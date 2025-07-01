@@ -168,7 +168,7 @@ const pmt = (P, r, yrs) => {
 };
 
 function useLocalStorage(key, defaultVal) {
-  const [val, setVal] = useState(() => {
+  const [_val, setVal] = useState(() => {
     try {
       const stored = localStorage.getItem(key);
       return stored != null ? JSON.parse(stored) : defaultVal;
@@ -207,7 +207,7 @@ const SectionCard = ({ title, children, className = "" }) => (
   
 
 export default function VineyardPlannerApp() {
-  const [showMenu, setShowMenu]         = useState(false);
+  const [_showMenu, setShowMenu]         = useState(false);
   const [activeTab, setActiveTab]       = useState("inputs");
   const [projYears, setProjYears]       = useState(10);
 
