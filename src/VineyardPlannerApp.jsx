@@ -239,7 +239,6 @@ const SectionCard = ({ title, children, className = "" }) => (
   
 
 export default function VineyardPlannerApp() {
-  const [showMenu, _setShowMenu] = useState(false);
   const [activeTab, setActiveTab]       = useState("inputs");
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
@@ -3379,9 +3378,7 @@ return (
     <div className="flex min-h-[calc(100vh-56px)]">
       {/* ── sidebar (unchanged) ── */}
       <aside
-        className={`bg-white w-64 border-r p-4 flex-shrink-0 md:block ${
-          showMenu ? "block absolute h-screen z-20 shadow-xl" : "hidden"
-        }`}
+        
       >
         <nav className="space-y-1">
           <h2 className="font-semibold text-gray-500 text-xs uppercase tracking-wider mb-3 px-4">
@@ -3489,6 +3486,4 @@ return (
     </div>
   </div>
 );
-       
-
 } 
