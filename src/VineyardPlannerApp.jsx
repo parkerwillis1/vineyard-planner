@@ -2227,7 +2227,7 @@ const LTV = (landValue + improvementsValue) > 0
                         ))}
                     </Pie>
 
-                    <Tooltip formatter={val => [`$${val.toLocaleString()}`, "Cost"]} />
+                    <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, 'Cost']} />
 
                     <Legend
                         layout="vertical"
