@@ -34,7 +34,7 @@ export default function DocumentationPage() {
         <blockquote>
           The model is designed for
           <em>owner-operators</em> who plan to (a) grow grapes, (b) vinify,
-          bottle and sell their own wine, and optionally (c) purchase outside
+          bottle and sell their own wine, (c) sell all grape yields to other winerys, and optionally (d) purchase outside
           fruit to scale production. It balances simplicity with enough rigor to
           satisfy lenders and investors.
         </blockquote>
@@ -82,62 +82,21 @@ export default function DocumentationPage() {
 
         {/* 3.1 Financial Inputs */}
         <h3>1. Financial Inputs</h3>
-        <p>
-          Capture <em>all</em> variable inputs that drive the projection:
-          acreage, prices, one-time &amp; recurring costs, loans, equipment and
-          optional grape purchases.
-        </p>
+        <p>Everything that drives the model – acreage, prices, one‑time &amp; recurring costs, loans and purchases.</p>
 
         <details open>
-          <summary className="cursor-pointer font-semibold">
-            Core Vineyard Parameters
-          </summary>
+          <summary className="cursor-pointer font-semibold">Core Vineyard Parameters</summary>
           <dl className="pl-4 space-y-2">
-            <div>
-              <dt className="font-medium">Acres</dt>
-              <dd>
-                Vineyard acreage under vine. Drives per-acre costs and yield
-                model.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium">Bottle Price ($)</dt>
-              <dd>
-                Expected selling price per 750 mL bottle. Revenue =
-                <code> sold × Bottle Price </code>.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium">Operating Cost ($/yr)</dt>
-              <dd>
-                Fixed annual overhead (labor, fuel, supplies). Calculated
-                automatically from the “Operating Cost” sections below.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium">Water Cost ($/ac-yr)</dt>
-              <dd>
-                Irrigation + labor. Total = cost × acres, incurred every year.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium">Land Price ($/ac)</dt>
-              <dd>Purchase price per acre – one-time cost in Year 0.</dd>
-            </div>
-            <div>
-              <dt className="font-medium">Build Cost ($/ac)</dt>
-              <dd>
-                Winery building / barn cost per acre. Scales with acreage for
-                simplicity.
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium">Setup Year</dt>
-              <dd>
-                Year 0 by default (recommended). Change only if the vineyard is
-                already partially established.
-              </dd>
-            </div>
+            <div><dt>Acres</dt><dd>Planted acres (scales nearly every cost &amp; yield figure).</dd></div>
+            <div><dt>Sales Strategy</dt><dd>
+              <strong>Bottle Wine</strong> or <strong>Sell All Grapes</strong>.  Switching rewires the revenue formula and reveals the relevant price field.
+            </dd></div>
+            <div><dt>Bottle Price ($)</dt><dd>Visible only in Bottle mode.</dd></div>
+            <div><dt>Grape Sale Price ($/ton)</dt><dd>Visible only in Bulk‑Grape mode.</dd></div>
+            <div><dt>Operating Cost ($/yr)</dt><dd>Auto‑calculated from all operating sections below.</dd></div>
+            <div><dt>Water Cost ($/ac‑yr)</dt><dd>Annual irrigation &amp; pumping cost.</dd></div>
+            <div><dt>Land Price ($/ac)</dt><dd>Year‑0 purchase price.</dd></div>
+            <div><dt>Build Cost ($/ac)</dt><dd>Winery / barn construction per acre.</dd></div>
           </dl>
         </details>
 
@@ -225,65 +184,19 @@ export default function DocumentationPage() {
       {/* -------------------------------------------------- */}
       {/* 4 ▸ FINANCIAL LOGIC & FORMULAS                      */}
       {/* -------------------------------------------------- */}
+      {/* 4 ▸ LOGIC & FORMULAS */}
       <section>
         <h2>📊 Financial Logic &amp; Formulas</h2>
         <table>
-          <thead>
-            <tr>
-              <th>Concept</th>
-              <th>Formula (plain-English)</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Metric</th><th>Formula</th></tr></thead>
           <tbody>
-            <tr>
-              <td>Annual Yield (bottles)</td>
-              <td>
-                <code>
-                  Acres × Yield (t/ac) × 756&nbsp;bottles/ton
-                </code>
-              </td>
-            </tr>
-            <tr>
-              <td>Revenue</td>
-              <td>
-                <code> Bottles Sold × Bottle Price </code>
-              </td>
-            </tr>
-            <tr>
-              <td>Operating Cost (annual)</td>
-              <td>
-                Sum of water, insurance, marketing, overhead, equipment ops,
-                debt service, etc.
-              </td>
-            </tr>
-            <tr>
-              <td>Net Profit (Y<sub>n</sub>)</td>
-              <td>
-                <code> Revenue − Cost </code>
-              </td>
-            </tr>
-            <tr>
-              <td>Cumulative Cash-Flow</td>
-              <td>
-                <code>
-                  Σ&nbsp;Net&nbsp;Profit&nbsp;to&nbsp;year&nbsp;n
-                </code>
-              </td>
-            </tr>
-            <tr>
-              <td>LTC</td>
-              <td>
-                <code> Total Loans ÷ Total Project Cost </code>
-              </td>
-            </tr>
-            <tr>
-              <td>LTV</td>
-              <td>
-                <code>
-                  Total Loans ÷ (Land Value + Improvements Value)
-                </code>
-              </td>
-            </tr>
+            <tr><td>Yield (bottles)</td><td><code>Acres × Tons/ac × 756</code></td></tr>
+            <tr><td>Revenue (Bottle mode)</td><td><code>Bottles Sold × Bottle Price</code></td></tr>
+            <tr><td>Revenue (Bulk‑Grape mode)</td><td><code>Tons Sold × Grape Price</code></td></tr>
+            <tr><td>Net Profit</td><td><code>Revenue − Cost</code></td></tr>
+            <tr><td>Cumulative CF</td><td><code>Σ Net Profit&nbsp;to&nbsp;Year n</code></td></tr>
+            <tr><td>LTC</td><td><code>Total Loans ÷ Total Project Cost</code></td></tr>
+            <tr><td>LTV</td><td><code>Total Loans ÷ (Land + Improvements)</code></td></tr>
           </tbody>
         </table>
       </section>

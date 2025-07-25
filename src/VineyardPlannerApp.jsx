@@ -1,7 +1,13 @@
 // src/VineyardPlannerApp.jsx
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Link, Navigate } from "react-router-dom";
-import DocumentationPage from "./components/DocumentationPage";
+import { Outlet, useLocation } from "react-router-dom";
+import { Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { supabase } from './lib/supabaseClient';
+import { savePlanner, loadPlanner, loadPlannerById } from './lib/saveLoadPlanner';
+import { savePlan, loadPlan }    from './lib/plansApi';
+
+
 
 import { Card, CardContent } from "./components/ui/card";
 import { Input } from "./components/ui/input";
@@ -22,6 +28,10 @@ import {
   ReferenceLine
 } from "recharts";
 
+import { useAuth } from "./auth/AuthContext";
+import { AlignVerticalJustifyEnd } from "lucide-react";
+
+
 /* ------------------------------------------------------------------ */
 /*  ⚙️  TOP-OF-PAGE UI HELPERS (all inline – no extra files needed)   */
 /* ------------------------------------------------------------------ */
@@ -35,13 +45,22 @@ const ProjectBanner = ({ years, setYears }) => (
     >
     {/* soft radial accent */}
     <div
-      className="absolute -top-10 -left-10 w-48 h-48 rounded-full opacity-10 bg-blue-400"
+      className="absolute -top-10 -left-10 w-40 h-40 rounded-full opacity-10 bg-blue-400"
     />
-    <div className="relative z-10 p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <h1 className="text-xl font-bold text-blue-900">Vineyard Planner</h1>
-      <div className="flex items-center gap-2">
+    <div className="relative z-10 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+  {/* logo + title */}
+      <div className="flex items-center gap-3">
+        <img
+          src="/vineyardplanner.png"          
+          alt="Vineyard Planner logo"
+          className="h-16 sm:h-20 w-auto drop-shadow-sm"
+        />
       </div>
+
+      {/* right‑side controls (leave empty for now) */}
+      <div className="flex items-center gap-2"></div>
     </div>
+
   </section>
 );
 
@@ -51,8 +70,17 @@ const ProjectBanner = ({ years, setYears }) => (
 
 const TAB_H = 56; // bar height in px (keep in sync with Tailwind padding)
 
-const TabNav = ({ active, setActive, projYears, setYears, totalEstCost }) => {
-  const tabs = [
+const TabNav = ({
+  active,
+  setActive,
+  projYears,
+  setYears,
+  totalEstCost,
+  onSave,
+  isSaving,
+  dirty,
+  lastSaved
+}) => {  const tabs = [
     { id: "inputs",        label: "Financial Inputs" },
     { id: "establishment", label: "Vineyard Establishment" },
     { id: "proj",          label: `${projYears}-Year Projection` },
@@ -61,35 +89,28 @@ const TabNav = ({ active, setActive, projYears, setYears, totalEstCost }) => {
 
   return (
     <>
-      {/* spacer so page content isn’t hidden when the bar sticks */}
       <div style={{ height: TAB_H }} aria-hidden />
-
       <div
         className="sticky top-0 z-30 bg-white/90 backdrop-blur-md shadow-sm"
         style={{ height: TAB_H }}
       >
         <nav className="flex items-center gap-1 h-full px-2 sm:px-4 overflow-x-auto">
-
-          {/* ── tabs ─────────────────────────────────────── */}
-          {tabs.map((t) => (
+          {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setActive(t.id)}
-              className={`px-4 sm:px-6 py-3 text-sm whitespace-nowrap border-b-2
-                ${
-                  active === t.id
-                    ? "font-semibold border-blue-600 text-blue-800 bg-blue-50/60"
-                    : "border-transparent text-blue-600/70 hover:text-blue-800 hover:bg-blue-50/40"
-                }`}
+              className={`px-4 sm:px-6 py-3 text-sm whitespace-nowrap border-b-2 ${
+                active === t.id
+                  ? "font-semibold border-blue-600 text-blue-800 bg-blue-50/60"
+                  : "border-transparent text-blue-600/70 hover:text-blue-800 hover:bg-blue-50/40"
+              }`}
             >
               {t.label}
             </button>
           ))}
 
-          {/* ── right-hand controls ──────────────────────── */}
+          {/* RIGHT SIDE */}
           <div className="ml-auto flex items-center gap-4 pr-2">
-
-            {/* projection years selector */}
             <label className="flex items-center gap-1 text-xs sm:text-sm text-blue-700 font-medium">
               Projection&nbsp;Years
               <Input
@@ -104,19 +125,28 @@ const TabNav = ({ active, setActive, projYears, setYears, totalEstCost }) => {
               />
             </label>
 
-            {/* total-investment chip */}
-            <span className="flex items-center text-xs sm:text-sm text-gray-700">
+            <span className="hidden sm:flex items-center text-xs sm:text-sm text-gray-700">
               Total&nbsp;Investment
               <span className="ml-2 px-3 py-1 rounded-full bg-purple-50 text-purple-700 font-semibold">
                 ${totalEstCost.toLocaleString()}
               </span>
             </span>
+
+            <button
+              onClick={onSave}
+              className="px-3 py-2 text-xs sm:text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 font-medium transition disabled:opacity-50"
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving…' : 'Save'}
+            </button>
+
           </div>
         </nav>
       </div>
     </>
   );
 };
+
 /* ------------------------------------------------------------------ */
 
 
@@ -168,7 +198,7 @@ const pmt = (P, r, yrs) => {
 };
 
 function useLocalStorage(key, defaultVal) {
-  const [_val, setVal] = useState(() => {
+  const [val, setVal] = useState(() => {
     try {
       const stored = localStorage.getItem(key);
       return stored != null ? JSON.parse(stored) : defaultVal;
@@ -207,9 +237,47 @@ const SectionCard = ({ title, children, className = "" }) => (
   
 
 export default function VineyardPlannerApp() {
-  const [_showMenu, setShowMenu]         = useState(false);
+  const [showMenu, setShowMenu]         = useState(false);
   const [activeTab, setActiveTab]       = useState("inputs");
   const [projYears, setProjYears]       = useState(10);
+  const [dirty, setDirty] = useState(false);
+
+  const { id: planId } = useParams();   // comes from route "/plans/:id"
+
+
+  // --- Auth context (SAFE destructure) ---
+  const auth = useAuth();          // may be null if provider missing
+  const user = auth?.user || null; // null until signed in
+
+  useEffect(() => {
+  if (!user) return;                  // wait for logged in
+  let isCancelled = false;
+
+  (async () => {
+    const { data, error } = planId
+      ? await loadPlan(planId)  
+      : await loadPlanner();
+    if (error) {
+      console.error('Load planner error', error);
+      return;
+    }
+    if (data && !isCancelled) {
+      // MERGE: defaults  ← saved object  (saved values win if they exist)
+      if (data.st) set({ ...DEFAULT_ST, ...data.st });
+
+      if (data.projYears) setProjYears(data.projYears);
+
+      setDirty(false);
+      setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
+    }
+
+  })();
+
+  return () => { isCancelled = true; };
+},[user, planId]);   // run when user changes
+
+
+
 
   const getYieldForYear = (year) => {
     if (year <= 3) return 0;
@@ -218,7 +286,7 @@ export default function VineyardPlannerApp() {
     return AVERAGE_YIELD_TONS_PER_ACRE;
   };
 
-  const [st, set] = useState({
+  const DEFAULT_ST = {
     acres: "1",
     bottlePrice: "28",
     landPrice: "60000",
@@ -228,6 +296,8 @@ export default function VineyardPlannerApp() {
     insType: "Liability + Crop",
     insCost: "4000",
     licenseCost: "100",
+    salesMode:       "wine",    
+    grapeSalePrice:  "1800",
     permits: [
         { include: true, key: 'federal',    label: "TTB Winery Permit",      cost: "0" },
         { include: true, key: 'state',      label: "TABC Winery Permit (G)", cost: "0" },
@@ -301,15 +371,61 @@ export default function VineyardPlannerApp() {
     ],
     purchases: [],
     
-  });
+  };
+
+  const [st, set] = useState(DEFAULT_ST);
+
+     // --- Saving state ---
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+
+    async function handleManualSave() {
+      if (!user) {
+        alert('Sign in to save your plan.');
+        return;
+      }
+
+      try {
+        setSaving(true);
+
+        /* ----------------------------------------------------
+          If we’re editing a specific plan (route /app/:id)
+          save that row; otherwise fall back to the personal
+          “default” planner record.
+        ---------------------------------------------------- */
+        let error;
+        if (planId) {
+          ({ error } = await savePlan(planId, { st, projYears })); // ✅ row‑specific
+        } else {
+          ({ error } = await savePlanner({ st, projYears }));      // default profile
+        }
+
+        if (error) {
+          console.error(error);
+          alert('Save failed: ' + (error.message || 'Unknown error'));
+        } else {
+          setDirty(false);          // mark form clean
+          setLastSaved(new Date()); // record timestamp
+        }
+      } finally {
+        setSaving(false);
+      }
+    }
+  // Mark planner state dirty when st or projYears change *after* an initial save/load baseline
+  useEffect(() => {
+    // If we have never saved/loaded (lastSaved is still null) don't mark dirty yet
+    if (lastSaved === null) return;
+    setDirty(true);
+  }, [st, projYears, lastSaved]);
 
 // ─── normalize EVERY string → number ───
 const stNum = {
   // core inputs
   acres:           Number(st.acres)       || 0,
   bottlePrice:     Number(st.bottlePrice) || 0,
-  landPrice:       Number(st.landPrice)   || 0,
+  grapeSalePrice:  Number(st.grapeSalePrice)  || 0,
   buildPrice:      Number(st.buildPrice)  || 0,
+  landPrice:       Number(st.landPrice)   || 0,
   waterCost:       Number(st.waterCost)   || 0,
   insCost:         Number(st.insCost)     || 0,
   licenseCost:     Number(st.licenseCost) || 0,
@@ -545,24 +661,105 @@ const annualFixed =
 
   const setupCapital = totalEstCost;
 
-  let cumulative = 0;
-  const projection = Array.from({ length: projYears }).map((_, idx) => {
+  const KV = ({ label, value }) => (
+  <div className="flex justify-between text-sm mb-1">
+    <span className="font-medium">{label}</span>
+    <span className="font-semibold">{value}</span>
+  </div>
+  );
+
+  const fullProdRevenue =
+  st.salesMode === "wine"
+    ? stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON * stNum.bottlePrice
+    : stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * stNum.grapeSalePrice;   // $/ton
+
+  const fullProdNet = fullProdRevenue - annualFixed;
+
+  const isWine         = st.salesMode === "wine";
+  const costPerTon     = annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE);
+  const grossMarginTon = stNum.grapeSalePrice - costPerTon;
+  
+  const grapePrice = Number(stNum.grapeSalePrice || 0); 
+
+  // ---- Year 0 + Operating Years Projection (with explicit Year 0 row) ----
+  // Base annual (recurring) operating + fixed costs (exclude one-time establishment)
+  const baseAnnualCost = annualFixed - permitOneTime; 
+  // (If you intended permitOneTime only in Year 0, ensure it was not already part of annualFixed; adjust if needed.)
+  console.log({
+    salesMode: st.salesMode,
+    grapeSalePrice: stNum.grapeSalePrice
+  });
+  // Build operating years 1..projYears
+  let cumulative = -setupCapital;        // start with the establishment outflow
+  const operatingYears = Array.from({ length: projYears }).map((_, idx) => {
     const year = idx + 1;
+
     const yieldPA = getYieldForYear(year);
-    const totalBottles = stNum.acres * yieldPA * BOTTLES_PER_TON;
-    const unsoldForYr = stNum.unsoldBottles
-      .filter((u) => u.include && u.year === year)
-      .reduce((sum, u) => sum + u.bottles, 0);
-    const soldBottles = Math.max(0, totalBottles - unsoldForYr);
-    const revenue = soldBottles * stNum.bottlePrice;
-    const cost = annualFixed + (year - 1 === stNum.setupYear ? setupCapital : 0);
+    const tonsTotal = yieldPA * stNum.acres;
+    let bottlesProduced   = tonsTotal * BOTTLES_PER_TON;
+
+    // Unsold (withheld) bottles flagged for this year
+    const withheldBottles = stNum.unsoldBottles
+      .filter(u => u.include && +u.year === year)
+      .reduce((s,u) => s + (+u.bottles || 0), 0);
+
+    let soldBottles      = Math.max(0, bottlesProduced - withheldBottles);
+
+    // ── price entered on the form (may be blank) ──────────────────
+    const costPerTon = annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE || 1);
+    const grossMarginTon  = grapePrice - costPerTon;
+    // 3️⃣  Revenue — branch on sales mode
+    const revenue = st.salesMode === "wine"
+      ? soldBottles * stNum.bottlePrice      // bottled‑wine path
+      : tonsTotal   * grapePrice;            // bulk‑grape path
+
+
+    // Harvest per‑ton variable portion (already counted inside dynamicOperatingCost earlier if you included costPerTon;
+    // here we isolate any per‑ton you want *added*; if already included remove this block)
+    const harvestPerTon = stNum.harvest
+      .filter(r => r.include)
+      .reduce((s,r) => s + (Number(r.costPerTon) || 0), 0);
+    const harvestVariable = harvestPerTon * tonsTotal;
+
+    // Annual cost = recurring base + harvest variable (exclude establishment)
+    const cost = baseAnnualCost + harvestVariable;
+
     const net = revenue - cost;
     cumulative += net;
-    return { year, yieldPA, unsoldForYear: unsoldForYr, soldBottles, revenue, cost, net, cumulative };
+
+    return {
+      year,
+      yieldPA,
+      bottlesProduced: Math.round(bottlesProduced),
+      withheldBottles: withheldBottles,
+      soldBottles,
+      revenue: Math.round(revenue),
+      cost: Math.round(cost),
+      net: Math.round(net),
+      cumulative: Math.round(cumulative)
+    };
   });
 
-  const beIdx = projection.findIndex(p => p.cumulative >= 0);
-  const breakEven = beIdx >= 0 ? beIdx + 1 : `>${projYears}`;
+  // Year 0 row (pure establishment). revenue 0, cost = setupCapital (all one-time)
+  const projection = [
+    {
+      year: 0,
+      yieldPA: 0,
+      bottlesProduced: 0,
+      withheldBottles: 0,
+      soldBottles: 0,
+      revenue: 0,
+      cost: Math.round(setupCapital + permitOneTime),
+      net: -Math.round(setupCapital + permitOneTime),
+      cumulative: -Math.round(setupCapital)
+    },
+    ...operatingYears
+  ];
+
+  // Break-even = first year >0 where cumulative >= 0
+  const beIdx = projection.findIndex(p => p.year > 0 && p.cumulative >= 0);
+  const breakEven = beIdx >= 0 ? projection[beIdx].year : `>${projYears}`;
+
 
   const breakdownData = [
     { name: "Operating Cost",             value: dynamicOperatingCost },
@@ -731,6 +928,29 @@ const LTV = (landValue + improvementsValue) > 0
                 <label className="text-sm text-blue-800 font-medium block mb-2">Bottle Price ($)</label>
                 {num("bottlePrice", 0.5)}
               </div>
+              {/* ——— SALES STRATEGY ——— */}
+              <div>
+                <label className="text-sm text-blue-800 font-medium block mb-2">
+                  Sales Strategy
+                </label>
+                <select
+                  className="border p-2 rounded-md bg-white w-full"
+                  value={st.salesMode}
+                  onChange={e => update("salesMode", e.target.value)}
+                >
+                  <option value="wine">Bottle • sell finished wine</option>
+                  <option value="grapes">Bulk • sell all grapes</option>
+                </select>
+              </div>
+
+              {st.salesMode === "grapes" && (
+                <div>
+                  <label className="text-sm text-blue-800 font-medium block mb-2">
+                    Grape Sale Price ($ / ton)
+                  </label>
+                  {num("grapeSalePrice", 10)}
+                </div>
+              )}
               <div>
                 <label>Operating Cost ($/yr)</label>
                     <Input
@@ -2150,6 +2370,7 @@ const LTV = (landValue + improvementsValue) > 0
             <StatsCard
                 label="Total Revenue"
                 value={`$${projection
+                .filter(p => p.year > 0)
                 .reduce((sum, p) => sum + p.revenue, 0)
                 .toLocaleString()}`}
                 color="green"
@@ -2161,6 +2382,7 @@ const LTV = (landValue + improvementsValue) > 0
             />
             </div>
 
+                  
             {/* Annual Financials Chart */}
             <SectionCard title="Annual Revenue vs Cost vs Net">
             <div className="h-64">
@@ -2191,7 +2413,7 @@ const LTV = (landValue + improvementsValue) > 0
             {/* Detailed Projection Table */}
             <SectionCard title="Year-by-Year Table">
             <div className="overflow-x-auto">
-                <table className="w-full border-collapse min-w-max">
+                <table className="w-full border-collapse">
                 <thead className="bg-blue-50">
                     <tr>
                     {[
@@ -2217,19 +2439,19 @@ const LTV = (landValue + improvementsValue) > 0
                 <tbody>
                     {projection.map(p => (
                     <tr key={p.year} className={p.year % 2 === 0 ? "bg-gray-50" : ""}>
-                        <td className="p-2">{p.year}</td>
-                        <td className="p-2">{p.yieldPA.toFixed(1)}</td>
-                        <td className="p-2">{Math.round(p.yieldPA * BOTTLES_PER_TON * stNum.acres).toLocaleString()}</td>
-                        <td className="p-2">{p.unsoldForYear.toLocaleString()}</td>
-                        <td className="p-2">{p.soldBottles.toLocaleString()}</td>
-                        <td className="p-2">${p.revenue.toLocaleString()}</td>
-                        <td className="p-2">${p.cost.toLocaleString()}</td>
-                        <td className={`p-2 font-medium ${p.net >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      <td className="p-2">{p.year}</td>
+                      <td className="p-2">{p.year === 0 ? "–" : p.yieldPA.toFixed(1)}</td>
+                      <td className="p-2">{p.bottlesProduced.toLocaleString()}</td>
+                      <td className="p-2">{p.withheldBottles.toLocaleString()}</td>
+                      <td className="p-2">{p.soldBottles.toLocaleString()}</td>
+                      <td className="p-2">${p.revenue.toLocaleString()}</td>
+                      <td className="p-2">${p.cost.toLocaleString()}</td>
+                      <td className={`p-2 font-medium ${p.net >= 0 ? "text-green-600" : "text-red-600"}`}>
                         ${p.net.toLocaleString()}
-                        </td>
-                        <td className={`p-2 font-medium ${p.cumulative >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      </td>
+                      <td className={`p-2 font-medium ${p.cumulative >= 0 ? "text-green-600" : "text-red-600"}`}>
                         ${p.cumulative.toLocaleString()}
-                        </td>
+                      </td>
                     </tr>
                     ))}
                 </tbody>
@@ -2239,9 +2461,11 @@ const LTV = (landValue + improvementsValue) > 0
         </div>
         )}
 
-      {/* DETAILS TAB - ENHANCED VERSION */}
+      {/* ---- DETAILS TAB - ENHANCED VERSION -------------------------- */}
+ 
+        {/* ------- render Details tab only when active ------- */}
         {activeTab === "details" && (
-        <div className="space-y-16">
+        <div className="space-y-8 p-6 max-w-full overflow-hidden">
             <SectionHeader title="Vineyard Financial Analysis & Breakdown" />
             
             {/* Executive Summary Card */}
@@ -2276,7 +2500,7 @@ const LTV = (landValue + improvementsValue) > 0
                     <div className="flex justify-between text-sm mb-1">
                         <span className="font-medium">Annual Revenue (at full production)</span>
                         <span className="font-semibold text-green-700">
-                        ${(stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON * stNum.bottlePrice).toLocaleString()}
+                          {fullProdRevenue.toLocaleString()}
                         </span>
                     </div>
                     <div className="flex justify-between text-sm mb-1">
@@ -2286,27 +2510,35 @@ const LTV = (landValue + improvementsValue) > 0
                     <div className="flex justify-between text-sm mb-1">
                         <span className="font-medium">Annual Net Profit (at full production)</span>
                         <span className="font-semibold text-blue-700">
-                        ${((stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON * stNum.bottlePrice) - annualFixed).toLocaleString()}
+                          {fullProdNet.toLocaleString()}
                         </span>
                     </div>
                     </div>
-                    <div>
-                    <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">Cost per Bottle</span>
-                        <span className="font-semibold">${(annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">Price per Bottle</span>
-                        <span className="font-semibold">${stNum.bottlePrice.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">Gross Margin per Bottle</span>
-                        <span className="font-semibold text-green-700">
-                        ${(stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))).toFixed(2)} 
-                        ({Math.round(((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice) * 100)}%)
-                        </span>
-                    </div>
-                    </div>
+                    {/* RIGHT column – bottle OR ton view */}
+                      {isWine ? (
+                        /* ---------- Wine mode ---------- */
+                        <div>
+                          <KV label="Cost per Bottle"  value={`$${(annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)).toFixed(2)}`} />
+                          <KV label="Price per Bottle" value={`$${stNum.bottlePrice.toFixed(2)}`} />
+                          <KV
+                            label="Gross Margin / Bottle"
+                            value={`$${(stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))).toFixed(2)}
+                                    (${Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%)`}
+                          />
+                        </div>
+                      ) : (
+                        /* ---------- Bulk‑grape mode ---------- */
+                        <div>
+                          <KV label="Cost per Ton"  value={`$${costPerTon.toFixed(0)}`} />
+                            <KV label="Price per Ton" value={`$${grapePrice.toLocaleString()}`} />
+                            <KV
+                              label="Gross Margin / Ton"
+                              value={`$${grossMarginTon.toLocaleString()}
+                                      (${grapePrice ? ((grossMarginTon / grapePrice) * 100).toFixed(1) : 0}%)`}
+                            />
+                        </div>
+                      )}
+                   {/* ← closes grid grid-cols‑2 */}
                 </div>
                 </div>
             </div>
@@ -2404,7 +2636,7 @@ const LTV = (landValue + improvementsValue) > 0
 
             <SectionCard title="All Vineyard Costs by Year">
             <div className="overflow-x-auto">
-                <table className="w-full min-w-max table-auto">
+                <table className="w-full table-auto">
                 <thead className="bg-blue-50">
                     <tr>
                     <th className="px-4 py-2 text-left text-xs font-medium text-blue-800">
@@ -2494,42 +2726,72 @@ const LTV = (landValue + improvementsValue) > 0
                 <h3 className="text-lg font-semibold text-blue-800 mb-4">Vineyard Production Timeline</h3>
                 <div className="h-64 mb-4">
                     <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                        data={projection.map(p => ({ 
-                        year: p.year, 
-                        yield: p.yieldPA,
-                        bottles: Math.round(p.yieldPA * BOTTLES_PER_TON * stNum.acres)
+                        {/* ── NEW BarChart that hides “bottles” in bulk‑grape mode ── */}
+                      <BarChart
+                        data={projection.map(p => ({
+                          year:   p.year,
+                          yield:  p.yieldPA,
+                          // only add a “bottles” field when in wine mode
+                          ...(isWine && {
+                            bottles: Math.round(p.yieldPA * BOTTLES_PER_TON * stNum.acres),
+                          }),
                         }))}
                         margin={{ top: 10, right: 30, left: 20, bottom: 20 }}
-                    >
+                      >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                        dataKey="year" 
-                        label={{ value: 'Year', position: 'insideBottom', offset: -5 }}
-                        tick={{ fontSize: 12 }}
+                        <XAxis
+                          dataKey="year"
+                          label={{ value: 'Year', position: 'insideBottom', offset: -5 }}
+                          tick={{ fontSize: 12 }}
                         />
-                        <YAxis 
-                        yAxisId="left"
-                        label={{ value: 'Tons/Acre', angle: -90, position: 'insideLeft', offset: 10 }}
-                        tick={{ fontSize: 12 }}
+
+                        {/* left axis – always tons/acre */}
+                        <YAxis
+                          yAxisId="left"
+                          label={{ value: 'Tons/Acre', angle: -90, position: 'insideLeft', offset: 10 }}
+                          tick={{ fontSize: 12 }}
                         />
-                        <YAxis 
-                        yAxisId="right"
-                        orientation="right"
-                        label={{ value: 'Bottles', angle: 90, position: 'insideRight', offset: 10 }}
-                        tick={{ fontSize: 12 }}
-                        />
-                        <Tooltip 
-                        formatter={(value, name) => [
-                            name === 'yield' ? `${value} tons/acre` : `${value.toLocaleString()} bottles`, 
-                            name === 'yield' ? 'Yield' : 'Bottles'
-                        ]}
-                        contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}
+
+                        {/* right axis & bars – only when selling wine */}
+                        {isWine && (
+                          <>
+                            <YAxis
+                              yAxisId="right"
+                              orientation="right"
+                              label={{ value: 'Bottles', angle: 90, position: 'insideRight', offset: 10 }}
+                              tick={{ fontSize: 12 }}
+                            />
+                            <Bar
+                              yAxisId="right"
+                              dataKey="bottles"
+                              name="Bottles Produced"
+                              fill="#60a5fa"
+                            />
+                          </>
+                        )}
+
+                        <Tooltip
+                          formatter={(v, n) =>
+                            n === 'yield' ? `${v} tons/acre` : `${v.toLocaleString()} bottles`
+                          }
+                          contentStyle={{
+                            background: 'white',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '6px',
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                          }}
                         />
                         <Legend />
-                        <Bar yAxisId="left" dataKey="yield" name="Yield (tons/acre)" fill="#4ade80" />
-                        <Bar yAxisId="right" dataKey="bottles" name="Bottles Produced" fill="#60a5fa" />
-                    </BarChart>
+
+                        {/* yield bar – always visible */}
+                        <Bar
+                          yAxisId="left"
+                          dataKey="yield"
+                          name="Yield (tons/acre)"
+                          fill="#4ade80"
+                        />
+                      </BarChart>
+
                     </ResponsiveContainer>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
@@ -2539,7 +2801,13 @@ const LTV = (landValue + improvementsValue) > 0
                     <li>Year 4: <span className="font-medium">1 ton/acre</span> (first crop)</li>
                     <li>Year 5: <span className="font-medium">2.5 tons/acre</span> (developing vines)</li>
                     <li>Year 6+: <span className="font-medium">{AVERAGE_YIELD_TONS_PER_ACRE} tons/acre</span> (mature vines)</li>
-                    <li>Each ton of grapes produces <span className="font-medium">{BOTTLES_PER_TON} bottles</span> of wine</li>
+                    {isWine && (
+                      <li>
+                        Each ton of grapes produces
+                        <span className="font-medium">&nbsp;{BOTTLES_PER_TON} bottles</span>
+                        of wine
+                      </li>
+                    )}
                     </ul>
                 </div>
                 </div>
@@ -2596,7 +2864,12 @@ const LTV = (landValue + improvementsValue) > 0
                     <li>First revenue in <span className="font-medium">Year {projection.findIndex(p => p.revenue > 0) + 1}</span></li>
                     <li>First profitable year: <span className="font-medium">Year {projection.findIndex(p => p.net > 0) + 1}</span></li>
                     <li>Maximum annual revenue: <span className="font-medium">${Math.max(...projection.map(p => p.revenue)).toLocaleString()}</span></li>
-                    <li>Revenue at full production: <span className="font-medium">${(stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON * stNum.bottlePrice).toLocaleString()}</span></li>
+                    <li>
+                      Revenue at full production:&nbsp;
+                      <span className="font-medium">
+                        ${fullProdRevenue.toLocaleString()}
+                      </span>
+                    </li>
                     </ul>
                 </div>
                 </div>
@@ -2871,225 +3144,227 @@ const LTV = (landValue + improvementsValue) > 0
             </SectionCard>
             
             {/* Bottling & Packaging Analysis */}
-            <SectionCard title="Bottle Economics & Price Point Analysis">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div>
-                <h3 className="text-lg font-medium text-blue-800 mb-4">Profit Margin Analysis</h3>
-                <div className="mb-6">
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                    <h4 className="text-md font-semibold text-blue-800 mb-3">Cost & Pricing Breakdown per Bottle</h4>
-                    
-                    <div className="space-y-4">
-                        <div>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="font-medium">Production Cost</span>
-                            <span>${(annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)).toFixed(2)}</span>
-                        </div>
-                        <div className="h-5 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                            className="h-5 bg-blue-600 rounded-full flex items-center justify-end pr-2 text-xs text-white font-medium"
-                            style={{ 
-                                width: `${Math.min(100, (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) / stNum.bottlePrice * 100)}%` 
-                            }}
-                            >
-                            {Math.round((annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) / stNum.bottlePrice * 100)}%
-                            </div>
-                        </div>
-                        </div>
-                        
-                        <div>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="font-medium">Profit Margin</span>
-                            <span>${(stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))).toFixed(2)}</span>
-                        </div>
-                        <div className="h-5 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                            className="h-5 bg-green-500 rounded-full flex items-center justify-end pr-2 text-xs text-white font-medium"
-                            style={{ 
-                                width: `${Math.min(100, (stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%`,
-                                marginLeft: `${Math.min(100, (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) / stNum.bottlePrice * 100)}%`
-                            }}
-                            >
-                            {Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-                    
-                    <div className="mt-6 flex justify-between items-end">
-                        <div>
-                        <span className="block text-2xl font-bold text-blue-800">${stNum.bottlePrice.toFixed(2)}</span>
-                        <span className="text-sm text-gray-600">Bottle Price</span>
-                        </div>
-                        <div className="text-right">
-                        <span className="block text-2xl font-bold text-green-700">
-                            {Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%
-                        </span>
-                        <span className="text-sm text-gray-600">Profit Margin</span>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                    <h4 className="text-md font-semibold text-blue-800 mb-3">Price Point Scenario Analysis</h4>
-                    <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price Point</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit/Bottle</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Margin</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Break-Even</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {[stNum.bottlePrice - 10, stNum.bottlePrice - 5, stNum.bottlePrice, stNum.bottlePrice + 5, stNum.bottlePrice + 10].map((price, i) => {
-                        if (price <= 0) return null;
-                        const costPerBottle = annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON);
-                        const profit = price - costPerBottle;
-                        const margin = (profit / price) * 100;
-                        // Simple break-even estimation (approximate)
-                        let estimatedBreakEven;
-                        if (profit <= 0) {
-                            estimatedBreakEven = ">10";
-                        } else {
-                            estimatedBreakEven = Math.ceil(totalEstCost / (profit * stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON));
-                            if (estimatedBreakEven > projYears) {
-                            estimatedBreakEven = `>${projYears}`;
-                            }
-                        }
-                        return (
-                            <tr key={i} className={price === stNum.bottlePrice ? "bg-blue-50" : ""}>
-                            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                                ${price.toFixed(2)}
-                                {price === stNum.bottlePrice && <span className="ml-2 text-xs text-blue-600">(Current)</span>}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                                ${profit.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                                {margin.toFixed(1)}%
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                                Year {estimatedBreakEven}
-                            </td>
-                            </tr>
-                        );
-                        })}
-                    </tbody>
-                    </table>
-                </div>
-                </div>
-                
-                {/* Right Column */}
-                <div>
-                <h3 className="text-lg font-medium text-blue-800 mb-4">Market Strategy Recommendations</h3>
-                
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 mb-6">
-                    <h4 className="text-md font-semibold text-blue-800 mb-3">Optimal Price Point Analysis</h4>
-                    <div className="h-64 mb-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                        data={
-                            Array.from({ length: 7 }, (_, i) => {
-                            const price = stNum.bottlePrice - 15 + (i * 5);
-                            if (price <= 0) return null;
-                            const costPerBottle = annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON);
-                            const profit = price - costPerBottle;
-                            const yearlyProfit = profit * stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON;
-                            const margin = (profit / price) * 100;
-                            return {
-                                price: price,
-                                profit: yearlyProfit,
-                                margin: margin
-                            };
-                            }).filter(Boolean)
-                        }
-                        margin={{ top: 10, right: 30, left: 20, bottom: 20 }}
-                        >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                            dataKey="price" 
-                            label={{ value: 'Bottle Price ($)', position: 'insideBottom', offset: -5 }}
-                            tick={{ fontSize: 12 }}
-                        />
-                        <YAxis 
-                            yAxisId="left"
-                            label={{ value: 'Annual Profit ($)', angle: -90, position: 'insideLeft', offset: 10 }}
-                            tick={{ fontSize: 12 }}
-                        />
-                        <YAxis 
-                            yAxisId="right"
-                            orientation="right"
-                            label={{ value: 'Profit Margin (%)', angle: 90, position: 'insideRight', offset: 10 }}
-                            tick={{ fontSize: 12 }}
-                        />
-                        <Tooltip 
-                            formatter={(value, name, props) => [
-                            name === 'profit' ? `$${value.toLocaleString()}` : `${value.toFixed(1)}%`,
-                            name === 'profit' ? 'Annual Profit' : 'Profit Margin'
-                            ]}
-                            labelFormatter={value => `Bottle Price: $${value}`}
-                            contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}
-                        />
-                        <Legend />
-                        <Bar yAxisId="left" dataKey="profit" name="Annual Profit" fill="#4ade80" />
-                        <Bar yAxisId="right" dataKey="margin" name="Profit Margin %" fill="#60a5fa" />
-                        <ReferenceLine 
-                            yAxisId="left"
-                            x={stNum.bottlePrice} 
-                            stroke="#8b5cf6" 
-                            strokeDasharray="3 3" 
-                            label={{ position: 'top', value: 'Current', fill: '#8b5cf6', fontSize: 12 }} 
-                        />
-                        </BarChart>
-                    </ResponsiveContainer>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700">
-                    <p className="mb-2">
-                        <span className="font-medium">Analysis:</span> This chart shows how different price points affect your annual profit and profit margin when the vineyard reaches full production.
-                    </p>
-                    {stNum.bottlePrice > 15 ? (
-                        <p>
-                        At your current price point (${stNum.bottlePrice.toFixed(2)}), you'll achieve a {Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}% profit margin
-                        and approximately ${Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) * stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON).toLocaleString()} in annual profit at full production.
-                        </p>
-                    ) : (
-                        <p className="text-red-600 font-medium">
-                        Warning: Your current price point is too low to cover production costs. Consider a bottle price of at least 
-                        ${Math.ceil(annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON) + 5).toFixed(2)} to achieve profitability.
-                        </p>
-                    )}
-                    </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                    <h4 className="text-md font-semibold text-blue-800 mb-3">Strategic Recommendations</h4>
-                    <ul className="list-disc ml-5 text-sm text-gray-700 space-y-3">
-                    <li>
-                        <span className="font-medium">Optimal Price Point:</span> Based on your costs and industry averages, 
-                        ${Math.max(stNum.bottlePrice, Math.ceil((annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) * 3))}-
-                        ${Math.max(stNum.bottlePrice + 10, Math.ceil((annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) * 4))} 
-                        per bottle would maximize both profit and sustainable market positioning.
-                    </li>
-                    <li>
-                        <span className="font-medium">Direct-to-Consumer Focus:</span> Consider allocating 30-40% of production to direct-to-consumer channels to improve margins and build brand loyalty.
-                    </li>
-                    <li>
-                        <span className="font-medium">Scaling Considerations:</span> Expanding beyond {stNum.acres} {stNum.acres === 1 ? "acre" : "acres"} would improve economies of scale, particularly for equipment utilization.
-                    </li>
-                    <li>
-                        <span className="font-medium">Diversification Opportunity:</span> Consider adding tasting room or wine club revenue streams to improve profitability in years 4-6.
-                    </li>
-                    <li>
-                        <span className="font-medium">Risk Mitigation:</span> Budget for minimum 10% contingency on all capital costs and consider crop insurance options.
-                    </li>
-                    </ul>
-                </div>
-                </div>
-            </div>
-            </SectionCard>
+            {isWine && (
+              <SectionCard title="Bottle Economics & Price Point Analysis">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div>
+                  <h3 className="text-lg font-medium text-blue-800 mb-4">Profit Margin Analysis</h3>
+                  <div className="mb-6">
+                      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                      <h4 className="text-md font-semibold text-blue-800 mb-3">Cost & Pricing Breakdown per Bottle</h4>
+                      
+                      <div className="space-y-4">
+                          <div>
+                          <div className="flex justify-between text-sm mb-1">
+                              <span className="font-medium">Production Cost</span>
+                              <span>${(annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)).toFixed(2)}</span>
+                          </div>
+                          <div className="h-5 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                              className="h-5 bg-blue-600 rounded-full flex items-center justify-end pr-2 text-xs text-white font-medium"
+                              style={{ 
+                                  width: `${Math.min(100, (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) / stNum.bottlePrice * 100)}%` 
+                              }}
+                              >
+                              {Math.round((annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) / stNum.bottlePrice * 100)}%
+                              </div>
+                          </div>
+                          </div>
+                          
+                          <div>
+                          <div className="flex justify-between text-sm mb-1">
+                              <span className="font-medium">Profit Margin</span>
+                              <span>${(stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))).toFixed(2)}</span>
+                          </div>
+                          <div className="h-5 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                              className="h-5 bg-green-500 rounded-full flex items-center justify-end pr-2 text-xs text-white font-medium"
+                              style={{ 
+                                  width: `${Math.min(100, (stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%`,
+                                  marginLeft: `${Math.min(100, (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) / stNum.bottlePrice * 100)}%`
+                              }}
+                              >
+                              {Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%
+                              </div>
+                          </div>
+                          </div>
+                      </div>
+                      
+                      <div className="mt-6 flex justify-between items-end">
+                          <div>
+                          <span className="block text-2xl font-bold text-blue-800">${stNum.bottlePrice.toFixed(2)}</span>
+                          <span className="text-sm text-gray-600">Bottle Price</span>
+                          </div>
+                          <div className="text-right">
+                          <span className="block text-2xl font-bold text-green-700">
+                              {Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%
+                          </span>
+                          <span className="text-sm text-gray-600">Profit Margin</span>
+                          </div>
+                      </div>
+                      </div>
+                  </div>
+                  
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                      <h4 className="text-md font-semibold text-blue-800 mb-3">Price Point Scenario Analysis</h4>
+                      <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                          <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price Point</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit/Bottle</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Margin</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Break-Even</th>
+                          </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                          {[stNum.bottlePrice - 10, stNum.bottlePrice - 5, stNum.bottlePrice, stNum.bottlePrice + 5, stNum.bottlePrice + 10].map((price, i) => {
+                          if (price <= 0) return null;
+                          const costPerBottle = annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON);
+                          const profit = price - costPerBottle;
+                          const margin = (profit / price) * 100;
+                          // Simple break-even estimation (approximate)
+                          let estimatedBreakEven;
+                          if (profit <= 0) {
+                              estimatedBreakEven = ">10";
+                          } else {
+                              estimatedBreakEven = Math.ceil(totalEstCost / (profit * stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON));
+                              if (estimatedBreakEven > projYears) {
+                              estimatedBreakEven = `>${projYears}`;
+                              }
+                          }
+                          return (
+                              <tr key={i} className={price === stNum.bottlePrice ? "bg-blue-50" : ""}>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  ${price.toFixed(2)}
+                                  {price === stNum.bottlePrice && <span className="ml-2 text-xs text-blue-600">(Current)</span>}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                  ${profit.toFixed(2)}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                  {margin.toFixed(1)}%
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                  Year {estimatedBreakEven}
+                              </td>
+                              </tr>
+                          );
+                          })}
+                      </tbody>
+                      </table>
+                  </div>
+                  </div>
+                  
+                  {/* Right Column */}
+                  <div>
+                  <h3 className="text-lg font-medium text-blue-800 mb-4">Market Strategy Recommendations</h3>
+                  
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 mb-6">
+                      <h4 className="text-md font-semibold text-blue-800 mb-3">Optimal Price Point Analysis</h4>
+                      <div className="h-64 mb-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                          data={
+                              Array.from({ length: 7 }, (_, i) => {
+                              const price = stNum.bottlePrice - 15 + (i * 5);
+                              if (price <= 0) return null;
+                              const costPerBottle = annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON);
+                              const profit = price - costPerBottle;
+                              const yearlyProfit = profit * stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON;
+                              const margin = (profit / price) * 100;
+                              return {
+                                  price: price,
+                                  profit: yearlyProfit,
+                                  margin: margin
+                              };
+                              }).filter(Boolean)
+                          }
+                          margin={{ top: 10, right: 30, left: 20, bottom: 20 }}
+                          >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                              dataKey="price" 
+                              label={{ value: 'Bottle Price ($)', position: 'insideBottom', offset: -5 }}
+                              tick={{ fontSize: 12 }}
+                          />
+                          <YAxis 
+                              yAxisId="left"
+                              label={{ value: 'Annual Profit ($)', angle: -90, position: 'insideLeft', offset: 10 }}
+                              tick={{ fontSize: 12 }}
+                          />
+                          <YAxis 
+                              yAxisId="right"
+                              orientation="right"
+                              label={{ value: 'Profit Margin (%)', angle: 90, position: 'insideRight', offset: 10 }}
+                              tick={{ fontSize: 12 }}
+                          />
+                          <Tooltip 
+                              formatter={(value, name, props) => [
+                              name === 'profit' ? `$${value.toLocaleString()}` : `${value.toFixed(1)}%`,
+                              name === 'profit' ? 'Annual Profit' : 'Profit Margin'
+                              ]}
+                              labelFormatter={value => `Bottle Price: $${value}`}
+                              contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}
+                          />
+                          <Legend />
+                          <Bar yAxisId="left" dataKey="profit" name="Annual Profit" fill="#4ade80" />
+                          <Bar yAxisId="right" dataKey="margin" name="Profit Margin %" fill="#60a5fa" />
+                          <ReferenceLine 
+                              yAxisId="left"
+                              x={stNum.bottlePrice} 
+                              stroke="#8b5cf6" 
+                              strokeDasharray="3 3" 
+                              label={{ position: 'top', value: 'Current', fill: '#8b5cf6', fontSize: 12 }} 
+                          />
+                          </BarChart>
+                      </ResponsiveContainer>
+                      </div>
+                      
+                      <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700">
+                      <p className="mb-2">
+                          <span className="font-medium">Analysis:</span> This chart shows how different price points affect your annual profit and profit margin when the vineyard reaches full production.
+                      </p>
+                      {stNum.bottlePrice > 15 ? (
+                          <p>
+                          At your current price point (${stNum.bottlePrice.toFixed(2)}), you'll achieve a {Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}% profit margin
+                          and approximately ${Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) * stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON).toLocaleString()} in annual profit at full production.
+                          </p>
+                      ) : (
+                          <p className="text-red-600 font-medium">
+                          Warning: Your current price point is too low to cover production costs. Consider a bottle price of at least 
+                          ${Math.ceil(annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON) + 5).toFixed(2)} to achieve profitability.
+                          </p>
+                      )}
+                      </div>
+                  </div>
+                  
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                      <h4 className="text-md font-semibold text-blue-800 mb-3">Strategic Recommendations</h4>
+                      <ul className="list-disc ml-5 text-sm text-gray-700 space-y-3">
+                      <li>
+                          <span className="font-medium">Optimal Price Point:</span> Based on your costs and industry averages, 
+                          ${Math.max(stNum.bottlePrice, Math.ceil((annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) * 3))}-
+                          ${Math.max(stNum.bottlePrice + 10, Math.ceil((annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) * 4))} 
+                          per bottle would maximize both profit and sustainable market positioning.
+                      </li>
+                      <li>
+                          <span className="font-medium">Direct-to-Consumer Focus:</span> Consider allocating 30-40% of production to direct-to-consumer channels to improve margins and build brand loyalty.
+                      </li>
+                      <li>
+                          <span className="font-medium">Scaling Considerations:</span> Expanding beyond {stNum.acres} {stNum.acres === 1 ? "acre" : "acres"} would improve economies of scale, particularly for equipment utilization.
+                      </li>
+                      <li>
+                          <span className="font-medium">Diversification Opportunity:</span> Consider adding tasting room or wine club revenue streams to improve profitability in years 4-6.
+                      </li>
+                      <li>
+                          <span className="font-medium">Risk Mitigation:</span> Budget for minimum 10% contingency on all capital costs and consider crop insurance options.
+                      </li>
+                      </ul>
+                  </div>
+                  </div>
+              </div>
+              </SectionCard>
+            )}
       </div>
     )}
   </div>             
@@ -3106,14 +3381,82 @@ return (
           showMenu ? "block absolute h-screen z-20 shadow-xl" : "hidden"
         }`}
       >
-        {/* ---- keep your existing <nav> + Settings panel intact ---- */}
         <nav className="space-y-1">
           <h2 className="font-semibold text-gray-500 text-xs uppercase tracking-wider mb-3 px-4">
             Navigation
           </h2>
-          <Link to="/"    className="block py-2 px-4 rounded-lg text-blue-800 hover:bg-blue-50">Dashboard</Link>
-          <Link to="/docs" className="block py-2 px-4 rounded-lg text-blue-800 hover:bg-blue-50">Documentation</Link>
+          <Link
+            to="/"
+            className="block py-2 px-4 rounded-lg text-blue-800 hover:bg-blue-50"
+          >
+            Dashboard
+          </Link>
+          <Link
+            to="/docs"
+            className="block py-2 px-4 rounded-lg text-blue-800 hover:bg-blue-50"
+          >
+            Documentation
+          </Link>
+          <Link
+            to="/plans"
+            className="block py-2 px-4 rounded-lg text-blue-800 hover:bg-blue-50"
+          >
+            My Plans
+          </Link>
         </nav>
+
+        {/* separator */}
+        <div className="mt-6 mb-3 h-px bg-gray-200" />
+
+        {/* show current user email if signed in */}
+        {user && (
+          <div className="px-2 mb-3 text-xs text-gray-600 break-all">
+            <span className="uppercase tracking-wide text-gray-400 block mb-1">Signed in</span>
+            <span className="font-medium text-gray-800">{user.email}</span>
+          </div>
+        )}
+
+        {/* sign in / sign out logic */}
+        {user ? (
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="w-full text-left px-4 py-2 text-sm rounded-lg text-red-600 hover:bg-red-50 font-medium transition"
+          >
+            Sign Out
+          </button>
+        ) : (
+          <Link
+            to="/signin"
+            className="block w-full px-4 py-2 text-sm rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 font-medium transition"
+          >
+            Sign In
+          </Link>
+        )}
+        {/* Save planner button (only when signed in) */}
+        {user && (
+          <div className="mt-4">
+            <button
+              onClick={handleManualSave}
+              disabled={saving || !dirty}
+              className={`w-full px-4 py-2 text-sm rounded-lg font-medium transition
+                ${saving
+                  ? 'bg-blue-300 text-white cursor-wait'
+                  : dirty
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-200 text-gray-500 cursor-default'
+                }`}
+            >
+              {saving ? 'Saving…' : dirty ? 'Save Changes' : 'Saved'}
+            </button>
+
+            <div className="mt-2 text-[11px] leading-tight text-gray-500 px-1">
+              {lastSaved
+                ? <>Last saved: {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
+                : 'Not saved yet'}
+            </div>
+          </div>
+        )}
+
       </aside>
 
       {/* ── main workspace ── */}
@@ -3129,16 +3472,17 @@ return (
           active={activeTab}
           setActive={setActiveTab}
           projYears={projYears}
-          setYears={setProjYears}      /*  ← new prop  */
+          setYears={setProjYears}
           totalEstCost={totalEstCost}
+          onSave={handleManualSave}
+          isSaving={saving}
+          dirty={dirty}
+          lastSaved={lastSaved}
         />
 
+
         {/*  everything else (MainUI / docs) stays the same */}
-        <Routes>
-          <Route path="/"    element={MainUI} />
-          <Route path="/docs" element={<DocumentationPage />} />
-          <Route path="*"     element={<Navigate to="/" replace />} />
-        </Routes>
+        {MainUI}   {/* renders MainUI for "/" and DocumentationPage for "/docs" */}
       </main>
     </div>
   </div>

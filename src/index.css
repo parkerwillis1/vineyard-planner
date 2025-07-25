@@ -1,3 +1,84 @@
+/* Tailwind layers */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* -------------------------------------------------
+   Global Light Theme (no auto dark inversion)
+-------------------------------------------------- */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #1e293b;            /* slate-800 */
+  background-color: #ffffff; /* white background */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Remove Vite template defaults (no color-scheme, no flex centering on body) */
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  /* Let your app / Tailwind containers handle layout */
+}
+
+/* Headings */
+h1 { font-size: 2.25rem; line-height: 1.1; margin: 0 0 0.75rem; }
+h2 { font-size: 1.5rem; line-height: 1.15; margin: 2rem 0 0.75rem; }
+h3 { font-size: 1.25rem; line-height: 1.2; margin: 1.5rem 0 0.5rem; }
+
+/* Links */
+a {
+  font-weight: 500;
+  color: #1d4ed8;             /* blue-700 */
+  text-decoration: none;
+  transition: color .18s;
+}
+a:hover { color: #1e40af; }   /* blue-800 */
+
+/* Buttons (base look – Tailwind utility classes can override) */
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #f1f5f9;  /* slate-100 */
+  color: #1e293b;
+  cursor: pointer;
+  transition: border-color .25s, background-color .25s, color .25s;
+}
+button:hover {
+  border-color: #3b82f6;      /* blue-500 */
+  background: #e2e8f0;        /* slate-200 */
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Utility: remove default outlines on map geographies if any */
+svg [role="button"]:focus {
+  outline: none;
+}
+
+/* Optional: nicer scrollbars (WebKit) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

@@ -1,11 +1,15 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
-import "./index.css";           // ← make sure this is here!
-import VineyardPlannerApp from "./VineyardPlannerApp";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import './index.css';
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+import App from './App.jsx';
+import { AuthProvider } from './auth/AuthContext';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
-    <VineyardPlannerApp />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </BrowserRouter>
 );
