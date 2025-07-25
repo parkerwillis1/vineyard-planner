@@ -198,21 +198,23 @@ const pmt = (P, r, yrs) => {
 };
 
 function useLocalStorage(key, defaultVal) {
-  const [val, setVal] = useState(() => {
-    try {
-      const stored = localStorage.getItem(key);
-      return stored != null ? JSON.parse(stored) : defaultVal;
-    } catch {
-      return defaultVal;
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(val));
-    } catch {}
-  }, [key, val]);
-  return [val, setVal];
-}
+    const [storedValue, setStoredValue] = useState(() => {
+      try {
+        const stored = localStorage.getItem(key);
+        return stored != null ? JSON.parse(stored) : defaultVal;
+      } catch {
+        return defaultVal;
+      }
+    });
+
+    useEffect(() => {
+      try {
+        localStorage.setItem(key, JSON.stringify(storedValue));
+      } catch {}
+    }, [key, storedValue]);
+
+    return [storedValue, setStoredValue];
+  }
 
 // Section header component for consistency
 const SectionHeader = ({ title }) => (
@@ -237,9 +239,9 @@ const SectionCard = ({ title, children, className = "" }) => (
   
 
 export default function VineyardPlannerApp() {
-  const [showMenu, _setShowMenu]         = useState(false);
+  const [showMenu, _setShowMenu] = useState(false);
   const [activeTab, setActiveTab]       = useState("inputs");
-  const [projYears, setProjYears]       = useState(10);
+  const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
 
   const { id: planId } = useParams();   // comes from route "/plans/:id"
