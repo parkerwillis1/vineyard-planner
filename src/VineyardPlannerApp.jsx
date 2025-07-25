@@ -237,7 +237,7 @@ const SectionCard = ({ title, children, className = "" }) => (
   
 
 export default function VineyardPlannerApp() {
-  const [showMenu, setShowMenu]         = useState(false);
+  const [showMenu, _setShowMenu]         = useState(false);
   const [activeTab, setActiveTab]       = useState("inputs");
   const [projYears, setProjYears]       = useState(10);
   const [dirty, setDirty] = useState(false);
