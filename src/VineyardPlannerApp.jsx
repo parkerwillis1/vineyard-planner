@@ -1,5 +1,5 @@
 // src/VineyardPlannerApp.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
@@ -195,7 +195,7 @@ const pmt = (P, r, yrs) => {
   return m ? (P * m) / (1 - (1 + m) ** -n) : 0;
 };
 
-function useLocalStorage(key, defaultVal) {
+/*function useLocalStorage(key, defaultVal) {
     const [storedValue, setStoredValue] = useState(() => {
       try {
         const stored = localStorage.getItem(key);
@@ -212,7 +212,7 @@ function useLocalStorage(key, defaultVal) {
     }, [key, storedValue]);
 
     return [storedValue, setStoredValue];
-  }
+  }*/
 
 // Section header component for consistency
 const SectionHeader = ({ title }) => (
@@ -244,38 +244,6 @@ export default function VineyardPlannerApp() {
   const { id: planId } = useParams();   // comes from route "/plans/:id"
 
 
-  // --- Auth context (SAFE destructure) ---
-  const auth = useAuth();          // may be null if provider missing
-  const user = auth?.user || null; // null until signed in
-
-  useEffect(() => {
-  if (!user) return;                  // wait for logged in
-  let isCancelled = false;
-
-  (async () => {
-    const { data, error } = planId
-      ? await loadPlan(planId)  
-      : await loadPlanner();
-    if (error) {
-      console.error('Load planner error', error);
-      return;
-    }
-    if (data && !isCancelled) {
-      // MERGE: defaults  ← saved object  (saved values win if they exist)
-      if (data.st) set({ ...DEFAULT_ST, ...data.st });
-
-      if (data.projYears) setProjYears(data.projYears);
-
-      setDirty(false);
-      setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
-    }
-
-  })();
-
-  return () => { isCancelled = true; };
-}, [user, planId, DEFAULT_ST]);   // run when user changes
-
-
 
 
   const getYieldForYear = (year) => {
@@ -285,7 +253,7 @@ export default function VineyardPlannerApp() {
     return AVERAGE_YIELD_TONS_PER_ACRE;
   };
 
-  const DEFAULT_ST = {
+  const DEFAULT_ST = useMemo(() => ({
     acres: "1",
     bottlePrice: "28",
     landPrice: "60000",
@@ -370,7 +338,41 @@ export default function VineyardPlannerApp() {
     ],
     purchases: [],
     
-  };
+  }), []);
+
+
+  // --- Auth context (SAFE destructure) ---
+  const auth = useAuth();          // may be null if provider missing
+  const user = auth?.user || null; // null until signed in
+
+  useEffect(() => {
+  if (!user) return;                  // wait for logged in
+  let isCancelled = false;
+
+  (async () => {
+    const { data, error } = planId
+      ? await loadPlan(planId)  
+      : await loadPlanner();
+    if (error) {
+      console.error('Load planner error', error);
+      return;
+    }
+    if (data && !isCancelled) {
+      // MERGE: defaults  ← saved object  (saved values win if they exist)
+      if (data.st) set({ ...DEFAULT_ST, ...data.st });
+
+      if (data.projYears) setProjYears(data.projYears);
+
+      setDirty(false);
+      setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
+    }
+
+  })();
+
+  return () => { isCancelled = true; };
+}, [user, planId, DEFAULT_ST]);   // run when user changes
+
+
 
   const [st, set] = useState(DEFAULT_ST);
 
@@ -675,10 +677,9 @@ const annualFixed =
   const fullProdNet = fullProdRevenue - annualFixed;
 
   const isWine         = st.salesMode === "wine";
-  const costPerTon     = annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE);
-  const grossMarginTon = stNum.grapeSalePrice - costPerTon;
-  
-  const grapePrice = Number(stNum.grapeSalePrice || 0); 
+  const costPerTon = annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE);
+  const grapePrice = Number(stNum.grapeSalePrice || 0);
+  const grossMarginTon = grapePrice - costPerTon;
 
   // ---- Year 0 + Operating Years Projection (with explicit Year 0 row) ----
   // Base annual (recurring) operating + fixed costs (exclude one-time establishment)
@@ -705,8 +706,6 @@ const annualFixed =
     let soldBottles      = Math.max(0, bottlesProduced - withheldBottles);
 
     // ── price entered on the form (may be blank) ──────────────────
-    const costPerTon = annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE || 1);
-    const grossMarginTon  = grapePrice - costPerTon;
     // 3️⃣  Revenue — branch on sales mode
     const revenue = st.salesMode === "wine"
       ? soldBottles * stNum.bottlePrice      // bottled‑wine path
@@ -2529,12 +2528,11 @@ const LTV = (landValue + improvementsValue) > 0
                         /* ---------- Bulk‑grape mode ---------- */
                         <div>
                           <KV label="Cost per Ton"  value={`$${costPerTon.toFixed(0)}`} />
-                            <KV label="Price per Ton" value={`$${grapePrice.toLocaleString()}`} />
-                            <KV
-                              label="Gross Margin / Ton"
-                              value={`$${grossMarginTon.toLocaleString()}
-                                      (${grapePrice ? ((grossMarginTon / grapePrice) * 100).toFixed(1) : 0}%)`}
-                            />
+                          <KV label="Price per Ton" value={`$${grapePrice.toLocaleString()}`} />
+                          <KV
+                            label="Gross Margin / Ton"
+                            value={`$${grossMarginTon.toLocaleString()} (${grapePrice ? ((grossMarginTon / grapePrice) * 100).toFixed(1) : 0}%)`}
+                          />
                         </div>
                       )}
                    {/* ← closes grid grid-cols‑2 */}
