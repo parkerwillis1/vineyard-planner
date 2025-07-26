@@ -1,10 +1,9 @@
 // src/VineyardPlannerApp.jsx
 import React, { useState, useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
-import { savePlanner, loadPlanner, loadPlannerById } from './lib/saveLoadPlanner';
+import { savePlanner, loadPlanner} from './lib/saveLoadPlanner';
 import { savePlan, loadPlan }    from './lib/plansApi';
 
 
@@ -29,7 +28,6 @@ import {
 } from "recharts";
 
 import { useAuth } from "./auth/AuthContext";
-import { AlignVerticalJustifyEnd } from "lucide-react";
 
 
 /* ------------------------------------------------------------------ */
@@ -275,7 +273,7 @@ export default function VineyardPlannerApp() {
   })();
 
   return () => { isCancelled = true; };
-},[user, planId]);   // run when user changes
+}, [user, planId, DEFAULT_ST]);   // run when user changes
 
 
 
