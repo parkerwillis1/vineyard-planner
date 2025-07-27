@@ -3374,7 +3374,9 @@ return (
     <div className="flex min-h-[calc(100vh-56px)]">
       {/* ── sidebar (unchanged) ── */}
       <aside
-        
+        /* 240 px wide, 1.5 rem gap from the window edge, inner padding */
+        className="w-60 mx-6 my-6 px-4 py-6 bg-white rounded-xl shadow-md
+                    flex flex-col shrink-0"
       >
         <nav className="space-y-1">
           <h2 className="font-semibold text-gray-500 text-xs uppercase tracking-wider mb-3 px-4">
