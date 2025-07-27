@@ -49,7 +49,7 @@ const ProjectBanner = ({ years, setYears }) => (
   {/* logo + title */}
       <div className="flex items-center gap-3">
         <img
-          src="/vineyardplanner.png"          
+          src="/VineSightLogo.png"          
           alt="Vineyard Planner logo"
           className="h-16 sm:h-20 w-auto drop-shadow-sm"
         />

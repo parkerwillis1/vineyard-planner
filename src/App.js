@@ -8,6 +8,7 @@ import SignIn from './auth/SignIn';
 import SignUp from './auth/SignUp';
 import { useAuth } from './auth/AuthContext';
 
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth() || {};
   if (loading) {
