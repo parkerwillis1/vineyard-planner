@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 import { savePlanner, loadPlanner} from './lib/saveLoadPlanner';
 import { savePlan, loadPlan }    from './lib/plansApi';
-
+import { ChevronDown } from "lucide-react";
 
 
 import { Card, CardContent } from "./components/ui/card";
@@ -233,6 +233,35 @@ const SectionCard = ({ title, children, className = "" }) => (
     </Card>
   );
 
+/* --------------------------------------------------------- */
+/*  Re‑usable collapsible card                               */
+/* --------------------------------------------------------- */
+function CollapsibleSection({ title, children, defaultOpen = true }) {
+  const [open, setOpen] = React.useState(defaultOpen);
+
+  return (
+    <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-10">
+      {/* clickable header */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between bg-blue-50 px-6 py-4 border-b
+                   focus:outline-none"
+      >
+        <h3 className="font-medium text-blue-800 text-lg">{title}</h3>
+
+        {/* chevron */}
+        <ChevronDown
+          className={`h-5 w-5 text-blue-600 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {/* body – only rendered when open */}
+      {open && <CardContent className="p-8">{children}</CardContent>}
+    </Card>
+  );
+}
 
   
 
@@ -919,7 +948,7 @@ const LTV = (landValue + improvementsValue) > 0
           <SectionHeader title="Financial Planning Inputs" />
 
           {/* Core Inputs */}
-          <SectionCard title="Core Vineyard Parameters">
+          <CollapsibleSection title="Core Vineyard Parameters">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-8">
               <div>
                 <label className="text-sm text-blue-800 font-medium block mb-2">
@@ -998,10 +1027,10 @@ const LTV = (landValue + improvementsValue) > 0
                 </div>
 
             </div>
-          </SectionCard>
+          </CollapsibleSection>
 
           {/* Setup Items */}
-          <SectionCard title="Vineyard Setup">
+          <CollapsibleSection title="Vineyard Setup">
             <div className="space-y-5">
               {Object.entries(stNum.setup).map(([k, obj]) => {
                 const label = k.charAt(0).toUpperCase() + k.slice(1);
@@ -1047,10 +1076,10 @@ const LTV = (landValue + improvementsValue) > 0
                 );
               })}
             </div>
-          </SectionCard>
+          </CollapsibleSection>
 
           {/* Pre-Planting / Site-Prep */}
-        <SectionCard title="Pre-Planting / Site-Prep">
+        <CollapsibleSection title="Pre-Planting / Site-Prep">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -1123,10 +1152,10 @@ const LTV = (landValue + improvementsValue) > 0
             }
             />
         </div>
-        </SectionCard>
+        </CollapsibleSection>
 
         {/* Planting Costs */}
-        <SectionCard title="Planting Costs">
+        <CollapsibleSection title="Planting Costs">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -1227,10 +1256,10 @@ const LTV = (landValue + improvementsValue) > 0
             }
             />
         </div>
-        </SectionCard>
+        </CollapsibleSection>
 
         {/* Cultural Operations */}
-        <SectionCard title="Cultural Operations">
+        <CollapsibleSection title="Cultural Operations">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -1303,10 +1332,10 @@ const LTV = (landValue + improvementsValue) > 0
             }
             />
         </div>
-        </SectionCard>
+        </CollapsibleSection>
 
         {/* Harvest & Hauling */}
-        <SectionCard title="Harvest & Hauling">
+        <CollapsibleSection title="Harvest & Hauling">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -1393,10 +1422,10 @@ const LTV = (landValue + improvementsValue) > 0
             }
             />
         </div>
-        </SectionCard>
+        </CollapsibleSection>
 
             {/* Assessments & Fees */}
-        <SectionCard title="Assessments & Fees">
+        <CollapsibleSection title="Assessments & Fees">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -1455,10 +1484,10 @@ const LTV = (landValue + improvementsValue) > 0
             onClick={()=>update("fees",[...stNum.fees,{ include:false,label:"",costPerAcre:0 }])}
             />
         </div>
-        </SectionCard>
+        </CollapsibleSection>
 
         {/* Cash Overhead */}
-        <SectionCard title="Cash Overhead">
+        <CollapsibleSection title="Cash Overhead">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -1517,10 +1546,10 @@ const LTV = (landValue + improvementsValue) > 0
             onClick={()=>update("overheadCash",[...stNum.overheadCash,{ include:false,label:"",annualCost:0 }])}
             />
         </div>
-        </SectionCard>
+        </CollapsibleSection>
 
         {/* Non-Cash Overhead */}
-        <SectionCard title="Non-Cash Overhead">
+        <CollapsibleSection title="Non-Cash Overhead">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -1579,10 +1608,10 @@ const LTV = (landValue + improvementsValue) > 0
             onClick={()=>update("overheadNonCash",[...stNum.overheadNonCash,{ include:false,label:"",annualCost:0 }])}
             />
         </div>
-        </SectionCard>
+        </CollapsibleSection>
 
         {/* Equipment Operating Costs */}
-        <SectionCard title="Equipment Operating Costs">
+        <CollapsibleSection title="Equipment Operating Costs">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -1652,10 +1681,10 @@ const LTV = (landValue + improvementsValue) > 0
             onClick={()=>update("equipmentOps",[...stNum.equipmentOps,{ include:false,label:"",costPerHour:0,annualHours:0 }])}
             />
         </div>
-        </SectionCard>
+        </CollapsibleSection>
 
         {/* Marketing & Management */}
-        <SectionCard title="Marketing & Management">
+        <CollapsibleSection title="Marketing & Management">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -1714,9 +1743,9 @@ const LTV = (landValue + improvementsValue) > 0
             onClick={()=>update("marketing",[...stNum.marketing,{ include:false,label:"",costPerAcre:0 }])}
             />
         </div>
-        </SectionCard>
+        </CollapsibleSection>
 
-        <SectionCard title="Permits & Licenses">
+        <CollapsibleSection title="Permits & Licenses">
             <div className="space-y-4">
                 {stNum.permits.map((p, i) => (
                 <div key={p.key} className="flex items-center gap-4">
@@ -1743,11 +1772,11 @@ const LTV = (landValue + improvementsValue) > 0
                 </div>
                 ))}
             </div>
-            </SectionCard>
+            </CollapsibleSection>
 
 
           {/* Equipment (financed) */}
-          <SectionCard title="Equipment">
+          <CollapsibleSection title="Equipment">
             <div className="overflow-x-auto">
               <table className="w-full min-w-max">
                 <thead>
@@ -1859,10 +1888,10 @@ const LTV = (landValue + improvementsValue) > 0
                 text="Add Equipment"
               />
             </div>
-          </SectionCard>
+          </CollapsibleSection>
 
         {/* ── Loans ── */}
-        <SectionCard title="Loans">
+        <CollapsibleSection title="Loans">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -1976,13 +2005,10 @@ const LTV = (landValue + improvementsValue) > 0
             text="Add Loan"
             />
         </div>
-        </SectionCard>
-
-
-
+        </CollapsibleSection>
 
           {/* Purchased Grapes */}
-          <SectionCard title="Purchased Grapes">
+          <CollapsibleSection title="Purchased Grapes">
             <div className="overflow-x-auto">
               <table className="w-full min-w-max">
                 <thead>
@@ -2075,10 +2101,10 @@ const LTV = (landValue + improvementsValue) > 0
                 text="Add Grape Purchase"
               />
             </div>
-          </SectionCard>
+          </CollapsibleSection>
 
           {/* Unsold Bottles */}
-          <SectionCard title="Unsold Bottles">
+          <CollapsibleSection title="Unsold Bottles">
             <div className="overflow-x-auto">
               <table className="w-full min-w-max">
                 <thead>
@@ -2147,7 +2173,7 @@ const LTV = (landValue + improvementsValue) > 0
                 text="Add Unsold Entry"
               />
             </div>
-          </SectionCard>
+          </CollapsibleSection>
         </div>
       )}
 
