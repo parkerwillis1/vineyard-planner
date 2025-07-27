@@ -696,6 +696,7 @@ const annualFixed =
 
     const yieldPA = getYieldForYear(year);
     const tonsTotal = yieldPA * stNum.acres;
+    const tonsSold        = tonsTotal;
     let bottlesProduced   = tonsTotal * BOTTLES_PER_TON;
 
     // Unsold (withheld) bottles flagged for this year
@@ -728,6 +729,8 @@ const annualFixed =
     return {
       year,
       yieldPA,
+      tonsProduced : tonsTotal,
+      tonsSold     : tonsSold,
       bottlesProduced: Math.round(bottlesProduced),
       withheldBottles: withheldBottles,
       soldBottles,
@@ -919,15 +922,6 @@ const LTV = (landValue + improvementsValue) > 0
           <SectionCard title="Core Vineyard Parameters">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-8">
               <div>
-                <label className="text-sm text-blue-800 font-medium block mb-2">Acres</label>
-                {num("acres")}
-              </div>
-              <div>
-                <label className="text-sm text-blue-800 font-medium block mb-2">Bottle Price ($)</label>
-                {num("bottlePrice", 0.5)}
-              </div>
-              {/* ——— SALES STRATEGY ——— */}
-              <div>
                 <label className="text-sm text-blue-800 font-medium block mb-2">
                   Sales Strategy
                 </label>
@@ -940,6 +934,19 @@ const LTV = (landValue + improvementsValue) > 0
                   <option value="grapes">Bulk • sell all grapes</option>
                 </select>
               </div>
+              <div>
+                <label className="text-sm text-blue-800 font-medium block mb-2">Acres</label>
+                {num("acres")}
+              </div>
+              {st.salesMode === "wine" && (
+                <div>
+                  <label className="text-sm text-blue-800 font-medium block mb-2">
+                    Bottle Price ($)
+                  </label>
+                  {num("bottlePrice", 0.5)}
+                </div>
+              )}
+              {/* ——— SALES STRATEGY ——— */}
 
               {st.salesMode === "grapes" && (
                 <div>
@@ -2410,51 +2417,104 @@ const LTV = (landValue + improvementsValue) > 0
 
             {/* Detailed Projection Table */}
             <SectionCard title="Year-by-Year Table">
-            <div className="overflow-x-auto">
+              <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
-                <thead className="bg-blue-50">
+                  <thead className="bg-blue-50">
                     <tr>
-                    {[
-                        "Year",
-                        "Yield (t/acre)",
-                        "Bottles Produced",
-                        "Bottles Unsold",
-                        "Bottles Sold",
-                        "Revenue",
-                        "Cost",
-                        "Net",
-                        "Cumulative"
-                    ].map(h => (
+                      {(
+                        st.salesMode === "wine"
+                          ? [
+                              "Year",
+                              "Yield (t/acre)",
+                              "Bottles Produced",
+                              "Bottles Unsold",
+                              "Bottles Sold",
+                              "Revenue",
+                              "Cost",
+                              "Net",
+                              "Cumulative",
+                            ]
+                          : [
+                              "Year",
+                              "Yield (t/acre)",
+                              "Tons Produced",
+                              "Tons Sold",
+                              "Revenue",
+                              "Cost",
+                              "Net",
+                              "Cumulative",
+                            ]
+                      ).map((h) => (
                         <th
-                        key={h}
-                        className="text-left p-2 text-xs font-medium text-blue-800 uppercase"
+                          key={h}
+                          className="text-left p-2 text-xs font-medium text-blue-800 uppercase"
                         >
-                        {h}
+                          {h}
                         </th>
-                    ))}
+                      ))}
                     </tr>
-                </thead>
-                <tbody>
-                    {projection.map(p => (
-                    <tr key={p.year} className={p.year % 2 === 0 ? "bg-gray-50" : ""}>
-                      <td className="p-2">{p.year}</td>
-                      <td className="p-2">{p.year === 0 ? "–" : p.yieldPA.toFixed(1)}</td>
-                      <td className="p-2">{p.bottlesProduced.toLocaleString()}</td>
-                      <td className="p-2">{p.withheldBottles.toLocaleString()}</td>
-                      <td className="p-2">{p.soldBottles.toLocaleString()}</td>
-                      <td className="p-2">${p.revenue.toLocaleString()}</td>
-                      <td className="p-2">${p.cost.toLocaleString()}</td>
-                      <td className={`p-2 font-medium ${p.net >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        ${p.net.toLocaleString()}
-                      </td>
-                      <td className={`p-2 font-medium ${p.cumulative >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        ${p.cumulative.toLocaleString()}
-                      </td>
-                    </tr>
-                    ))}
-                </tbody>
+                  </thead>
+
+                  <tbody>
+                    {projection.map((p) => {
+                      const isWine = st.salesMode === "wine";
+                      const tonsTotal = p.yieldPA * stNum.acres;          // helper for grapes view
+
+                      return (
+                        <tr
+                          key={p.year}
+                          className={p.year % 2 === 0 ? "bg-gray-50" : undefined}
+                        >
+                          {/* Year & yield */}
+                          <td className="p-2">{p.year}</td>
+                          <td className="p-2">
+                            {p.year === 0 ? "–" : p.yieldPA.toFixed(1)}
+                          </td>
+
+                          {/* Mode‑specific production / sales columns */}
+                          {isWine ? (
+                            <>
+                              <td className="p-2">
+                                {p.bottlesProduced.toLocaleString()}
+                              </td>
+                              <td className="p-2">
+                                {p.withheldBottles.toLocaleString()}
+                              </td>
+                              <td className="p-2">
+                                {p.soldBottles.toLocaleString()}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="p-2">{tonsTotal.toLocaleString()}</td>
+                              {/* selling all tons ⇒ tons sold = tons produced */}
+                              <td className="p-2">{tonsTotal.toLocaleString()}</td>
+                            </>
+                          )}
+
+                          {/* $ columns – identical for both modes */}
+                          <td className="p-2">${p.revenue.toLocaleString()}</td>
+                          <td className="p-2">${p.cost.toLocaleString()}</td>
+                          <td
+                            className={`p-2 font-medium ${
+                              p.net >= 0 ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
+                            ${p.net.toLocaleString()}
+                          </td>
+                          <td
+                            className={`p-2 font-medium ${
+                              p.cumulative >= 0 ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
+                            ${p.cumulative.toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
                 </table>
-            </div>
+              </div>
             </SectionCard>
         </div>
         )}
