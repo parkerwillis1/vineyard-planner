@@ -1,11 +1,17 @@
 // src/VineyardPlannerApp.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 import { savePlanner, loadPlanner} from './lib/saveLoadPlanner';
 import { savePlan, loadPlan }    from './lib/plansApi';
 import { ChevronDown } from "lucide-react";
+import { 
+  VineyardLayoutConfig, 
+  calculateVineyardLayout, 
+  calculateMaterialCosts,
+  VINE_SPACING_OPTIONS 
+} from './VineyardLayoutCalculator';
 
 
 import { Card, CardContent } from "./components/ui/card";
@@ -304,6 +310,17 @@ export default function VineyardPlannerApp() {
            { include: false, key: 'farm', label: "Farm Winery Permit", cost: "0" },
       ],
     availableEquity: "0",
+
+    vineyardLayout: {
+      spacingOption: "6x10",
+      customVineSpacing: 6,
+      customRowSpacing: 10,
+      shape: "rectangle",
+      aspectRatio: 2,
+      calculatedLayout: null,
+      materialCosts: null
+    },
+
     setupYear: "0",
     setup: {
       sitePrep:   { include: true, cost: "1500" },
@@ -844,15 +861,54 @@ const annualFixed =
   const updateSetup = (k, row) =>
     update("setup", { ...stNum.setup, [k]: row });
 
-  // Component for add buttons with consistent styling
-  const AddButton = ({ onClick, text }) => (
-    <button
-      onClick={onClick}
-      className="text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md px-3 py-2 flex items-center gap-1 transition-colors mt-4 mb-2"
-    >
-      <span className="text-lg">+</span> {text}
-    </button>
-  );
+const handleLayoutChange = useCallback((layout, materialCosts) => {
+  // Update the vine count in planting costs automatically
+  const updatedPlanting = st.planting.map(row => {
+    if (row.label.toLowerCase().includes('vine stock')) {
+      return {
+        ...row,
+        qtyPerAcre: Math.round(layout.vineLayout.vinesPerAcre),
+        costPerAcre: (Number(row.unitCost) || 0) * Math.round(layout.vineLayout.vinesPerAcre)
+      };
+    }
+    return row;
+  });
+  
+  // Update trellis and irrigation costs based on actual material requirements
+  const updatedSetup = {
+    ...st.setup,
+    trellis: {
+      ...st.setup.trellis,
+      cost: Math.round((materialCosts.posts + materialCosts.wire + materialCosts.hardware) / stNum.acres)
+    },
+    irrigation: {
+      ...st.setup.irrigation,
+      cost: Math.round(materialCosts.irrigation / stNum.acres)
+    }
+  };
+  
+  // Update state with calculated values
+  set(prev => ({
+    ...prev,
+    planting: updatedPlanting,
+    setup: updatedSetup,
+    vineyardLayout: {
+      ...prev.vineyardLayout,
+      calculatedLayout: layout,
+      materialCosts: materialCosts
+    }
+  }));
+}, [st.planting, st.setup, stNum.acres]);
+
+// Component for add buttons with consistent styling
+const AddButton = ({ onClick, text }) => (
+  <button
+    onClick={onClick}
+    className="text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md px-3 py-2 flex items-center gap-1 transition-colors mt-4 mb-2"
+  >
+    <span className="text-lg">+</span> {text}
+  </button>
+);
 
 // 0…projYears
 const years = Array.from({ length: projYears + 1 }, (_, i) => i)
@@ -946,6 +1002,12 @@ const LTV = (landValue + improvementsValue) > 0
       {activeTab === "inputs" && (
         <div className="space-y-10">
           <SectionHeader title="Financial Planning Inputs" />
+
+          <VineyardLayoutConfig
+            acres={stNum.acres}
+            onLayoutChange={handleLayoutChange}
+            currentLayout={st.vineyardLayout}
+          />
 
           {/* Core Inputs */}
           <CollapsibleSection title="Core Vineyard Parameters">
@@ -1156,106 +1218,130 @@ const LTV = (landValue + improvementsValue) > 0
 
         {/* Planting Costs */}
         <CollapsibleSection title="Planting Costs">
-        <div className="overflow-x-auto">
+          {st.vineyardLayout?.calculatedLayout && (
+            <div className="mb-4 p-4 bg-green-50 rounded-lg">
+              <h4 className="font-medium text-green-800 mb-2">Calculated Vine Requirements</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-green-700">Total Vines:</span>
+                  <div className="font-semibold">{st.vineyardLayout.calculatedLayout.vineLayout.totalVines.toLocaleString()}</div>
+                </div>
+                <div>
+                  <span className="text-green-700">Vines/Acre:</span>
+                  <div className="font-semibold">{Math.round(st.vineyardLayout.calculatedLayout.vineLayout.vinesPerAcre)}</div>
+                </div>
+                <div>
+                  <span className="text-green-700">Spacing:</span>
+                  <div className="font-semibold">{st.vineyardLayout.calculatedLayout.spacing.vine}' × {st.vineyardLayout.calculatedLayout.spacing.row}'</div>
+                </div>
+                <div>
+                  <span className="text-green-700">Rows:</span>
+                  <div className="font-semibold">{st.vineyardLayout.calculatedLayout.vineLayout.numberOfRows}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
             <table className="w-full min-w-max">
-            <thead>
+              <thead>
                 <tr className="bg-blue-50">
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Item</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Unit Cost</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Qty/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Cost/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                  <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
+                  <th className="text-left p-3 text-xs font-medium text-blue-800">Item</th>
+                  <th className="text-left p-3 text-xs font-medium text-blue-800">Unit Cost</th>
+                  <th className="text-left p-3 text-xs font-medium text-blue-800">Qty/acre</th>
+                  <th className="text-left p-3 text-xs font-medium text-blue-800">Cost/acre</th>
+                  <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
                 </tr>
-            </thead>
-            <tbody>
+              </thead>
+              <tbody>
                 {stNum.planting.map((row, i) => (
-                <tr key={i} className="border-b hover:bg-gray-50">
+                  <tr key={i} className="border-b hover:bg-gray-50">
                     <td className="p-3">
-                    <Checkbox
+                      <Checkbox
                         checked={row.include}
                         onCheckedChange={v => {
-                        const next = [...stNum.planting]
-                        next[i].include = v
-                        update("planting", next)
+                          const next = [...stNum.planting]
+                          next[i].include = v
+                          update("planting", next)
                         }}
                         className="h-4 w-4"
-                    />
+                      />
                     </td>
                     <td className="p-3">
-                    <Input
+                      <Input
                         className="w-32 bg-white text-sm"
                         value={row.label}
                         onChange={e => {
-                        const next = [...stNum.planting]
-                        next[i].label = e.target.value
-                        update("planting", next)
+                          const next = [...stNum.planting]
+                          next[i].label = e.target.value
+                          update("planting", next)
                         }}
-                    />
+                      />
                     </td>
                     <td className="p-3">
-                    <Input
+                      <Input
                         type="number"
                         step="0.1"
                         className="w-24 bg-white text-sm"
                         value={row.unitCost}
                         onChange={e => {
-                        const next = [...stNum.planting]
-                        next[i].unitCost = (e.target.value)
-                        update("planting", next)
+                          const next = [...stNum.planting]
+                          next[i].unitCost = (e.target.value)
+                          update("planting", next)
                         }}
-                    />
+                      />
                     </td>
                     <td className="p-3">
-                    <Input
+                      <Input
                         type="number"
                         step="1"
                         className="w-24 bg-white text-sm"
                         value={row.qtyPerAcre}
                         onChange={e => {
-                        const next = [...stNum.planting]
-                        next[i].qtyPerAcre = (e.target.value)
-                        update("planting", next)
+                          const next = [...stNum.planting]
+                          next[i].qtyPerAcre = (e.target.value)
+                          update("planting", next)
                         }}
-                    />
+                      />
                     </td>
                     <td className="p-3">
-                    <Input
+                      <Input
                         type="number"
                         step="1"
                         className="w-24 bg-white text-sm"
                         value={row.costPerAcre}
                         onChange={e => {
-                        const next = [...stNum.planting]
-                        next[i].costPerAcre = (e.target.value)
-                        update("planting", next)
+                          const next = [...stNum.planting]
+                          next[i].costPerAcre = (e.target.value)
+                          update("planting", next)
                         }}
-                    />
+                      />
                     </td>
                     <td className="p-3">
-                    <button
+                      <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={() =>
-                        update("planting", stNum.planting.filter((_, j) => j !== i))
+                          update("planting", stNum.planting.filter((_, j) => j !== i))
                         }
-                    >
+                      >
                         Remove
-                    </button>
+                      </button>
                     </td>
-                </tr>
+                  </tr>
                 ))}
-            </tbody>
+              </tbody>
             </table>
             <AddButton
-            text="Add Planting Item"
-            onClick={() =>
+              text="Add Planting Item"
+              onClick={() =>
                 update("planting", [
-                ...stNum.planting,
-                { include: false, label: "", unitCost: 0, qtyPerAcre: 0, costPerAcre: 0 },
+                  ...stNum.planting,
+                  { include: false, label: "", unitCost: 0, qtyPerAcre: 0, costPerAcre: 0 },
                 ])
-            }
+              }
             />
-        </div>
+          </div>
         </CollapsibleSection>
 
         {/* Cultural Operations */}

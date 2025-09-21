@@ -30,7 +30,7 @@ export default function SignUp() {
         className="w-full max-w-sm bg-white rounded-lg shadow p-6 space-y-4"
       >
         <img
-        src="/vineyardlogoside.png"
+        src="/VineSightLogo.png"
         alt="Vineyard Planner logo"
         className="h-24 mx-auto mb-6 drop-shadow-lg"
         />

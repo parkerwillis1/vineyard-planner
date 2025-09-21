@@ -33,7 +33,7 @@ export async function loadPlanner() {
  */
 export async function loadPlannerById(planId) {
   const { data, error } = await supabase
-    .from('vineyard_profiles')        // ← use your table name
+    .from('vineyard_plans')        // ← use your table name
     .select('data')
     .eq('id', planId)                 // ← primary‑key column
     .single();
