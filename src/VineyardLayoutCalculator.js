@@ -29,7 +29,7 @@ export const VINEYARD_SHAPES = [
 ];
 
 // Calculate actual vineyard dimensions and material requirements
-export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = "rectangle", aspectRatio = 2) => {
+export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = "rectangle", aspectRatio = 2, orientation = "horizontal") => {
   const sqftPerAcre = 43560;
   const totalSqft = acres * sqftPerAcre;
   
@@ -46,8 +46,17 @@ export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = 
   const rowSpacingFeet = rowSpacing;
   const vineSpacingFeet = vineSpacing;
   
-  const numberOfRows = Math.floor(width / rowSpacingFeet);
-  const vinesPerRow = Math.floor(length / vineSpacingFeet);
+    let numberOfRows, vinesPerRow;
+
+    if (orientation === "vertical") {
+    // Rows run vertically (posts on long sides)
+    numberOfRows = Math.floor(length / rowSpacingFeet);
+    vinesPerRow = Math.floor(width / vineSpacingFeet);
+    } else {
+    // Rows run horizontally (posts on short sides) - current default
+    numberOfRows = Math.floor(width / rowSpacingFeet);
+    vinesPerRow = Math.floor(length / vineSpacingFeet);
+    }
   const totalVines = numberOfRows * vinesPerRow;
   
   // Calculate material requirements
@@ -622,16 +631,6 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
               {Math.round(dimensions.width)}'
             </text>
           </g>
-          
-          {/* Compass rose */}
-          <g transform={`translate(${padding + scaledWidth - 30}, ${padding + 30})`}>
-            <circle cx="0" cy="0" r="15" fill="rgba(255,255,255,0.9)" stroke="#374151" strokeWidth="1"/>
-            <text x="0" y="-8" fontSize="8" fill="#dc2626" fontWeight="bold" textAnchor="middle">N</text>
-            <text x="8" y="3" fontSize="8" fill="#374151" textAnchor="middle">E</text>
-            <text x="0" y="12" fontSize="8" fill="#374151" textAnchor="middle">S</text>
-            <text x="-8" y="3" fontSize="8" fill="#374151" textAnchor="middle">W</text>
-            <polygon points="0,-8 2,-2 0,-4 -2,-2" fill="#dc2626"/>
-          </g>
         </svg>
       </div>
       
@@ -698,6 +697,8 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) =
   const [customRowSpacing, setCustomRowSpacing] = useState(10);
   const [shape, setShape] = useState("rectangle");
   const [aspectRatio, setAspectRatio] = useState(2);
+  const [rowOrientation, setRowOrientation] = useState("horizontal"); // ADD THIS LINE
+
   
   const selectedSpacing = VINE_SPACING_OPTIONS.find(opt => opt.key === spacingOption);
   const isCustom = spacingOption === "custom";
@@ -710,7 +711,8 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) =
       return calculateVineyardLayout(acres, vineSpacing, rowSpacing, shape, aspectRatio);
     }
     return null;
-  }, [acres, vineSpacing, rowSpacing, shape, aspectRatio]);
+  }, [acres, vineSpacing, rowSpacing, shape, aspectRatio, rowOrientation]); 
+
   
   const materialCosts = useMemo(() => {
     if (layout) {
@@ -817,6 +819,19 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) =
                 </select>
               </div>
             )}
+            <div>
+                <label className="block text-sm font-medium text-blue-800 mb-2">
+                    Row Orientation
+                </label>
+                <select
+                    value={rowOrientation}
+                    onChange={(e) => setRowOrientation(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                    <option value="horizontal">Horizontal (posts on short sides)</option>
+                    <option value="vertical">Vertical (posts on long sides)</option>
+                </select>
+            </div>
           </div>
         </CardContent>
       </Card>
