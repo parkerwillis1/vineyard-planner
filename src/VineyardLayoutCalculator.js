@@ -298,16 +298,15 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
   const { dimensions, vineLayout, spacing } = layout;
   
   // Enhanced scaling for better visualization
-  const maxWidth = 600;
-  const maxHeight = 400;
+  const maxWidth = 800;
+  const maxHeight = 600;
   const scale = Math.min(maxWidth / dimensions.width, maxHeight / dimensions.length);
   const scaledWidth = dimensions.width * scale;
   const scaledHeight = dimensions.length * scale;
   
   // Calculate vine positions for better distribution
   const maxVinesPerRow = Math.min(Math.floor(scaledWidth / 8), vineLayout.vinesPerRow);
-  const maxRows = Math.min(Math.floor(scaledHeight / 12), vineLayout.numberOfRows);
-  
+  const maxRows = vineLayout.numberOfRows; // Show all rows, adjust spacing instead
   // Gradient definitions for SVG
   const gradients = (
     <defs>
@@ -363,7 +362,7 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
   
   // Calculate positioning
   const padding = 40;
-  const vineRowSpacing = Math.max(12, scaledHeight / vineLayout.numberOfRows);
+  const vineRowSpacing = Math.max(8, scaledHeight / vineLayout.numberOfRows);
   const vineSpacingInRow = Math.max(8, scaledWidth / vineLayout.vinesPerRow);
   
   return (
@@ -567,19 +566,16 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
                 })}
                 
                 {/* Row information */}
-                {vineLayout.vinesPerRow > maxVinesPerRow && (
-                  <text
-                    x={padding + scaledWidth - 10}
-                    y={yPosition - 10}
+                <text
+                    x={padding + scaledWidth + 20}  // Position it outside the vineyard boundary
+                    y={yPosition + 3}              // Align with the row
                     fontSize="10"
                     fill="#15803d"
                     fontWeight="600"
-                    textAnchor="end"
-                    opacity="0.8"
-                  >
+                    textAnchor="start"             // Left-align the text
+                >
                     {vineLayout.vinesPerRow} vines
-                  </text>
-                )}
+                </text>
                 
                 {/* Row number */}
                 <text
