@@ -85,6 +85,7 @@ const TabNav = ({
   dirty,
   lastSaved
 }) => {  const tabs = [
+    { id: "design",        label: "Vineyard Design" },
     { id: "inputs",        label: "Financial Inputs" },
     { id: "establishment", label: "Vineyard Establishment" },
     { id: "proj",          label: `${projYears}-Year Projection` },
@@ -272,14 +273,11 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
   
 
 export default function VineyardPlannerApp() {
-  const [activeTab, setActiveTab]       = useState("inputs");
+  const [activeTab, setActiveTab]       = useState("design");
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
 
   const { id: planId } = useParams();   // comes from route "/plans/:id"
-
-
-
 
   const getYieldForYear = (year) => {
     if (year <= 3) return 0;
@@ -998,16 +996,24 @@ const LTV = (landValue + improvementsValue) > 0
 
   const MainUI = (
     <div className="p-8 max-w-7xl mx-auto space-y-12">
-      {/* INPUTS TAB */}
-      {activeTab === "inputs" && (
-        <div className="space-y-10">
-          <SectionHeader title="Financial Planning Inputs" />
 
+      {/* NEW VINEYARD DESIGN TAB */}
+      {activeTab === "design" && (
+        <div className="space-y-8">
+          <SectionHeader title="Vineyard Design & Layout Planning" />
+          
           <VineyardLayoutConfig
             acres={stNum.acres}
             onLayoutChange={handleLayoutChange}
             currentLayout={st.vineyardLayout}
           />
+        </div>
+      )}
+      
+      {/* INPUTS TAB */}
+      {activeTab === "inputs" && (
+        <div className="space-y-10">
+          <SectionHeader title="Financial Planning Inputs" />
 
           {/* Core Inputs */}
           <CollapsibleSection title="Core Vineyard Parameters">
