@@ -291,7 +291,7 @@ export const MaterialCostsVisualizer = ({ materialCosts, layout }) => {
 };
 
 // ENHANCED VINEYARD LAYOUT VISUALIZER
-export const VineyardLayoutVisualizer = ({ layout, acres }) => {
+export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizontal" }) => {
   if (!layout) {
     return (
       <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-8 rounded-xl border-2 border-green-200 shadow-lg">
@@ -370,10 +370,20 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
   );
   
   // Calculate positioning
-  const padding = 40;
-  const vineRowSpacing = Math.max(8, scaledHeight / vineLayout.numberOfRows);
-  const vineSpacingInRow = Math.max(8, scaledWidth / vineLayout.vinesPerRow);
-  
+  // Calculate positioning based on orientation
+    const padding = 40;
+    let vineRowSpacing, vineSpacingInRow;
+
+    if (orientation === "vertical") {
+    // Rows run vertically (posts on long sides)
+    vineRowSpacing = Math.max(8, scaledWidth / vineLayout.numberOfRows);
+    vineSpacingInRow = Math.max(8, scaledHeight / vineLayout.vinesPerRow);
+    } else {
+    // Rows run horizontally (posts on short sides) - current default
+    vineRowSpacing = Math.max(8, scaledHeight / vineLayout.numberOfRows);
+    vineSpacingInRow = Math.max(8, scaledWidth / vineLayout.vinesPerRow);
+    }
+    
   return (
     <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 p-6 rounded-xl border-2 border-green-200 shadow-xl">
       <div className="mb-6">
@@ -837,7 +847,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) =
       </Card>
       
       {/* Layout Visualization */}
-      {layout && <VineyardLayoutVisualizer layout={layout} acres={acres} />}
+      {layout && <VineyardLayoutVisualizer layout={layout} acres={acres} orientation={rowOrientation} />}
       
       {/* Enhanced Material Costs */}
       {layout && materialCosts && <MaterialCostsVisualizer materialCosts={materialCosts} layout={layout} />}
