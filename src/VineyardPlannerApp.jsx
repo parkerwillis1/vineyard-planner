@@ -861,7 +861,9 @@ const annualFixed =
     update("setup", { ...stNum.setup, [k]: row });
 
 const handleLayoutChange = useCallback((layout, materialCosts) => {
+  if (!layout || !materialCosts) return;
   // Update the vine count in planting costs automatically
+  // 1. Update vine quantities in planting costs
   const updatedPlanting = st.planting.map(row => {
     if (row.label.toLowerCase().includes('vine stock')) {
       return {
@@ -877,12 +879,20 @@ const handleLayoutChange = useCallback((layout, materialCosts) => {
   const updatedSetup = {
     ...st.setup,
     trellis: {
-      ...st.setup.trellis,
-      cost: Math.round((materialCosts.posts + materialCosts.wire + materialCosts.hardware) / stNum.acres)
+      include: true,
+      cost: Math.round((materialCosts.posts + materialCosts.wire + materialCosts.hardware) / stNum.acres),
+      calculated: true, // Mark as calculated
+      breakdown: {
+        posts: materialCosts.posts,
+        wire: materialCosts.wire, 
+        hardware: materialCosts.hardware
+      }
     },
     irrigation: {
-      ...st.setup.irrigation,
-      cost: Math.round(materialCosts.irrigation / stNum.acres)
+      include: true,
+      cost: Math.round(materialCosts.irrigation / stNum.acres),
+      calculated: true, // Mark as calculated
+      system: st.setup.irrigation?.system || "drip"
     }
   };
   
@@ -1016,6 +1026,27 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="space-y-10">
           <SectionHeader title="Financial Planning Inputs" />
 
+          {/* ADD THE WARNING RIGHT HERE: */}
+          {!st.vineyardLayout?.calculatedLayout && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-yellow-600">⚠️</span>
+                <div>
+                  <h4 className="font-medium text-yellow-800">Vineyard Design Not Configured</h4>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    Configure your vineyard layout first for accurate material costs and vine quantities.
+                  </p>
+                  <button 
+                    onClick={() => setActiveTab("design")}
+                    className="mt-2 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                  >
+                    Go to Vineyard Design →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Core Inputs */}
           <CollapsibleSection title="Core Vineyard Parameters">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-8">
@@ -1103,6 +1134,8 @@ const LTV = (landValue + improvementsValue) > 0
             <div className="space-y-5">
               {Object.entries(stNum.setup).map(([k, obj]) => {
                 const label = k.charAt(0).toUpperCase() + k.slice(1);
+                const isCalculated = obj.calculated; // From vineyard design
+                
                 return (
                   <div key={k} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg">
                     <Checkbox 
@@ -1111,34 +1144,57 @@ const LTV = (landValue + improvementsValue) > 0
                       className="h-5 w-5"
                     />
                     <span className="text-sm text-blue-800 font-medium capitalize w-32">{label}</span>
-                    {k === "irrigation" ? (
-                      <>
-                        <select 
-                          className="border p-2 rounded-md text-sm bg-white" 
-                          value={obj.system} 
-                          onChange={e => updateSetup(k, { ...obj, system: e.target.value, cost: IRRIG_OPTIONS.find(o => o.key === e.target.value).defaultCost })}
+                    
+                    {/* Show calculation source */}
+                    {isCalculated ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                          Auto-calculated from design
+                        </span>
+                        <span className="text-sm text-blue-800">$/acre</span>
+                        <span className="w-28 p-2 bg-gray-100 text-sm rounded border">
+                          ${obj.cost.toLocaleString()}
+                        </span>
+                        <button 
+                          onClick={() => setActiveTab("design")}
+                          className="text-xs text-blue-600 hover:text-blue-800 underline"
                         >
-                          {IRRIG_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-                        </select>
-                        <label className="text-sm text-blue-800">$/acre</label>
-                        <Input 
-                          className="w-28 bg-white" 
-                          type="number" 
-                          step="100" 
-                          value={obj.cost} 
-                          onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })} 
-                        />
-                      </>
+                          Edit in Design →
+                        </button>
+                      </div>
                     ) : (
+                      // Manual input for non-calculated items
                       <>
-                        <label className="text-sm text-blue-800">$/acre</label>
-                        <Input 
-                          className="w-28 bg-white" 
-                          type="number" 
-                          step="100" 
-                          value={obj.cost} 
-                          onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })} 
-                        />
+                        {k === "irrigation" ? (
+                          <>
+                            <select 
+                              className="border p-2 rounded-md text-sm bg-white" 
+                              value={obj.system} 
+                              onChange={e => updateSetup(k, { ...obj, system: e.target.value, cost: IRRIG_OPTIONS.find(o => o.key === e.target.value).defaultCost })}
+                            >
+                              {IRRIG_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                            </select>
+                            <label className="text-sm text-blue-800">$/acre</label>
+                            <Input 
+                              className="w-28 bg-white" 
+                              type="number" 
+                              step="100" 
+                              value={obj.cost} 
+                              onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })} 
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <label className="text-sm text-blue-800">$/acre</label>
+                            <Input 
+                              className="w-28 bg-white" 
+                              type="number" 
+                              step="100" 
+                              value={obj.cost} 
+                              onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })} 
+                            />
+                          </>
+                        )}
                       </>
                     )}
                   </div>

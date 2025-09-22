@@ -1,5 +1,13 @@
 // VineyardLayoutCalculator.js
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
+import ReactFlow, {
+  MiniMap,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+} from 'reactflow';
+import 'reactflow/dist/style.css';
 import { Card, CardContent } from './components/ui/card';
 import { Input } from './components/ui/input';
 
@@ -43,7 +51,7 @@ export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = 
   const totalVines = numberOfRows * vinesPerRow;
   
   // Calculate material requirements
-const materials = calculateMaterials(numberOfRows, vinesPerRow, length, rowSpacingFeet, shape);
+  const materials = calculateMaterials(numberOfRows, vinesPerRow, length, rowSpacingFeet, shape);
   
   return {
     dimensions: { width, length, totalSqft },
@@ -145,115 +153,306 @@ export const calculateMaterialCosts = (materials, customPrices = {}) => {
   };
 };
 
-// React component for vineyard layout visualization
-export const VineyardLayoutVisualizer = ({ layout, acres }) => {
-  if (!layout) return null;
+// Custom vine node component
+const VineNode = ({ data }) => {
+  const { spacing, isEndPost, isVine, rowNumber, vineNumber } = data;
   
-  const { dimensions, vineLayout, materials } = layout;
-  const scale = Math.min(300 / dimensions.width, 200 / dimensions.length);
+  if (isEndPost) {
+    return (
+      <div className="vine-post">
+        <div 
+          className="w-2 h-8 bg-amber-700 rounded-sm shadow-sm"
+          title={`End post - Row ${rowNumber}`}
+        />
+      </div>
+    );
+  }
+  
+  if (isVine) {
+    return (
+      <div className="vine-plant">
+        <div 
+          className="w-3 h-3 bg-green-600 rounded-full shadow-sm border border-green-700"
+          title={`Vine ${vineNumber} - Row ${rowNumber}`}
+        />
+      </div>
+    );
+  }
+  
+  return null;
+};
+
+// Custom trellis wire edge component
+const TrellisWire = ({ 
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  style = {},
+  data,
+}) => {
+  const edgePath = `M${sourceX},${sourceY}L${targetX},${targetY}`;
   
   return (
-    <div className="bg-green-50 p-6 rounded-lg border-2 border-green-200">
-      <h4 className="text-lg font-semibold text-green-800 mb-4">Vineyard Layout Visualization</h4>
+    <>
+      <path
+        id={id}
+        style={{ ...style, strokeWidth: 2, stroke: '#8B4513' }}
+        className="react-flow__edge-path"
+        d={edgePath}
+      />
+    </>
+  );
+};
+
+const nodeTypes = {
+  vine: VineNode,
+};
+
+const edgeTypes = {
+  trellis: TrellisWire,
+};
+
+// Enhanced material costs visualization
+export const MaterialCostsVisualizer = ({ materialCosts, layout }) => {
+  if (!materialCosts || !layout) return null;
+  
+  const totalCost = Object.values(materialCosts).reduce((sum, cost) => sum + cost, 0);
+  
+  const costBreakdown = [
+    { category: 'Posts', cost: materialCosts.posts, color: 'bg-amber-500', icon: '🏗️' },
+    { category: 'Trellis Wire', cost: materialCosts.wire, color: 'bg-orange-500', icon: '🔗' },
+    { category: 'Irrigation', cost: materialCosts.irrigation, color: 'bg-blue-500', icon: '💧' },
+    { category: 'Hardware', cost: materialCosts.hardware, color: 'bg-gray-500', icon: '🔧' },
+    { category: 'Earth Anchors', cost: materialCosts.earthAnchors, color: 'bg-stone-600', icon: '⚓' },
+  ].sort((a, b) => b.cost - a.cost);
+  
+  return (
+    <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-6">
+      <h3 className="text-lg font-semibold text-blue-800 mb-4">Material Cost Breakdown</h3>
       
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* SVG Diagram */}
-        <div className="flex-1">
-          <svg 
-            width="320" 
-            height="220" 
-            viewBox="0 0 320 220" 
-            className="border border-green-300 bg-white rounded"
-          >
-            {/* Background */}
-            <rect width="320" height="220" fill="#f0f9ff"/>
-            
-            {/* Vineyard plot */}
-            <rect 
-              x="10" 
-              y="10" 
-              width={dimensions.width * scale} 
-              height={dimensions.length * scale}
-              fill="#dcfce7" 
-              stroke="#16a34a" 
-              strokeWidth="2"
-            />
-            
-            {/* Vine rows */}
-            {Array.from({ length: vineLayout.numberOfRows }, (_, i) => (
-              <g key={i}>
-                {/* Row line */}
-                <line
-                  x1="10"
-                  y1={10 + (i * layout.spacing.row * scale)}
-                  x2={10 + dimensions.width * scale}
-                  y2={10 + (i * layout.spacing.row * scale)}
-                  stroke="#15803d"
-                  strokeWidth="1"
-                  strokeDasharray="2,2"
-                />
-                
-                {/* Vine markers */}
-                {Array.from({ length: Math.min(vineLayout.vinesPerRow, 20) }, (_, j) => (
-                  <circle
-                    key={j}
-                    cx={10 + (j * layout.spacing.vine * scale)}
-                    cy={10 + (i * layout.spacing.row * scale)}
-                    r="1.5"
-                    fill="#16a34a"
-                  />
-                ))}
-                
-                {vineLayout.vinesPerRow > 20 && (
-                  <text
-                    x={10 + dimensions.width * scale - 40}
-                    y={10 + (i * layout.spacing.row * scale) + 3}
-                    fontSize="8"
-                    fill="#15803d"
-                  >
-                    ...{vineLayout.vinesPerRow} vines
-                  </text>
-                )}
-              </g>
-            ))}
-            
-            {/* Dimensions labels */}
-            <text x="10" y="200" fontSize="10" fill="#374151">
-              {Math.round(dimensions.width)}' × {Math.round(dimensions.length)}'
-            </text>
-            <text x="10" y="215" fontSize="10" fill="#374151">
-              {acres} acres • {vineLayout.totalVines} vines
-            </text>
-          </svg>
+      <div className="mb-6">
+        <div className="text-center mb-4">
+          <span className="text-3xl font-bold text-blue-800">${totalCost.toLocaleString()}</span>
+          <p className="text-gray-600">Total Material Cost</p>
         </div>
         
-        {/* Layout Stats */}
-        <div className="flex-1 space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="font-medium text-green-800">Dimensions:</span>
-              <div>{Math.round(dimensions.width)}' × {Math.round(dimensions.length)}'</div>
-            </div>
-            <div>
-              <span className="font-medium text-green-800">Total Vines:</span>
-              <div>{vineLayout.totalVines.toLocaleString()}</div>
-            </div>
-            <div>
-              <span className="font-medium text-green-800">Rows:</span>
-              <div>{vineLayout.numberOfRows} rows</div>
-            </div>
-            <div>
-              <span className="font-medium text-green-800">Vines/Row:</span>
-              <div>{vineLayout.vinesPerRow}</div>
-            </div>
-            <div>
-              <span className="font-medium text-green-800">Vine Density:</span>
-              <div>{Math.round(vineLayout.vinesPerAcre)} vines/acre</div>
-            </div>
-            <div>
-              <span className="font-medium text-green-800">Spacing:</span>
-              <div>{layout.spacing.vine}' × {layout.spacing.row}'</div>
-            </div>
+        <div className="space-y-3">
+          {costBreakdown.map((item, index) => {
+            const percentage = (item.cost / totalCost) * 100;
+            return (
+              <div key={item.category} className="flex items-center gap-3">
+                <span className="text-lg">{item.icon}</span>
+                <div className="flex-1">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium">{item.category}</span>
+                    <span className="font-semibold">${item.cost.toLocaleString()}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full ${item.color} transition-all duration-300`}
+                      style={{ width: `${percentage}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {percentage.toFixed(1)}% of total cost
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4 text-sm border-t pt-4">
+        <div>
+          <span className="text-gray-600">Cost per vine:</span>
+          <span className="ml-2 font-medium">${(totalCost / layout.vineLayout.totalVines).toFixed(2)}</span>
+        </div>
+        <div>
+          <span className="text-gray-600">Cost per acre:</span>
+          <span className="ml-2 font-medium">${(totalCost / layout.dimensions.totalSqft * 43560).toFixed(0)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main improved visualizer component using React Flow
+export const VineyardLayoutVisualizer = ({ layout, acres }) => {
+  // Generate nodes and edges for React Flow - moved before early return
+  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
+    if (!layout) return { nodes: [], edges: [] };
+    
+    const { dimensions, vineLayout, spacing } = layout;
+    const nodes = [];
+    const edges = [];
+    
+    const scaleX = 800 / dimensions.width; // Scale to fit in 800px width
+    const scaleY = 600 / dimensions.length; // Scale to fit in 600px height
+    const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+    
+    const rowSpacingScaled = spacing.row * scale;
+    const vineSpacingScaled = spacing.vine * scale;
+    
+    // Generate vineyard layout
+    for (let rowIndex = 0; rowIndex < vineLayout.numberOfRows; rowIndex++) {
+      const rowY = rowIndex * rowSpacingScaled;
+      
+      // End posts for each row
+      nodes.push({
+        id: `end-post-start-${rowIndex}`,
+        type: 'vine',
+        position: { x: -10, y: rowY },
+        data: { 
+          isEndPost: true, 
+          rowNumber: rowIndex + 1,
+          spacing: spacing 
+        },
+        draggable: false,
+      });
+      
+      nodes.push({
+        id: `end-post-end-${rowIndex}`,
+        type: 'vine',
+        position: { x: (vineLayout.vinesPerRow - 1) * vineSpacingScaled + 10, y: rowY },
+        data: { 
+          isEndPost: true, 
+          rowNumber: rowIndex + 1,
+          spacing: spacing 
+        },
+        draggable: false,
+      });
+      
+      // Trellis wires for each row
+      edges.push({
+        id: `trellis-${rowIndex}`,
+        source: `end-post-start-${rowIndex}`,
+        target: `end-post-end-${rowIndex}`,
+        type: 'trellis',
+        style: { strokeWidth: 3, stroke: '#8B4513' },
+        data: { rowNumber: rowIndex + 1 },
+      });
+      
+      // Vines in each row
+      for (let vineIndex = 0; vineIndex < vineLayout.vinesPerRow; vineIndex++) {
+        const vineX = vineIndex * vineSpacingScaled;
+        
+        nodes.push({
+          id: `vine-${rowIndex}-${vineIndex}`,
+          type: 'vine',
+          position: { x: vineX, y: rowY },
+          data: { 
+            isVine: true, 
+            rowNumber: rowIndex + 1,
+            vineNumber: vineIndex + 1,
+            spacing: spacing 
+          },
+          draggable: false,
+        });
+      }
+    }
+    
+    return { nodes, edges };
+  }, [layout]);
+  
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  
+  const onConnect = useCallback((params) => {
+    // Prevent user connections
+  }, []);
+  
+  // Early return after all hooks are called
+  if (!layout) return null;
+  
+  const { dimensions, vineLayout, spacing } = layout;
+  
+  return (
+    <div className="bg-white p-6 rounded-lg border-2 border-green-200 shadow-lg">
+      <div className="mb-4">
+        <h4 className="text-xl font-semibold text-green-800 mb-2">
+          Interactive Vineyard Layout
+        </h4>
+        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+          <span>📐 {Math.round(dimensions.width)}' × {Math.round(dimensions.length)}'</span>
+          <span>🍇 {vineLayout.totalVines.toLocaleString()} vines</span>
+          <span>📏 {spacing.vine}' × {spacing.row}' spacing</span>
+          <span>🚜 {vineLayout.numberOfRows} rows</span>
+        </div>
+      </div>
+      
+      <div className="h-96 border border-gray-300 rounded-lg overflow-hidden">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          fitView
+          fitViewOptions={{
+            padding: 0.1,
+            includeHiddenNodes: false,
+          }}
+          minZoom={0.1}
+          maxZoom={4}
+          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        >
+          <Controls />
+          <MiniMap 
+            style={{
+              height: 120,
+              backgroundColor: '#f8f9fa',
+            }}
+            zoomable
+            pannable
+            nodeColor={(node) => {
+              if (node.data?.isEndPost) return '#8B4513';
+              if (node.data?.isVine) return '#16a34a';
+              return '#6b7280';
+            }}
+          />
+          <Background color="#aaa" gap={16} />
+        </ReactFlow>
+      </div>
+      
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-green-600 rounded-full border border-green-700"></div>
+          <span>Vine Plants</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-6 bg-amber-700 rounded-sm"></div>
+          <span>End Posts</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-0.5 bg-amber-700"></div>
+          <span>Trellis Wire</span>
+        </div>
+        <div className="text-gray-600">
+          Use controls to zoom & pan
+        </div>
+      </div>
+      
+      <div className="mt-4 p-3 bg-green-50 rounded-lg">
+        <h5 className="font-medium text-green-800 mb-2">Layout Statistics</h5>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <div>
+            <span className="text-green-700">Density:</span>
+            <span className="ml-1 font-medium">{Math.round(vineLayout.vinesPerAcre)} vines/acre</span>
+          </div>
+          <div>
+            <span className="text-green-700">Total Area:</span>
+            <span className="ml-1 font-medium">{acres} acres</span>
+          </div>
+          <div>
+            <span className="text-green-700">Row Length:</span>
+            <span className="ml-1 font-medium">{Math.round(dimensions.length)}'</span>
           </div>
         </div>
       </div>
@@ -394,11 +593,14 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) =
       {/* Layout Visualization */}
       {layout && <VineyardLayoutVisualizer layout={layout} acres={acres} />}
       
-      {/* Material Requirements */}
+      {/* Enhanced Material Costs */}
+      {layout && materialCosts && <MaterialCostsVisualizer materialCosts={materialCosts} layout={layout} />}
+      
+      {/* Detailed Material Requirements */}
       {layout && materialCosts && (
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-blue-800 mb-4">Material Requirements & Costs</h3>
+            <h3 className="text-lg font-semibold text-blue-800 mb-4">Detailed Material Requirements</h3>
             
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
