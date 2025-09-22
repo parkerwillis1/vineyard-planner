@@ -1,4 +1,4 @@
-// VineyardLayoutCalculator.js
+// VineyardLayoutCalculator.js - Complete file with enhanced visualization
 import React, { useMemo, useState, useCallback } from 'react';
 import ReactFlow, {
   MiniMap,
@@ -223,7 +223,7 @@ export const MaterialCostsVisualizer = ({ materialCosts, layout }) => {
   const totalCost = Object.values(materialCosts).reduce((sum, cost) => sum + cost, 0);
   
   const costBreakdown = [
-    { category: 'Posts', cost: materialCosts.posts, color: 'bg-amber-500', icon: '🏗️' },
+    { category: 'Posts', cost: materialCosts.posts, color: 'bg-amber-500', icon: '🗂️' },
     { category: 'Trellis Wire', cost: materialCosts.wire, color: 'bg-orange-500', icon: '🔗' },
     { category: 'Irrigation', cost: materialCosts.irrigation, color: 'bg-blue-500', icon: '💧' },
     { category: 'Hardware', cost: materialCosts.hardware, color: 'bg-gray-500', icon: '🔧' },
@@ -281,169 +281,413 @@ export const MaterialCostsVisualizer = ({ materialCosts, layout }) => {
   );
 };
 
-// Simplified vineyard layout visualization (temporarily removing React Flow)
+// ENHANCED VINEYARD LAYOUT VISUALIZER
 export const VineyardLayoutVisualizer = ({ layout, acres }) => {
   if (!layout) {
     return (
-      <div className="bg-gray-100 p-6 rounded-lg border-2 border-gray-200">
-        <p className="text-gray-600 text-center">Configure your vineyard layout to see visualization</p>
+      <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-8 rounded-xl border-2 border-green-200 shadow-lg">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🍇</div>
+          <p className="text-gray-600 text-lg">Configure your vineyard layout to see visualization</p>
+          <p className="text-gray-500 text-sm mt-2">Set acreage and spacing to begin planning</p>
+        </div>
       </div>
     );
   }
   
   const { dimensions, vineLayout, spacing } = layout;
-  const scale = Math.min(400 / dimensions.width, 300 / dimensions.length);
+  
+  // Enhanced scaling for better visualization
+  const maxWidth = 600;
+  const maxHeight = 400;
+  const scale = Math.min(maxWidth / dimensions.width, maxHeight / dimensions.length);
+  const scaledWidth = dimensions.width * scale;
+  const scaledHeight = dimensions.length * scale;
+  
+  // Calculate vine positions for better distribution
+  const maxVinesPerRow = Math.min(Math.floor(scaledWidth / 8), vineLayout.vinesPerRow);
+  const maxRows = Math.min(Math.floor(scaledHeight / 12), vineLayout.numberOfRows);
+  
+  // Gradient definitions for SVG
+  const gradients = (
+    <defs>
+      {/* Ground gradient */}
+      <linearGradient id="groundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#f0fdf4" />
+        <stop offset="50%" stopColor="#dcfce7" />
+        <stop offset="100%" stopColor="#bbf7d0" />
+      </linearGradient>
+      
+      {/* Vineyard boundary gradient */}
+      <linearGradient id="boundaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#16a34a" stopOpacity="0.8" />
+        <stop offset="100%" stopColor="#15803d" stopOpacity="0.9" />
+      </linearGradient>
+      
+      {/* Post gradient */}
+      <linearGradient id="postGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#d2691e" />
+        <stop offset="50%" stopColor="#8b4513" />
+        <stop offset="100%" stopColor="#654321" />
+      </linearGradient>
+      
+      {/* Vine gradient */}
+      <radialGradient id="vineGradient" cx="50%" cy="30%">
+        <stop offset="0%" stopColor="#22c55e" />
+        <stop offset="70%" stopColor="#16a34a" />
+        <stop offset="100%" stopColor="#15803d" />
+      </radialGradient>
+      
+      {/* Wire gradient */}
+      <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#8b4513" stopOpacity="0.9" />
+        <stop offset="50%" stopColor="#a0522d" stopOpacity="1" />
+        <stop offset="100%" stopColor="#8b4513" stopOpacity="0.9" />
+      </linearGradient>
+      
+      {/* Shadow filter */}
+      <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="1" dy="2" stdDeviation="1" floodColor="rgba(0,0,0,0.2)" />
+      </filter>
+      
+      {/* Glow effect for vines */}
+      <filter id="vineGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+        <feMerge> 
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+  );
+  
+  // Calculate positioning
+  const padding = 40;
+  const vineRowSpacing = Math.max(12, scaledHeight / vineLayout.numberOfRows);
+  const vineSpacingInRow = Math.max(8, scaledWidth / vineLayout.vinesPerRow);
   
   return (
-    <div className="bg-white p-6 rounded-lg border-2 border-green-200 shadow-lg">
-      <div className="mb-4">
-        <h4 className="text-xl font-semibold text-green-800 mb-2">
-          Vineyard Layout Visualization
+    <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 p-6 rounded-xl border-2 border-green-200 shadow-xl">
+      <div className="mb-6">
+        <h4 className="text-2xl font-bold text-green-800 mb-3 flex items-center gap-2">
+          🍇 Vineyard Layout Visualization
         </h4>
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-          <span>📐 {Math.round(dimensions.width)}' × {Math.round(dimensions.length)}'</span>
-          <span>🍇 {vineLayout.totalVines.toLocaleString()} vines</span>
-          <span>📏 {spacing.vine}' × {spacing.row}' spacing</span>
-          <span>🚜 {vineLayout.numberOfRows} rows</span>
+        <div className="flex flex-wrap gap-6 text-sm text-gray-700 bg-white/50 p-3 rounded-lg backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-blue-600">📐</span>
+            <span className="font-medium">{Math.round(dimensions.width)}' × {Math.round(dimensions.length)}'</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-600">🍇</span>
+            <span className="font-medium">{vineLayout.totalVines.toLocaleString()} vines</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-purple-600">📏</span>
+            <span className="font-medium">{spacing.vine}' × {spacing.row}' spacing</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-amber-600">🚜</span>
+            <span className="font-medium">{vineLayout.numberOfRows} rows</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-600">📊</span>
+            <span className="font-medium">{Math.round(vineLayout.vinesPerAcre)} vines/acre</span>
+          </div>
         </div>
       </div>
       
-      <div className="border border-gray-300 rounded-lg overflow-hidden bg-green-50">
+      <div className="bg-white/70 p-4 rounded-xl shadow-inner backdrop-blur-sm border border-green-200/50">
         <svg 
           width="100%" 
-          height="350" 
-          viewBox={`0 0 ${Math.max(400, dimensions.width * scale)} ${Math.max(300, dimensions.length * scale)}`}
-          className="bg-green-50"
+          height="450" 
+          viewBox={`0 0 ${Math.max(600, scaledWidth + padding * 2)} ${Math.max(400, scaledHeight + padding * 2)}`}
+          className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-lg"
+          style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}
         >
-          {/* Background */}
+          {gradients}
+          
+          {/* Background with subtle texture */}
           <rect 
             width="100%" 
             height="100%" 
-            fill="#f0fdf4"
+            fill="url(#groundGradient)"
           />
           
-          {/* Vineyard boundary */}
+          {/* Vineyard boundary with enhanced styling */}
           <rect 
-            x="20" 
-            y="20" 
-            width={dimensions.width * scale} 
-            height={dimensions.length * scale}
-            fill="#dcfce7" 
-            stroke="#16a34a" 
-            strokeWidth="2"
-            rx="4"
+            x={padding} 
+            y={padding} 
+            width={scaledWidth} 
+            height={scaledHeight}
+            fill="rgba(220, 252, 231, 0.8)" 
+            stroke="url(#boundaryGradient)" 
+            strokeWidth="3"
+            rx="8"
+            filter="url(#dropShadow)"
           />
           
-          {/* Vine rows */}
-          {Array.from({ length: vineLayout.numberOfRows }, (_, i) => (
-            <g key={i}>
-              {/* Row guidelines */}
-              <line
-                x1="20"
-                y1={20 + (i * spacing.row * scale)}
-                x2={20 + dimensions.width * scale}
-                y2={20 + (i * spacing.row * scale)}
-                stroke="#15803d"
-                strokeWidth="1"
-                strokeDasharray="3,3"
-                opacity="0.6"
-              />
-              
-              {/* End posts */}
-              <rect
-                x="15"
-                y={15 + (i * spacing.row * scale)}
-                width="4"
-                height="10"
-                fill="#8B4513"
-                rx="1"
-              />
-              <rect
-                x={21 + dimensions.width * scale}
-                y={15 + (i * spacing.row * scale)}
-                width="4"
-                height="10"
-                fill="#8B4513"
-                rx="1"
-              />
-              
-              {/* Trellis wire */}
-              <line
-                x1="17"
-                y1={20 + (i * spacing.row * scale)}
-                x2={23 + dimensions.width * scale}
-                y2={20 + (i * spacing.row * scale)}
-                stroke="#8B4513"
-                strokeWidth="2"
-              />
-              
-              {/* Vine markers - show up to 25 per row to avoid overcrowding */}
-              {Array.from({ length: Math.min(vineLayout.vinesPerRow, 25) }, (_, j) => (
-                <circle
-                  key={j}
-                  cx={20 + (j * spacing.vine * scale)}
-                  cy={20 + (i * spacing.row * scale)}
-                  r="2"
-                  fill="#16a34a"
-                  stroke="#15803d"
-                  strokeWidth="0.5"
-                />
-              ))}
-              
-              {/* Show count if more vines than displayed */}
-              {vineLayout.vinesPerRow > 25 && (
-                <text
-                  x={20 + dimensions.width * scale - 60}
-                  y={25 + (i * spacing.row * scale)}
-                  fontSize="10"
-                  fill="#15803d"
-                  fontWeight="500"
-                >
-                  {vineLayout.vinesPerRow} vines
-                </text>
-              )}
-            </g>
-          ))}
-          
-          {/* Dimensions labels */}
-          <text x="20" y={40 + dimensions.length * scale} fontSize="12" fill="#374151" fontWeight="500">
-            {Math.round(dimensions.width)}' × {Math.round(dimensions.length)}' ({acres} acres)
+          {/* Property label */}
+          <text 
+            x={padding + scaledWidth / 2} 
+            y={padding - 15} 
+            fontSize="16" 
+            fill="#065f46" 
+            fontWeight="700" 
+            textAnchor="middle"
+            fontFamily="serif"
+          >
+            {acres} Acre Vineyard
           </text>
+          
+          {/* Vineyard rows with enhanced graphics */}
+          {Array.from({ length: Math.min(maxRows, vineLayout.numberOfRows) }, (_, i) => {
+            const actualRowIndex = Math.floor((i / maxRows) * vineLayout.numberOfRows);
+            const yPosition = padding + (i * vineRowSpacing) + vineRowSpacing/2;
+            
+            return (
+              <g key={i}>
+                {/* Soil preparation line - subtle background */}
+                <line
+                  x1={padding - 5}
+                  y1={yPosition}
+                  x2={padding + scaledWidth + 5}
+                  y2={yPosition}
+                  stroke="#a3a3a3"
+                  strokeWidth="0.5"
+                  strokeDasharray="2,4"
+                  opacity="0.3"
+                />
+                
+                {/* Left end post with 3D effect */}
+                <g transform={`translate(${padding - 15}, ${yPosition - 8})`}>
+                  <rect
+                    width="6"
+                    height="16"
+                    fill="url(#postGradient)"
+                    rx="2"
+                    filter="url(#dropShadow)"
+                  />
+                  <rect
+                    x="1"
+                    y="1"
+                    width="2"
+                    height="14"
+                    fill="rgba(255,255,255,0.3)"
+                    rx="1"
+                  />
+                </g>
+                
+                {/* Right end post with 3D effect */}
+                <g transform={`translate(${padding + scaledWidth + 9}, ${yPosition - 8})`}>
+                  <rect
+                    width="6"
+                    height="16"
+                    fill="url(#postGradient)"
+                    rx="2"
+                    filter="url(#dropShadow)"
+                  />
+                  <rect
+                    x="1"
+                    y="1"
+                    width="2"
+                    height="14"
+                    fill="rgba(255,255,255,0.3)"
+                    rx="1"
+                  />
+                </g>
+                
+                {/* Trellis wires - multiple wires with gradient */}
+                {[0, 1, 2].map(wireIndex => (
+                  <line
+                    key={wireIndex}
+                    x1={padding - 12}
+                    y1={yPosition - 2 + wireIndex * 2}
+                    x2={padding + scaledWidth + 12}
+                    y2={yPosition - 2 + wireIndex * 2}
+                    stroke="url(#wireGradient)"
+                    strokeWidth="1.5"
+                    opacity="0.8"
+                  />
+                ))}
+                
+                {/* Line posts every ~24 feet */}
+                {Array.from({ length: Math.floor(dimensions.width / 24) - 1 }, (_, postIndex) => (
+                  <g key={postIndex} transform={`translate(${padding + (postIndex + 1) * (scaledWidth / Math.floor(dimensions.width / 24))}, ${yPosition - 6})`}>
+                    <rect
+                      width="3"
+                      height="12"
+                      fill="url(#postGradient)"
+                      rx="1"
+                      opacity="0.9"
+                    />
+                  </g>
+                ))}
+                
+                {/* Vine plants with enhanced graphics */}
+                {Array.from({ length: Math.min(maxVinesPerRow, vineLayout.vinesPerRow) }, (_, j) => {
+                  const xPosition = padding + (j * vineSpacingInRow) + vineSpacingInRow/2;
+                  
+                  return (
+                    <g key={j}>
+                      {/* Vine plant base */}
+                      <circle
+                        cx={xPosition}
+                        cy={yPosition + 1}
+                        r="2.5"
+                        fill="url(#vineGradient)"
+                        filter="url(#vineGlow)"
+                        className="hover:r-3 transition-all duration-200"
+                      />
+                      
+                      {/* Vine leaves */}
+                      <circle
+                        cx={xPosition - 1}
+                        cy={yPosition - 1}
+                        r="1.5"
+                        fill="#22c55e"
+                        opacity="0.8"
+                      />
+                      <circle
+                        cx={xPosition + 1}
+                        cy={yPosition - 1}
+                        r="1.5"
+                        fill="#16a34a"
+                        opacity="0.7"
+                      />
+                      
+                      {/* Highlight on vine */}
+                      <circle
+                        cx={xPosition - 0.5}
+                        cy={yPosition - 0.5}
+                        r="0.8"
+                        fill="rgba(255,255,255,0.4)"
+                      />
+                    </g>
+                  );
+                })}
+                
+                {/* Row information */}
+                {vineLayout.vinesPerRow > maxVinesPerRow && (
+                  <text
+                    x={padding + scaledWidth - 10}
+                    y={yPosition - 10}
+                    fontSize="10"
+                    fill="#15803d"
+                    fontWeight="600"
+                    textAnchor="end"
+                    opacity="0.8"
+                  >
+                    {vineLayout.vinesPerRow} vines
+                  </text>
+                )}
+                
+                {/* Row number */}
+                <text
+                  x={padding - 25}
+                  y={yPosition + 3}
+                  fontSize="9"
+                  fill="#6b7280"
+                  fontWeight="500"
+                  textAnchor="middle"
+                >
+                  {actualRowIndex + 1}
+                </text>
+              </g>
+            );
+          })}
+          
+          {/* Additional rows indicator */}
+          {vineLayout.numberOfRows > maxRows && (
+            <text
+              x={padding + scaledWidth / 2}
+              y={padding + scaledHeight + 25}
+              fontSize="12"
+              fill="#6b7280"
+              fontWeight="500"
+              textAnchor="middle"
+            >
+              ... and {vineLayout.numberOfRows - maxRows} more rows
+            </text>
+          )}
+          
+          {/* Dimensions and scale */}
+          <g transform={`translate(${padding}, ${padding + scaledHeight + 30})`}>
+            <line x1="0" y1="0" x2={scaledWidth} y2="0" stroke="#374151" strokeWidth="1"/>
+            <line x1="0" y1="-3" x2="0" y2="3" stroke="#374151" strokeWidth="1"/>
+            <line x1={scaledWidth} y1="-3" x2={scaledWidth} y2="3" stroke="#374151" strokeWidth="1"/>
+            <text 
+              x={scaledWidth / 2} 
+              y="15" 
+              fontSize="12" 
+              fill="#374151" 
+              fontWeight="600" 
+              textAnchor="middle"
+            >
+              {Math.round(dimensions.width)}'
+            </text>
+          </g>
+          
+          {/* Compass rose */}
+          <g transform={`translate(${padding + scaledWidth - 30}, ${padding + 30})`}>
+            <circle cx="0" cy="0" r="15" fill="rgba(255,255,255,0.9)" stroke="#374151" strokeWidth="1"/>
+            <text x="0" y="-8" fontSize="8" fill="#dc2626" fontWeight="bold" textAnchor="middle">N</text>
+            <text x="8" y="3" fontSize="8" fill="#374151" textAnchor="middle">E</text>
+            <text x="0" y="12" fontSize="8" fill="#374151" textAnchor="middle">S</text>
+            <text x="-8" y="3" fontSize="8" fill="#374151" textAnchor="middle">W</text>
+            <polygon points="0,-8 2,-2 0,-4 -2,-2" fill="#dc2626"/>
+          </g>
         </svg>
       </div>
       
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-green-600 rounded-full border border-green-700"></div>
-          <span>Vine Plants</span>
+      {/* Enhanced legend */}
+      <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+        <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
+          <div className="w-4 h-4 bg-gradient-to-br from-green-400 to-green-600 rounded-full shadow-sm"></div>
+          <span className="font-medium text-gray-700">Vine Plants</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-6 bg-amber-700 rounded-sm"></div>
-          <span>End Posts</span>
+        <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
+          <div className="w-3 h-6 bg-gradient-to-br from-amber-600 to-amber-800 rounded-sm shadow-sm"></div>
+          <span className="font-medium text-gray-700">Posts</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-0.5 bg-amber-700"></div>
-          <span>Trellis Wire</span>
+        <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
+          <div className="w-8 h-1 bg-gradient-to-r from-amber-700 to-amber-600 rounded-full shadow-sm"></div>
+          <span className="font-medium text-gray-700">Trellis Wire</span>
         </div>
-        <div className="text-gray-600">
-          Scalable SVG diagram
+        <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
+          <div className="w-4 h-4 border-2 border-green-500 rounded bg-green-100"></div>
+          <span className="font-medium text-gray-700">Vineyard Boundary</span>
+        </div>
+        <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
+          <div className="text-lg">🧭</div>
+          <span className="font-medium text-gray-700">Interactive SVG</span>
         </div>
       </div>
       
-      <div className="mt-4 p-3 bg-green-50 rounded-lg">
-        <h5 className="font-medium text-green-800 mb-2">Layout Statistics</h5>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-          <div>
-            <span className="text-green-700">Density:</span>
-            <span className="ml-1 font-medium">{Math.round(vineLayout.vinesPerAcre)} vines/acre</span>
+      {/* Enhanced statistics panel */}
+      <div className="mt-6 bg-gradient-to-r from-green-500 to-emerald-600 p-5 rounded-xl text-white shadow-lg">
+        <h5 className="font-bold text-lg mb-3 flex items-center gap-2">
+          📊 Layout Statistics
+        </h5>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+            <div className="text-green-100 text-xs uppercase tracking-wide">Density</div>
+            <div className="text-xl font-bold">{Math.round(vineLayout.vinesPerAcre)}</div>
+            <div className="text-green-100 text-xs">vines/acre</div>
           </div>
-          <div>
-            <span className="text-green-700">Total Area:</span>
-            <span className="ml-1 font-medium">{acres} acres</span>
+          <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+            <div className="text-green-100 text-xs uppercase tracking-wide">Total Area</div>
+            <div className="text-xl font-bold">{acres}</div>
+            <div className="text-green-100 text-xs">acres</div>
           </div>
-          <div>
-            <span className="text-green-700">Row Length:</span>
-            <span className="ml-1 font-medium">{Math.round(dimensions.length)}'</span>
+          <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+            <div className="text-green-100 text-xs uppercase tracking-wide">Row Length</div>
+            <div className="text-xl font-bold">{Math.round(dimensions.length)}'</div>
+            <div className="text-green-100 text-xs">feet</div>
+          </div>
+          <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+            <div className="text-green-100 text-xs uppercase tracking-wide">Total Vines</div>
+            <div className="text-xl font-bold">{vineLayout.totalVines.toLocaleString()}</div>
+            <div className="text-green-100 text-xs">plants</div>
           </div>
         </div>
       </div>
