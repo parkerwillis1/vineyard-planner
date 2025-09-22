@@ -458,158 +458,202 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
           </text>
           
           {/* Vineyard rows with enhanced graphics */}
-          {Array.from({ length: Math.min(maxRows, vineLayout.numberOfRows) }, (_, i) => {
-            const actualRowIndex = Math.floor((i / maxRows) * vineLayout.numberOfRows);
-            const yPosition = padding + (i * vineRowSpacing) + vineRowSpacing/2;
+            {Array.from({ length: vineLayout.numberOfRows }, (_, i) => {
+            let rowPosition, vinePositions, postPositions, wirePositions;
+            
+            if (orientation === "vertical") {
+                // Rows run vertically (posts on top and bottom)
+                const xPos = padding + (i * vineRowSpacing) + vineRowSpacing/2;
+                
+                rowPosition = { x: xPos, y: null };
+                postPositions = {
+                start: { x: xPos - 3, y: padding - 15 },
+                end: { x: xPos - 3, y: padding + scaledHeight + 9 }
+                };
+                wirePositions = {
+                x1: xPos, y1: padding - 12,
+                x2: xPos, y2: padding + scaledHeight + 12
+                };
+                
+            } else {
+                // Rows run horizontally (posts on left and right)
+                const yPos = padding + (i * vineRowSpacing) + vineRowSpacing/2;
+                
+                rowPosition = { x: null, y: yPos };
+                postPositions = {
+                start: { x: padding - 15, y: yPos - 8 },
+                end: { x: padding + scaledWidth + 9, y: yPos - 8 }
+                };
+                wirePositions = {
+                x1: padding - 12, y1: yPos,
+                x2: padding + scaledWidth + 12, y2: yPos
+                };
+            }
             
             return (
-              <g key={i}>
-                {/* Soil preparation line - subtle background */}
-                <line
-                  x1={padding - 5}
-                  y1={yPosition}
-                  x2={padding + scaledWidth + 5}
-                  y2={yPosition}
-                  stroke="#a3a3a3"
-                  strokeWidth="0.5"
-                  strokeDasharray="2,4"
-                  opacity="0.3"
-                />
+                <g key={i}>
+                {/* Soil preparation line */}
+                {orientation === "horizontal" && (
+                    <line
+                    x1={padding - 5}
+                    y1={rowPosition.y}
+                    x2={padding + scaledWidth + 5}
+                    y2={rowPosition.y}
+                    stroke="#a3a3a3"
+                    strokeWidth="0.5"
+                    strokeDasharray="2,4"
+                    opacity="0.3"
+                    />
+                )}
                 
-                {/* Left end post with 3D effect */}
-                <g transform={`translate(${padding - 15}, ${yPosition - 8})`}>
-                  <rect
+                {/* Start end post */}
+                <g transform={`translate(${postPositions.start.x}, ${postPositions.start.y})`}>
+                    <rect
                     width="6"
                     height="16"
                     fill="url(#postGradient)"
                     rx="2"
                     filter="url(#dropShadow)"
-                  />
-                  <rect
+                    />
+                    <rect
                     x="1"
                     y="1"
                     width="2"
                     height="14"
                     fill="rgba(255,255,255,0.3)"
                     rx="1"
-                  />
+                    />
                 </g>
                 
-                {/* Right end post with 3D effect */}
-                <g transform={`translate(${padding + scaledWidth + 9}, ${yPosition - 8})`}>
-                  <rect
+                {/* End post */}
+                <g transform={`translate(${postPositions.end.x}, ${postPositions.end.y})`}>
+                    <rect
                     width="6"
                     height="16"
                     fill="url(#postGradient)"
                     rx="2"
                     filter="url(#dropShadow)"
-                  />
-                  <rect
+                    />
+                    <rect
                     x="1"
                     y="1"
                     width="2"
                     height="14"
                     fill="rgba(255,255,255,0.3)"
                     rx="1"
-                  />
+                    />
                 </g>
                 
-                {/* Trellis wires - multiple wires with gradient */}
+                {/* Trellis wires */}
                 {[0, 1, 2].map(wireIndex => (
-                  <line
+                    <line
                     key={wireIndex}
-                    x1={padding - 12}
-                    y1={yPosition - 2 + wireIndex * 2}
-                    x2={padding + scaledWidth + 12}
-                    y2={yPosition - 2 + wireIndex * 2}
+                    x1={wirePositions.x1}
+                    y1={wirePositions.y1 + (orientation === "horizontal" ? wireIndex * 2 - 2 : 0)}
+                    x2={wirePositions.x2}
+                    y2={wirePositions.y2 + (orientation === "horizontal" ? wireIndex * 2 - 2 : 0)}
                     stroke="url(#wireGradient)"
                     strokeWidth="1.5"
                     opacity="0.8"
-                  />
-                ))}
-                
-                {/* Line posts every ~24 feet */}
-                {Array.from({ length: Math.floor(dimensions.width / 24) - 1 }, (_, postIndex) => (
-                  <g key={postIndex} transform={`translate(${padding + (postIndex + 1) * (scaledWidth / Math.floor(dimensions.width / 24))}, ${yPosition - 6})`}>
-                    <rect
-                      width="3"
-                      height="12"
-                      fill="url(#postGradient)"
-                      rx="1"
-                      opacity="0.9"
                     />
-                  </g>
                 ))}
                 
-                {/* Vine plants with enhanced graphics */}
-                {Array.from({ length: Math.min(maxVinesPerRow, vineLayout.vinesPerRow) }, (_, j) => {
-                  const xPosition = padding + (j * vineSpacingInRow) + vineSpacingInRow/2;
-                  
-                  return (
+                {/* Vine plants */}
+                {Array.from({ length: vineLayout.vinesPerRow }, (_, j) => {
+                    let vineX, vineY;
+                    
+                    if (orientation === "vertical") {
+                    vineX = rowPosition.x;
+                    vineY = padding + (j * vineSpacingInRow) + vineSpacingInRow/2;
+                    } else {
+                    vineX = padding + (j * vineSpacingInRow) + vineSpacingInRow/2;
+                    vineY = rowPosition.y;
+                    }
+                    
+                    return (
                     <g key={j}>
-                      {/* Vine plant base */}
-                      <circle
-                        cx={xPosition}
-                        cy={yPosition + 1}
+                        <circle
+                        cx={vineX}
+                        cy={vineY + 1}
                         r="2.5"
                         fill="url(#vineGradient)"
                         filter="url(#vineGlow)"
-                        className="hover:r-3 transition-all duration-200"
-                      />
-                      
-                      {/* Vine leaves */}
-                      <circle
-                        cx={xPosition - 1}
-                        cy={yPosition - 1}
+                        />
+                        <circle
+                        cx={vineX - 1}
+                        cy={vineY - 1}
                         r="1.5"
                         fill="#22c55e"
                         opacity="0.8"
-                      />
-                      <circle
-                        cx={xPosition + 1}
-                        cy={yPosition - 1}
+                        />
+                        <circle
+                        cx={vineX + 1}
+                        cy={vineY - 1}
                         r="1.5"
                         fill="#16a34a"
                         opacity="0.7"
-                      />
-                      
-                      {/* Highlight on vine */}
-                      <circle
-                        cx={xPosition - 0.5}
-                        cy={yPosition - 0.5}
+                        />
+                        <circle
+                        cx={vineX - 0.5}
+                        cy={vineY - 0.5}
                         r="0.8"
                         fill="rgba(255,255,255,0.4)"
-                      />
+                        />
                     </g>
-                  );
+                    );
                 })}
                 
-                {/* Row information */}
-                <text
-                    x={padding + scaledWidth + 20}  // Position it outside the vineyard boundary
-                    y={yPosition + 3}              // Align with the row
-                    fontSize="10"
-                    fill="#15803d"
-                    fontWeight="600"
-                    textAnchor="start"             // Left-align the text
-                >
-                    {vineLayout.vinesPerRow} vines
-                </text>
-                
-                {/* Row number */}
-                <text
-                  x={padding - 25}
-                  y={yPosition + 3}
-                  fontSize="9"
-                  fill="#6b7280"
-                  fontWeight="500"
-                  textAnchor="middle"
-                >
-                  {actualRowIndex + 1}
-                </text>
-              </g>
+                {/* Row number and vine count */}
+                {orientation === "horizontal" ? (
+                    <>
+                    <text
+                        x={padding + scaledWidth + 20}
+                        y={rowPosition.y + 3}
+                        fontSize="10"
+                        fill="#15803d"
+                        fontWeight="600"
+                        textAnchor="start"
+                    >
+                        {vineLayout.vinesPerRow} vines
+                    </text>
+                    <text
+                        x={padding - 25}
+                        y={rowPosition.y + 3}
+                        fontSize="9"
+                        fill="#6b7280"
+                        fontWeight="500"
+                        textAnchor="middle"
+                    >
+                        {i + 1}
+                    </text>
+                    </>
+                ) : (
+                    <>
+                    <text
+                        x={rowPosition.x + 3}
+                        y={padding - 20}
+                        fontSize="10"
+                        fill="#15803d"
+                        fontWeight="600"
+                        textAnchor="start"
+                    >
+                        {vineLayout.vinesPerRow}
+                    </text>
+                    <text
+                        x={rowPosition.x}
+                        y={padding + scaledHeight + 25}
+                        fontSize="9"
+                        fill="#6b7280"
+                        fontWeight="500"
+                        textAnchor="middle"
+                    >
+                        {i + 1}
+                    </text>
+                    </>
+                )}
+                </g>
             );
-          })}
+            })}
           
           {/* Additional rows indicator */}
           {vineLayout.numberOfRows > maxRows && (
