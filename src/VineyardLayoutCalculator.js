@@ -281,88 +281,8 @@ export const MaterialCostsVisualizer = ({ materialCosts, layout }) => {
   );
 };
 
-// Main improved visualizer component using React Flow
+// Simplified vineyard layout visualization (temporarily removing React Flow)
 export const VineyardLayoutVisualizer = ({ layout, acres }) => {
-  // Always call hooks first, regardless of conditions
-  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
-    if (!layout) return { nodes: [], edges: [] };
-    
-    const { dimensions, vineLayout, spacing } = layout;
-    const nodes = [];
-    const edges = [];
-    
-    const scaleX = 800 / dimensions.width;
-    const scaleY = 600 / dimensions.length;
-    const scale = Math.min(scaleX, scaleY, 1);
-    
-    const rowSpacingScaled = spacing.row * scale;
-    const vineSpacingScaled = spacing.vine * scale;
-    
-    for (let rowIndex = 0; rowIndex < vineLayout.numberOfRows; rowIndex++) {
-      const rowY = rowIndex * rowSpacingScaled;
-      
-      nodes.push({
-        id: `end-post-start-${rowIndex}`,
-        type: 'vine',
-        position: { x: -10, y: rowY },
-        data: { 
-          isEndPost: true, 
-          rowNumber: rowIndex + 1,
-          spacing: spacing 
-        },
-        draggable: false,
-      });
-      
-      nodes.push({
-        id: `end-post-end-${rowIndex}`,
-        type: 'vine',
-        position: { x: (vineLayout.vinesPerRow - 1) * vineSpacingScaled + 10, y: rowY },
-        data: { 
-          isEndPost: true, 
-          rowNumber: rowIndex + 1,
-          spacing: spacing 
-        },
-        draggable: false,
-      });
-      
-      edges.push({
-        id: `trellis-${rowIndex}`,
-        source: `end-post-start-${rowIndex}`,
-        target: `end-post-end-${rowIndex}`,
-        type: 'trellis',
-        style: { strokeWidth: 3, stroke: '#8B4513' },
-        data: { rowNumber: rowIndex + 1 },
-      });
-      
-      for (let vineIndex = 0; vineIndex < vineLayout.vinesPerRow; vineIndex++) {
-        const vineX = vineIndex * vineSpacingScaled;
-        
-        nodes.push({
-          id: `vine-${rowIndex}-${vineIndex}`,
-          type: 'vine',
-          position: { x: vineX, y: rowY },
-          data: { 
-            isVine: true, 
-            rowNumber: rowIndex + 1,
-            vineNumber: vineIndex + 1,
-            spacing: spacing 
-          },
-          draggable: false,
-        });
-      }
-    }
-    
-    return { nodes, edges };
-  }, [layout]);
-  
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
-  
-  const onConnect = useCallback(() => {
-    // Prevent user connections
-  }, []);
-  
-  // Now we can safely return early if needed
   if (!layout) {
     return (
       <div className="bg-gray-100 p-6 rounded-lg border-2 border-gray-200">
@@ -372,12 +292,13 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
   }
   
   const { dimensions, vineLayout, spacing } = layout;
+  const scale = Math.min(400 / dimensions.width, 300 / dimensions.length);
   
   return (
     <div className="bg-white p-6 rounded-lg border-2 border-green-200 shadow-lg">
       <div className="mb-4">
         <h4 className="text-xl font-semibold text-green-800 mb-2">
-          Interactive Vineyard Layout
+          Vineyard Layout Visualization
         </h4>
         <div className="flex flex-wrap gap-4 text-sm text-gray-600">
           <span>📐 {Math.round(dimensions.width)}' × {Math.round(dimensions.length)}'</span>
@@ -387,40 +308,108 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
         </div>
       </div>
       
-      <div className="h-96 border border-gray-300 rounded-lg overflow-hidden">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          fitView
-          fitViewOptions={{
-            padding: 0.1,
-            includeHiddenNodes: false,
-          }}
-          minZoom={0.1}
-          maxZoom={4}
-          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+      <div className="border border-gray-300 rounded-lg overflow-hidden bg-green-50">
+        <svg 
+          width="100%" 
+          height="350" 
+          viewBox={`0 0 ${Math.max(400, dimensions.width * scale)} ${Math.max(300, dimensions.length * scale)}`}
+          className="bg-green-50"
         >
-          <Controls />
-          <MiniMap 
-            style={{
-              height: 120,
-              backgroundColor: '#f8f9fa',
-            }}
-            zoomable
-            pannable
-            nodeColor={(node) => {
-              if (node.data?.isEndPost) return '#8B4513';
-              if (node.data?.isVine) return '#16a34a';
-              return '#6b7280';
-            }}
+          {/* Background */}
+          <rect 
+            width="100%" 
+            height="100%" 
+            fill="#f0fdf4"
           />
-          <Background color="#aaa" gap={16} />
-        </ReactFlow>
+          
+          {/* Vineyard boundary */}
+          <rect 
+            x="20" 
+            y="20" 
+            width={dimensions.width * scale} 
+            height={dimensions.length * scale}
+            fill="#dcfce7" 
+            stroke="#16a34a" 
+            strokeWidth="2"
+            rx="4"
+          />
+          
+          {/* Vine rows */}
+          {Array.from({ length: vineLayout.numberOfRows }, (_, i) => (
+            <g key={i}>
+              {/* Row guidelines */}
+              <line
+                x1="20"
+                y1={20 + (i * spacing.row * scale)}
+                x2={20 + dimensions.width * scale}
+                y2={20 + (i * spacing.row * scale)}
+                stroke="#15803d"
+                strokeWidth="1"
+                strokeDasharray="3,3"
+                opacity="0.6"
+              />
+              
+              {/* End posts */}
+              <rect
+                x="15"
+                y={15 + (i * spacing.row * scale)}
+                width="4"
+                height="10"
+                fill="#8B4513"
+                rx="1"
+              />
+              <rect
+                x={21 + dimensions.width * scale}
+                y={15 + (i * spacing.row * scale)}
+                width="4"
+                height="10"
+                fill="#8B4513"
+                rx="1"
+              />
+              
+              {/* Trellis wire */}
+              <line
+                x1="17"
+                y1={20 + (i * spacing.row * scale)}
+                x2={23 + dimensions.width * scale}
+                y2={20 + (i * spacing.row * scale)}
+                stroke="#8B4513"
+                strokeWidth="2"
+              />
+              
+              {/* Vine markers - show up to 25 per row to avoid overcrowding */}
+              {Array.from({ length: Math.min(vineLayout.vinesPerRow, 25) }, (_, j) => (
+                <circle
+                  key={j}
+                  cx={20 + (j * spacing.vine * scale)}
+                  cy={20 + (i * spacing.row * scale)}
+                  r="2"
+                  fill="#16a34a"
+                  stroke="#15803d"
+                  strokeWidth="0.5"
+                />
+              ))}
+              
+              {/* Show count if more vines than displayed */}
+              {vineLayout.vinesPerRow > 25 && (
+                <text
+                  x={20 + dimensions.width * scale - 60}
+                  y={25 + (i * spacing.row * scale)}
+                  fontSize="10"
+                  fill="#15803d"
+                  fontWeight="500"
+                >
+                  {vineLayout.vinesPerRow} vines
+                </text>
+              )}
+            </g>
+          ))}
+          
+          {/* Dimensions labels */}
+          <text x="20" y={40 + dimensions.length * scale} fontSize="12" fill="#374151" fontWeight="500">
+            {Math.round(dimensions.width)}' × {Math.round(dimensions.length)}' ({acres} acres)
+          </text>
+        </svg>
       </div>
       
       <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -437,7 +426,7 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
           <span>Trellis Wire</span>
         </div>
         <div className="text-gray-600">
-          Use controls to zoom & pan
+          Scalable SVG diagram
         </div>
       </div>
       
