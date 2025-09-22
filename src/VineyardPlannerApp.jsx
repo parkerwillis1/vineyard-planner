@@ -85,11 +85,11 @@ const TabNav = ({
   dirty,
   lastSaved
 }) => {  const tabs = [
-    { id: "design",        label: "Vineyard Design" },
-    { id: "inputs",        label: "Financial Inputs" },
-    { id: "establishment", label: "Vineyard Establishment" },
-    { id: "proj",          label: `${projYears}-Year Projection` },
-    { id: "details",       label: "Details" },
+    { id: "design",        label: "Design", shortLabel: "Design" },
+    { id: "inputs",        label: "Financial Inputs", shortLabel: "Inputs" },
+    { id: "establishment", label: "Vineyard Setup", shortLabel: "Setup" },
+    { id: "proj",          label: `${projYears}-Year Plan`, shortLabel: `${projYears}Yr` },
+    { id: "details",       label: "Details", shortLabel: "Details" },
   ];
 
   return (
@@ -104,13 +104,14 @@ const TabNav = ({
             <button
               key={t.id}
               onClick={() => setActive(t.id)}
-              className={`px-4 sm:px-6 py-3 text-sm whitespace-nowrap border-b-2 ${
+              className={`px-3 sm:px-6 py-3 text-xs sm:text-sm whitespace-nowrap border-b-2 ${
                 active === t.id
                   ? "font-semibold border-blue-600 text-blue-800 bg-blue-50/60"
                   : "border-transparent text-blue-600/70 hover:text-blue-800 hover:bg-blue-50/40"
               }`}
             >
-              {t.label}
+              <span className="block sm:hidden">{t.shortLabel || t.label}</span>
+              <span className="hidden sm:block">{t.label}</span>
             </button>
           ))}
 
