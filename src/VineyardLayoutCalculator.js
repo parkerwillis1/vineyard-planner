@@ -283,7 +283,7 @@ export const MaterialCostsVisualizer = ({ materialCosts, layout }) => {
 
 // Main improved visualizer component using React Flow
 export const VineyardLayoutVisualizer = ({ layout, acres }) => {
-  // Generate nodes and edges for React Flow - moved before early return
+  // Always call hooks first, regardless of conditions
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     if (!layout) return { nodes: [], edges: [] };
     
@@ -291,18 +291,16 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
     const nodes = [];
     const edges = [];
     
-    const scaleX = 800 / dimensions.width; // Scale to fit in 800px width
-    const scaleY = 600 / dimensions.length; // Scale to fit in 600px height
-    const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+    const scaleX = 800 / dimensions.width;
+    const scaleY = 600 / dimensions.length;
+    const scale = Math.min(scaleX, scaleY, 1);
     
     const rowSpacingScaled = spacing.row * scale;
     const vineSpacingScaled = spacing.vine * scale;
     
-    // Generate vineyard layout
     for (let rowIndex = 0; rowIndex < vineLayout.numberOfRows; rowIndex++) {
       const rowY = rowIndex * rowSpacingScaled;
       
-      // End posts for each row
       nodes.push({
         id: `end-post-start-${rowIndex}`,
         type: 'vine',
@@ -327,7 +325,6 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
         draggable: false,
       });
       
-      // Trellis wires for each row
       edges.push({
         id: `trellis-${rowIndex}`,
         source: `end-post-start-${rowIndex}`,
@@ -337,7 +334,6 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
         data: { rowNumber: rowIndex + 1 },
       });
       
-      // Vines in each row
       for (let vineIndex = 0; vineIndex < vineLayout.vinesPerRow; vineIndex++) {
         const vineX = vineIndex * vineSpacingScaled;
         
@@ -359,15 +355,21 @@ export const VineyardLayoutVisualizer = ({ layout, acres }) => {
     return { nodes, edges };
   }, [layout]);
   
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
   
-  const onConnect = useCallback((params) => {
+  const onConnect = useCallback(() => {
     // Prevent user connections
   }, []);
   
-  // Early return after all hooks are called
-  if (!layout) return null;
+  // Now we can safely return early if needed
+  if (!layout) {
+    return (
+      <div className="bg-gray-100 p-6 rounded-lg border-2 border-gray-200">
+        <p className="text-gray-600 text-center">Configure your vineyard layout to see visualization</p>
+      </div>
+    );
+  }
   
   const { dimensions, vineLayout, spacing } = layout;
   
