@@ -57,7 +57,7 @@ export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = 
         numberOfRows = Math.floor(length / rowSpacing);
         vinesPerRow = Math.floor(width / vineSpacing);
     }
-    
+
   const totalVines = numberOfRows * vinesPerRow;
   
   // Calculate material requirements
@@ -308,8 +308,8 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
   const { dimensions, vineLayout, spacing } = layout;
   
   // Enhanced scaling for better visualization
-  const maxWidth = 800;
-  const maxHeight = 600;
+  const maxWidth = 1200;
+  const maxHeight = 1000;
   const scale = Math.min(maxWidth / dimensions.width, maxHeight / dimensions.length);
   const scaledWidth = dimensions.width * scale;
   const scaledHeight = dimensions.length * scale;
@@ -416,8 +416,8 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
       <div className="bg-white/70 p-4 rounded-xl shadow-inner backdrop-blur-sm border border-green-200/50">
         <svg 
           width="100%" 
-          height="450" 
-          viewBox={`0 0 ${Math.max(600, scaledWidth + padding * 2)} ${Math.max(400, scaledHeight + padding * 2)}`}
+          height="850" 
+          viewBox={`0 0 ${Math.max(1200, scaledWidth + padding * 2)} ${Math.max(800, scaledHeight + padding * 2)}`}
           className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-lg"
           style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}
         >
@@ -508,8 +508,8 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
                 {/* Start end post */}
                 <g transform={`translate(${postPositions.start.x}, ${postPositions.start.y})`}>
                     <rect
-                    width="6"
-                    height="16"
+                    width="8"
+                    height="20"
                     fill="url(#postGradient)"
                     rx="2"
                     filter="url(#dropShadow)"
@@ -618,28 +618,28 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
                         <circle
                         cx={vineX}
                         cy={vineY + 1}
-                        r="2.5"
+                        r="3.5"
                         fill="url(#vineGradient)"
                         filter="url(#vineGlow)"
                         />
                         <circle
                         cx={vineX - 1}
                         cy={vineY - 1}
-                        r="1.5"
+                        r="2"
                         fill="#22c55e"
                         opacity="0.8"
                         />
                         <circle
                         cx={vineX + 1}
                         cy={vineY - 1}
-                        r="1.5"
+                        r="2"
                         fill="#16a34a"
                         opacity="0.7"
                         />
                         <circle
                         cx={vineX - 0.5}
                         cy={vineY - 0.5}
-                        r="0.8"
+                        r="1.2"
                         fill="rgba(255,255,255,0.4)"
                         />
                     </g>
