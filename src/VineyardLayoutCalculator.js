@@ -367,6 +367,23 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
+
+      {/* Vine row patterns */}
+    <pattern id="vineRowPattern" patternUnits="userSpaceOnUse" 
+             width={vineSpacingInRow} height="20" x="0" y="0">
+      <circle cx={vineSpacingInRow/2} cy="10" r="3.5" fill="url(#vineGradient)" />
+      <circle cx={vineSpacingInRow/2 - 1} cy="8" r="2" fill="#22c55e" opacity="0.8" />
+      <circle cx={vineSpacingInRow/2 + 1} cy="8" r="2" fill="#16a34a" opacity="0.7" />
+      <circle cx={vineSpacingInRow/2 - 0.5} cy="8.5" r="1.2" fill="rgba(255,255,255,0.4)" />
+    </pattern>
+    
+    <pattern id="verticalVinePattern" patternUnits="userSpaceOnUse" 
+             width="20" height={vineSpacingInRow} x="0" y="0">
+      <circle cx="10" cy={vineSpacingInRow/2} r="3.5" fill="url(#vineGradient)" />
+      <circle cx="8" cy={vineSpacingInRow/2 - 1} r="2" fill="#22c55e" opacity="0.8" />
+      <circle cx="8" cy={vineSpacingInRow/2 + 1} r="2" fill="#16a34a" opacity="0.7" />
+      <circle cx="8.5" cy={vineSpacingInRow/2 - 0.5} r="1.2" fill="rgba(255,255,255,0.4)" />
+    </pattern>
     </defs>
   );
   
@@ -601,50 +618,26 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
                 }
                 })}
                 
-                {/* Vine plants */}
-                {Array.from({ length: vineLayout.vinesPerRow }, (_, j) => {
-                    let vineX, vineY;
-                    
-                    if (orientation === "vertical") {
-                    vineX = rowPosition.x;
-                    vineY = padding + (j * vineSpacingInRow) + vineSpacingInRow/2;
-                    } else {
-                    vineX = padding + (j * vineSpacingInRow) + vineSpacingInRow/2;
-                    vineY = rowPosition.y;
-                    }
-                    
-                    return (
-                    <g key={j}>
-                        <circle
-                        cx={vineX}
-                        cy={vineY + 1}
-                        r="3.5"
-                        fill="url(#vineGradient)"
-                        filter="url(#vineGlow)"
-                        />
-                        <circle
-                        cx={vineX - 1}
-                        cy={vineY - 1}
-                        r="2"
-                        fill="#22c55e"
-                        opacity="0.8"
-                        />
-                        <circle
-                        cx={vineX + 1}
-                        cy={vineY - 1}
-                        r="2"
-                        fill="#16a34a"
-                        opacity="0.7"
-                        />
-                        <circle
-                        cx={vineX - 0.5}
-                        cy={vineY - 0.5}
-                        r="1.2"
-                        fill="rgba(255,255,255,0.4)"
-                        />
-                    </g>
-                    );
-                })}
+                {/* Vine plants using patterns */}
+                {orientation === "horizontal" ? (
+                <rect
+                    x={padding}
+                    y={rowPosition.y - 10}
+                    width={scaledWidth}
+                    height="20"
+                    fill="url(#vineRowPattern)"
+                    opacity="0.9"
+                />
+                ) : (
+                <rect
+                    x={rowPosition.x - 10}
+                    y={padding}
+                    width="20"
+                    height={scaledHeight}
+                    fill="url(#verticalVinePattern)"
+                    opacity="0.9"
+                />
+                )}
                 
                 {/* Row number and vine count */}
                 {orientation === "horizontal" ? (
