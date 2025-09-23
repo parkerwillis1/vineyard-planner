@@ -49,14 +49,15 @@ export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = 
     let numberOfRows, vinesPerRow;
 
     if (orientation === "vertical") {
-    // Rows run vertically (posts on long sides)
-    numberOfRows = Math.floor(length / rowSpacingFeet);
-    vinesPerRow = Math.floor(width / vineSpacingFeet);
+        // Rows run vertically (fewer rows, more vines per row)
+        numberOfRows = Math.floor(width / rowSpacing);
+        vinesPerRow = Math.floor(length / vineSpacing);
     } else {
-    // Rows run horizontally (posts on short sides) - current default
-    numberOfRows = Math.floor(width / rowSpacingFeet);
-    vinesPerRow = Math.floor(length / vineSpacingFeet);
+        // Rows run horizontally (more rows, fewer vines per row) - current default
+        numberOfRows = Math.floor(length / rowSpacing);
+        vinesPerRow = Math.floor(width / vineSpacing);
     }
+    
   const totalVines = numberOfRows * vinesPerRow;
   
   // Calculate material requirements
