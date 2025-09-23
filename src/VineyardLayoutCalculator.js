@@ -375,13 +375,11 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
     let vineRowSpacing, vineSpacingInRow;
 
     if (orientation === "vertical") {
-    // Rows run vertically (posts on long sides)
-    vineRowSpacing = Math.max(8, scaledWidth / vineLayout.numberOfRows);
-    vineSpacingInRow = Math.max(8, scaledHeight / vineLayout.vinesPerRow);
+        vineRowSpacing = Math.max(12, scaledWidth / vineLayout.numberOfRows);
+        vineSpacingInRow = Math.max(4, scaledHeight / vineLayout.vinesPerRow);
     } else {
-    // Rows run horizontally (posts on short sides) - current default
-    vineRowSpacing = Math.max(8, scaledHeight / vineLayout.numberOfRows);
-    vineSpacingInRow = Math.max(8, scaledWidth / vineLayout.vinesPerRow);
+        vineRowSpacing = Math.max(8, scaledHeight / vineLayout.numberOfRows);
+        vineSpacingInRow = Math.max(8, scaledWidth / vineLayout.vinesPerRow);
     }
     
   return (
@@ -543,20 +541,64 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
                     rx="1"
                     />
                 </g>
+
+                {/* Line posts every ~24 feet */}
+                {orientation === "horizontal" ? (
+                Array.from({ length: Math.floor(dimensions.width / 24) - 1 }, (_, postIndex) => (
+                    <g key={postIndex} transform={`translate(${padding + (postIndex + 1) * (scaledWidth / Math.floor(dimensions.width / 24))}, ${rowPosition.y - 6})`}>
+                    <rect
+                        width="3"
+                        height="12"
+                        fill="url(#postGradient)"
+                        rx="1"
+                        opacity="0.9"
+                    />
+                    </g>
+                ))
+                ) : (
+                Array.from({ length: Math.floor(dimensions.length / 24) - 1 }, (_, postIndex) => (
+                    <g key={postIndex} transform={`translate(${rowPosition.x - 1.5}, ${padding + (postIndex + 1) * (scaledHeight / Math.floor(dimensions.length / 24)) - 6})`}>
+                    <rect
+                        width="3"
+                        height="12"
+                        fill="url(#postGradient)"
+                        rx="1"
+                        opacity="0.9"
+                    />
+                    </g>
+                ))
+                )}
                 
                 {/* Trellis wires */}
-                {[0, 1, 2].map(wireIndex => (
+                {[0, 1, 2].map(wireIndex => {
+                if (orientation === "vertical") {
+                    return (
                     <line
-                    key={wireIndex}
-                    x1={wirePositions.x1}
-                    y1={wirePositions.y1 + (orientation === "horizontal" ? wireIndex * 2 - 2 : 0)}
-                    x2={wirePositions.x2}
-                    y2={wirePositions.y2 + (orientation === "horizontal" ? wireIndex * 2 - 2 : 0)}
-                    stroke="url(#wireGradient)"
-                    strokeWidth="1.5"
-                    opacity="0.8"
+                        key={wireIndex}
+                        x1={wirePositions.x1 + wireIndex * 2 - 2}
+                        y1={wirePositions.y1}
+                        x2={wirePositions.x2 + wireIndex * 2 - 2}
+                        y2={wirePositions.y2}
+                        stroke="url(#wireGradient)"
+                        strokeWidth="1.5"
+                        opacity="0.8"
                     />
-                ))}
+                    );
+                } else {
+                    return (
+                    <line
+                        key={wireIndex}
+                        x1={wirePositions.x1}
+                        y1={wirePositions.y1 + wireIndex * 2 - 2}
+                        x2={wirePositions.x2}
+                        y2={wirePositions.y2 + wireIndex * 2 - 2}
+                        stroke="url(#wireGradient)"
+                        strokeWidth="1.5"
+                        opacity="0.8"
+                    />
+                    );
+                }
+                })}
                 
                 {/* Vine plants */}
                 {Array.from({ length: vineLayout.vinesPerRow }, (_, j) => {
