@@ -1,4 +1,4 @@
-// VineyardLayoutCalculator.js - Complete file with enhanced visualization
+// VineyardLayoutCalculator.js - Fixed version
 import React, { useMemo, useState, useCallback } from 'react';
 import ReactFlow, {
   MiniMap,
@@ -42,32 +42,34 @@ export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = 
     length = width * aspectRatio;
   }
   
-  // Calculate vine layout
+  // Calculate vine layout based on orientation
   const rowSpacingFeet = rowSpacing;
   const vineSpacingFeet = vineSpacing;
   
-    let numberOfRows, vinesPerRow;
+  let numberOfRows, vinesPerRow;
 
-    if (orientation === "vertical") {
-        // Rows run vertically (fewer rows, more vines per row)
-        numberOfRows = Math.floor(width / rowSpacing);
-        vinesPerRow = Math.floor(length / vineSpacing);
-    } else {
-        // Rows run horizontally (more rows, fewer vines per row) - current default
-        numberOfRows = Math.floor(length / rowSpacing);
-        vinesPerRow = Math.floor(width / vineSpacing);
-    }
+  if (orientation === "vertical") {
+    // Rows run vertically (posts on top and bottom)
+    numberOfRows = Math.floor(width / rowSpacingFeet);
+    vinesPerRow = Math.floor(length / vineSpacingFeet);
+  } else {
+    // Rows run horizontally (posts on left and right)
+    numberOfRows = Math.floor(length / rowSpacingFeet);
+    vinesPerRow = Math.floor(width / vineSpacingFeet);
+  }
 
   const totalVines = numberOfRows * vinesPerRow;
   
-  // Calculate material requirements
-  const materials = calculateMaterials(numberOfRows, vinesPerRow, length, rowSpacingFeet, shape);
+  // Calculate material requirements based on orientation
+  const rowLength = orientation === "vertical" ? length : width;
+  const materials = calculateMaterials(numberOfRows, vinesPerRow, rowLength, rowSpacingFeet, shape);
   
   return {
     dimensions: { width, length, totalSqft },
     vineLayout: { numberOfRows, vinesPerRow, totalVines, vinesPerAcre: totalVines / acres },
     materials,
-    spacing: { vine: vineSpacingFeet, row: rowSpacingFeet }
+    spacing: { vine: vineSpacingFeet, row: rowSpacingFeet },
+    orientation
   };
 };
 
@@ -309,14 +311,23 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
   
   // Enhanced scaling for better visualization
   const maxWidth = 1200;
-  const maxHeight = 1000;
+  const maxHeight = 800;
   const scale = Math.min(maxWidth / dimensions.width, maxHeight / dimensions.length);
   const scaledWidth = dimensions.width * scale;
   const scaledHeight = dimensions.length * scale;
   
-  // Calculate vine positions for better distribution
-  const maxVinesPerRow = Math.min(Math.floor(scaledWidth / 8), vineLayout.vinesPerRow);
-  const maxRows = vineLayout.numberOfRows; // Show all rows, adjust spacing instead
+  // Calculate positioning based on orientation
+  const padding = 60;
+  let vineRowSpacing, vineSpacingInRow;
+
+  if (orientation === "vertical") {
+    vineRowSpacing = Math.max(20, scaledWidth / vineLayout.numberOfRows);
+    vineSpacingInRow = Math.max(8, scaledHeight / vineLayout.vinesPerRow);
+  } else {
+    vineRowSpacing = Math.max(20, scaledHeight / vineLayout.numberOfRows);
+    vineSpacingInRow = Math.max(8, scaledWidth / vineLayout.vinesPerRow);
+  }
+  
   // Gradient definitions for SVG
   const gradients = (
     <defs>
@@ -368,37 +379,24 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
         </feMerge>
       </filter>
 
-      {/* Vine row patterns */}
-    <pattern id="vineRowPattern" patternUnits="userSpaceOnUse" 
-             width={vineSpacingInRow} height="20" x="0" y="0">
-      <circle cx={vineSpacingInRow/2} cy="10" r="3.5" fill="url(#vineGradient)" />
-      <circle cx={vineSpacingInRow/2 - 1} cy="8" r="2" fill="#22c55e" opacity="0.8" />
-      <circle cx={vineSpacingInRow/2 + 1} cy="8" r="2" fill="#16a34a" opacity="0.7" />
-      <circle cx={vineSpacingInRow/2 - 0.5} cy="8.5" r="1.2" fill="rgba(255,255,255,0.4)" />
-    </pattern>
-    
-    <pattern id="verticalVinePattern" patternUnits="userSpaceOnUse" 
-             width="20" height={vineSpacingInRow} x="0" y="0">
-      <circle cx="10" cy={vineSpacingInRow/2} r="3.5" fill="url(#vineGradient)" />
-      <circle cx="8" cy={vineSpacingInRow/2 - 1} r="2" fill="#22c55e" opacity="0.8" />
-      <circle cx="8" cy={vineSpacingInRow/2 + 1} r="2" fill="#16a34a" opacity="0.7" />
-      <circle cx="8.5" cy={vineSpacingInRow/2 - 0.5} r="1.2" fill="rgba(255,255,255,0.4)" />
-    </pattern>
+      {/* Vine row patterns with correct spacing */}
+      <pattern id="vineRowPattern" patternUnits="userSpaceOnUse" 
+               width={vineSpacingInRow} height="20" x="0" y="0">
+        <circle cx={vineSpacingInRow/2} cy="10" r="3.5" fill="url(#vineGradient)" />
+        <circle cx={vineSpacingInRow/2 - 1} cy="8" r="2" fill="#22c55e" opacity="0.8" />
+        <circle cx={vineSpacingInRow/2 + 1} cy="8" r="2" fill="#16a34a" opacity="0.7" />
+        <circle cx={vineSpacingInRow/2 - 0.5} cy="8.5" r="1.2" fill="rgba(255,255,255,0.4)" />
+      </pattern>
+      
+      <pattern id="verticalVinePattern" patternUnits="userSpaceOnUse" 
+               width="20" height={vineSpacingInRow} x="0" y="0">
+        <circle cx="10" cy={vineSpacingInRow/2} r="3.5" fill="url(#vineGradient)" />
+        <circle cx="8" cy={vineSpacingInRow/2 - 1} r="2" fill="#22c55e" opacity="0.8" />
+        <circle cx="8" cy={vineSpacingInRow/2 + 1} r="2" fill="#16a34a" opacity="0.7" />
+        <circle cx="8.5" cy={vineSpacingInRow/2 - 0.5} r="1.2" fill="rgba(255,255,255,0.4)" />
+      </pattern>
     </defs>
   );
-  
-  // Calculate positioning
-  // Calculate positioning based on orientation
-    const padding = 40;
-    let vineRowSpacing, vineSpacingInRow;
-
-    if (orientation === "vertical") {
-        vineRowSpacing = Math.max(12, scaledWidth / vineLayout.numberOfRows);
-        vineSpacingInRow = Math.max(4, scaledHeight / vineLayout.vinesPerRow);
-    } else {
-        vineRowSpacing = Math.max(8, scaledHeight / vineLayout.numberOfRows);
-        vineSpacingInRow = Math.max(8, scaledWidth / vineLayout.vinesPerRow);
-    }
     
   return (
     <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 p-6 rounded-xl border-2 border-green-200 shadow-xl">
@@ -433,8 +431,8 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
       <div className="bg-white/70 p-4 rounded-xl shadow-inner backdrop-blur-sm border border-green-200/50">
         <svg 
           width="100%" 
-          height="850" 
-          viewBox={`0 0 ${Math.max(1200, scaledWidth + padding * 2)} ${Math.max(800, scaledHeight + padding * 2)}`}
+          height="900" 
+          viewBox={`0 0 ${Math.max(1200, scaledWidth + padding * 2)} ${Math.max(900, scaledHeight + padding * 2)}`}
           className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-lg"
           style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}
         >
@@ -447,13 +445,13 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
             fill="url(#groundGradient)"
           />
           
-          {/* Vineyard boundary with enhanced styling */}
+          {/* Vineyard boundary - properly sized */}
           <rect 
             x={padding} 
             y={padding} 
             width={scaledWidth} 
             height={scaledHeight}
-            fill="rgba(220, 252, 231, 0.8)" 
+            fill="rgba(220, 252, 231, 0.3)" 
             stroke="url(#boundaryGradient)" 
             strokeWidth="3"
             rx="8"
@@ -474,239 +472,216 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
           </text>
           
           {/* Vineyard rows with enhanced graphics */}
-            {Array.from({ length: vineLayout.numberOfRows }, (_, i) => {
-            let rowPosition, vinePositions, postPositions, wirePositions;
+          {Array.from({ length: vineLayout.numberOfRows }, (_, i) => {
+            let rowPosition, postPositions, wirePositions, rowLength;
             
             if (orientation === "vertical") {
-                // Rows run vertically (posts on top and bottom)
-                const xPos = padding + (i * vineRowSpacing) + vineRowSpacing/2;
-                
-                rowPosition = { x: xPos, y: null };
-                postPositions = {
-                start: { x: xPos - 3, y: padding - 15 },
-                end: { x: xPos - 3, y: padding + scaledHeight + 9 }
-                };
-                wirePositions = {
+              // Rows run vertically (posts on top and bottom)
+              const xPos = padding + (i * vineRowSpacing) + vineRowSpacing/2;
+              rowPosition = { x: xPos, y: null };
+              rowLength = scaledHeight;
+              
+              postPositions = {
+                start: { x: xPos - 4, y: padding - 25 },
+                end: { x: xPos - 4, y: padding + scaledHeight + 5 }
+              };
+              wirePositions = {
                 x1: xPos, y1: padding - 12,
                 x2: xPos, y2: padding + scaledHeight + 12
-                };
-                
+              };
             } else {
-                // Rows run horizontally (posts on left and right)
-                const yPos = padding + (i * vineRowSpacing) + vineRowSpacing/2;
-                
-                rowPosition = { x: null, y: yPos };
-                postPositions = {
-                start: { x: padding - 15, y: yPos - 8 },
-                end: { x: padding + scaledWidth + 9, y: yPos - 8 }
-                };
-                wirePositions = {
+              // Rows run horizontally (posts on left and right)
+              const yPos = padding + (i * vineRowSpacing) + vineRowSpacing/2;
+              rowPosition = { x: null, y: yPos };
+              rowLength = scaledWidth;
+              
+              postPositions = {
+                start: { x: padding - 25, y: yPos - 10 },
+                end: { x: padding + scaledWidth + 5, y: yPos - 10 }
+              };
+              wirePositions = {
                 x1: padding - 12, y1: yPos,
                 x2: padding + scaledWidth + 12, y2: yPos
-                };
+              };
             }
             
             return (
-                <g key={i}>
-                {/* Soil preparation line */}
-                {orientation === "horizontal" && (
-                    <line
-                    x1={padding - 5}
-                    y1={rowPosition.y}
-                    x2={padding + scaledWidth + 5}
-                    y2={rowPosition.y}
-                    stroke="#a3a3a3"
-                    strokeWidth="0.5"
-                    strokeDasharray="2,4"
-                    opacity="0.3"
-                    />
-                )}
-                
+              <g key={i}>
                 {/* Start end post */}
                 <g transform={`translate(${postPositions.start.x}, ${postPositions.start.y})`}>
-                    <rect
+                  <rect
                     width="8"
                     height="20"
                     fill="url(#postGradient)"
                     rx="2"
                     filter="url(#dropShadow)"
-                    />
-                    <rect
+                  />
+                  <rect
                     x="1"
                     y="1"
                     width="2"
-                    height="14"
+                    height="18"
                     fill="rgba(255,255,255,0.3)"
                     rx="1"
-                    />
+                  />
                 </g>
                 
                 {/* End post */}
                 <g transform={`translate(${postPositions.end.x}, ${postPositions.end.y})`}>
-                    <rect
-                    width="6"
-                    height="16"
+                  <rect
+                    width="8"
+                    height="20"
                     fill="url(#postGradient)"
                     rx="2"
                     filter="url(#dropShadow)"
-                    />
-                    <rect
+                  />
+                  <rect
                     x="1"
                     y="1"
                     width="2"
-                    height="14"
+                    height="18"
                     fill="rgba(255,255,255,0.3)"
                     rx="1"
-                    />
+                  />
                 </g>
 
-                {/* Line posts every ~24 feet */}
-                {orientation === "horizontal" ? (
-                Array.from({ length: Math.floor(dimensions.width / 24) - 1 }, (_, postIndex) => (
-                    <g key={postIndex} transform={`translate(${padding + (postIndex + 1) * (scaledWidth / Math.floor(dimensions.width / 24))}, ${rowPosition.y - 6})`}>
-                    <rect
-                        width="3"
-                        height="12"
-                        fill="url(#postGradient)"
-                        rx="1"
-                        opacity="0.9"
-                    />
-                    </g>
-                ))
-                ) : (
-                Array.from({ length: Math.floor(dimensions.length / 24) - 1 }, (_, postIndex) => (
-                    <g key={postIndex} transform={`translate(${rowPosition.x - 1.5}, ${padding + (postIndex + 1) * (scaledHeight / Math.floor(dimensions.length / 24)) - 6})`}>
-                    <rect
-                        width="3"
-                        height="12"
-                        fill="url(#postGradient)"
-                        rx="1"
-                        opacity="0.9"
-                    />
-                    </g>
-                ))
-                )}
+                {/* Line posts every ~24 feet - FIXED positioning */}
+                {Array.from({ length: Math.floor(dimensions.width / 24) - 1 }, (_, postIndex) => {
+                  const postPosition = (postIndex + 1) * (rowLength / Math.floor(dimensions.width / 24));
+                  
+                  if (orientation === "vertical") {
+                    return (
+                      <g key={postIndex} transform={`translate(${rowPosition.x - 2}, ${padding + postPosition - 6})`}>
+                        <rect
+                          width="4"
+                          height="12"
+                          fill="url(#postGradient)"
+                          rx="1"
+                          opacity="0.9"
+                        />
+                      </g>
+                    );
+                  } else {
+                    return (
+                      <g key={postIndex} transform={`translate(${padding + postPosition - 2}, ${rowPosition.y - 6})`}>
+                        <rect
+                          width="4"
+                          height="12"
+                          fill="url(#postGradient)"
+                          rx="1"
+                          opacity="0.9"
+                        />
+                      </g>
+                    );
+                  }
+                })}
                 
                 {/* Trellis wires */}
                 {[0, 1, 2].map(wireIndex => {
-                if (orientation === "vertical") {
+                  if (orientation === "vertical") {
                     return (
-                    <line
+                      <line
                         key={wireIndex}
                         x1={wirePositions.x1 + wireIndex * 2 - 2}
                         y1={wirePositions.y1}
                         x2={wirePositions.x2 + wireIndex * 2 - 2}
                         y2={wirePositions.y2}
                         stroke="url(#wireGradient)"
-                        strokeWidth="1.5"
+                        strokeWidth="2"
                         opacity="0.8"
-                    />
+                      />
                     );
-                } else {
+                  } else {
                     return (
-                    <line
+                      <line
                         key={wireIndex}
                         x1={wirePositions.x1}
                         y1={wirePositions.y1 + wireIndex * 2 - 2}
                         x2={wirePositions.x2}
                         y2={wirePositions.y2 + wireIndex * 2 - 2}
                         stroke="url(#wireGradient)"
-                        strokeWidth="1.5"
+                        strokeWidth="2"
                         opacity="0.8"
-                    />
+                      />
                     );
-                }
+                  }
                 })}
                 
-                {/* Vine plants using patterns */}
+                {/* Vine plants using patterns - PROPERLY CONSTRAINED */}
                 {orientation === "horizontal" ? (
-                <rect
+                  <rect
                     x={padding}
                     y={rowPosition.y - 10}
                     width={scaledWidth}
                     height="20"
                     fill="url(#vineRowPattern)"
                     opacity="0.9"
-                />
+                  />
                 ) : (
-                <rect
+                  <rect
                     x={rowPosition.x - 10}
                     y={padding}
                     width="20"
                     height={scaledHeight}
                     fill="url(#verticalVinePattern)"
                     opacity="0.9"
-                />
+                  />
                 )}
                 
                 {/* Row number and vine count */}
                 {orientation === "horizontal" ? (
-                    <>
+                  <>
                     <text
-                        x={padding + scaledWidth + 20}
-                        y={rowPosition.y + 3}
-                        fontSize="10"
-                        fill="#15803d"
-                        fontWeight="600"
-                        textAnchor="start"
+                      x={padding + scaledWidth + 10}
+                      y={rowPosition.y + 3}
+                      fontSize="11"
+                      fill="#15803d"
+                      fontWeight="600"
+                      textAnchor="start"
                     >
-                        {vineLayout.vinesPerRow} vines
+                      {vineLayout.vinesPerRow} vines
                     </text>
                     <text
-                        x={padding - 25}
-                        y={rowPosition.y + 3}
-                        fontSize="9"
-                        fill="#6b7280"
-                        fontWeight="500"
-                        textAnchor="middle"
+                      x={padding - 35}
+                      y={rowPosition.y + 3}
+                      fontSize="10"
+                      fill="#6b7280"
+                      fontWeight="500"
+                      textAnchor="middle"
                     >
-                        {i + 1}
+                      {i + 1}
                     </text>
-                    </>
+                  </>
                 ) : (
-                    <>
+                  <>
                     <text
-                        x={rowPosition.x + 3}
-                        y={padding - 20}
-                        fontSize="10"
-                        fill="#15803d"
-                        fontWeight="600"
-                        textAnchor="start"
+                      x={rowPosition.x + 3}
+                      y={padding - 30}
+                      fontSize="11"
+                      fill="#15803d"
+                      fontWeight="600"
+                      textAnchor="start"
                     >
-                        {vineLayout.vinesPerRow}
+                      {vineLayout.vinesPerRow}
                     </text>
                     <text
-                        x={rowPosition.x}
-                        y={padding + scaledHeight + 25}
-                        fontSize="9"
-                        fill="#6b7280"
-                        fontWeight="500"
-                        textAnchor="middle"
+                      x={rowPosition.x}
+                      y={padding + scaledHeight + 35}
+                      fontSize="10"
+                      fill="#6b7280"
+                      fontWeight="500"
+                      textAnchor="middle"
                     >
-                        {i + 1}
+                      {i + 1}
                     </text>
-                    </>
+                  </>
                 )}
-                </g>
+              </g>
             );
-            })}
-          
-          {/* Additional rows indicator */}
-          {vineLayout.numberOfRows > maxRows && (
-            <text
-              x={padding + scaledWidth / 2}
-              y={padding + scaledHeight + 25}
-              fontSize="12"
-              fill="#6b7280"
-              fontWeight="500"
-              textAnchor="middle"
-            >
-              ... and {vineLayout.numberOfRows - maxRows} more rows
-            </text>
-          )}
+          })}
           
           {/* Dimensions and scale */}
-          <g transform={`translate(${padding}, ${padding + scaledHeight + 30})`}>
+          <g transform={`translate(${padding}, ${padding + scaledHeight + 45})`}>
             <line x1="0" y1="0" x2={scaledWidth} y2="0" stroke="#374151" strokeWidth="1"/>
             <line x1="0" y1="-3" x2="0" y2="3" stroke="#374151" strokeWidth="1"/>
             <line x1={scaledWidth} y1="-3" x2={scaledWidth} y2="3" stroke="#374151" strokeWidth="1"/>
@@ -725,7 +700,7 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
       </div>
       
       {/* Enhanced legend */}
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
         <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
           <div className="w-4 h-4 bg-gradient-to-br from-green-400 to-green-600 rounded-full shadow-sm"></div>
           <span className="font-medium text-gray-700">Vine Plants</span>
@@ -741,10 +716,6 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
         <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
           <div className="w-4 h-4 border-2 border-green-500 rounded bg-green-100"></div>
           <span className="font-medium text-gray-700">Vineyard Boundary</span>
-        </div>
-        <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
-          <div className="text-lg">🧭</div>
-          <span className="font-medium text-gray-700">Interactive SVG</span>
         </div>
       </div>
       
@@ -787,9 +758,8 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) =
   const [customRowSpacing, setCustomRowSpacing] = useState(10);
   const [shape, setShape] = useState("rectangle");
   const [aspectRatio, setAspectRatio] = useState(2);
-  const [rowOrientation, setRowOrientation] = useState("horizontal"); // ADD THIS LINE
+  const [rowOrientation, setRowOrientation] = useState("horizontal");
 
-  
   const selectedSpacing = VINE_SPACING_OPTIONS.find(opt => opt.key === spacingOption);
   const isCustom = spacingOption === "custom";
   
@@ -798,12 +768,11 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) =
   
   const layout = useMemo(() => {
     if (acres > 0 && vineSpacing > 0 && rowSpacing > 0) {
-      return calculateVineyardLayout(acres, vineSpacing, rowSpacing, shape, aspectRatio);
+      return calculateVineyardLayout(acres, vineSpacing, rowSpacing, shape, aspectRatio, rowOrientation);
     }
     return null;
   }, [acres, vineSpacing, rowSpacing, shape, aspectRatio, rowOrientation]); 
 
-  
   const materialCosts = useMemo(() => {
     if (layout) {
       return calculateMaterialCosts(layout.materials);
@@ -909,18 +878,19 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) =
                 </select>
               </div>
             )}
+            
             <div>
-                <label className="block text-sm font-medium text-blue-800 mb-2">
-                    Row Orientation
-                </label>
-                <select
-                    value={rowOrientation}
-                    onChange={(e) => setRowOrientation(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                >
-                    <option value="horizontal">Horizontal (posts on short sides)</option>
-                    <option value="vertical">Vertical (posts on long sides)</option>
-                </select>
+              <label className="block text-sm font-medium text-blue-800 mb-2">
+                Row Orientation
+              </label>
+              <select
+                value={rowOrientation}
+                onChange={(e) => setRowOrientation(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              >
+                <option value="horizontal">Horizontal (posts on short sides)</option>
+                <option value="vertical">Vertical (posts on long sides)</option>
+              </select>
             </div>
           </div>
         </CardContent>
