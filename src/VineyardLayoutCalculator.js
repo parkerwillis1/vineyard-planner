@@ -317,7 +317,7 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
   const scaledHeight = dimensions.length * scale;
   
   // Calculate positioning based on orientation
-  const padding = 60;
+  const padding = 80;
   let vineRowSpacing, vineSpacingInRow;
 
   if (orientation === "vertical") {
@@ -432,7 +432,7 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
         <svg 
           width="100%" 
           height="900" 
-          viewBox={`0 0 ${Math.max(1200, scaledWidth + padding * 2)} ${Math.max(900, scaledHeight + padding * 2)}`}
+          viewBox={`0 0 ${Math.max(1200, scaledWidth + padding * 2)} ${Math.max(950, scaledHeight + padding * 2)}`}
           className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-lg"
           style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}
         >
@@ -445,31 +445,40 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
             fill="url(#groundGradient)"
           />
           
-          {/* Vineyard boundary - properly sized */}
+          {/* Vineyard boundary - PROPERLY ALIGNED */}
           <rect 
             x={padding} 
             y={padding} 
             width={scaledWidth} 
             height={scaledHeight}
-            fill="rgba(220, 252, 231, 0.3)" 
+            fill="none"
             stroke="url(#boundaryGradient)" 
-            strokeWidth="3"
+            strokeWidth="2"
             rx="8"
-            filter="url(#dropShadow)"
+            strokeDasharray="5,3"
           />
           
           {/* Property label */}
           <text 
             x={padding + scaledWidth / 2} 
-            y={padding - 15} 
+            y={padding - 35} 
             fontSize="16" 
             fill="#065f46" 
             fontWeight="700" 
             textAnchor="middle"
             fontFamily="serif"
-          >
+            >
             {acres} Acre Vineyard
           </text>
+          {/* Add background rectangle for title */}
+          <rect
+            x={padding + scaledWidth / 2 - 60}
+            y={padding - 45}
+            width="120"
+            height="20"
+            fill="rgba(255,255,255,0.9)"
+            rx="4"
+          />
           
           {/* Vineyard rows with enhanced graphics */}
           {Array.from({ length: vineLayout.numberOfRows }, (_, i) => {
@@ -609,24 +618,30 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
                 
                 {/* Vine plants using patterns - PROPERLY CONSTRAINED */}
                 {orientation === "horizontal" ? (
-                  <rect
-                    x={padding}
+                <rect
+                    x={padding + 1}  // Add 1px margin
                     y={rowPosition.y - 10}
-                    width={scaledWidth}
+                    width={scaledWidth - 2}  // Subtract 2px for margins
                     height="20"
                     fill="url(#vineRowPattern)"
                     opacity="0.9"
-                  />
+                    clipPath="url(#vineyardClip)"  // Add clipping
+                />
                 ) : (
-                  <rect
+                <rect
                     x={rowPosition.x - 10}
-                    y={padding}
+                    y={padding + 1}  // Add 1px margin
                     width="20"
-                    height={scaledHeight}
+                    height={scaledHeight - 2}  // Subtract 2px for margins
                     fill="url(#verticalVinePattern)"
                     opacity="0.9"
-                  />
+                    clipPath="url(#vineyardClip)"  // Add clipping
+                />
                 )}
+                {/* Add clipping path to contain patterns */}
+                <clipPath id="vineyardClip">
+                <rect x={padding} y={padding} width={scaledWidth} height={scaledHeight} rx="8"/>
+                </clipPath>
                 
                 {/* Row number and vine count */}
                 {orientation === "horizontal" ? (
