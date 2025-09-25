@@ -990,18 +990,20 @@ const LTV = (landValue + improvementsValue) > 0
 
 
   // StatsCard component for consistent stat displays
-  const StatsCard = ({ label, value, color = "blue" }) => (
-    <div
-      className={`p-5 bg-${color}-50 rounded-lg text-center shadow-sm border border-${color}-100`}
-    >
-      <p
-        className={`text-xs text-${color}-700 uppercase mb-1 font-medium`}
-      >
-        {label}
-      </p>
-      <p className={`text-2xl font-bold text-${color}-800`}>{value}</p>
-    </div>
-  );
+  const StatsCard = ({ label, value, color = "blue", description, icon }) => (
+  <div className={`p-6 bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-xl text-center shadow-lg border-2 border-${color}-200 transform hover:scale-105 transition-all duration-200`}>
+    {icon && (
+      <div className="mb-3 text-3xl">{icon}</div>
+    )}
+    <p className={`text-xs text-${color}-700 uppercase mb-2 font-bold tracking-wider`}>
+      {label}
+    </p>
+    <p className={`text-3xl font-black text-${color}-900 mb-2`}>{value}</p>
+    {description && (
+      <p className="text-xs text-gray-600 leading-tight">{description}</p>
+    )}
+  </div>
+);
 
   
 
@@ -2331,33 +2333,62 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="space-y-8 p-6">
             <SectionHeader title="Year 0 Establishment Costs" />
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-              <StatsCard label="Land"
-                value={`$${(stNum.landPrice * stNum.acres).toLocaleString()}`} />
-
-              <StatsCard label="Pre-Planting"
-                value={`$${prePlantTotal.toLocaleString()}`} />
-
-              <StatsCard label="Planting"
-                value={`$${plantingTotal.toLocaleString()}`} />
-
-              <StatsCard label="Setup"
+            {/* Enhanced Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
+              <StatsCard 
+                label="Land" 
+                value={`$${(stNum.landPrice * stNum.acres).toLocaleString()}`}
+                color="green"
+                icon="🏞️"
+                description="Property acquisition"
+              />
+              <StatsCard 
+                label="Pre-Planting" 
+                value={`$${prePlantTotal.toLocaleString()}`}
+                color="yellow"
+                icon="🚜"
+                description="Site preparation"
+              />
+              <StatsCard 
+                label="Planting" 
+                value={`$${plantingTotal.toLocaleString()}`}
+                color="emerald"
+                icon="🌱"
+                description="Vines & materials"
+              />
+              <StatsCard 
+                label="Setup" 
                 value={`$${estData
-                  .filter(d =>
-                    !['Land Purchase','License','One-time Permits','Pre-Planting','Planting'].includes(d.name)
-                  )
+                  .filter(d => !['Land Purchase','License','One-time Permits','Pre-Planting','Planting'].includes(d.name))
                   .reduce((s,d) => s + d.value, 0)
-                  .toLocaleString()}`} />
-
-              <StatsCard label="License"
-                value={`$${stNum.licenseCost.toLocaleString()}`} />
-
-              <StatsCard label="Permits"
-                value={`$${permitOneTime.toLocaleString()}`} />
-
-              <StatsCard label="Total Cost" color="purple"
-                value={`$${estData.reduce((s,d) => s + d.value, 0).toLocaleString()}`} />
+                  .toLocaleString()}`}
+                color="blue"
+                icon="🏗️"
+                description="Infrastructure"
+              />
+              <StatsCard 
+                label="License" 
+                value={`$${stNum.licenseCost.toLocaleString()}`}
+                color="purple"
+                icon="📋"
+                description="Permits & fees"
+              />
+              <StatsCard 
+                label="Permits" 
+                value={`$${permitOneTime.toLocaleString()}`}
+                color="indigo"
+                icon="📄"
+                description="Legal requirements"
+              />
+              <div className="sm:col-span-2 md:col-span-3 lg:col-span-4 xl:col-span-6">
+                <StatsCard 
+                  label="Total Investment" 
+                  value={`$${estData.reduce((s,d) => s + d.value, 0).toLocaleString()}`}
+                  color="red"
+                  icon="💎"
+                  description={`$${Math.round(estData.reduce((s,d) => s + d.value, 0) / stNum.acres).toLocaleString()} per acre`}
+                />
+              </div>
             </div>
 
             {/* Bar + Pie Charts */}
@@ -2367,11 +2398,25 @@ const LTV = (landValue + improvementsValue) > 0
                 <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={estData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tickFormatter={n => `$${n.toLocaleString()}`} />
-                    <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, 'Cost']} />
-                    <Bar dataKey="value" fill="#3b82f6" />
+                      <defs>
+                        <linearGradient id="establishmentGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9}/>
+                          <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.7}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#475569' }} stroke="#94a3b8" />
+                      <YAxis tickFormatter={n => `$${n.toLocaleString()}`} tick={{ fontSize: 12, fill: '#475569' }} stroke="#94a3b8" />
+                      <Tooltip 
+                        formatter={(val) => [`$${val.toLocaleString()}`, 'Cost']} 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '2px solid #e2e8f0', 
+                          borderRadius: '12px', 
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
+                        }}
+                      />
+                      <Bar dataKey="value" fill="url(#establishmentGradient)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ResponsiveContainer>
                 </div>
@@ -2540,26 +2585,66 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="space-y-8 p-6">
             <SectionHeader title={`${projYears}-Year Financial Projection`} />
 
-            {/* Top‐line summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatsCard
-                label="Break-Even Year"
-                value={`Year ${breakEven}`}
-                color="blue"
-            />
-            <StatsCard
-                label="Total Revenue"
-                value={`$${projection
-                .filter(p => p.year > 0)
-                .reduce((sum, p) => sum + p.revenue, 0)
-                .toLocaleString()}`}
-                color="green"
-            />
-            <StatsCard
-                label="Cumulative Profit"
-                value={`$${projection[projection.length - 1].cumulative.toLocaleString()}`}
-                color="purple"
-            />
+            {/* Enhanced Top-line summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold opacity-90">Break-Even Point</h3>
+                  <div className="text-3xl">⚖️</div>
+                </div>
+                <p className="text-5xl font-black mb-4">Year {breakEven}</p>
+                <p className="text-blue-100 text-sm leading-relaxed">
+                  When your vineyard starts generating positive cumulative cash flow
+                </p>
+                <div className="mt-4 p-3 bg-blue-400 bg-opacity-30 rounded-lg">
+                  <p className="text-xs font-medium">
+                    Investment Recovery: {projection.length > 0 && beIdx >= 0 
+                      ? `${((beIdx + 1) / projYears * 100).toFixed(0)}%` 
+                      : ">100%"} of projection period
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold opacity-90">Total Revenue</h3>
+                  <div className="text-3xl">💵</div>
+                </div>
+                <p className="text-5xl font-black mb-4">
+                  ${projection
+                    .filter(p => p.year > 0)
+                    .reduce((sum, p) => sum + p.revenue, 0)
+                    .toLocaleString()}
+                </p>
+                <p className="text-green-100 text-sm leading-relaxed">
+                  Cumulative revenue over {projYears} years of operation
+                </p>
+                <div className="mt-4 p-3 bg-green-400 bg-opacity-30 rounded-lg">
+                  <p className="text-xs font-medium">
+                    Avg Annual: ${Math.round(projection.filter(p => p.year > 0).reduce((sum, p) => sum + p.revenue, 0) / projYears).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold opacity-90">Final Profit</h3>
+                  <div className="text-3xl">🎯</div>
+                </div>
+                <p className="text-5xl font-black mb-4">
+                  ${projection[projection.length - 1].cumulative.toLocaleString()}
+                </p>
+                <p className="text-purple-100 text-sm leading-relaxed">
+                  Cumulative profit after {projYears} years including all costs
+                </p>
+                <div className="mt-4 p-3 bg-purple-400 bg-opacity-30 rounded-lg">
+                  <p className="text-xs font-medium">
+                    ROI: {projection.length > 0 
+                      ? `${Math.round((projection[projection.length - 1].cumulative / totalEstCost) * 100)}%` 
+                      : "0%"}
+                  </p>
+                </div>
+              </div>
             </div>
 
                   
@@ -2703,79 +2788,162 @@ const LTV = (landValue + improvementsValue) > 0
             
             {/* Executive Summary Card */}
             <SectionCard title="Executive Summary">
-            <div className="bg-blue-50 p-6 rounded-xl mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-blue-100">
-                    <p className="text-xs text-blue-700 uppercase mb-1 font-medium">Break-Even Year</p>
-                    <p className="text-3xl font-bold text-blue-800">Year {breakEven}</p>
-                    <p className="text-sm text-gray-600 mt-2">The point when cumulative profit becomes positive</p>
-                </div>
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-green-100">
-                    <p className="text-xs text-green-700 uppercase mb-1 font-medium">Total Investment</p>
-                    <p className="text-3xl font-bold text-green-800">${totalEstCost.toLocaleString()}</p>
-                    <p className="text-sm text-gray-600 mt-2">Initial capital required to establish vineyard</p>
-                </div>
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-purple-100">
-                    <p className="text-xs text-purple-700 uppercase mb-1 font-medium">10-Year ROI</p>
-                    <p className="text-3xl font-bold text-purple-800">
-                    {projection.length > 0 
+              <div className="bg-gradient-to-br from-blue-50 via-blue-25 to-white p-8 rounded-2xl mb-8 border-2 border-blue-100 shadow-xl">
+                {/* Three main KPI cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                  <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-300">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-blue-700 uppercase font-bold tracking-wider">Break-Even Year</p>
+                      <div className="text-2xl">⏱️</div>
+                    </div>
+                    <p className="text-4xl font-black text-blue-900 mb-3">Year {breakEven}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      When cumulative profit becomes positive
+                    </p>
+                    {projection.length > 0 && beIdx >= 0 && (
+                      <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                        <p className="text-xs text-blue-700">
+                          Cumulative profit: <span className="font-semibold">${projection[beIdx].cumulative.toLocaleString()}</span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-green-700 uppercase font-bold tracking-wider">Total Investment</p>
+                      <div className="text-2xl">💰</div>
+                    </div>
+                    <p className="text-4xl font-black text-green-900 mb-3">${totalEstCost.toLocaleString()}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Initial capital required to establish vineyard
+                    </p>
+                    <div className="mt-3 p-2 bg-green-50 rounded-lg">
+                      <p className="text-xs text-green-700">
+                        Per acre: <span className="font-semibold">${Math.round(totalEstCost / stNum.acres).toLocaleString()}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500 hover:shadow-xl transition-shadow duration-300">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-purple-700 uppercase font-bold tracking-wider">{projYears}-Year ROI</p>
+                      <div className="text-2xl">📈</div>
+                    </div>
+                    <p className="text-4xl font-black text-purple-900 mb-3">
+                      {projection.length > 0 
                         ? `${Math.round((projection[projection.length - 1].cumulative / totalEstCost) * 100)}%` 
                         : "0%"}
                     </p>
-                    <p className="text-sm text-gray-600 mt-2">Return on investment over full period</p>
-                </div>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Return on investment over full period
+                    </p>
+                    <div className="mt-3">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-purple-600 h-2 rounded-full transition-all duration-500"
+                          style={{ 
+                            width: `${Math.min(100, Math.max(0, (projection.length > 0 ? (projection[projection.length - 1].cumulative / totalEstCost) * 100 : 0)))}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-semibold text-blue-800 mb-4">Financial Snapshot</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
-                    <div>
-                    <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">Annual Revenue (at full production)</span>
-                        <span className="font-semibold text-green-700">
-                          {fullProdRevenue.toLocaleString()}
+                {/* Financial snapshot section */}
+                <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+                  <h3 className="text-xl font-bold text-blue-900 mb-6 flex items-center gap-3">
+                    <span className="text-2xl">📊</span>
+                    Financial Snapshot
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Left column - Revenue metrics */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border-l-4 border-green-400">
+                        <span className="font-semibold text-green-900">Annual Revenue (full production)</span>
+                        <span className="font-black text-xl text-green-800">
+                          ${fullProdRevenue.toLocaleString()}
                         </span>
-                    </div>
-                    <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">Annual Operating Costs</span>
-                        <span className="font-semibold text-red-600">${annualFixed.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">Annual Net Profit (at full production)</span>
-                        <span className="font-semibold text-blue-700">
-                          {fullProdNet.toLocaleString()}
+                      </div>
+                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border-l-4 border-red-400">
+                        <span className="font-semibold text-red-900">Annual Operating Costs</span>
+                        <span className="font-black text-xl text-red-800">${annualFixed.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border-l-4 border-blue-400">
+                        <span className="font-semibold text-blue-900">Annual Net Profit (full production)</span>
+                        <span className="font-black text-xl text-blue-800">
+                          ${fullProdNet.toLocaleString()}
                         </span>
+                      </div>
                     </div>
-                    </div>
-                    {/* RIGHT column – bottle OR ton view */}
+
+                    {/* Right column - Unit economics */}
+                    <div className="space-y-4">
                       {isWine ? (
-                        /* ---------- Wine mode ---------- */
-                        <div>
-                          <KV label="Cost per Bottle"  value={`$${(annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)).toFixed(2)}`} />
-                          <KV label="Price per Bottle" value={`$${stNum.bottlePrice.toFixed(2)}`} />
-                          <KV
-                            label="Gross Margin / Bottle"
-                            value={`$${(stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))).toFixed(2)}
-                                    (${Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%)`}
-                          />
-                        </div>
+                        <>
+                          <div className="p-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-lg border-l-4 border-amber-400">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-semibold text-amber-900">Cost per Bottle</span>
+                              <span className="font-black text-xl text-amber-800">
+                                ${(annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="w-full bg-amber-200 rounded-full h-2">
+                              <div 
+                                className="bg-amber-600 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${(annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) / stNum.bottlePrice * 100}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className="p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg border-l-4 border-emerald-400">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-semibold text-emerald-900">Price per Bottle</span>
+                              <span className="font-black text-xl text-emerald-800">${stNum.bottlePrice.toFixed(2)}</span>
+                            </div>
+                          </div>
+                          <div className="p-4 bg-gradient-to-r from-violet-50 to-violet-100 rounded-lg border-l-4 border-violet-400">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-semibold text-violet-900">Gross Margin per Bottle</span>
+                              <span className="font-black text-xl text-violet-800">
+                                ${(stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="text-sm text-violet-700 font-medium">
+                              {Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}% margin
+                            </div>
+                          </div>
+                        </>
                       ) : (
-                        /* ---------- Bulk‑grape mode ---------- */
-                        <div>
-                          <KV label="Cost per Ton"  value={`$${costPerTon.toFixed(0)}`} />
-                          <KV label="Price per Ton" value={`$${grapePrice.toLocaleString()}`} />
-                          <KV
-                            label="Gross Margin / Ton"
-                            value={`$${grossMarginTon.toLocaleString()} (${grapePrice ? ((grossMarginTon / grapePrice) * 100).toFixed(1) : 0}%)`}
-                          />
-                        </div>
+                        <>
+                          <div className="p-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-lg border-l-4 border-amber-400">
+                            <div className="flex justify-between items-center">
+                              <span className="font-semibold text-amber-900">Cost per Ton</span>
+                              <span className="font-black text-xl text-amber-800">${costPerTon.toFixed(0)}</span>
+                            </div>
+                          </div>
+                          <div className="p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg border-l-4 border-emerald-400">
+                            <div className="flex justify-between items-center">
+                              <span className="font-semibold text-emerald-900">Price per Ton</span>
+                              <span className="font-black text-xl text-emerald-800">${grapePrice.toLocaleString()}</span>
+                            </div>
+                          </div>
+                          <div className="p-4 bg-gradient-to-r from-violet-50 to-violet-100 rounded-lg border-l-4 border-violet-400">
+                            <div className="flex justify-between items-center">
+                              <span className="font-semibold text-violet-900">Gross Margin per Ton</span>
+                              <span className="font-black text-xl text-violet-800">
+                                ${grossMarginTon.toLocaleString()} ({grapePrice ? ((grossMarginTon / grapePrice) * 100).toFixed(1) : 0}%)
+                              </span>
+                            </div>
+                          </div>
+                        </>
                       )}
-                   {/* ← closes grid grid-cols‑2 */}
+                    </div>
+                  </div>
                 </div>
-                </div>
-            </div>
+              </div>
             </SectionCard>
-            
+
             {/* Enhanced Cost Breakdown */}
             <SectionCard title="Comprehensive Cost Analysis">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -2788,6 +2956,13 @@ const LTV = (landValue + improvementsValue) > 0
                         layout="vertical"
                         margin={{ top: 10, right: 30, left: 160, bottom: 20 }}
                     >
+                          <defs>
+                            <linearGradient id="costBarGradient" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.8}/>
+                              <stop offset="100%" stopColor="#3b82f6" stopOpacity={1}/>
+                            </linearGradient>
+                          </defs>
+                          {/* rest of your existing chart code */}
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                         type="number" 
