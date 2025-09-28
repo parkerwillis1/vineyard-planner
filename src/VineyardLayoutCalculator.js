@@ -46,17 +46,9 @@ export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = 
   const rowSpacingFeet = rowSpacing;
   const vineSpacingFeet = vineSpacing;
   
-  let numberOfRows, vinesPerRow;
-
-  if (orientation === "vertical") {
-  // Rows run vertically (fewer rows, more vines per row)
-  numberOfRows = Math.floor(width / rowSpacingFeet);
-  vinesPerRow = Math.floor(length / vineSpacingFeet);
-} else {
-  // Rows run horizontally (more rows, fewer vines per row)  
-  numberOfRows = Math.floor(length / rowSpacingFeet);
-  vinesPerRow = Math.floor(width / vineSpacingFeet);
-}
+    // Always use the same calculation regardless of orientation
+    const numberOfRows = Math.floor(width / rowSpacingFeet);
+    const vinesPerRow = Math.floor(length / vineSpacingFeet);
 
   const totalVines = numberOfRows * vinesPerRow;
   
