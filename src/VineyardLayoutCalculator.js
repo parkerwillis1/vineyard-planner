@@ -293,7 +293,7 @@ export const MaterialCostsVisualizer = ({ materialCosts, layout }) => {
   );
 };
 
-// ENHANCED VINEYARD LAYOUT VISUALIZER (fixed)
+// ENHANCED VINEYARD LAYOUT VISUALIZER (fit-first sizing + orientation fixes)
 export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizontal" }) => {
   if (!layout) {
     return (
@@ -309,92 +309,81 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
 
   const { dimensions, vineLayout, spacing } = layout;
 
-  // Enhanced scaling for better visualization
+  // Scene scale
   const maxWidth = 1200;
   const maxHeight = 800;
   const scale = Math.min(maxWidth / dimensions.width, maxHeight / dimensions.length);
   const scaledWidth = dimensions.width * scale;
   const scaledHeight = dimensions.length * scale;
 
-  // Calculate positioning based on orientation
   const padding = 80;
-  let vineRowSpacing, vineSpacingInRow;
+
+  // ---------- FIT-FIRST SPACING (no hard minimums) ----------
+  // We *fit* all rows/vines into the available box.
+  // Optional: cap with a MAX for readability, but never with a MIN that would overflow.
+  const MAX_ROW_PIXEL_SPACING = 40;      // visual cap so rows aren't too far apart
+  const MAX_VINE_PIXEL_SPACING = 26;     // visual cap so vines don't look sparse
+
+  let vineRowSpacing;      // distance between row centers (pixels)
+  let vineSpacingInRow;    // distance between vines within a row (pixels)
 
   if (orientation === "vertical") {
-    vineRowSpacing = Math.max(20, scaledWidth / Math.max(1, vineLayout.numberOfRows));
-    vineSpacingInRow = Math.max(8, scaledHeight / Math.max(1, vineLayout.vinesPerRow));
+    // rows span across width; vines run down the height
+    vineRowSpacing   = Math.min(scaledWidth  / Math.max(1, vineLayout.numberOfRows), MAX_ROW_PIXEL_SPACING);   // ✅ fit-first
+    vineSpacingInRow = Math.min(scaledHeight / Math.max(1, vineLayout.vinesPerRow), MAX_VINE_PIXEL_SPACING);   // ✅ fit-first
   } else {
-    vineRowSpacing = Math.max(20, scaledHeight / Math.max(1, vineLayout.numberOfRows));
-    vineSpacingInRow = Math.max(8, scaledWidth / Math.max(1, vineLayout.vinesPerRow));
+    // rows span down the height; vines run across the width
+    vineRowSpacing   = Math.min(scaledHeight / Math.max(1, vineLayout.numberOfRows), MAX_ROW_PIXEL_SPACING);   // ✅ fit-first
+    vineSpacingInRow = Math.min(scaledWidth  / Math.max(1, vineLayout.vinesPerRow), MAX_VINE_PIXEL_SPACING);   // ✅ fit-first
   }
 
-  // Gradients / defs (moved clipPath here so it's not recreated per row)
+  // ---------- DEFS ----------
   const defs = (
     <defs>
-      {/* Ground gradient */}
       <linearGradient id="groundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
         <stop offset="0%" stopColor="#f0fdf4" />
         <stop offset="50%" stopColor="#dcfce7" />
         <stop offset="100%" stopColor="#bbf7d0" />
       </linearGradient>
-
-      {/* Vineyard boundary gradient */}
       <linearGradient id="boundaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#16a34a" stopOpacity="0.8" />
         <stop offset="100%" stopColor="#15803d" stopOpacity="0.9" />
       </linearGradient>
-
-      {/* Post gradient */}
       <linearGradient id="postGradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#d2691e" />
         <stop offset="50%" stopColor="#8b4513" />
         <stop offset="100%" stopColor="#654321" />
       </linearGradient>
-
-      {/* Vine gradient */}
       <radialGradient id="vineGradient" cx="50%" cy="30%">
         <stop offset="0%" stopColor="#22c55e" />
         <stop offset="70%" stopColor="#16a34a" />
         <stop offset="100%" stopColor="#15803d" />
       </radialGradient>
-
-      {/* Wire gradient */}
       <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
         <stop offset="0%" stopColor="#8b4513" stopOpacity="0.9" />
         <stop offset="50%" stopColor="#a0522d" stopOpacity="1" />
         <stop offset="100%" stopColor="#8b4513" stopOpacity="0.9" />
       </linearGradient>
-
-      {/* Shadow filter */}
       <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
         <feDropShadow dx="1" dy="2" stdDeviation="1" floodColor="rgba(0,0,0,0.2)" />
       </filter>
 
-      {/* Glow effect for vines */}
-      <filter id="vineGlow" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="1" result="coloredBlur" />
-        <feMerge>
-          <feMergeNode in="coloredBlur" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-
-      {/* Vine row patterns with correct spacing */}
-      <pattern id="vineRowPattern" patternUnits="userSpaceOnUse" width={vineSpacingInRow} height="20" x="0" y="0">
-        <circle cx={vineSpacingInRow / 2} cy="10" r="3.5" fill="url(#vineGradient)" />
-        <circle cx={vineSpacingInRow / 2 - 1} cy="8" r="2" fill="#22c55e" opacity="0.8" />
-        <circle cx={vineSpacingInRow / 2 + 1} cy="8" r="2" fill="#16a34a" opacity="0.7" />
-        <circle cx={vineSpacingInRow / 2 - 0.5} cy="8.5" r="1.2" fill="rgba(255,255,255,0.4)" />
+      {/* Patterns sized by the *fit* spacing */}
+      <pattern id="vineRowPattern" patternUnits="userSpaceOnUse" width={vineSpacingInRow} height="20">
+        <circle cx={vineSpacingInRow/2} cy="10" r="3.5" fill="url(#vineGradient)" />
+        <circle cx={vineSpacingInRow/2 - 1} cy="8" r="2" fill="#22c55e" opacity="0.8" />
+        <circle cx={vineSpacingInRow/2 + 1} cy="8" r="2" fill="#16a34a" opacity="0.7" />
+        <circle cx={vineSpacingInRow/2 - 0.5} cy="8.5" r="1.2" fill="rgba(255,255,255,0.4)" />
       </pattern>
 
-      <pattern id="verticalVinePattern" patternUnits="userSpaceOnUse" width="20" height={vineSpacingInRow} x="0" y="0">
-        <circle cx="10" cy={vineSpacingInRow / 2} r="3.5" fill="url(#vineGradient)" />
-        <circle cx="8" cy={vineSpacingInRow / 2 - 1} r="2" fill="#22c55e" opacity="0.8" />
-        <circle cx="8" cy={vineSpacingInRow / 2 + 1} r="2" fill="#16a34a" opacity="0.7" />
-        <circle cx="8.5" cy={vineSpacingInRow / 2 - 0.5} r="1.2" fill="rgba(255,255,255,0.4)" />
+      <pattern id="verticalVinePattern" patternUnits="userSpaceOnUse" width="20" height={vineSpacingInRow}>
+        <circle cx="10" cy={vineSpacingInRow/2} r="3.5" fill="url(#vineGradient)" />
+        <circle cx="8" cy={vineSpacingInRow/2 - 1} r="2" fill="#22c55e" opacity="0.8" />
+        <circle cx="8" cy={vineSpacingInRow/2 + 1} r="2" fill="#16a34a" opacity="0.7" />
+        <circle cx="8.5" cy={vineSpacingInRow/2 - 0.5} r="1.2" fill="rgba(255,255,255,0.4)" />
       </pattern>
 
-      {/* Single clipPath referenced by all rows */}
+      {/* One clip path for all rows */}
       <clipPath id="vineyardClip">
         <rect x={padding} y={padding} width={scaledWidth} height={scaledHeight} rx="8" />
       </clipPath>
@@ -404,9 +393,7 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
   return (
     <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 p-6 rounded-xl border-2 border-green-200 shadow-xl">
       <div className="mb-6">
-        <h4 className="text-2xl font-bold text-green-800 mb-3 flex items-center gap-2">
-          🍇 Vineyard Layout Visualization
-        </h4>
+        <h4 className="text-2xl font-bold text-green-800 mb-3 flex items-center gap-2">🍇 Vineyard Layout Visualization</h4>
         <div className="flex flex-wrap gap-6 text-sm text-gray-700 bg-white/50 p-3 rounded-lg backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <span className="text-blue-600">📐</span>
@@ -414,7 +401,7 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
           </div>
           <div className="flex items-center gap-2">
             <span className="text-green-600">🍇</span>
-            <span className="font-medium">{vineLayout.totalVines.toLocaleString()} vines</span>
+            <span className="font-medium">{layout.vineLayout.totalVines.toLocaleString()} vines</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-purple-600">📏</span>
@@ -422,11 +409,11 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
           </div>
           <div className="flex items-center gap-2">
             <span className="text-amber-600">🚜</span>
-            <span className="font-medium">{vineLayout.numberOfRows} rows</span>
+            <span className="font-medium">{layout.vineLayout.numberOfRows} rows</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-emerald-600">📊</span>
-            <span className="font-medium">{Math.round(vineLayout.vinesPerAcre)} vines/acre</span>
+            <span className="font-medium">{Math.round(layout.vineLayout.vinesPerAcre)} vines/acre</span>
           </div>
         </div>
       </div>
@@ -437,216 +424,110 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
           height="900"
           viewBox={`0 0 ${Math.max(1200, scaledWidth + padding * 2)} ${Math.max(950, scaledHeight + padding * 2)}`}
           className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-lg"
-          style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.1))" }}
+          style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}
         >
           {defs}
 
-          {/* Background */}
+          {/* background */}
           <rect width="100%" height="100%" fill="url(#groundGradient)" />
 
-          {/* Title background then text (so text is on top) */}
-          <rect
-            x={padding + scaledWidth / 2 - 60}
-            y={padding - 45}
-            width="120"
-            height="20"
-            fill="rgba(255,255,255,0.9)"
-            rx="4"
-          />
-          <text
-            x={padding + scaledWidth / 2}
-            y={padding - 30}
-            fontSize="16"
-            fill="#065f46"
-            fontWeight="700"
-            textAnchor="middle"
-            fontFamily="serif"
-          >
+          {/* title bg then text */}
+          <rect x={padding + scaledWidth/2 - 60} y={padding - 45} width="120" height="20" fill="rgba(255,255,255,0.9)" rx="4" />
+          <text x={padding + scaledWidth/2} y={padding - 30} fontSize="16" fill="#065f46" fontWeight="700" textAnchor="middle" fontFamily="serif">
             {acres} Acre Vineyard
           </text>
 
-          {/* Vineyard boundary */}
-          <rect
-            x={padding}
-            y={padding}
-            width={scaledWidth}
-            height={scaledHeight}
-            fill="none"
-            stroke="url(#boundaryGradient)"
-            strokeWidth="2"
-            rx="8"
-            strokeDasharray="5,3"
-          />
+          {/* boundary */}
+          <rect x={padding} y={padding} width={scaledWidth} height={scaledHeight} fill="none" stroke="url(#boundaryGradient)" strokeWidth="2" rx="8" strokeDasharray="5,3" />
 
-          {/* Rows */}
-          {Array.from({ length: vineLayout.numberOfRows }, (_, i) => {
+          {/* rows */}
+          {Array.from({ length: layout.vineLayout.numberOfRows }, (_, i) => {
             let rowPosition, postPositions, wirePositions, rowLength;
 
             if (orientation === "vertical") {
-              // Rows run vertically (posts on top and bottom)
-              const xPos = padding + i * vineRowSpacing + vineRowSpacing / 2;
+              const xPos = padding + i * vineRowSpacing + vineRowSpacing / 2;               // ✅ fit within width
               rowPosition = { x: xPos, y: null };
               rowLength = scaledHeight;
 
               postPositions = {
                 start: { x: xPos - 4, y: padding - 25 },
-                end: { x: xPos - 4, y: padding + scaledHeight + 5 },
+                end:   { x: xPos - 4, y: padding + scaledHeight + 5 }
               };
-              wirePositions = {
-                x1: xPos,
-                y1: padding - 12,
-                x2: xPos,
-                y2: padding + scaledHeight + 12,
-              };
+              wirePositions = { x1: xPos, y1: padding - 12, x2: xPos, y2: padding + scaledHeight + 12 };
             } else {
-              // Rows run horizontally (posts on left and right)
-              const yPos = padding + i * vineRowSpacing + vineRowSpacing / 2;
+              const yPos = padding + i * vineRowSpacing + vineRowSpacing / 2;               // ✅ fit within height
               rowPosition = { x: null, y: yPos };
               rowLength = scaledWidth;
 
               postPositions = {
                 start: { x: padding - 25, y: yPos - 10 },
-                end: { x: padding + scaledWidth + 5, y: yPos - 10 },
+                end:   { x: padding + scaledWidth + 5, y: yPos - 10 }
               };
-              wirePositions = {
-                x1: padding - 12,
-                y1: yPos,
-                x2: padding + scaledWidth + 12,
-                y2: yPos,
-              };
+              wirePositions = { x1: padding - 12, y1: yPos, x2: padding + scaledWidth + 12, y2: yPos };
             }
 
-            // ✅ Use rowLength for line-post spacing in BOTH orientations
-            const linePostsCount = Math.max(0, Math.floor(rowLength / 24) - 1);
-            const segment = rowLength / Math.max(1, Math.floor(rowLength / 24));
+            // posts every ~24' along row length (uses rowLength for both orientations)
+            const sections = Math.max(1, Math.floor(rowLength / 24));
+            const linePostsCount = Math.max(0, sections - 1);
+            const segment = rowLength / sections;
 
             return (
               <g key={i}>
-                {/* Start end post */}
+                {/* end posts */}
                 <g transform={`translate(${postPositions.start.x}, ${postPositions.start.y})`}>
                   <rect width="8" height="20" fill="url(#postGradient)" rx="2" filter="url(#dropShadow)" />
                   <rect x="1" y="1" width="2" height="18" fill="rgba(255,255,255,0.3)" rx="1" />
                 </g>
-
-                {/* End post */}
                 <g transform={`translate(${postPositions.end.x}, ${postPositions.end.y})`}>
                   <rect width="8" height="20" fill="url(#postGradient)" rx="2" filter="url(#dropShadow)" />
                   <rect x="1" y="1" width="2" height="18" fill="rgba(255,255,255,0.3)" rx="1" />
                 </g>
 
-                {/* Line posts every ~24 feet — uses rowLength consistently */}
+                {/* line posts */}
                 {Array.from({ length: linePostsCount }, (_, postIndex) => {
-                  const postPosition = (postIndex + 1) * segment;
-                  if (orientation === "vertical") {
-                    return (
-                      <g key={postIndex} transform={`translate(${rowPosition.x - 2}, ${padding + postPosition - 6})`}>
-                        <rect width="4" height="12" fill="url(#postGradient)" rx="1" opacity="0.9" />
-                      </g>
-                    );
-                  }
-                  return (
-                    <g key={postIndex} transform={`translate(${padding + postPosition - 2}, ${rowPosition.y - 6})`}>
+                  const pos = (postIndex + 1) * segment;
+                  return orientation === "vertical" ? (
+                    <g key={postIndex} transform={`translate(${rowPosition.x - 2}, ${padding + pos - 6})`}>
+                      <rect width="4" height="12" fill="url(#postGradient)" rx="1" opacity="0.9" />
+                    </g>
+                  ) : (
+                    <g key={postIndex} transform={`translate(${padding + pos - 2}, ${rowPosition.y - 6})`}>
                       <rect width="4" height="12" fill="url(#postGradient)" rx="1" opacity="0.9" />
                     </g>
                   );
                 })}
 
-                {/* Trellis wires */}
-                {[0, 1, 2].map((wireIndex) =>
-                  orientation === "vertical" ? (
-                    <line
-                      key={wireIndex}
-                      x1={wirePositions.x1 + wireIndex * 2 - 2}
-                      y1={wirePositions.y1}
-                      x2={wirePositions.x2 + wireIndex * 2 - 2}
-                      y2={wirePositions.y2}
-                      stroke="url(#wireGradient)"
-                      strokeWidth="2"
-                      opacity="0.8"
-                    />
-                  ) : (
-                    <line
-                      key={wireIndex}
-                      x1={wirePositions.x1}
-                      y1={wirePositions.y1 + wireIndex * 2 - 2}
-                      x2={wirePositions.x2}
-                      y2={wirePositions.y2 + wireIndex * 2 - 2}
-                      stroke="url(#wireGradient)"
-                      strokeWidth="2"
-                      opacity="0.8"
-                    />
-                  )
-                )}
-
-                {/* Vine plants using patterns (clipped to boundary) */}
-                {orientation === "horizontal" ? (
-                  <rect
-                    x={padding + 1}
-                    y={rowPosition.y - 10}
-                    width={scaledWidth - 2}
-                    height="20"
-                    fill="url(#vineRowPattern)"
-                    opacity="0.9"
-                    clipPath="url(#vineyardClip)"
-                  />
+                {/* trellis wires */}
+                {[0,1,2].map(w => orientation === "vertical" ? (
+                  <line key={w} x1={wirePositions.x1 + w*2 - 2} y1={wirePositions.y1} x2={wirePositions.x2 + w*2 - 2} y2={wirePositions.y2} stroke="url(#wireGradient)" strokeWidth="2" opacity="0.8" />
                 ) : (
-                  <rect
-                    x={rowPosition.x - 10}
-                    y={padding + 1}
-                    width="20"
-                    height={scaledHeight - 2}
-                    fill="url(#verticalVinePattern)"
-                    opacity="0.9"
-                    clipPath="url(#vineyardClip)"
-                  />
+                  <line key={w} x1={wirePositions.x1} y1={wirePositions.y1 + w*2 - 2} x2={wirePositions.x2} y2={wirePositions.y2 + w*2 - 2} stroke="url(#wireGradient)" strokeWidth="2" opacity="0.8" />
+                ))}
+
+                {/* vines (clipped) */}
+                {orientation === "horizontal" ? (
+                  <rect x={padding + 1} y={rowPosition.y - 10} width={scaledWidth - 2} height="20" fill="url(#vineRowPattern)" opacity="0.9" clipPath="url(#vineyardClip)" />
+                ) : (
+                  <rect x={rowPosition.x - 10} y={padding + 1} width="20" height={scaledHeight - 2} fill="url(#verticalVinePattern)" opacity="0.9" clipPath="url(#vineyardClip)" />
                 )}
 
-                {/* Row number and vine count */}
+                {/* labels */}
                 {orientation === "horizontal" ? (
                   <>
-                    <text
-                      x={padding + scaledWidth + 10}
-                      y={rowPosition.y + 3}
-                      fontSize="11"
-                      fill="#15803d"
-                      fontWeight="600"
-                      textAnchor="start"
-                    >
-                      {vineLayout.vinesPerRow} vines
-                    </text>
-                    <text x={padding - 35} y={rowPosition.y + 3} fontSize="10" fill="#6b7280" fontWeight="500" textAnchor="middle">
-                      {i + 1}
-                    </text>
+                    <text x={padding + scaledWidth + 10} y={rowPosition.y + 3} fontSize="11" fill="#15803d" fontWeight="600"> {layout.vineLayout.vinesPerRow} vines </text>
+                    <text x={padding - 35} y={rowPosition.y + 3} fontSize="10" fill="#6b7280" fontWeight="500" textAnchor="middle">{i + 1}</text>
                   </>
                 ) : (
                   <>
-                    <text
-                      x={rowPosition.x + 3}
-                      y={padding - 30}
-                      fontSize="11"
-                      fill="#15803d"
-                      fontWeight="600"
-                      textAnchor="start"
-                    >
-                      {vineLayout.vinesPerRow}
-                    </text>
-                    <text
-                      x={rowPosition.x}
-                      y={padding + scaledHeight + 35}
-                      fontSize="10"
-                      fill="#6b7280"
-                      fontWeight="500"
-                      textAnchor="middle"
-                    >
-                      {i + 1}
-                    </text>
+                    <text x={rowPosition.x + 3} y={padding - 30} fontSize="11" fill="#15803d" fontWeight="600">{layout.vineLayout.vinesPerRow}</text>
+                    <text x={rowPosition.x} y={padding + scaledHeight + 35} fontSize="10" fill="#6b7280" fontWeight="500" textAnchor="middle">{i + 1}</text>
                   </>
                 )}
               </g>
             );
           })}
 
-          {/* Dimensions and scale */}
+          {/* bottom width scale */}
           <g transform={`translate(${padding}, ${padding + scaledHeight + 45})`}>
             <line x1="0" y1="0" x2={scaledWidth} y2="0" stroke="#374151" strokeWidth="1" />
             <line x1="0" y1="-3" x2="0" y2="3" stroke="#374151" strokeWidth="1" />
