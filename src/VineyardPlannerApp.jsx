@@ -1008,7 +1008,7 @@ const LTV = (landValue + improvementsValue) > 0
   
 
   const MainUI = (
-    <div className="p-8 max-w-7xl mx-auto space-y-12">
+    <div className="p-8 w-full space-y-12">
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
