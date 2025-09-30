@@ -2864,7 +2864,7 @@ const LTV = (landValue + improvementsValue) > 0
                       <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border-l-4 border-green-400">
                         <span className="font-semibold text-green-900">Annual Revenue (full production)</span>
                         <span className="font-black text-xl text-green-800">
-                          ${fullProdRevenue.toLocaleString()}
+                         ${fullProdRevenue.toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between items-center p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border-l-4 border-red-400">
@@ -3781,119 +3781,72 @@ const LTV = (landValue + improvementsValue) > 0
 
 return (
   <div className="min-h-screen bg-gray-50">
-    {/* ── floating header ── */}
+    {/* ── Top navbar ── */}
+    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b">
+      <div className="max-w-screen-2xl mx-auto px-6 py-4 flex items-center gap-4">
+        {/* Left: logo / brand */}
+        <Link to="/" className="flex items-center gap-2">
+          <img src="/VineSightLogo.png" alt="VineSight" className="h-8" />
+          <span className="font-bold text-blue-800">Vine Sight</span>
+        </Link>
 
-    <div className="flex min-h-[calc(100vh-56px)]">
-      {/* ── sidebar (unchanged) ── */}
-      <aside
-        /* 240 px wide, 1.5 rem gap from the window edge, inner padding */
-        className="w-60 mx-6 my-6 px-4 py-6 bg-white rounded-xl shadow-md
-                    flex flex-col shrink-0"
-      >
-        <nav className="space-y-1">
-          <h2 className="font-semibold text-gray-500 text-xs uppercase tracking-wider mb-3 px-4">
-            Navigation
-          </h2>
-          <Link
-            to="/"
-            className="block py-2 px-4 rounded-lg text-blue-800 hover:bg-blue-50"
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/docs"
-            className="block py-2 px-4 rounded-lg text-blue-800 hover:bg-blue-50"
-          >
-            Documentation
-          </Link>
-          <Link
-            to="/plans"
-            className="block py-2 px-4 rounded-lg text-blue-800 hover:bg-blue-50"
-          >
-            My Plans
-          </Link>
+        {/* Center: primary nav */}
+        <nav className="hidden md:flex items-center gap-6 mx-auto">
+          <Link to="/" className="text-blue-800 hover:text-blue-600">Dashboard</Link>
+          <Link to="/docs" className="text-blue-800 hover:text-blue-600">Documentation</Link>
+          <Link to="/plans" className="text-blue-800 hover:text-blue-600">My Plans</Link>
         </nav>
 
-        {/* separator */}
-        <div className="mt-6 mb-3 h-px bg-gray-200" />
-
-        {/* show current user email if signed in */}
-        {user && (
-          <div className="px-2 mb-3 text-xs text-gray-600 break-all">
-            <span className="uppercase tracking-wide text-gray-400 block mb-1">Signed in</span>
-            <span className="font-medium text-gray-800">{user.email}</span>
-          </div>
-        )}
-
-        {/* sign in / sign out logic */}
-        {user ? (
-          <button
-            onClick={() => supabase.auth.signOut()}
-            className="w-full text-left px-4 py-2 text-sm rounded-lg text-red-600 hover:bg-red-50 font-medium transition"
-          >
-            Sign Out
-          </button>
-        ) : (
-          <Link
-            to="/signin"
-            className="block w-full px-4 py-2 text-sm rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 font-medium transition"
-          >
-            Sign In
-          </Link>
-        )}
-        {/* Save planner button (only when signed in) */}
-        {user && (
-          <div className="mt-4">
+        {/* Right: auth + save actions */}
+        <div className="ml-auto flex items-center gap-3">
+          {user && <span className="hidden sm:block text-sm text-gray-600">{user.email}</span>}
+          {user ? (
+            <button onClick={() => supabase.auth.signOut()} className="text-red-600 hover:underline">
+              Sign Out
+            </button>
+          ) : (
+            <Link to="/signin" className="text-blue-700 hover:underline">Sign In</Link>
+          )}
+          {user && (
             <button
               onClick={handleManualSave}
               disabled={saving || !dirty}
-              className={`w-full px-4 py-2 text-sm rounded-lg font-medium transition
-                ${saving
-                  ? 'bg-blue-300 text-white cursor-wait'
+              className={
+                saving
+                  ? "px-4 py-2 rounded-lg bg-blue-300 text-white cursor-wait"
                   : dirty
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-500 cursor-default'
-                }`}
+                  ? "px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                  : "px-4 py-2 rounded-lg bg-gray-200 text-gray-500 cursor-default"
+              }
             >
-              {saving ? 'Saving…' : dirty ? 'Save Changes' : 'Saved'}
+              {saving ? "Saving…" : dirty ? "Save Changes" : "Saved"}
             </button>
+          )}
+        </div>
+      </div>
+    </header>
 
-            <div className="mt-2 text-[11px] leading-tight text-gray-500 px-1">
-              {lastSaved
-                ? <>Last saved: {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
-                : 'Not saved yet'}
-            </div>
-          </div>
-        )}
+    {/* ── Main content ── */}
+    <main className="w-full overflow-x-hidden">
+      {/* full-width banner/nav can live outside the max width if you prefer */}
+      <ProjectBanner years={projYears} setYears={setProjYears} />
+      <TabNav
+        active={activeTab}
+        setActive={setActiveTab}
+        projYears={projYears}
+        setYears={setProjYears}
+        totalEstCost={totalEstCost}
+        onSave={handleManualSave}
+        isSaving={saving}
+        dirty={dirty}
+        lastSaved={lastSaved}
+      />
 
-      </aside>
-
-      {/* ── main workspace ── */}
-      <main className="flex-grow">
-        {/* translucent project banner */}
-        <ProjectBanner
-          years={projYears}
-          setYears={setProjYears}
-        />
-
-        {/* tab strip */}
-        <TabNav
-          active={activeTab}
-          setActive={setActiveTab}
-          projYears={projYears}
-          setYears={setProjYears}
-          totalEstCost={totalEstCost}
-          onSave={handleManualSave}
-          isSaving={saving}
-          dirty={dirty}
-          lastSaved={lastSaved}
-        />
-
-
-        {/*  everything else (MainUI / docs) stays the same */}
-        {MainUI}   {/* renders MainUI for "/" and DocumentationPage for "/docs" */}
-      </main>
-    </div>
+      {/* centered content container */}
+      <div className="p-8 max-w-screen-2xl mx-auto space-y-12">
+        {MainUI}
+      </div>
+    </main>
   </div>
 );
-} 
+}
