@@ -1008,7 +1008,8 @@ const LTV = (landValue + improvementsValue) > 0
   
 
   const MainUI = (
-    <div className="p-8 w-full space-y-12">
+    <div className="w-full overflow-x-hidden">
+      <div className="p-8 max-w-screen-2xl mx-auto space-y-12"> 
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
@@ -2859,7 +2860,7 @@ const LTV = (landValue + improvementsValue) > 0
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Left column - Revenue metrics */}
-                    <div className="space-y-4">
+                    <div className="min-w-0">
                       <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border-l-4 border-green-400">
                         <span className="font-semibold text-green-900">Annual Revenue (full production)</span>
                         <span className="font-black text-xl text-green-800">
@@ -3774,7 +3775,8 @@ const LTV = (landValue + improvementsValue) > 0
             )}
       </div>
     )}
-  </div>             
+    </div>
+  </div>
 );
 
 return (
