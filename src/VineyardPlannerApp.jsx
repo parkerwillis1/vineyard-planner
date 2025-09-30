@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 import { savePlanner, loadPlanner} from './lib/saveLoadPlanner';
+import { useLocation } from "react-router-dom";
 import { savePlan, loadPlan }    from './lib/plansApi';
 import { ChevronDown } from "lucide-react";
 import { 
@@ -279,6 +280,8 @@ export default function VineyardPlannerApp() {
   const [dirty, setDirty] = useState(false);
 
   const { id: planId } = useParams();   // comes from route "/plans/:id"
+
+  const location = useLocation();
 
   const getYieldForYear = (year) => {
     if (year <= 3) return 0;
@@ -3827,7 +3830,7 @@ return (
     </header>
 
     {/* ── Main content ── */}
-    <main className="w-full overflow-x-hidden">
+    <main className="w-full overflow-x-hidden"key={location.pathname}>
       {/* full-width banner/nav can live outside the max width if you prefer */}
       <ProjectBanner years={projYears} setYears={setProjYears} />
       <TabNav
