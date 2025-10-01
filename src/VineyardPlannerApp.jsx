@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 import { savePlanner, loadPlanner} from './lib/saveLoadPlanner';
-import { useLocation } from "react-router-dom";
+import { useLocation } from 'react-router-dom';
 import { savePlan, loadPlan }    from './lib/plansApi';
 import { ChevronDown } from "lucide-react";
 import { 
@@ -204,25 +204,6 @@ const pmt = (P, r, yrs) => {
   return m ? (P * m) / (1 - (1 + m) ** -n) : 0;
 };
 
-/*function useLocalStorage(key, defaultVal) {
-    const [storedValue, setStoredValue] = useState(() => {
-      try {
-        const stored = localStorage.getItem(key);
-        return stored != null ? JSON.parse(stored) : defaultVal;
-      } catch {
-        return defaultVal;
-      }
-    });
-
-    useEffect(() => {
-      try {
-        localStorage.setItem(key, JSON.stringify(storedValue));
-      } catch {}
-    }, [key, storedValue]);
-
-    return [storedValue, setStoredValue];
-  }*/
-
 // Section header component for consistency
 const SectionHeader = ({ title }) => (
   <h2 className="text-xl font-semibold text-blue-800 mb-6 border-b pb-2">
@@ -282,6 +263,15 @@ export default function VineyardPlannerApp() {
   const { id: planId } = useParams();   // comes from route "/plans/:id"
 
   const location = useLocation();
+
+  // Recharts/measurement-based components sometimes mount at width=0.
+  // Nudge a layout pass whenever route or tab changes.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    return () => cancelAnimationFrame(id);
+  }, [location.pathname, activeTab]);
 
   const getYieldForYear = (year) => {
     if (year <= 3) return 0;
@@ -2400,7 +2390,11 @@ const LTV = (landValue + improvementsValue) > 0
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Bar Chart */}
                 <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  key={`rc-${location.pathname}-${activeTab}`}
+                  width="100%"
+                  height="100%"
+                >
                     <BarChart data={estData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <defs>
                         <linearGradient id="establishmentGradient" x1="0" y1="0" x2="0" y2="1">
@@ -2427,7 +2421,11 @@ const LTV = (landValue + improvementsValue) > 0
 
                 {/* Upgraded Pie Chart */}
                 <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  key={`rc-${location.pathname}-${activeTab}`}
+                  width="100%"
+                  height="100%"
+                >
                     <PieChart>
                     {/* Shift pie left for legend on the right */}
                     <Pie
@@ -2655,7 +2653,11 @@ const LTV = (landValue + improvementsValue) > 0
             {/* Annual Financials Chart */}
             <SectionCard title="Annual Revenue vs Cost vs Net">
             <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  key={`rc-${location.pathname}-${activeTab}`}
+                  width="100%"
+                  height="100%"
+                >
                 <BarChart data={projection} margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
@@ -2954,7 +2956,11 @@ const LTV = (landValue + improvementsValue) > 0
                 <div>
                 <h3 className="text-lg font-medium text-blue-800 mb-4">Cost Distribution</h3>
                 <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer
+                      key={`rc-${location.pathname}-${activeTab}`}
+                      width="100%"
+                      height="100%"
+                    >
                     <BarChart
                         data={breakdownData}
                         layout="vertical"
@@ -3135,8 +3141,12 @@ const LTV = (landValue + improvementsValue) > 0
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                 <h3 className="text-lg font-semibold text-blue-800 mb-4">Vineyard Production Timeline</h3>
-                <div className="h-64 mb-4">
-                    <ResponsiveContainer width="100%" height="100%">
+                <div className="h-64 mb-4 min-w-0">
+                    <ResponsiveContainer
+                      key={`rc-${location.pathname}-${activeTab}`}
+                      width="100%"
+                      height="100%"
+                    >
                         {/* ── NEW BarChart that hides “bottles” in bulk‑grape mode ── */}
                       <BarChart
                         data={projection.map(p => ({
@@ -3226,8 +3236,12 @@ const LTV = (landValue + improvementsValue) > 0
                 {/* Revenue Analysis */}
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                 <h3 className="text-lg font-semibold text-blue-800 mb-4">Revenue & Profit Analysis</h3>
-                <div className="h-64 mb-4">
-                    <ResponsiveContainer width="100%" height="100%">
+                <div className="h-64 mb-4 min-w-0">
+                    <ResponsiveContainer
+                      key={`rc-${location.pathname}-${activeTab}`}
+                      width="100%"
+                      height="100%"
+                    >
                     <BarChart
                         data={projection.map(p => ({ 
                         year: p.year, 
@@ -3294,7 +3308,11 @@ const LTV = (landValue + improvementsValue) > 0
                 <div>
                 <h3 className="text-lg font-medium text-blue-800 mb-4">Setup Cost Breakdown</h3>
                 <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer
+                    key={`rc-${location.pathname}-${activeTab}`}
+                    width="100%"
+                    height="100%"
+                  >
                     <BarChart
                         data={[
                         ...Object.entries(stNum.setup)
@@ -3464,7 +3482,11 @@ const LTV = (landValue + improvementsValue) > 0
                 <h3 className="text-lg font-semibold text-blue-800 mb-4">Break-Even Analysis</h3>
                 <div className="h-80">
                     {/* This is the section with the error - Fixed version */}
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer
+                      key={`rc-${location.pathname}-${activeTab}`}
+                      width="100%"
+                      height="100%"
+                    >
                     <BarChart data={projection} margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
                         <defs>
                         <linearGradient id="colorPos" x1="0" y1="0" x2="0" y2="1">
@@ -3672,8 +3694,12 @@ const LTV = (landValue + improvementsValue) > 0
                   
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 mb-6">
                       <h4 className="text-md font-semibold text-blue-800 mb-3">Optimal Price Point Analysis</h4>
-                      <div className="h-64 mb-4">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <div className="h-64 mb-4 min-w-0">
+                      <ResponsiveContainer
+                        key={`rc-${location.pathname}-${activeTab}`}
+                        width="100%"
+                        height="100%"
+                      >
                           <BarChart
                           data={
                               Array.from({ length: 7 }, (_, i) => {
@@ -3790,7 +3816,6 @@ return (
         {/* Left: logo / brand */}
         <Link to="/" className="flex items-center gap-2">
           <img src="/VineSightLogo.png" alt="VineSight" className="h-8" />
-          <span className="font-bold text-blue-800">Vine Sight</span>
         </Link>
 
         {/* Center: primary nav */}
@@ -3830,7 +3855,8 @@ return (
     </header>
 
     {/* ── Main content ── */}
-    <main className="w-full overflow-x-hidden"key={location.pathname}>
+    <main className="flex-grow w-full overflow-x-hidden" key={location.pathname}>
+
       {/* full-width banner/nav can live outside the max width if you prefer */}
       <ProjectBanner years={projYears} setYears={setProjYears} />
       <TabNav
