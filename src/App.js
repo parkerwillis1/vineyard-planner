@@ -4,9 +4,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import PlannerShell from "@/features/planning/pages/PlannerShell";
 import DocumentationPage from '@/shared/components/DocumentationPage';
 
-import SignIn from '@/auth/SignIn';
-import SignUp from '@/auth/SignUp';
-import { useAuth } from './auth/AuthContext';
+import SignIn from './auth/SignIn';
+import SignUp from './auth/SignUp';
+import { useAuth } from '@/auth/AuthContext';
 
 
 function ProtectedRoute({ children }) {

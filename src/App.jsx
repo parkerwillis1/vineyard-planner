@@ -5,8 +5,8 @@ import { useAuth }        from "./auth/AuthContext";
 import PlannerShell from "@/features/planning/pages/PlannerShell";
 import DocumentationPage  from "@/shared/components/DocumentationPage";
 import PlansPage          from "@/shared/components/PlansPage";
-import SignIn             from "@/auth/SignIn";
-import SignUp             from "@/auth/SignUp";
+import SignIn             from "./auth/SignIn";
+import SignUp             from "./auth/SignUp";
 
 /* ──────────────────────────────────────────────── */
 /*  Gatekeeper – wraps all routes that need auth   */
