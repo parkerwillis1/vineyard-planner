@@ -1,6 +1,6 @@
 // VineyardLayoutCalculator.js - Fixed version
 import React, { useMemo, useState, useCallback } from 'react';
-import { MaterialCostsVisualizer } from "@/features/planning/components/MaterialCostsVisualizer";
+import { MaterialCostsVisualizer } from "./features/planning/components/MaterialCostsVisualizer";
 
 import ReactFlow, {
   MiniMap,
@@ -10,8 +10,8 @@ import ReactFlow, {
   useEdgesState,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Card, CardContent } from '@/shared/components/ui/card';
-import { Input } from '@/shared/components/ui/components/ui/input';
+import { Card, CardContent } from './shared/components/ui/card';
+import { Input } from './shared/components/ui/components/ui/input';
 
 // Standard spacing options used in commercial viticulture
 export const VINE_SPACING_OPTIONS = [

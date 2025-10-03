@@ -2,22 +2,22 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/shared/lib/supabaseClient';
-import { savePlanner, loadPlanner} from '@/shared/lib/saveLoadPlanner';
+import { supabase } from './shared/lib/supabaseClient';
+import { savePlanner, loadPlanner} from './shared/lib/saveLoadPlanner';
 import { useLocation } from 'react-router-dom';
-import { savePlan, loadPlan }    from '@/shared/lib/plansApi';
+import { savePlan, loadPlan }    from './shared/lib/plansApi';
 import { ChevronDown } from "lucide-react";
 import { 
   VineyardLayoutConfig, 
   calculateVineyardLayout, 
   calculateMaterialCosts,
   VINE_SPACING_OPTIONS 
-} from '@/features/planning/components/VineyardLayoutCalculator';
+} from './features/planning/components/VineyardLayoutCalculator';
 
 
-import { Card, CardContent } from "@/shared/components/ui/card";
-import { Input } from "@/shared/components/ui/input";
-import { Checkbox } from "@/shared/components/ui/checkbox";
+import { Card, CardContent } from "./shared/components/ui/card";
+import { Input } from "./shared/components/ui/input";
+import { Checkbox } from "./shared/components/ui/checkbox";
 // Remove the unused Table imports
 import {
   BarChart,
@@ -34,7 +34,7 @@ import {
   ReferenceLine
 } from "recharts";
 
-import { useAuth } from "@/auth/AuthContext";
+import { useAuth } from "./auth/AuthContext";
 
 
 /* ------------------------------------------------------------------ */

@@ -1,8 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
 import RootLayout from './layout/RootLayout';
-import HomePage from '@/pages/home/HomePage';
-import PlannerPage from '@/pages/planning/PlannerPage';
-import ComingSoon from '@/pages/_partials/ComingSoon';
+import HomePage from './pages/home/HomePage';
+import PlannerPage from './pages/planning/PlannerPage';
+import ComingSoon from './pages/_partials/ComingSoon';
 
 export default function AppRouter() {
   return (

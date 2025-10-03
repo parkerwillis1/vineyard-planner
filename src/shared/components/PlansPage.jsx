@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { listPlans, createPlan, deletePlan, renamePlan } from '../lib/plansApi';
+import { listPlans, createPlan, deletePlan, renamePlan } from './lib/plansApi';
 import { useNavigate } from 'react-router-dom';
 import { Input } from './ui/input';   
 import Button from './ui/button'; 
