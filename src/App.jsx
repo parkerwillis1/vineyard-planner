@@ -2,7 +2,7 @@ import React           from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 
 import { useAuth }        from "./auth/AuthContext";
-import PlannerShell from ",/features/planning/pages/PlannerShell";
+import PlannerShell from "./features/planning/pages/PlannerShell";
 import DocumentationPage  from "./shared/components/DocumentationPage";
 import PlansPage          from "./shared/components/PlansPage";
 import SignIn             from "./auth/SignIn";
