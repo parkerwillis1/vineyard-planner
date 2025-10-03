@@ -1,11 +1,11 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-import VineyardPlannerApp from './VineyardPlannerApp';
-import DocumentationPage from './components/DocumentationPage';
+import PlannerShell from "@/features/planning/pages/PlannerShell";
+import DocumentationPage from '@/shared/components/DocumentationPage';
 
-import SignIn from './auth/SignIn';
-import SignUp from './auth/SignUp';
+import SignIn from '@/auth/SignIn';
+import SignUp from '@/auth/SignUp';
 import { useAuth } from './auth/AuthContext';
 
 
@@ -31,7 +31,7 @@ export default function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <VineyardPlannerApp />
+            <PlannerShell />
           </ProtectedRoute>
         }
       />
