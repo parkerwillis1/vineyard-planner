@@ -1,20 +1,47 @@
-import { Routes, Route } from 'react-router-dom';
-import RootLayout from './layout/RootLayout';
-import HomePage from './pages/home/HomePage';
-import PlannerPage from './pages/planning/PlannerPage';
-import ComingSoon from './pages/_partials/ComingSoon';
+// src/app/router.jsx
+import React from "react";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+
+// Use @ if your alias is working. If not, see the relative-path version below.
+import { useAuth }        from "@/auth/AuthContext.jsx";
+import PlannerShell       from "@/features/planning/pages/PlannerShell.jsx";
+import DocumentationPage  from "@/shared/components/DocumentationPage.jsx";
+import PlansPage          from "@/shared/components/PlansPage.jsx";
+import SignIn             from "@/auth/SignIn.jsx";
+import SignUp             from "@/auth/SignUp.jsx";
+
+/* Guard for routes that require auth */
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth() || {};
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading…
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/signin" replace />;
+  return children ? children : <Outlet />;
+}
 
 export default function AppRouter() {
   return (
-    <RootLayout>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/planning" element={<PlannerPage />} />
-        <Route path="/vineyards" element={<ComingSoon title="Vineyards" blurb="Blocks, maps, activities, health." />} />
-        <Route path="/resources" element={<ComingSoon title="Resources" blurb="Guides, benchmarks, research." />} />
-        <Route path="/account" element={<ComingSoon title="Account" blurb="Teams, billing, settings." />} />
-        <Route path="*" element={<ComingSoon title="Not Found" blurb="That page doesn’t exist (yet)." />} />
-      </Routes>
-    </RootLayout>
+    <Routes>
+      {/* Auth-protected area */}
+      <Route element={<ProtectedRoute />}>
+        {/* Main editor/dashboard shell */}
+        <Route path="/" element={<PlannerShell />} />
+        <Route path="/app/:id/*" element={<PlannerShell />} />
+        <Route path="/plans" element={<PlansPage />} />
+        <Route path="/docs"  element={<DocumentationPage />} />
+      </Route>
+
+      {/* Public auth pages */}
+      <Route path="/signin" element={<SignIn />} />
+      <Route path="/signup" element={<SignUp />} />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
