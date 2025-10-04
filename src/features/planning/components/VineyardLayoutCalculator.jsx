@@ -11,7 +11,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Card, CardContent } from '@/shared/components/ui/card';
-import { Input } from '@/shared/components/ui/components/ui/input';
+import { Input } from '@/shared/components/ui/input';
 
 // Standard spacing options used in commercial viticulture
 export const VINE_SPACING_OPTIONS = [
