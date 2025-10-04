@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/shared/lib/supabaseClient';
-
+import { supabase } from '@/shared/lib/supabaseClient.js'
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
