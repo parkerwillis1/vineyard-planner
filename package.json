@@ -2,6 +2,9 @@
   "name": "vineyard-planner",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.52.0",
     "@testing-library/dom": "^10.4.0",
@@ -17,11 +20,11 @@
     "recharts": "^2.15.3",
     "web-vitals": "^2.1.4"
   },
+  
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest"
+    "preview": "vite preview"
   },
   "eslintConfig": {
     "extends": [
