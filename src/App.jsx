@@ -1,60 +1,47 @@
-import React           from "react";
+import React from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 
-import { useAuth }        from "./auth/AuthContext";
-import PlannerShell from "./features/planning/pages/PlannerShell";
-import DocumentationPage  from "./shared/components/DocumentationPage";
-import PlansPage          from "./shared/components/PlansPage";
-import SignIn             from "./auth/SignIn";
-import SignUp             from "./auth/SignUp";
+import { useAuth }        from "@/auth/AuthContext";
+import NavBar             from "@/shared/components/NavBar";
+import HomePage           from "@/pages/home/HomePage";
+import PlannerShell       from "@/features/planning/pages/PlannerShell";
+import VineyardsPage      from "@/pages/vineyards/VineyardsPage";
+import DocumentationPage  from "@/shared/components/DocumentationPage";
+import PlansPage          from "@/shared/components/PlansPage";
+import SignIn             from "@/auth/SignIn";
+import SignUp             from "@/auth/SignUp";
 
-/* ──────────────────────────────────────────────── */
-/*  Gatekeeper – wraps all routes that need auth   */
-/* ──────────────────────────────────────────────── */
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth() || {};
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading…
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen grid place-items-center">Loading…</div>;
   if (!user) return <Navigate to="/signin" replace />;
-
-  /* works for both styles: <ProtectedRoute>… and element={<ProtectedRoute/>} */
-  return children ? children : <Outlet />;
+  return children ?? <Outlet />;
 }
 
-/* ──────────────────────────────────────────────── */
-/*  Main router                                    */
-/* ──────────────────────────────────────────────── */
 export default function App() {
   return (
-    <Routes>
-      {/* SIGN‑IN‑REQUIRED AREA */}
-      <Route element={<ProtectedRoute />}>
+    <>
+      <NavBar />
+      <Routes>
+        {/* public */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/vineyards" element={<VineyardsPage />} />
+        <Route path="/docs" element={<DocumentationPage />} />
 
-        {/* Dashboard + editor – the “app shell” */}
-        <Route path="/*" element={<PlannerShell />} />
+        {/* protected */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/app/*" element={<PlannerShell />} />
+          <Route path="/app/:id/*" element={<PlannerShell />} />
+          <Route path="/plans" element={<PlansPage />} />
+        </Route>
 
-        {/* List of saved plans */}
-        <Route path="plans" element={<PlansPage />} />
+        {/* auth */}
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
 
-        {/* A specific plan by row id */}
-        <Route path="app/:id/*" element={<PlannerShell />} />
-
-        {/* Stand‑alone docs page  (kept outside the editor) */}
-        <Route path="docs" element={<DocumentationPage />} />
-      </Route>
-
-      {/* Public auth routes */}
-      <Route path="/signin" element={<SignIn />} />
-      <Route path="/signup" element={<SignUp />} />
-
-      {/* Fallback → dashboard */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
