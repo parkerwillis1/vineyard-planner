@@ -257,7 +257,7 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
 
   
 
-export default function PlannerShell({ embedded = false }) {
+export default function PlannerShell() {
   const [activeTab, setActiveTab]       = useState("design");
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
@@ -265,7 +265,7 @@ export default function PlannerShell({ embedded = false }) {
   const { id: planId } = useParams();   // comes from route "/plans/:id"
 
   const location = useLocation();
-  const stickyTopClass = embedded ? "top-14 md:top-16" : "top-0";
+  const stickyTopClass = "top-0";
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
   useEffect(() => {
@@ -3816,9 +3816,7 @@ return (
     <main className="flex-grow w-full overflow-x-hidden" key={location.pathname}>
 
       {/* Hide the big blue banner/logo when embedded */}
-      {!embedded && (
-        <ProjectBanner years={projYears} setYears={setProjYears} />
-      )}
+      <ProjectBanner years={projYears} setYears={setProjYears} />
  
        <TabNav
          active={activeTab}

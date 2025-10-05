@@ -26,7 +26,7 @@ export default function App() {
     <Routes>
       <Route element={<SiteLayout />}>
         <Route index element={<HomePage />} />
-        <Route path="planner"   element={<PlannerShell embedded />} />
+        <Route path="planner"   element={<PlannerShell />} />
         <Route path="vineyards" element={<VineyardsPage />} />
         <Route path="docs"      element={<DocumentationPage />} />
         <Route path="plans"     element={<PlansPage />} />
