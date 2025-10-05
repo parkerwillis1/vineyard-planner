@@ -31,23 +31,13 @@ function ProtectedRoute({ children }) {
 export default function App() {
   return (
     <Routes>
-      {/* Public site area with global header & footer */}
       <Route element={<SiteLayout />}>
         <Route index element={<HomePage />} />
+        <Route path="planner"   element={<PlannerShell embedded />} />
         <Route path="vineyards" element={<VineyardsPage />} />
-        <Route path="docs" element={<DocumentationPage />} />
-        <Route path="plans" element={<PlansPage />} />
+        <Route path="docs"      element={<DocumentationPage />} />
+        <Route path="plans"     element={<PlansPage />} />
       </Route>
-
-      {/* Planner app: its own shell/header to avoid double nav */}
-      <Route
-        path="/planner/*"
-        element={
-          <ProtectedRoute>
-            <PlannerShell />
-          </ProtectedRoute>
-        }
-      />
 
       {/* Auth */}
       <Route path="/signin" element={<SignIn />} />

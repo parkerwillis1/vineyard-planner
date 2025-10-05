@@ -255,7 +255,7 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
 
   
 
-export default function PlannerShell() {
+export default function PlannerShell({ embedded = false }) {
   const [activeTab, setActiveTab]       = useState("design");
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
@@ -3809,29 +3809,32 @@ const LTV = (landValue + improvementsValue) > 0
 );
 
 return (
-  <div className="min-h-screen bg-gray-50 pt-16"> {/* space under global header */}
-    {/* Project banner */}
-    <ProjectBanner years={projYears} setYears={setProjYears} />
-
-    {/* Sticky planner tabs (has the Save button on the right) */}
-    <TabNav
-      active={activeTab}
-      setActive={setActiveTab}
-      projYears={projYears}
-      setYears={setProjYears}
-      totalEstCost={totalEstCost}
-      onSave={handleManualSave}
-      isSaving={saving}
-      dirty={dirty}
-      lastSaved={lastSaved}
-    />
-
-    {/* Main planner content */}
+  <div className="min-h-screen bg-gray-50">
+    {/* When embedded, we rely on SiteLayout's header. No local header. */}
     <main className="flex-grow w-full overflow-x-hidden" key={location.pathname}>
-      <div className="p-8 max-w-screen-2xl mx-auto space-y-12">
-        {MainUI}
-      </div>
-    </main>
-  </div>
-);
+
+      {/* Hide the big blue banner/logo when embedded */}
+      {!embedded && (
+        <ProjectBanner years={projYears} setYears={setProjYears} />
+      )}
+ 
+       <TabNav
+         active={activeTab}
+         setActive={setActiveTab}
+         projYears={projYears}
+         setYears={setProjYears}
+         totalEstCost={totalEstCost}
+         onSave={handleManualSave}
+         isSaving={saving}
+         dirty={dirty}
+         lastSaved={lastSaved}
+       />
+ 
+       {/* centered content container */}
+       <div className="p-8 max-w-screen-2xl mx-auto space-y-12">
+         {MainUI}
+       </div>
+     </main>
+   </div>
+ );
 }
