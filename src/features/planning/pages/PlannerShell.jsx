@@ -255,7 +255,7 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
 
   
 
-export default function VineyardPlannerApp() {
+export default function PlannerShell() {
   const [activeTab, setActiveTab]       = useState("design");
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
@@ -3809,69 +3809,25 @@ const LTV = (landValue + improvementsValue) > 0
 );
 
 return (
-  <div className="min-h-screen bg-gray-50">
-    {/* ── Top navbar ── */}
-    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b">
-      <div className="max-w-screen-2xl mx-auto px-6 py-4 flex items-center gap-4">
-        {/* Left: logo / brand */}
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/VineSightLogo.png" alt="VineSight" className="h-8" />
-        </Link>
+  <div className="min-h-screen bg-gray-50 pt-16"> {/* space under global header */}
+    {/* Project banner */}
+    <ProjectBanner years={projYears} setYears={setProjYears} />
 
-        {/* Center: primary nav */}
-        <nav className="hidden md:flex items-center gap-6 mx-auto">
-          <Link to="/" className="text-blue-800 hover:text-blue-600">Dashboard</Link>
-          <Link to="/docs" className="text-blue-800 hover:text-blue-600">Documentation</Link>
-          <Link to="/plans" className="text-blue-800 hover:text-blue-600">My Plans</Link>
-        </nav>
+    {/* Sticky planner tabs (has the Save button on the right) */}
+    <TabNav
+      active={activeTab}
+      setActive={setActiveTab}
+      projYears={projYears}
+      setYears={setProjYears}
+      totalEstCost={totalEstCost}
+      onSave={handleManualSave}
+      isSaving={saving}
+      dirty={dirty}
+      lastSaved={lastSaved}
+    />
 
-        {/* Right: auth + save actions */}
-        <div className="ml-auto flex items-center gap-3">
-          {user && <span className="hidden sm:block text-sm text-gray-600">{user.email}</span>}
-          {user ? (
-            <button onClick={() => supabase.auth.signOut()} className="text-red-600 hover:underline">
-              Sign Out
-            </button>
-          ) : (
-            <Link to="/signin" className="text-blue-700 hover:underline">Sign In</Link>
-          )}
-          {user && (
-            <button
-              onClick={handleManualSave}
-              disabled={saving || !dirty}
-              className={
-                saving
-                  ? "px-4 py-2 rounded-lg bg-blue-300 text-white cursor-wait"
-                  : dirty
-                  ? "px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                  : "px-4 py-2 rounded-lg bg-gray-200 text-gray-500 cursor-default"
-              }
-            >
-              {saving ? "Saving…" : dirty ? "Save Changes" : "Saved"}
-            </button>
-          )}
-        </div>
-      </div>
-    </header>
-
-    {/* ── Main content ── */}
+    {/* Main planner content */}
     <main className="flex-grow w-full overflow-x-hidden" key={location.pathname}>
-
-      {/* full-width banner/nav can live outside the max width if you prefer */}
-      <ProjectBanner years={projYears} setYears={setProjYears} />
-      <TabNav
-        active={activeTab}
-        setActive={setActiveTab}
-        projYears={projYears}
-        setYears={setProjYears}
-        totalEstCost={totalEstCost}
-        onSave={handleManualSave}
-        isSaving={saving}
-        dirty={dirty}
-        lastSaved={lastSaved}
-      />
-
-      {/* centered content container */}
       <div className="p-8 max-w-screen-2xl mx-auto space-y-12">
         {MainUI}
       </div>
