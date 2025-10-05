@@ -8,7 +8,7 @@ import DocumentationPage from "./shared/components/DocumentationPage";
 import PlansPage from "./shared/components/PlansPage";
 // add your simple pages if you have them:
 import HomePage from "./pages/home/HomePage.jsx";         // stub/placeholder OK
-import VineyardsPage from "./pages/vineyards/Vineyards.jsx"; // stub/placeholder OK
+import VineyardsPage from "./pages/vineyards/VineyardsPage.jsx"; // stub/placeholder OK
 import SignIn from "./auth/SignIn";
 import SignUp from "./auth/SignUp";
 
