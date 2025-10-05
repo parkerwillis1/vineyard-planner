@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext";        // adjust if your path differs
-import { supabase } from "../shared/lib/supabaseClient";
+import { useAuth } from "@/auth/AuthContext";        // adjust if your path differs
+import { supabase } from "@/shared/lib/supabaseClient";
 
 export default function SiteLayout() {
   const { user } = useAuth() || {};
