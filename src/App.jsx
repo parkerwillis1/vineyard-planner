@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 
-import SiteLayout from "./app/SiteLayout.jsx";
+import SiteLayout from "./app/layout/SiteLayout.jsx";
 
 import HomePage        from "./pages/home/HomePage.jsx";
 import VineyardsPage   from "./pages/vineyards/VineyardsPage.jsx";
