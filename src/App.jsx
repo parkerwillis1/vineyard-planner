@@ -1,44 +1,59 @@
-// src/App.jsx
 import React from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "./auth/AuthContext";
 
-import PlannerShell from "./features/planning/pages/PlannerShell";
-import DocumentationPage from "./shared/components/DocumentationPage";
-import PlansPage from "./shared/components/PlansPage";
-// add your simple pages if you have them:
-import HomePage from "./pages/home/HomePage.jsx";         // stub/placeholder OK
-import VineyardsPage from "./pages/vineyards/VineyardsPage.jsx"; // stub/placeholder OK
-import SignIn from "./auth/SignIn";
-import SignUp from "./auth/SignUp";
+import SiteLayout from "./app/SiteLayout.jsx";
 
-function ProtectedRoute() {
+import HomePage        from "./pages/home/HomePage.jsx";
+import VineyardsPage   from "./pages/vineyards/VineyardsPage.jsx";
+import DocumentationPage from "./shared/components/DocumentationPage.jsx";
+import PlansPage       from "./shared/components/PlansPage.jsx";
+
+import PlannerShell    from "./features/planning/pages/PlannerShell.jsx";
+
+import SignIn          from "./auth/SignIn.jsx";
+import SignUp          from "./auth/SignUp.jsx";
+import { useAuth }     from "./auth/AuthContext.jsx";
+
+/* Auth gate that can wrap a route element */
+function ProtectedRoute({ children }) {
   const { user, loading } = useAuth() || {};
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading…
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/signin" replace />;
-  return <Outlet />;
+  return children ?? <Outlet />;
 }
 
 export default function App() {
   return (
     <Routes>
-      {/* everything below requires auth */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/vineyards" element={<VineyardsPage />} />
-        <Route path="/docs" element={<DocumentationPage />} />
-        <Route path="/plans" element={<PlansPage />} />
-
-        {/* 👇 scope the planner explicitly */}
-        <Route path="/planner/*" element={<PlannerShell />} />
-        <Route path="/planner/:id/*" element={<PlannerShell />} />
+      {/* Public site area with global header & footer */}
+      <Route element={<SiteLayout />}>
+        <Route index element={<HomePage />} />
+        <Route path="vineyards" element={<VineyardsPage />} />
+        <Route path="docs" element={<DocumentationPage />} />
+        <Route path="plans" element={<PlansPage />} />
       </Route>
 
-      {/* public auth */}
+      {/* Planner app: its own shell/header to avoid double nav */}
+      <Route
+        path="/planner/*"
+        element={
+          <ProtectedRoute>
+            <PlannerShell />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Auth */}
       <Route path="/signin" element={<SignIn />} />
       <Route path="/signup" element={<SignUp />} />
 
-      {/* fallback */}
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
