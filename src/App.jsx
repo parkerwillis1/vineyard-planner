@@ -7,7 +7,6 @@ import HomePage        from "./pages/home/HomePage.jsx";
 import VineyardsPage   from "./pages/vineyards/VineyardsPage.jsx";
 import DocumentationPage from "./shared/components/DocumentationPage.jsx";
 import PlansPage       from "./shared/components/PlansPage.jsx";
-
 import PlannerShell    from "./features/planning/pages/PlannerShell.jsx";
 
 import SignIn          from "./auth/SignIn.jsx";
@@ -33,7 +32,7 @@ export default function App() {
     <Routes>
       <Route element={<SiteLayout />}>
         <Route index element={<HomePage />} />
-        <Route path="planner"   element={<PlannerShell embedded />} />
+        <Route path="planner/*" element={<PlannerShell embedded />} />
         <Route path="vineyards" element={<VineyardsPage />} />
         <Route path="docs"      element={<DocumentationPage />} />
         <Route path="plans"     element={<PlansPage />} />

@@ -75,6 +75,7 @@ const ProjectBanner = ({ years, setYears }) => (
 
 const TAB_H = 56; // bar height in px (keep in sync with Tailwind padding)
 
+
 const TabNav = ({
   active,
   setActive,
@@ -84,8 +85,9 @@ const TabNav = ({
   onSave,
   isSaving,
   dirty,
-  lastSaved
-}) => {  const tabs = [
+  lastSaved,
+  stickyTopClass = "top-0",
+ }) => {  const tabs = [
     { id: "design",        label: "Design", shortLabel: "Design" },
     { id: "inputs",        label: "Financial Inputs", shortLabel: "Inputs" },
     { id: "establishment", label: "Vineyard Setup", shortLabel: "Setup" },
@@ -97,7 +99,7 @@ const TabNav = ({
     <>
       <div style={{ height: TAB_H }} aria-hidden />
       <div
-        className="sticky top-0 z-30 bg-white/90 backdrop-blur-md shadow-sm"
+        className={`sticky ${stickyTopClass} z-20 bg-white/90 backdrop-blur-md shadow-sm`}
         style={{ height: TAB_H }}
       >
         <nav className="flex items-center gap-1 h-full px-2 sm:px-4 overflow-x-auto">
@@ -263,7 +265,7 @@ export default function PlannerShell({ embedded = false }) {
   const { id: planId } = useParams();   // comes from route "/plans/:id"
 
   const location = useLocation();
-
+  const stickyTopClass = embedded ? "top-14 md:top-16" : "top-0";
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
   useEffect(() => {
@@ -3828,6 +3830,7 @@ return (
          isSaving={saving}
          dirty={dirty}
          lastSaved={lastSaved}
+         stickyTopClass={stickyTopClass}
        />
  
        {/* centered content container */}
