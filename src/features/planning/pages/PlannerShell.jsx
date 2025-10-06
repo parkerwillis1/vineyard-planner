@@ -258,6 +258,7 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
   
 
 export default function PlannerShell({ embedded = false }) {
+  console.log('🟢 PlannerShell RENDER', { embedded });
   const [activeTab, setActiveTab]       = useState("design");
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
@@ -265,20 +266,27 @@ export default function PlannerShell({ embedded = false }) {
   const { id: planId } = useParams();   // comes from route "/plans/:id"
 
   const location = useLocation();
+  console.log('📍 Location in PlannerShell:', location.pathname);
   const stickyTopClass = embedded ? "top-14 md:top-16" : "top-0"; // ~56–64px header
   const topPadClass    = embedded ? "pt-14 md:pt-16" : "";
 
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
   useEffect(() => {
+    console.log('🟡 PlannerShell MOUNTED');
     // Only dispatch resize events when we're on tabs with charts
     if (['establishment', 'proj', 'details'].includes(activeTab)) {
       const id = requestAnimationFrame(() => {
         window.dispatchEvent(new Event('resize'));
       });
-      return () => cancelAnimationFrame(id);
-    }
-  }, [activeTab]);
+      return () => {
+      cancelAnimationFrame(id);
+    };
+  }
+  return () => {
+    console.log('🔴 PlannerShell UNMOUNTING');
+  };
+}, [activeTab]);
 
   const getYieldForYear = (year) => {
     if (year <= 3) return 0;
