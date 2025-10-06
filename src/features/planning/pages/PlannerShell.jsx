@@ -46,7 +46,7 @@ import { useAuth } from "@/auth/AuthContext";
 const ProjectBanner = ({ years, setYears }) => (
     <section
       className="relative rounded-xl overflow-hidden shadow-sm mb-0 mx-4 md:mx-8
-                bg-gradient-to-r from-blue-100 via-blue-50 to-white"
+                bg-gradient-to-r from-vine-green-100 via-vine-green-50 to-white"
     >
     {/* soft radial accent */}
     <div
@@ -109,8 +109,8 @@ const TabNav = ({
               onClick={() => setActive(t.id)}
               className={`px-3 sm:px-6 py-3 text-xs sm:text-sm whitespace-nowrap border-b-2 ${
                 active === t.id
-                  ? "font-semibold border-blue-600 text-blue-800 bg-blue-50/60"
-                  : "border-transparent text-blue-600/70 hover:text-blue-800 hover:bg-blue-50/40"
+                  ? "font-semibold border-vine-green-500 text-vine-green-700 bg-vine-green-50/60"
+                  : "border-transparent text-vine-green-500/70 hover:text-vine-green-700 hover:bg-vine-green-50/40"
               }`}
             >
               <span className="block sm:hidden">{t.shortLabel || t.label}</span>
@@ -120,7 +120,7 @@ const TabNav = ({
 
           {/* RIGHT SIDE */}
           <div className="ml-auto flex items-center gap-4 pr-2">
-            <label className="flex items-center gap-1 text-xs sm:text-sm text-blue-700 font-medium">
+            <label className="flex items-center gap-1 text-xs sm:text-sm text-vine-green-600 font-medium">
               Projection&nbsp;Years
               <Input
                 type="number"
@@ -143,7 +143,7 @@ const TabNav = ({
 
             <button
               onClick={onSave}
-              className="px-3 py-2 text-xs sm:text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 font-medium transition disabled:opacity-50"
+              className="px-3 py-2 text-xs sm:text-sm rounded-md bg-vine-green-500 text-white hover:bg-vine-green-600 font-medium transition disabled:opacity-50"
               disabled={isSaving}
             >
               {isSaving ? 'Saving…' : 'Save'}
@@ -208,7 +208,7 @@ const pmt = (P, r, yrs) => {
 
 // Section header component for consistency
 const SectionHeader = ({ title }) => (
-  <h2 className="text-xl font-semibold text-blue-800 mb-6 border-b pb-2">
+  <h2 className="text-xl font-semibold text-vine-green-700 mb-6 border-b pb-2">
     {title}
   </h2>
 );
@@ -216,8 +216,8 @@ const SectionHeader = ({ title }) => (
 // Card container for each section
 const SectionCard = ({ title, children, className = "" }) => (
     <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-10"> {/* Increase mb-8 to mb-10 */}
-      <div className="bg-blue-50 px-6 py-4 border-b"> {/* Increase py-3 to py-4 */}
-        <h3 className="font-medium text-blue-800 text-lg">{title}</h3> {/* Add text-lg */}
+      <div className="bg-vine-green-50 px-6 py-4 border-b"> {/* Increase py-3 to py-4 */}
+        <h3 className="font-medium text-vine-green-700 text-lg">{title}</h3> {/* Add text-lg */}
       </div>
       <CardContent className={`p-8 ${className}`}> {/* Increase p-6 to p-8 */}
         {children}
@@ -236,14 +236,14 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
       {/* clickable header */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between bg-blue-50 px-6 py-4 border-b
+        className="w-full flex items-center justify-between bg-vine-green-50 px-6 py-4 border-b
                    focus:outline-none"
       >
-        <h3 className="font-medium text-blue-800 text-lg">{title}</h3>
+        <h3 className="font-medium text-vine-green-700 text-lg">{title}</h3>
 
         {/* chevron */}
         <ChevronDown
-          className={`h-5 w-5 text-blue-600 transition-transform ${
+          className={`h-5 w-5 text-vine-green-500 transition-transform ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -931,7 +931,7 @@ const handleLayoutChange = useCallback((layout, materialCosts) => {
 const AddButton = ({ onClick, text }) => (
   <button
     onClick={onClick}
-    className="text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md px-3 py-2 flex items-center gap-1 transition-colors mt-4 mb-2"
+    className="text-sm text-vine-green-600 bg-vine-green-50 hover:bg-vine-green-100 rounded-md px-3 py-2 flex items-center gap-1 transition-colors mt-4 mb-2"
   >
     <span className="text-lg">+</span> {text}
   </button>
@@ -1072,7 +1072,7 @@ const LTV = (landValue + improvementsValue) > 0
           <CollapsibleSection title="Core Vineyard Parameters">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-8">
               <div>
-                <label className="text-sm text-blue-800 font-medium block mb-2">
+                <label className="text-sm text-vine-green-700 font-medium block mb-2">
                   Sales Strategy
                 </label>
                 <select
@@ -1085,12 +1085,12 @@ const LTV = (landValue + improvementsValue) > 0
                 </select>
               </div>
               <div>
-                <label className="text-sm text-blue-800 font-medium block mb-2">Acres</label>
+                <label className="text-sm text-vine-green-700 font-medium block mb-2">Acres</label>
                 {num("acres")}
               </div>
               {st.salesMode === "wine" && (
                 <div>
-                  <label className="text-sm text-blue-800 font-medium block mb-2">
+                  <label className="text-sm text-vine-green-700 font-medium block mb-2">
                     Bottle Price ($)
                   </label>
                   {num("bottlePrice", 0.5)}
@@ -1100,7 +1100,7 @@ const LTV = (landValue + improvementsValue) > 0
 
               {st.salesMode === "grapes" && (
                 <div>
-                  <label className="text-sm text-blue-800 font-medium block mb-2">
+                  <label className="text-sm text-vine-green-700 font-medium block mb-2">
                     Grape Sale Price ($ / ton)
                   </label>
                   {num("grapeSalePrice", 10)}
@@ -1115,27 +1115,27 @@ const LTV = (landValue + improvementsValue) > 0
                     />
               </div>
               <div>
-                <label className="text-sm text-blue-800 font-medium block mb-2">Water Cost ($/acre-yr)</label>
+                <label className="text-sm text-vine-green-700 font-medium block mb-2">Water Cost ($/acre-yr)</label>
                 {num("waterCost", 10)}
               </div>
               <div>
-                <label className="text-sm text-blue-800 font-medium block mb-2">Land Price ($/acre)</label>
+                <label className="text-sm text-vine-green-700 font-medium block mb-2">Land Price ($/acre)</label>
                 {num("landPrice", 1000)}
               </div>
               <div>
-                <label className="text-sm text-blue-800 font-medium block mb-2">Build Cost ($/acre)</label>
+                <label className="text-sm text-vine-green-700 font-medium block mb-2">Build Cost ($/acre)</label>
                 {num("buildPrice", 1000)}
               </div>
               <div>
-                <label className="text-sm text-blue-800 font-medium block mb-2">Setup Year</label>
+                <label className="text-sm text-vine-green-700 font-medium block mb-2">Setup Year</label>
                 {num("setupYear", 1)}
               </div>
               <div>
-                <label className="text-sm text-blue-800 font-medium block mb-2">License Cost ($)</label>
+                <label className="text-sm text-vine-green-700 font-medium block mb-2">License Cost ($)</label>
                 {num("licenseCost", 100)}
               </div>
               <div>
-                <label className="text-sm text-blue-800 font-medium block mb-2">
+                <label className="text-sm text-vine-green-700 font-medium block mb-2">
                     Available Equity ($)
                 </label>
                 <Input
@@ -1164,7 +1164,7 @@ const LTV = (landValue + improvementsValue) > 0
                       onCheckedChange={v => updateSetup(k, { ...obj, include: v })}
                       className="h-5 w-5"
                     />
-                    <span className="text-sm text-blue-800 font-medium capitalize w-32">{label}</span>
+                    <span className="text-sm text-vine-green-700 font-medium capitalize w-32">{label}</span>
                     
                     {/* Show calculation source */}
                     {isCalculated ? (
@@ -1172,13 +1172,13 @@ const LTV = (landValue + improvementsValue) > 0
                         <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                           Auto-calculated from design
                         </span>
-                        <span className="text-sm text-blue-800">$/acre</span>
+                        <span className="text-sm text-vine-green-700">$/acre</span>
                         <span className="w-28 p-2 bg-gray-100 text-sm rounded border">
                           ${obj.cost.toLocaleString()}
                         </span>
                         <button 
                           onClick={() => setActiveTab("design")}
-                          className="text-xs text-blue-600 hover:text-blue-800 underline"
+                          className="text-xs text-vine-green-500 hover:text-vine-green-700 underline"
                         >
                           Edit in Design →
                         </button>
@@ -1195,7 +1195,7 @@ const LTV = (landValue + improvementsValue) > 0
                             >
                               {IRRIG_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
                             </select>
-                            <label className="text-sm text-blue-800">$/acre</label>
+                            <label className="text-sm text-vine-green-700">$/acre</label>
                             <Input 
                               className="w-28 bg-white" 
                               type="number" 
@@ -1206,7 +1206,7 @@ const LTV = (landValue + improvementsValue) > 0
                           </>
                         ) : (
                           <>
-                            <label className="text-sm text-blue-800">$/acre</label>
+                            <label className="text-sm text-vine-green-700">$/acre</label>
                             <Input 
                               className="w-28 bg-white" 
                               type="number" 
@@ -1229,11 +1229,11 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
-                <tr className="bg-blue-50">
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Task</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">$/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                <tr className="bg-vine-green-50">
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Task</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/acre</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -1329,13 +1329,13 @@ const LTV = (landValue + improvementsValue) > 0
           <div className="overflow-x-auto">
             <table className="w-full min-w-max">
               <thead>
-                <tr className="bg-blue-50">
-                  <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                  <th className="text-left p-3 text-xs font-medium text-blue-800">Item</th>
-                  <th className="text-left p-3 text-xs font-medium text-blue-800">Unit Cost</th>
-                  <th className="text-left p-3 text-xs font-medium text-blue-800">Qty/acre</th>
-                  <th className="text-left p-3 text-xs font-medium text-blue-800">Cost/acre</th>
-                  <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                <tr className="bg-vine-green-50">
+                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Item</th>
+                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Unit Cost</th>
+                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Qty/acre</th>
+                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Cost/acre</th>
+                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1433,11 +1433,11 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
-                <tr className="bg-blue-50">
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Operation</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">$/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                <tr className="bg-vine-green-50">
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Operation</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/acre</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -1509,12 +1509,12 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
-                <tr className="bg-blue-50">
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Service</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">$/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">$/ton</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                <tr className="bg-vine-green-50">
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Service</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/acre</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/ton</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -1599,11 +1599,11 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
-                <tr className="bg-blue-50">
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Fee</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">$/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                <tr className="bg-vine-green-50">
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Fee</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/acre</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -1661,11 +1661,11 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
-                <tr className="bg-blue-50">
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Expense</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Annual $</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                <tr className="bg-vine-green-50">
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Expense</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Annual $</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -1723,11 +1723,11 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
-                <tr className="bg-blue-50">
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Category</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Annual $</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                <tr className="bg-vine-green-50">
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Category</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Annual $</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -1785,12 +1785,12 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
-                <tr className="bg-blue-50">
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Item</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">$/hour</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Hours/yr</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                <tr className="bg-vine-green-50">
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Item</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/hour</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Hours/yr</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -1858,11 +1858,11 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
-                <tr className="bg-blue-50">
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Service</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">$/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                <tr className="bg-vine-green-50">
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Service</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/acre</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -1927,7 +1927,7 @@ const LTV = (landValue + improvementsValue) > 0
                         update("permits", next);
                     }}
                     />
-                    <span className="flex-1 text-sm text-blue-800">{p.label}</span>
+                    <span className="flex-1 text-sm text-vine-green-700">{p.label}</span>
                     <Input
                     type="number"
                     step={100}
@@ -1950,14 +1950,14 @@ const LTV = (landValue + improvementsValue) > 0
             <div className="overflow-x-auto">
               <table className="w-full min-w-max">
                 <thead>
-                  <tr className="bg-blue-50">
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Equipment</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Price ($)</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Rate (%)</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Term (yrs)</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">$/mo</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                  <tr className="bg-vine-green-50">
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Equipment</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Price ($)</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Rate (%)</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Term (yrs)</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/mo</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2065,14 +2065,14 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
-                <tr className="bg-blue-50">
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Label</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Principal ($)</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Rate (%)</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Term (yrs)</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">$/mo</th>
-                <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                <tr className="bg-vine-green-50">
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Label</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Principal ($)</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Rate (%)</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Term (yrs)</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/mo</th>
+                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -2182,13 +2182,13 @@ const LTV = (landValue + improvementsValue) > 0
             <div className="overflow-x-auto">
               <table className="w-full min-w-max">
                 <thead>
-                  <tr className="bg-blue-50">
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Variety</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Pounds</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Price/lb ($)</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Total ($)</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                  <tr className="bg-vine-green-50">
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Variety</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Pounds</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Price/lb ($)</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Total ($)</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2278,12 +2278,12 @@ const LTV = (landValue + improvementsValue) > 0
             <div className="overflow-x-auto">
               <table className="w-full min-w-max">
                 <thead>
-                  <tr className="bg-blue-50">
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Include</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Category</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Year</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Bottles</th>
-                    <th className="text-left p-3 text-xs font-medium text-blue-800">Actions</th>
+                  <tr className="bg-vine-green-50">
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Category</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Year</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Bottles</th>
+                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2500,12 +2500,12 @@ const LTV = (landValue + improvementsValue) > 0
             <SectionCard title="Establishment Expense Details">
             <div className="overflow-x-auto">
                 <table className="min-w-full bg-white divide-y divide-gray-200">
-                <thead className="bg-blue-50">
+                <thead className="bg-vine-green-50">
                     <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">
                         Item
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-blue-800 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
                         Total Cost
                     </th>
                     </tr>
@@ -2522,11 +2522,11 @@ const LTV = (landValue + improvementsValue) > 0
                     </tr>
                     ))}
                     {/* Grand-total row */}
-                    <tr className="bg-blue-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-800">
+                    <tr className="bg-vine-green-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700">
                         Total
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-800 text-right">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700 text-right">
                         ${estData.reduce((sum, e) => sum + e.value, 0).toLocaleString()}
                     </td>
                     </tr>
@@ -2540,18 +2540,18 @@ const LTV = (landValue + improvementsValue) > 0
                 {/* Loan Options Table (only included loans) */}
                 <div className="overflow-x-auto">
                 <table className="min-w-full bg-white divide-y divide-gray-200">
-                    <thead className="bg-blue-50">
+                    <thead className="bg-vine-green-50">
                     <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">
                         Lender
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-blue-800 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
                         Principal
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-blue-800 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
                         Rate
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-blue-800 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
                         Term (yrs)
                         </th>
                     </tr>
@@ -2573,11 +2573,11 @@ const LTV = (landValue + improvementsValue) > 0
                         </td>
                         </tr>
                     ))}
-                    <tr className="bg-blue-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-800">
+                    <tr className="bg-vine-green-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700">
                         Total Loans
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-800 text-right">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700 text-right">
                         ${totalLoanPrincipal.toLocaleString()}
                         </td>
                         <td colSpan={2}></td>
@@ -2614,13 +2614,13 @@ const LTV = (landValue + improvementsValue) > 0
 
             {/* Enhanced Top-line summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-300">
+              <div className="bg-gradient-to-br from-blue-500 to-vine-green-600 rounded-2xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-300">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold opacity-90">Break-Even Point</h3>
                   <div className="text-3xl">⚖️</div>
                 </div>
                 <p className="text-5xl font-black mb-4">Year {breakEven}</p>
-                <p className="text-blue-100 text-sm leading-relaxed">
+                <p className="text-vine-green-100 text-sm leading-relaxed">
                   When your vineyard starts generating positive cumulative cash flow
                 </p>
                 <div className="mt-4 p-3 bg-blue-400 bg-opacity-30 rounded-lg">
@@ -2710,7 +2710,7 @@ const LTV = (landValue + improvementsValue) > 0
             <SectionCard title="Year-by-Year Table">
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
-                  <thead className="bg-blue-50">
+                  <thead className="bg-vine-green-50">
                     <tr>
                       {(
                         st.salesMode === "wine"
@@ -2738,7 +2738,7 @@ const LTV = (landValue + improvementsValue) > 0
                       ).map((h) => (
                         <th
                           key={h}
-                          className="text-left p-2 text-xs font-medium text-blue-800 uppercase"
+                          className="text-left p-2 text-xs font-medium text-vine-green-700 uppercase"
                         >
                           {h}
                         </th>
@@ -2819,21 +2819,21 @@ const LTV = (landValue + improvementsValue) > 0
             
             {/* Executive Summary Card */}
             <SectionCard title="Executive Summary">
-              <div className="bg-gradient-to-br from-blue-50 via-blue-25 to-white p-8 rounded-2xl mb-8 border-2 border-blue-100 shadow-xl">
+              <div className="bg-gradient-to-br from-vine-green-50 via-blue-25 to-white p-8 rounded-2xl mb-8 border-2 border-vine-green-100 shadow-xl">
                 {/* Three main KPI cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                   <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-300">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-blue-700 uppercase font-bold tracking-wider">Break-Even Year</p>
+                      <p className="text-xs text-vine-green-600 uppercase font-bold tracking-wider">Break-Even Year</p>
                       <div className="text-2xl">⏱️</div>
                     </div>
-                    <p className="text-4xl font-black text-blue-900 mb-3">Year {breakEven}</p>
+                    <p className="text-4xl font-black text-vine-green-800 mb-3">Year {breakEven}</p>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       When cumulative profit becomes positive
                     </p>
                     {projection.length > 0 && beIdx >= 0 && (
-                      <div className="mt-3 p-2 bg-blue-50 rounded-lg">
-                        <p className="text-xs text-blue-700">
+                      <div className="mt-3 p-2 bg-vine-green-50 rounded-lg">
+                        <p className="text-xs text-vine-green-600">
                           Cumulative profit: <span className="font-semibold">${projection[beIdx].cumulative.toLocaleString()}</span>
                         </p>
                       </div>
@@ -2884,7 +2884,7 @@ const LTV = (landValue + improvementsValue) > 0
                 
                 {/* Financial snapshot section */}
                 <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-                  <h3 className="text-xl font-bold text-blue-900 mb-6 flex items-center gap-3">
+                  <h3 className="text-xl font-bold text-vine-green-800 mb-6 flex items-center gap-3">
                     <span className="text-2xl">📊</span>
                     Financial Snapshot
                   </h3>
@@ -2901,9 +2901,9 @@ const LTV = (landValue + improvementsValue) > 0
                         <span className="font-semibold text-red-900">Annual Operating Costs</span>
                         <span className="font-black text-xl text-red-800">${annualFixed.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border-l-4 border-blue-400">
-                        <span className="font-semibold text-blue-900">Annual Net Profit (full production)</span>
-                        <span className="font-black text-xl text-blue-800">
+                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-vine-green-50 to-vine-green-100 rounded-lg border-l-4 border-blue-400">
+                        <span className="font-semibold text-vine-green-800">Annual Net Profit (full production)</span>
+                        <span className="font-black text-xl text-vine-green-700">
                           ${fullProdNet.toLocaleString()}
                         </span>
                       </div>
@@ -2979,7 +2979,7 @@ const LTV = (landValue + improvementsValue) > 0
             <SectionCard title="Comprehensive Cost Analysis">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
-                <h3 className="text-lg font-medium text-blue-800 mb-4">Cost Distribution</h3>
+                <h3 className="text-lg font-medium text-vine-green-700 mb-4">Cost Distribution</h3>
                 <div className="h-80">
                     <ResponsiveContainer
                       key={`rc-${location.pathname}-${activeTab}`}
@@ -3037,14 +3037,14 @@ const LTV = (landValue + improvementsValue) > 0
                 </div>
                 
                 <div>
-                <h3 className="text-lg font-medium text-blue-800 mb-4">Cost Breakdown</h3>
+                <h3 className="text-lg font-medium text-vine-green-700 mb-4">Cost Breakdown</h3>
                 <div className="overflow-auto rounded-lg shadow">
                     <table className="min-w-full bg-white divide-y divide-gray-200">
-                    <thead className="bg-blue-50">
+                    <thead className="bg-vine-green-50">
                         <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Category</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Amount ($)</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">% of Total</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">Category</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">Amount ($)</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">% of Total</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -3060,7 +3060,7 @@ const LTV = (landValue + improvementsValue) > 0
                                 <span className="mr-2">{percentage.toFixed(1)}%</span>
                                 <div className="w-24 bg-gray-200 rounded-full h-2.5">
                                     <div 
-                                    className={`h-2.5 rounded-full ${index % 2 === 0 ? 'bg-blue-600' : 'bg-blue-400'}`}
+                                    className={`h-2.5 rounded-full ${index % 2 === 0 ? 'bg-vine-green-500' : 'bg-blue-400'}`}
                                     style={{ width: `${percentage}%` }}
                                     ></div>
                                 </div>
@@ -3079,15 +3079,15 @@ const LTV = (landValue + improvementsValue) > 0
             <SectionCard title="All Vineyard Costs by Year">
             <div className="overflow-x-auto">
                 <table className="w-full table-auto">
-                <thead className="bg-blue-50">
+                <thead className="bg-vine-green-50">
                     <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-blue-800">
+                    <th className="px-4 py-2 text-left text-xs font-medium text-vine-green-700">
                         Category
                     </th>
                     {years.map(y => (
                         <th
                         key={y}
-                        className="px-4 py-2 text-right text-xs font-medium text-blue-800"
+                        className="px-4 py-2 text-right text-xs font-medium text-vine-green-700"
                         >
                         {y === 0 ? 'Year 0' : `Year ${y}`}
                         </th>
@@ -3115,14 +3115,14 @@ const LTV = (landValue + improvementsValue) > 0
                     ))}
 
                     {/* ── Totals Row ── */}
-                    <tr className="bg-blue-50">
-                    <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-blue-800">
+                    <tr className="bg-vine-green-50">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-vine-green-700">
                         Total
                     </td>
                     {yearTotals.map((tot, j) => (
                         <td
                         key={j}
-                        className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-blue-800 text-right"
+                        className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-vine-green-700 text-right"
                         >
                         ${tot.toLocaleString()}
                         </td>
@@ -3143,18 +3143,18 @@ const LTV = (landValue + improvementsValue) > 0
             {/* ── Terminology quick-reference ── */}
             <div className="mt-4 space-y-2 text-sm text-gray-700 leading-relaxed">
               <p>
-                <span className="font-semibold text-blue-800">LTC (Loan-to-Cost):</span>
+                <span className="font-semibold text-vine-green-700">LTC (Loan-to-Cost):</span>
                 &nbsp;Total loan principal divided by total project cost. A higher LTC means
                 you’re financing a larger share of the build-out expenses.
               </p>
               <p>
-                <span className="font-semibold text-blue-800">LTV (Loan-to-Value):</span>
+                <span className="font-semibold text-vine-green-700">LTV (Loan-to-Value):</span>
                 &nbsp;Total loan principal divided by the collateral’s appraised value
                 (land + improvements). Lenders watch this ratio to be sure the asset is
                 worth more than the debt secured against it.
               </p>
               <p>
-                <span className="font-semibold text-blue-800">Land + Impr.</span>
+                <span className="font-semibold text-vine-green-700">Land + Impr.</span>
                 &nbsp;is the combined market value of the raw land purchase <em>plus</em>
                 all permanent site improvements (buildings, trellis, irrigation, etc.).
               </p>
@@ -3165,7 +3165,7 @@ const LTV = (landValue + improvementsValue) > 0
             <SectionCard title="Production & Revenue Analysis">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                <h3 className="text-lg font-semibold text-blue-800 mb-4">Vineyard Production Timeline</h3>
+                <h3 className="text-lg font-semibold text-vine-green-700 mb-4">Vineyard Production Timeline</h3>
                 <div className="h-64 mb-4 min-w-0">
                     <ResponsiveContainer
                       key={`rc-${location.pathname}-${activeTab}`}
@@ -3241,7 +3241,7 @@ const LTV = (landValue + improvementsValue) > 0
                     </ResponsiveContainer>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="text-md font-semibold text-blue-800 mb-3">Vineyard Maturation Model</h4>
+                    <h4 className="text-md font-semibold text-vine-green-700 mb-3">Vineyard Maturation Model</h4>
                     <ul className="list-disc ml-5 text-sm text-gray-700 space-y-2">
                     <li>Years 1-3: <span className="font-medium">0 tons/acre</span> (vineyard establishment)</li>
                     <li>Year 4: <span className="font-medium">1 ton/acre</span> (first crop)</li>
@@ -3260,7 +3260,7 @@ const LTV = (landValue + improvementsValue) > 0
                 
                 {/* Revenue Analysis */}
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                <h3 className="text-lg font-semibold text-blue-800 mb-4">Revenue & Profit Analysis</h3>
+                <h3 className="text-lg font-semibold text-vine-green-700 mb-4">Revenue & Profit Analysis</h3>
                 <div className="h-64 mb-4 min-w-0">
                     <ResponsiveContainer
                       key={`rc-${location.pathname}-${activeTab}`}
@@ -3309,7 +3309,7 @@ const LTV = (landValue + improvementsValue) > 0
                     </ResponsiveContainer>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="text-md font-semibold text-blue-800 mb-3">Revenue Insights</h4>
+                    <h4 className="text-md font-semibold text-vine-green-700 mb-3">Revenue Insights</h4>
                     <ul className="list-disc ml-5 text-sm text-gray-700 space-y-2">
                     <li>First revenue in <span className="font-medium">Year {projection.findIndex(p => p.revenue > 0) + 1}</span></li>
                     <li>First profitable year: <span className="font-medium">Year {projection.findIndex(p => p.net > 0) + 1}</span></li>
@@ -3331,7 +3331,7 @@ const LTV = (landValue + improvementsValue) > 0
             <SectionCard title="Initial Investment Analysis">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
-                <h3 className="text-lg font-medium text-blue-800 mb-4">Setup Cost Breakdown</h3>
+                <h3 className="text-lg font-medium text-vine-green-700 mb-4">Setup Cost Breakdown</h3>
                 <div className="h-64">
                   <ResponsiveContainer
                     key={`rc-${location.pathname}-${activeTab}`}
@@ -3384,15 +3384,15 @@ const LTV = (landValue + improvementsValue) > 0
                 </div>
 
                 <div>
-                <h3 className="text-lg font-medium text-blue-800 mb-4">Investment Details</h3>
+                <h3 className="text-lg font-medium text-vine-green-700 mb-4">Investment Details</h3>
                 <div className="overflow-hidden rounded-lg shadow">
                     <table className="min-w-full bg-white divide-y divide-gray-200">
-                    <thead className="bg-blue-50">
+                    <thead className="bg-vine-green-50">
                         <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Item</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Cost/Acre</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Total Cost</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">% of Setup</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">Item</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">Cost/Acre</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">Total Cost</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">% of Setup</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -3442,15 +3442,15 @@ const LTV = (landValue + improvementsValue) > 0
                         </tr>
 
                         {/* Total Investment row */}
-                        <tr className="bg-blue-50">
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-blue-800">Total Investment</td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-blue-800">
+                        <tr className="bg-vine-green-50">
+                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-vine-green-700">Total Investment</td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-vine-green-700">
                             ${((totalEstCost - stNum.licenseCost) / stNum.acres).toLocaleString()}
                         </td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-blue-800">
+                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-vine-green-700">
                             ${totalEstCost.toLocaleString()}
                         </td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-blue-800">100.0%</td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-vine-green-700">100.0%</td>
                         </tr>
                     </tbody>
                     </table>
@@ -3462,11 +3462,11 @@ const LTV = (landValue + improvementsValue) > 0
             
             {/* Profitability Analysis */}
             <SectionCard title="Profitability & Break-Even Analysis">
-            <div className="bg-blue-50 p-6 rounded-xl mb-6">
+            <div className="bg-vine-green-50 p-6 rounded-xl mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div className="bg-white p-5 rounded-lg shadow-sm">
-                    <h3 className="text-lg font-medium text-blue-800 mb-3">Break-Even Timeline</h3>
-                    <p className="text-3xl font-bold text-blue-800 mb-2">Year {breakEven}</p>
+                    <h3 className="text-lg font-medium text-vine-green-700 mb-3">Break-Even Timeline</h3>
+                    <p className="text-3xl font-bold text-vine-green-700 mb-2">Year {breakEven}</p>
                     <p className="text-sm text-gray-600">
                     This vineyard will reach break-even (cumulative positive cash flow) in Year {breakEven}.
                     {projection.length > 0 && beIdx >= 0 && (
@@ -3475,7 +3475,7 @@ const LTV = (landValue + improvementsValue) > 0
                     </p>
                 </div>
                 <div className="bg-white p-5 rounded-lg shadow-sm">
-                    <h3 className="text-lg font-medium text-blue-800 mb-3">Investment Recovery</h3>
+                    <h3 className="text-lg font-medium text-vine-green-700 mb-3">Investment Recovery</h3>
                     <p className="text-3xl font-bold text-green-800 mb-2">
                     {projection.length > 0 && beIdx >= 0 
                         ? `${((beIdx + 1) / projYears * 100).toFixed(0)}%` 
@@ -3488,7 +3488,7 @@ const LTV = (landValue + improvementsValue) > 0
                     </p>
                 </div>
                 <div className="bg-white p-5 rounded-lg shadow-sm">
-                    <h3 className="text-lg font-medium text-blue-800 mb-3">10-Year ROI</h3>
+                    <h3 className="text-lg font-medium text-vine-green-700 mb-3">10-Year ROI</h3>
                     <p className="text-3xl font-bold text-purple-800 mb-2">
                     {projection.length > 0 
                         ? `${Math.round((projection[projection.length - 1].cumulative / totalEstCost) * 100)}%` 
@@ -3504,7 +3504,7 @@ const LTV = (landValue + improvementsValue) > 0
                 </div>
                 
                 <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-semibold text-blue-800 mb-4">Break-Even Analysis</h3>
+                <h3 className="text-lg font-semibold text-vine-green-700 mb-4">Break-Even Analysis</h3>
                 <div className="h-80">
                     {/* This is the section with the error - Fixed version */}
                     <ResponsiveContainer
@@ -3551,7 +3551,7 @@ const LTV = (landValue + improvementsValue) > 0
                 </div>
                 
                 <div className="mt-6">
-                    <h4 className="text-md font-semibold text-blue-800 mb-3">Sensitivity Analysis</h4>
+                    <h4 className="text-md font-semibold text-vine-green-700 mb-3">Sensitivity Analysis</h4>
                     <p className="text-sm text-gray-700 mb-4">
                     How changes in key factors affect your break-even point:
                     </p>
@@ -3606,10 +3606,10 @@ const LTV = (landValue + improvementsValue) > 0
               <SectionCard title="Bottle Economics & Price Point Analysis">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div>
-                  <h3 className="text-lg font-medium text-blue-800 mb-4">Profit Margin Analysis</h3>
+                  <h3 className="text-lg font-medium text-vine-green-700 mb-4">Profit Margin Analysis</h3>
                   <div className="mb-6">
                       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                      <h4 className="text-md font-semibold text-blue-800 mb-3">Cost & Pricing Breakdown per Bottle</h4>
+                      <h4 className="text-md font-semibold text-vine-green-700 mb-3">Cost & Pricing Breakdown per Bottle</h4>
                       
                       <div className="space-y-4">
                           <div>
@@ -3619,7 +3619,7 @@ const LTV = (landValue + improvementsValue) > 0
                           </div>
                           <div className="h-5 bg-gray-200 rounded-full overflow-hidden">
                               <div 
-                              className="h-5 bg-blue-600 rounded-full flex items-center justify-end pr-2 text-xs text-white font-medium"
+                              className="h-5 bg-vine-green-500 rounded-full flex items-center justify-end pr-2 text-xs text-white font-medium"
                               style={{ 
                                   width: `${Math.min(100, (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) / stNum.bottlePrice * 100)}%` 
                               }}
@@ -3650,7 +3650,7 @@ const LTV = (landValue + improvementsValue) > 0
                       
                       <div className="mt-6 flex justify-between items-end">
                           <div>
-                          <span className="block text-2xl font-bold text-blue-800">${stNum.bottlePrice.toFixed(2)}</span>
+                          <span className="block text-2xl font-bold text-vine-green-700">${stNum.bottlePrice.toFixed(2)}</span>
                           <span className="text-sm text-gray-600">Bottle Price</span>
                           </div>
                           <div className="text-right">
@@ -3664,7 +3664,7 @@ const LTV = (landValue + improvementsValue) > 0
                   </div>
                   
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                      <h4 className="text-md font-semibold text-blue-800 mb-3">Price Point Scenario Analysis</h4>
+                      <h4 className="text-md font-semibold text-vine-green-700 mb-3">Price Point Scenario Analysis</h4>
                       <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                           <tr>
@@ -3691,10 +3691,10 @@ const LTV = (landValue + improvementsValue) > 0
                               }
                           }
                           return (
-                              <tr key={i} className={price === stNum.bottlePrice ? "bg-blue-50" : ""}>
+                              <tr key={i} className={price === stNum.bottlePrice ? "bg-vine-green-50" : ""}>
                               <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                                   ${price.toFixed(2)}
-                                  {price === stNum.bottlePrice && <span className="ml-2 text-xs text-blue-600">(Current)</span>}
+                                  {price === stNum.bottlePrice && <span className="ml-2 text-xs text-vine-green-500">(Current)</span>}
                               </td>
                               <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                                   ${profit.toFixed(2)}
@@ -3715,10 +3715,10 @@ const LTV = (landValue + improvementsValue) > 0
                   
                   {/* Right Column */}
                   <div>
-                  <h3 className="text-lg font-medium text-blue-800 mb-4">Market Strategy Recommendations</h3>
+                  <h3 className="text-lg font-medium text-vine-green-700 mb-4">Market Strategy Recommendations</h3>
                   
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 mb-6">
-                      <h4 className="text-md font-semibold text-blue-800 mb-3">Optimal Price Point Analysis</h4>
+                      <h4 className="text-md font-semibold text-vine-green-700 mb-3">Optimal Price Point Analysis</h4>
                       <div className="h-64 mb-4 min-w-0">
                       <ResponsiveContainer
                         key={`rc-${location.pathname}-${activeTab}`}
@@ -3801,7 +3801,7 @@ const LTV = (landValue + improvementsValue) > 0
                   </div>
                   
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                      <h4 className="text-md font-semibold text-blue-800 mb-3">Strategic Recommendations</h4>
+                      <h4 className="text-md font-semibold text-vine-green-700 mb-3">Strategic Recommendations</h4>
                       <ul className="list-disc ml-5 text-sm text-gray-700 space-y-3">
                       <li>
                           <span className="font-medium">Optimal Price Point:</span> Based on your costs and industry averages, 
@@ -3839,7 +3839,7 @@ return (
     <main className="flex-grow w-full overflow-x-hidden">
 
       {/* Hide the big blue banner/logo when embedded */}
-      <ProjectBanner years={projYears} setYears={setProjYears} />
+      {/*<ProjectBanner years={projYears} setYears={setProjYears} /> */}
  
        <TabNav
          active={activeTab}
