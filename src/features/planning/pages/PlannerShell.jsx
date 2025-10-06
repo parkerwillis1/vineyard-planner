@@ -98,18 +98,18 @@ const TabNav = ({
   return (
     <>
       <div
-        className={`sticky ${stickyTopClass} z-20 bg-white/90 backdrop-blur-md shadow-sm`}
+        className={`sticky ${stickyTopClass} z-20 bg-white border-b border-gray-200 shadow-sm`}
         style={{ height: TAB_H }}
       >
-        <nav className="flex items-center gap-1 h-full px-2 sm:px-4 overflow-x-auto">
+        <nav className="flex items-center gap-2 h-full px-4 sm:px-6 lg:px-8 max-w-screen-2xl mx-auto overflow-x-auto">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setActive(t.id)}
-              className={`px-3 sm:px-6 py-3 text-xs sm:text-sm whitespace-nowrap border-b-2 ${
+              className={`px-4 sm:px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
                 active === t.id
-                  ? "font-semibold border-vine-green-500 text-vine-green-700 bg-vine-green-50/60"
-                  : "border-transparent text-vine-green-500/70 hover:text-vine-green-700 hover:bg-vine-green-50/40"
+                  ? "text-vine-green-700 border-b-2 border-vine-green-600"
+                  : "text-gray-600 hover:text-vine-green-700"
               }`}
             >
               <span className="block sm:hidden">{t.shortLabel || t.label}</span>
@@ -207,7 +207,7 @@ const pmt = (P, r, yrs) => {
 
 // Section header component for consistency
 const SectionHeader = ({ title }) => (
-  <h2 className="text-xl font-semibold text-vine-green-700 mb-6 border-b pb-2">
+  <h2 className="text-2xl font-bold text-vine-green-700 pb-3 border-b border-gray-200">
     {title}
   </h2>
 );
@@ -1025,11 +1025,12 @@ const LTV = (landValue + improvementsValue) > 0
 
   const MainUI = (
     <div className="w-full overflow-x-hidden">
-      <div className="p-8 max-w-screen-2xl mx-auto space-y-12"> 
+
+      <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-screen-2xl mx-auto"> 
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
-        <div className="space-y-8">
+        <div className="space-y-6">
           <SectionHeader title="Vineyard Design & Layout Planning" />
           
           <VineyardLayoutConfig
