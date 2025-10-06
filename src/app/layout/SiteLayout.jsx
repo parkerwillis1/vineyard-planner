@@ -4,8 +4,8 @@ import { useAuth } from "@/auth/AuthContext";        // adjust if your path diff
 import { supabase } from "@/shared/lib/supabaseClient";
 
 export default function SiteLayout() {
-  const location = useLocation();
   const { user } = useAuth() || {};
+  const location = useLocation();
 
   return (
     <div className="min-h-screen bg-white">
