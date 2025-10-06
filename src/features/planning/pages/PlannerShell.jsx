@@ -876,52 +876,56 @@ const annualFixed =
 
 const handleLayoutChange = useCallback((layout, materialCosts) => {
   if (!layout || !materialCosts) return;
-  // Update the vine count in planting costs automatically
-  // 1. Update vine quantities in planting costs
-  const updatedPlanting = st.planting.map(row => {
-    if (row.label.toLowerCase().includes('vine stock')) {
-      return {
-        ...row,
-        qtyPerAcre: Math.round(layout.vineLayout.vinesPerAcre),
-        costPerAcre: (Number(row.unitCost) || 0) * Math.round(layout.vineLayout.vinesPerAcre)
-      };
-    }
-    return row;
-  });
   
-  // Update trellis and irrigation costs based on actual material requirements
-  const updatedSetup = {
-    ...st.setup,
-    trellis: {
-      include: true,
-      cost: Math.round((materialCosts.posts + materialCosts.wire + materialCosts.hardware) / stNum.acres),
-      calculated: true, // Mark as calculated
-      breakdown: {
-        posts: materialCosts.posts,
-        wire: materialCosts.wire, 
-        hardware: materialCosts.hardware
+  // Use functional setState - prev gives us the current state
+  set(prev => {
+    // 1. Update vine quantities in planting costs
+    const updatedPlanting = prev.planting.map(row => {
+      if (row.label.toLowerCase().includes('vine stock')) {
+        return {
+          ...row,
+          qtyPerAcre: Math.round(layout.vineLayout.vinesPerAcre),
+          costPerAcre: (Number(row.unitCost) || 0) * Math.round(layout.vineLayout.vinesPerAcre)
+        };
       }
-    },
-    irrigation: {
-      include: true,
-      cost: Math.round(materialCosts.irrigation / stNum.acres),
-      calculated: true, // Mark as calculated
-      system: st.setup.irrigation?.system || "drip"
-    }
-  };
-  
-  // Update state with calculated values
-  set(prev => ({
-    ...prev,
-    planting: updatedPlanting,
-    setup: updatedSetup,
-    vineyardLayout: {
-      ...prev.vineyardLayout,
-      calculatedLayout: layout,
-      materialCosts: materialCosts
-    }
-  }));
-}, [st.planting, st.setup, stNum.acres]);
+      return row;
+    });
+    
+    // 2. Update trellis and irrigation costs based on actual material requirements
+    const acres = Number(prev.acres) || 1; // Get acres from prev state
+    const updatedSetup = {
+      ...prev.setup,
+      trellis: {
+        include: true,
+        cost: Math.round((materialCosts.posts + materialCosts.wire + materialCosts.hardware) / acres),
+        calculated: true,
+        breakdown: {
+          posts: materialCosts.posts,
+          wire: materialCosts.wire, 
+          hardware: materialCosts.hardware
+        }
+      },
+      irrigation: {
+        include: true,
+        cost: Math.round(materialCosts.irrigation / acres),
+        calculated: true,
+        system: prev.setup.irrigation?.system || "drip"
+      }
+    };
+    
+    // 3. Return the new state object
+    return {
+      ...prev,
+      planting: updatedPlanting,
+      setup: updatedSetup,
+      vineyardLayout: {
+        ...prev.vineyardLayout,
+        calculatedLayout: layout,
+        materialCosts: materialCosts
+      }
+    };
+  });
+}, []); // Empty dependencies array - no external values needed!
 
 // Component for add buttons with consistent styling
 const AddButton = ({ onClick, text }) => (
@@ -1030,11 +1034,11 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="space-y-8">
           <SectionHeader title="Vineyard Design & Layout Planning" />
           
-          {/* <VineyardLayoutConfig
+          <VineyardLayoutConfig
             acres={stNum.acres}
             onLayoutChange={handleLayoutChange}
             currentLayout={st.vineyardLayout}
-          /> */}
+          />
         </div>
       )}
       
