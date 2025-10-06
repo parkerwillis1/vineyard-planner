@@ -259,6 +259,7 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
 
 export default function PlannerShell({ embedded = false }) {
   console.log('🟢 PlannerShell RENDER', { embedded });
+  console.trace('RENDER STACK TRACE');
   const [activeTab, setActiveTab]       = useState("design");
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
