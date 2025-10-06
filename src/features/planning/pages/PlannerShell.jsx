@@ -50,7 +50,7 @@ const ProjectBanner = ({ years, setYears }) => (
     >
     {/* soft radial accent */}
     <div
-      className="absolute -top-10 -left-10 w-40 h-40 rounded-full opacity-10 bg-blue-400"
+      className="absolute -top-10 -left-10 w-40 h-40 rounded-full opacity-10 bg-vine-green-500"
     />
     <div className="relative z-10 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
   {/* logo + title */}
@@ -97,7 +97,6 @@ const TabNav = ({
 
   return (
     <>
-      <div style={{ height: TAB_H }} aria-hidden />
       <div
         className={`sticky ${stickyTopClass} z-20 bg-white/90 backdrop-blur-md shadow-sm`}
         style={{ height: TAB_H }}
@@ -268,7 +267,7 @@ export default function PlannerShell({ embedded = false }) {
 
   const location = useLocation();
   console.log('📍 Location in PlannerShell:', location.pathname);
-  const stickyTopClass = embedded ? "top-14 md:top-16" : "top-0"; // ~56–64px header
+  const stickyTopClass = embedded ? "top-[65px]" : "top-0"; // ~56–64px header
 
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
@@ -1007,7 +1006,7 @@ const LTV = (landValue + improvementsValue) > 0
 
 
   // StatsCard component for consistent stat displays
-  const StatsCard = ({ label, value, color = "blue", description, icon }) => (
+  const StatsCard = ({ label, value, color = "vine-green-500", description, icon }) => (
   <div className={`p-6 bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-xl text-center shadow-lg border-2 border-${color}-200 transform hover:scale-105 transition-all duration-200`}>
     {icon && (
       <div className="mb-3 text-3xl">{icon}</div>
@@ -2380,7 +2379,7 @@ const LTV = (landValue + improvementsValue) > 0
                   .filter(d => !['Land Purchase','License','One-time Permits','Pre-Planting','Planting'].includes(d.name))
                   .reduce((s,d) => s + d.value, 0)
                   .toLocaleString()}`}
-                color="blue"
+                color="vine-green-500"
                 icon="🏗️"
                 description="Infrastructure"
               />
@@ -2466,7 +2465,7 @@ const LTV = (landValue + improvementsValue) > 0
                         <Cell
                             key={i}
                             fill={[
-                            "#1F77B4", // muted blue
+                            "#1F77B4", // muted vine-green-500
                             "#FF7F0E", // orange
                             "#2CA02C", // green
                             "#D62728", // red
@@ -2613,7 +2612,7 @@ const LTV = (landValue + improvementsValue) > 0
 
             {/* Enhanced Top-line summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              <div className="bg-gradient-to-br from-blue-500 to-vine-green-600 rounded-2xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-300">
+              <div className="bg-gradient-to-br from-vine-green-500 to-vine-green-600 rounded-2xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-300">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold opacity-90">Break-Even Point</h3>
                   <div className="text-3xl">⚖️</div>
@@ -2622,7 +2621,7 @@ const LTV = (landValue + improvementsValue) > 0
                 <p className="text-vine-green-100 text-sm leading-relaxed">
                   When your vineyard starts generating positive cumulative cash flow
                 </p>
-                <div className="mt-4 p-3 bg-blue-400 bg-opacity-30 rounded-lg">
+                <div className="mt-4 p-3 bg-vine-green-500 bg-opacity-30 rounded-lg">
                   <p className="text-xs font-medium">
                     Investment Recovery: {projection.length > 0 && beIdx >= 0 
                       ? `${((beIdx + 1) / projYears * 100).toFixed(0)}%` 
@@ -2818,10 +2817,10 @@ const LTV = (landValue + improvementsValue) > 0
             
             {/* Executive Summary Card */}
             <SectionCard title="Executive Summary">
-              <div className="bg-gradient-to-br from-vine-green-50 via-blue-25 to-white p-8 rounded-2xl mb-8 border-2 border-vine-green-100 shadow-xl">
+              <div className="bg-gradient-to-br from-vine-green-50 via-vine-green-500-25 to-white p-8 rounded-2xl mb-8 border-2 border-vine-green-100 shadow-xl">
                 {/* Three main KPI cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-                  <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-300">
+                  <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-vine-green-500 hover:shadow-xl transition-shadow duration-300">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-vine-green-600 uppercase font-bold tracking-wider">Break-Even Year</p>
                       <div className="text-2xl">⏱️</div>
@@ -2900,7 +2899,7 @@ const LTV = (landValue + improvementsValue) > 0
                         <span className="font-semibold text-red-900">Annual Operating Costs</span>
                         <span className="font-black text-xl text-red-800">${annualFixed.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-vine-green-50 to-vine-green-100 rounded-lg border-l-4 border-blue-400">
+                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-vine-green-50 to-vine-green-100 rounded-lg border-l-4 border-vine-green-500">
                         <span className="font-semibold text-vine-green-800">Annual Net Profit (full production)</span>
                         <span className="font-black text-xl text-vine-green-700">
                           ${fullProdNet.toLocaleString()}
@@ -3059,7 +3058,7 @@ const LTV = (landValue + improvementsValue) > 0
                                 <span className="mr-2">{percentage.toFixed(1)}%</span>
                                 <div className="w-24 bg-gray-200 rounded-full h-2.5">
                                     <div 
-                                    className={`h-2.5 rounded-full ${index % 2 === 0 ? 'bg-vine-green-500' : 'bg-blue-400'}`}
+                                    className={`h-2.5 rounded-full ${index % 2 === 0 ? 'bg-vine-green-500' : 'bg-vine-green-500'}`}
                                     style={{ width: `${percentage}%` }}
                                     ></div>
                                 </div>
@@ -3837,7 +3836,7 @@ return (
     {/* When embedded, we rely on SiteLayout's header. No local header. */}
     <main className="flex-grow w-full overflow-x-hidden">
 
-      {/* Hide the big blue banner/logo when embedded */}
+      {/* Hide the big vine-green-500 banner/logo when embedded */}
       {/*<ProjectBanner years={projYears} setYears={setProjYears} /> */}
  
        <TabNav
@@ -3854,7 +3853,7 @@ return (
        />
  
        {/* centered content container */}
-       <div className="p-8 max-w-screen-2xl mx-auto space-y-12">
+       <div className="w-full">
          {MainUI}
        </div>
      </main>
