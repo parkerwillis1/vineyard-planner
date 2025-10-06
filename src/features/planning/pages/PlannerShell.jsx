@@ -73,7 +73,7 @@ const ProjectBanner = ({ years, setYears }) => (
 /*  Sticky tab bar – lives directly under ProjectBanner       */
 /* --------------------------------------------------------- */
 
-const TAB_H = 1; // bar height in px (keep in sync with Tailwind padding)
+const TAB_H = 50; // bar height in px (keep in sync with Tailwind padding)
 
 
 const TabNav = ({
