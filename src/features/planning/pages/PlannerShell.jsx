@@ -270,10 +270,11 @@ export default function PlannerShell({ embedded = false }) {
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
   useEffect(() => {
-    const id = requestAnimationFrame(() => {
+    // Only trigger resize after route/tab has fully changed
+    const id = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
-    });
-    return () => cancelAnimationFrame(id);
+    }, 0);
+    return () => clearTimeout(id);
   }, [location.pathname, activeTab]);
 
   const getYieldForYear = (year) => {
