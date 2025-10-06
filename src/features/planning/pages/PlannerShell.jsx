@@ -1027,7 +1027,7 @@ const LTV = (landValue + improvementsValue) > 0
   const MainUI = (
     <div className="w-full overflow-x-hidden">
 
-      <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-screen-2xl mx-auto"> 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
@@ -1047,7 +1047,6 @@ const LTV = (landValue + improvementsValue) > 0
       {/* INPUTS TAB */}
       {activeTab === "inputs" && (
         <div className="space-y-10">
-          <SectionHeader title="Financial Planning Inputs" />
 
           {/* ADD THE WARNING RIGHT HERE: */}
           {!st.vineyardLayout?.calculatedLayout && (
