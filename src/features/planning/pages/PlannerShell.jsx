@@ -3833,7 +3833,7 @@ const LTV = (landValue + improvementsValue) > 0
 );
 
 return (
-  <div className={`min-h-screen bg-gray-50`}>
+  <div className="min-h-screen bg-gray-50">
     {/* When embedded, we rely on SiteLayout's header. No local header. */}
     <main className="flex-grow w-full overflow-x-hidden">
 
