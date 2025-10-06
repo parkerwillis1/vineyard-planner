@@ -14,8 +14,7 @@ export default function SiteLayout() {
         <div className="max-w-screen-2xl mx-auto px-6 py-3 flex items-center gap-6">
           {/* Brand */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img src="/VineSightLogo.png" alt="Vine Pioneer" className="h-7" />
-            <span className="font-semibold text-blue-900">Vine Pioneer</span>
+            <img src="/VinePioneerLongV1.png" alt="Vine Pioneer" className="h-7" />
           </Link>
 
           {/* Left nav */}
