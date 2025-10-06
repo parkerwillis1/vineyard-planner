@@ -423,7 +423,7 @@ export default function PlannerShell({ embedded = false }) {
   })();
 
   return () => { isCancelled = true; };
-}, [user, planId, DEFAULT_ST]);   // run when user changes
+}, [user, planId]);   // run when user changes
 
 
 
