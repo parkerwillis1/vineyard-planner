@@ -269,8 +269,7 @@ export default function PlannerShell({ embedded = false }) {
   const location = useLocation();
   console.log('📍 Location in PlannerShell:', location.pathname);
   const stickyTopClass = embedded ? "top-14 md:top-16" : "top-0"; // ~56–64px header
-  const topPadClass    = embedded ? "pt-14 md:pt-16" : "";
-
+  
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
   useEffect(() => {
@@ -3834,7 +3833,7 @@ const LTV = (landValue + improvementsValue) > 0
 );
 
 return (
-  <div className={`min-h-screen bg-gray-50 ${topPadClass}`}>
+  <div className={`min-h-screen bg-gray-50`}>
     {/* When embedded, we rely on SiteLayout's header. No local header. */}
     <main className="flex-grow w-full overflow-x-hidden">
 
