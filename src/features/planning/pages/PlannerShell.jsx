@@ -73,7 +73,7 @@ const ProjectBanner = ({ years, setYears }) => (
 /*  Sticky tab bar – lives directly under ProjectBanner       */
 /* --------------------------------------------------------- */
 
-const TAB_H = 56; // bar height in px (keep in sync with Tailwind padding)
+const TAB_H = 0; // bar height in px (keep in sync with Tailwind padding)
 
 
 const TabNav = ({
@@ -269,7 +269,7 @@ export default function PlannerShell({ embedded = false }) {
   const location = useLocation();
   console.log('📍 Location in PlannerShell:', location.pathname);
   const stickyTopClass = embedded ? "top-14 md:top-16" : "top-0"; // ~56–64px header
-  
+
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
   useEffect(() => {
