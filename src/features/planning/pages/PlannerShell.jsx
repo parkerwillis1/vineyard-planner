@@ -434,6 +434,11 @@ export default function PlannerShell({ embedded = false }) {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
 
+  const setWithLog = (newState) => {
+    console.log('🔥 SET CALLED', new Error().stack);
+    set(newState);
+  };
+
     async function handleManualSave() {
       if (!user) {
         alert('Sign in to save your plan.');
@@ -1025,11 +1030,11 @@ const LTV = (landValue + improvementsValue) > 0
         <div className="space-y-8">
           <SectionHeader title="Vineyard Design & Layout Planning" />
           
-          <VineyardLayoutConfig
+          {/* <VineyardLayoutConfig
             acres={stNum.acres}
             onLayoutChange={handleLayoutChange}
             currentLayout={st.vineyardLayout}
-          />
+          /> */}
         </div>
       )}
       
