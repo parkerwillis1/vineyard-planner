@@ -267,15 +267,18 @@ export default function PlannerShell({ embedded = false }) {
   const location = useLocation();
   const stickyTopClass = embedded ? "top-14 md:top-16" : "top-0"; // ~56–64px header
   const topPadClass    = embedded ? "pt-14 md:pt-16" : "";
+
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
   useEffect(() => {
-    // Only trigger resize after route/tab has fully changed
-    const id = setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-    }, 0);
-    return () => clearTimeout(id);
-  }, [location.pathname, activeTab]);
+    // Only dispatch resize events when we're on tabs with charts
+    if (['establishment', 'proj', 'details'].includes(activeTab)) {
+      const id = requestAnimationFrame(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+      return () => cancelAnimationFrame(id);
+    }
+  }, [activeTab]);
 
   const getYieldForYear = (year) => {
     if (year <= 3) return 0;
