@@ -87,7 +87,8 @@ const TabNav = ({
   dirty,
   lastSaved,
   stickyTopClass = "top-0",
- }) => {  const tabs = [
+}) => {
+  const tabs = [
     { id: "design",        label: "Design", shortLabel: "Design" },
     { id: "inputs",        label: "Financial Inputs", shortLabel: "Inputs" },
     { id: "establishment", label: "Vineyard Setup", shortLabel: "Setup" },
@@ -96,31 +97,33 @@ const TabNav = ({
   ];
 
   return (
-    <>
-      <div
-        className={`sticky ${stickyTopClass} z-20 bg-white border-b border-gray-200 shadow-sm`}
-        style={{ height: TAB_H }}
-      >
-        <nav className="flex items-center gap-2 h-full px-4 sm:px-6 lg:px-8 max-w-screen-2xl mx-auto overflow-x-auto">
-          {tabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setActive(t.id)}
-              className={`px-4 sm:px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
-                active === t.id
-                  ? "text-vine-green-700 border-b-2 border-vine-green-600"
-                  : "text-gray-600 hover:text-vine-green-700"
-              }`}
-            >
-              <span className="block sm:hidden">{t.shortLabel || t.label}</span>
-              <span className="hidden sm:block">{t.label}</span>
-            </button>
-          ))}
+    <div
+      className={`sticky ${stickyTopClass} z-20 bg-white border-b border-gray-200`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav className="flex items-center justify-between h-14">
+          {/* LEFT SIDE - Tabs */}
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {tabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setActive(t.id)}
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  active === t.id
+                    ? "border-vine-green-600 text-vine-green-700"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                <span className="hidden sm:inline">{t.label}</span>
+                <span className="sm:hidden">{t.shortLabel || t.label}</span>
+              </button>
+            ))}
+          </div>
 
-          {/* RIGHT SIDE */}
-          <div className="ml-auto flex items-center gap-4 pr-2">
-            <label className="flex items-center gap-1 text-xs sm:text-sm text-vine-green-600 font-medium">
-              Projection&nbsp;Years
+          {/* RIGHT SIDE - Controls */}
+          <div className="flex items-center gap-4 ml-4">
+            <label className="hidden md:flex items-center gap-2 text-sm text-gray-700">
+              Years
               <Input
                 type="number"
                 min={1}
@@ -129,29 +132,28 @@ const TabNav = ({
                 onChange={(e) =>
                   setYears(Math.max(1, Math.min(30, Number(e.target.value) || 1)))
                 }
-                className="w-16 text-center bg-white border-gray-200"
+                className="w-16 text-center"
               />
             </label>
 
-            <span className="hidden sm:flex items-center text-xs sm:text-sm text-gray-700">
-              Total&nbsp;Investment
-              <span className="ml-2 px-3 py-1 rounded-full bg-purple-50 text-purple-700 font-semibold">
+            <span className="hidden lg:flex items-center gap-2 text-sm text-gray-700">
+              Total
+              <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">
                 ${totalEstCost.toLocaleString()}
               </span>
             </span>
 
             <button
               onClick={onSave}
-              className="px-3 py-2 text-xs sm:text-sm rounded-md bg-vine-green-500 text-white hover:bg-vine-green-600 font-medium transition disabled:opacity-50"
+              className="px-4 py-2 text-sm rounded-md bg-vine-green-600 text-white hover:bg-vine-green-700 font-medium transition disabled:opacity-50"
               disabled={isSaving}
             >
               {isSaving ? 'Saving…' : 'Save'}
             </button>
-
           </div>
         </nav>
       </div>
-    </>
+    </div>
   );
 };
 
@@ -1030,8 +1032,10 @@ const LTV = (landValue + improvementsValue) > 0
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
-        <div className="space-y-6">
-          <SectionHeader title="Vineyard Design & Layout Planning" />
+        <div className="space-y-8">
+          <h1 className="text-2xl font-bold text-vine-green-700">
+            Vineyard Design & Layout Planning
+          </h1>
           
           <VineyardLayoutConfig
             acres={stNum.acres}
