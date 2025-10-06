@@ -1,9 +1,10 @@
 import React from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";        // adjust if your path differs
 import { supabase } from "@/shared/lib/supabaseClient";
 
 export default function SiteLayout() {
+  const location = useLocation();
   const { user } = useAuth() || {};
 
   return (
@@ -68,6 +69,9 @@ export default function SiteLayout() {
       {/* Page content */}
       <main className="max-w-screen-2xl mx-auto px-6 py-10">
         <Outlet />
+      </main>
+      <main className="max-w-screen-2xl mx-auto px-6 py-10">
+        <Outlet key={location.pathname} />
       </main>
     </div>
   );
