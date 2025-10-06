@@ -97,9 +97,8 @@ const TabNav = ({
   ];
 
   return (
-    <div
-      className={`sticky ${stickyTopClass} z-20 bg-white border-b border-gray-200`}
-    >
+    <div className={`sticky ${stickyTopClass} z-20 bg-white border-b border-gray-200`}>
+      {/* Add the same max-width container and padding as your content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <nav className="flex items-center justify-between h-14">
           {/* LEFT SIDE - Tabs */}
@@ -121,7 +120,7 @@ const TabNav = ({
           </div>
 
           {/* RIGHT SIDE - Controls */}
-          <div className="flex items-center gap-4 ml-4">
+          <div className="flex items-center gap-4">
             <label className="hidden md:flex items-center gap-2 text-sm text-gray-700">
               Years
               <Input
