@@ -1046,7 +1046,7 @@ const LTV = (landValue + improvementsValue) > 0
       
       {/* INPUTS TAB */}
       {activeTab === "inputs" && (
-        <div className="space-y-10">
+        <div className="space-y-8">
 
           {/* ADD THE WARNING RIGHT HERE: */}
           {!st.vineyardLayout?.calculatedLayout && (
