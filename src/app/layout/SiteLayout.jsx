@@ -20,33 +20,33 @@ export default function SiteLayout() {
           {/* Left nav */}
           <nav className="flex items-center gap-8">
             <NavLink to="/" end className={({isActive}) =>
-              isActive ? "text-blue-700 font-semibold text-base" : "text-gray-700 hover:text-blue-700"
+              isActive ? "text-vine-green-500 font-semibold text-base" : "text-gray-700 hover:text-vine-green-500"
             }>Home</NavLink>
 
             <NavLink to="/planner" className={({isActive}) =>
-              isActive ? "text-blue-700 font-semibold text-base" : "text-gray-700 hover:text-blue-700"
+              isActive ? "text-vine-green-500 font-semibold text-base" : "text-gray-700 hover:text-vine-green-500"
             }>Planner</NavLink>
 
             <NavLink to="/vineyards" className={({isActive}) =>
-              isActive ? "text-blue-700 font-semibold text-base" : "text-gray-700 hover:text-blue-700"
+              isActive ? "text-vine-green-500 font-semibold text-base" : "text-gray-700 hover:text-vine-green-500"
             }>Vineyards</NavLink>
 
             <NavLink to="/about" className={({isActive}) =>
-              isActive ? "text-blue-700 font-semibold text-base" : "text-gray-700 hover:text-blue-700"
+              isActive ? "text-vine-green-500 font-semibold text-base" : "text-gray-700 hover:text-vine-green-500"
             }>About</NavLink>
           </nav>
 
           {/* Right side */}
           <div className="ml-auto flex items-center gap-4">
             <NavLink to="/docs" className={({isActive}) =>
-              isActive ? "text-blue-700 font-semibold text-base" : "text-gray-700 hover:text-blue-700"
+              isActive ? "text-vine-green-500 font-semibold text-base" : "text-gray-700 hover:text-vine-green-500"
             }>Documentation</NavLink>
 
             {user ? (
               <div className="relative">
                 <button
                   onClick={() => setShowAccountMenu(!showAccountMenu)}
-                  className="text-gray-700 hover:text-blue-700 font-medium text-base"
+                  className="text-gray-700 hover:text-vine-green-500 font-medium text-base"
                 >
                   Account
                 </button>
@@ -87,7 +87,7 @@ export default function SiteLayout() {
                 )}
               </div>
             ) : (
-              <Link to="/signin" className="text-blue-700 hover:underline font-medium text-base">
+              <Link to="/signin" className="text-vine-green-500 hover:underline font-medium text-base">
                 Sign In
               </Link>
             )}
@@ -95,7 +95,7 @@ export default function SiteLayout() {
         </div>
       </header>
 
-      <main className="max-w-screen-2xl mx-auto px-6 py-10">
+      <main className="max-w-screen-2xl mx-auto px-6">
         <Outlet key={location.pathname} />
       </main>
     </div>

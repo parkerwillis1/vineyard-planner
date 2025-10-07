@@ -3836,7 +3836,7 @@ const LTV = (landValue + improvementsValue) > 0
 
 return (
   <div className="min-h-screen bg-white">
-    <main className="w-full pt-6 overflow-x-hidden">
+    <main className="w-full pt-0 overflow-x-hidden">
 
       {/* Hide the big vine-green-500 banner/logo when embedded */}
       {/*<ProjectBanner years={projYears} setYears={setProjYears} /> */}
