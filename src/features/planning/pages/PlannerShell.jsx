@@ -1027,12 +1027,12 @@ const LTV = (landValue + improvementsValue) > 0
   const MainUI = (
     <div className="w-full overflow-x-hidden">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0">
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
         <div className="space-y-8">
-          <h1 className="text-2xl font-bold text-vine-green-700">
+          <h1 className="text-2xl font-bold text-vine-green-700 border-b pb-3">
             Vineyard Design & Layout Planning
           </h1>
           
@@ -1050,7 +1050,7 @@ const LTV = (landValue + improvementsValue) > 0
 
           {/* ADD THE WARNING RIGHT HERE: */}
           {!st.vineyardLayout?.calculatedLayout && (
-            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-center gap-2">
                 <span className="text-yellow-600">⚠️</span>
                 <div>
@@ -3836,8 +3836,7 @@ const LTV = (landValue + improvementsValue) > 0
 
 return (
   <div className="min-h-screen bg-white">
-    {/* When embedded, we rely on SiteLayout's header. No local header. */}
-    <main className="flex-grow w-full overflow-x-hidden">
+    <main className="w-full overflow-x-hidden">
 
       {/* Hide the big vine-green-500 banner/logo when embedded */}
       {/*<ProjectBanner years={projYears} setYears={setProjYears} /> */}
