@@ -215,7 +215,7 @@ const SectionHeader = ({ title }) => (
 
 // Card container for each section
 const SectionCard = ({ title, children, className = "" }) => (
-    <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-12"> {/* Increase mb-8 to mb-10 */}
+    <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-16"> {/* Increase mb-8 to mb-10 */}
       <div className="bg-vine-green-50 px-6 py-4 border-b"> {/* Increase py-3 to py-4 */}
         <h3 className="font-medium text-vine-green-700 text-lg">{title}</h3> {/* Add text-lg */}
       </div>
@@ -232,7 +232,7 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
   const [open, setOpen] = React.useState(defaultOpen);
 
   return (
-    <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-12">
+    <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-16">
       {/* clickable header */}
       <button
         onClick={() => setOpen(!open)}
@@ -1027,7 +1027,7 @@ const LTV = (landValue + improvementsValue) > 0
   const MainUI = (
     <div className="w-full overflow-x-hidden">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
