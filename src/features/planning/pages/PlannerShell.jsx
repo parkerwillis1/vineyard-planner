@@ -1240,7 +1240,7 @@ const LTV = (landValue + improvementsValue) > 0
             <tbody>
                 {stNum.prePlanting.map((row, i) => (
                 <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-4">
+                    <td className="p-3">
                     <Checkbox
                         checked={row.include}
                         onCheckedChange={v => {
@@ -1251,7 +1251,7 @@ const LTV = (landValue + improvementsValue) > 0
                         className="h-4 w-4"
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         className="w-32 bg-white text-sm"
                         value={row.label}
@@ -1262,7 +1262,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number"
                         step="1"
@@ -1275,7 +1275,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={() =>
@@ -1342,7 +1342,7 @@ const LTV = (landValue + improvementsValue) > 0
               <tbody>
                 {stNum.planting.map((row, i) => (
                   <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-4">
+                    <td className="p-3">
                       <Checkbox
                         checked={row.include}
                         onCheckedChange={v => {
@@ -1353,7 +1353,7 @@ const LTV = (landValue + improvementsValue) > 0
                         className="h-4 w-4"
                       />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       <Input
                         className="w-32 bg-white text-sm"
                         value={row.label}
@@ -1364,7 +1364,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                       />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       <Input
                         type="number"
                         step="0.1"
@@ -1377,7 +1377,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                       />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       <Input
                         type="number"
                         step="1"
@@ -1390,7 +1390,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                       />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       <Input
                         type="number"
                         step="1"
@@ -1403,7 +1403,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                       />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={() =>
@@ -1444,7 +1444,7 @@ const LTV = (landValue + improvementsValue) > 0
             <tbody>
                 {stNum.cultural.map((row, i) => (
                 <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-4">
+                    <td className="p-3">
                     <Checkbox
                         checked={row.include}
                         onCheckedChange={v => {
@@ -1455,7 +1455,7 @@ const LTV = (landValue + improvementsValue) > 0
                         className="h-4 w-4"
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         className="w-32 bg-white text-sm"
                         value={row.label}
@@ -1466,7 +1466,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number"
                         step="1"
@@ -1479,7 +1479,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={() =>
@@ -1521,7 +1521,7 @@ const LTV = (landValue + improvementsValue) > 0
             <tbody>
                 {stNum.harvest.map((row, i) => (
                 <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-4">
+                    <td className="p-3">
                     <Checkbox
                         checked={row.include}
                         onCheckedChange={v => {
@@ -1532,7 +1532,7 @@ const LTV = (landValue + improvementsValue) > 0
                         className="h-4 w-4"
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         className="w-32 bg-white text-sm"
                         value={row.label}
@@ -1543,7 +1543,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number"
                         step="1"
@@ -1556,7 +1556,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number"
                         step="1"
@@ -1569,7 +1569,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={() =>
@@ -1610,7 +1610,7 @@ const LTV = (landValue + improvementsValue) > 0
             <tbody>
                 {stNum.fees.map((row,i)=>( 
                 <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-4">
+                    <td className="p-3">
                     <Checkbox
                         checked={row.include}
                         onCheckedChange={v=>{
@@ -1619,7 +1619,7 @@ const LTV = (landValue + improvementsValue) > 0
                         className="h-4 w-4"
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         className="w-32 bg-white text-sm"
                         value={row.label}
@@ -1628,7 +1628,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number" step="1"
                         className="w-24 bg-white text-sm"
@@ -1638,7 +1638,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={()=>update("fees",stNum.fees.filter((_,j)=>j!==i))}
@@ -1672,7 +1672,7 @@ const LTV = (landValue + improvementsValue) > 0
             <tbody>
                 {stNum.overheadCash.map((row,i)=>( 
                 <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-4">
+                    <td className="p-3">
                     <Checkbox
                         checked={row.include}
                         onCheckedChange={v=>{
@@ -1681,7 +1681,7 @@ const LTV = (landValue + improvementsValue) > 0
                         className="h-4 w-4"
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         className="w-32 bg-white text-sm"
                         value={row.label}
@@ -1690,7 +1690,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number" step="1"
                         className="w-24 bg-white text-sm"
@@ -1700,7 +1700,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={()=>update("overheadCash",stNum.overheadCash.filter((_,j)=>j!==i))}
@@ -1734,7 +1734,7 @@ const LTV = (landValue + improvementsValue) > 0
             <tbody>
                 {stNum.overheadNonCash.map((row,i)=>( 
                 <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-4">
+                    <td className="p-3">
                     <Checkbox
                         checked={row.include}
                         onCheckedChange={v=>{
@@ -1743,7 +1743,7 @@ const LTV = (landValue + improvementsValue) > 0
                         className="h-4 w-4"
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         className="w-32 bg-white text-sm"
                         value={row.label}
@@ -1752,7 +1752,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number" step="1"
                         className="w-24 bg-white text-sm"
@@ -1762,7 +1762,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={()=>update("overheadNonCash",stNum.overheadNonCash.filter((_,j)=>j!==i))}
@@ -1797,7 +1797,7 @@ const LTV = (landValue + improvementsValue) > 0
             <tbody>
                 {stNum.equipmentOps.map((row,i)=>( 
                 <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-4">
+                    <td className="p-3">
                     <Checkbox
                         checked={row.include}
                         onCheckedChange={v=>{
@@ -1806,7 +1806,7 @@ const LTV = (landValue + improvementsValue) > 0
                         className="h-4 w-4"
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         className="w-32 bg-white text-sm"
                         value={row.label}
@@ -1815,7 +1815,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number" step="0.1"
                         className="w-24 bg-white text-sm"
@@ -1825,7 +1825,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number" step="1"
                         className="w-24 bg-white text-sm"
@@ -1835,7 +1835,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={()=>update("equipmentOps",stNum.equipmentOps.filter((_,j)=>j!==i))}
@@ -1869,7 +1869,7 @@ const LTV = (landValue + improvementsValue) > 0
             <tbody>
                 {stNum.marketing.map((row,i)=>( 
                 <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="p-4">
+                    <td className="p-3">
                     <Checkbox
                         checked={row.include}
                         onCheckedChange={v=>{
@@ -1878,7 +1878,7 @@ const LTV = (landValue + improvementsValue) > 0
                         className="h-4 w-4"
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         className="w-32 bg-white text-sm"
                         value={row.label}
@@ -1887,7 +1887,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number" step="1"
                         className="w-24 bg-white text-sm"
@@ -1897,7 +1897,7 @@ const LTV = (landValue + improvementsValue) > 0
                         }}
                     />
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                     <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={()=>update("marketing",stNum.marketing.filter((_,j)=>j!==i))}
@@ -1964,14 +1964,14 @@ const LTV = (landValue + improvementsValue) > 0
                 <tbody>
                   {stNum.equipmentRows.map((r, i) => (
                     <tr key={i} className="border-b hover:bg-gray-50">
-                      <td className="p-4">
+                      <td className="p-3">
                         <Checkbox
                           checked={r.include}
                           onCheckedChange={v => updateEquip(i, "include", v)}
                           className="h-4 w-4"
                         />
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <select
                           className="border p-1 rounded bg-white text-sm w-full"
                           value={r.type}
@@ -1992,7 +1992,7 @@ const LTV = (landValue + improvementsValue) > 0
                           ))}
                         </select>
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <Input
                           type="number"
                           className="w-24 bg-white text-sm"
@@ -2003,7 +2003,7 @@ const LTV = (landValue + improvementsValue) > 0
                           }
                         />
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <Input
                           type="number"
                           className="w-16 bg-white text-sm"
@@ -2014,7 +2014,7 @@ const LTV = (landValue + improvementsValue) > 0
                           }
                         />
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <Input
                           type="number"
                           className="w-16 bg-white text-sm"
@@ -2028,7 +2028,7 @@ const LTV = (landValue + improvementsValue) > 0
                       <td className="p-3 font-medium">
                         {r.include ? `$${pmt(r.price, r.rate, r.term).toFixed(0)}` : "$0"}
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <button
                           className="text-red-600 hover:text-red-800 p-1"
                           onClick={() =>
@@ -2080,7 +2080,7 @@ const LTV = (landValue + improvementsValue) > 0
                 {stNum.loans.map((l, i) => (
                 <tr key={i} className="border-b hover:bg-gray-50">
                     {/* checkbox to include/exclude */}
-                    <td className="p-4">
+                    <td className="p-3">
                     <Checkbox
                         checked={l.include}
                         onCheckedChange={v => updateLoan(i, "include", v)}
@@ -2089,7 +2089,7 @@ const LTV = (landValue + improvementsValue) > 0
                     </td>
 
                     {/* label */}
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         className="w-32 bg-white text-sm"
                         value={l.label}
@@ -2098,7 +2098,7 @@ const LTV = (landValue + improvementsValue) > 0
                     </td>
 
                     {/* principal */}
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number"
                         className="w-28 bg-white text-sm"
@@ -2111,7 +2111,7 @@ const LTV = (landValue + improvementsValue) > 0
                     </td>
 
                     {/* rate (%) — stored as percent, not decimal */}
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number"
                         className="w-16 bg-white text-sm"
@@ -2125,7 +2125,7 @@ const LTV = (landValue + improvementsValue) > 0
                     </td>
 
                     {/* term */}
-                    <td className="p-4">
+                    <td className="p-3">
                     <Input
                         type="number"
                         className="w-16 bg-white text-sm"
@@ -2145,7 +2145,7 @@ const LTV = (landValue + improvementsValue) > 0
                     </td>
 
                     {/* remove button */}
-                    <td className="p-4">
+                    <td className="p-3">
                     <button
                         className="text-red-600 hover:text-red-800 p-1"
                         onClick={() =>
@@ -2195,14 +2195,14 @@ const LTV = (landValue + improvementsValue) > 0
                 <tbody>
                   {stNum.purchases.map((r, i) => (
                     <tr key={i} className="border-b hover:bg-gray-50">
-                      <td className="p-4">
+                      <td className="p-3">
                         <Checkbox
                           checked={r.include}
                           onCheckedChange={v => updatePurchase(i, { ...r, include: v })}
                           className="h-4 w-4"
                         />
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <select
                           className="border p-1 rounded bg-white text-sm w-full"
                           value={r.grape}
@@ -2222,7 +2222,7 @@ const LTV = (landValue + improvementsValue) > 0
                           ))}
                         </select>
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <Input
                           type="number"
                           className="w-24 bg-white text-sm"
@@ -2242,7 +2242,7 @@ const LTV = (landValue + improvementsValue) > 0
                       <td className="p-3 font-medium">
                         {r.include ? `$${(r.pounds * r.pricePerLb).toFixed(0)}` : "$0"}
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <button
                           className="text-red-600 hover:text-red-800 p-1"
                           onClick={() =>
@@ -2290,14 +2290,14 @@ const LTV = (landValue + improvementsValue) > 0
                 <tbody>
                   {stNum.unsoldBottles.map((u, idx) => (
                     <tr key={idx} className="border-b hover:bg-gray-50">
-                      <td className="p-4">
+                      <td className="p-3">
                         <Checkbox 
                           checked={u.include} 
                           onCheckedChange={v => updateUnsold(idx, "include", v)} 
                           className="h-4 w-4"
                         />
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <select 
                           className="border p-1 rounded bg-white text-sm" 
                           value={u.category} 
@@ -2306,7 +2306,7 @@ const LTV = (landValue + improvementsValue) > 0
                           {UNSOLD_CATEGORIES.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                         </select>
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <select 
                           className="border p-1 rounded bg-white text-sm" 
                           value={u.year} 
@@ -2317,7 +2317,7 @@ const LTV = (landValue + improvementsValue) > 0
                           ))}
                         </select>
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <Input 
                           type="number" 
                           step="1" 
@@ -2326,7 +2326,7 @@ const LTV = (landValue + improvementsValue) > 0
                           onChange={e => updateUnsold(idx, "bottles", (e.target.value) )} 
                         />
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <button
                           className="text-red-600 hover:text-red-800 p-1"
                           onClick={() => update("unsoldBottles", stNum.unsoldBottles.filter((_, j) => j !== idx))}
