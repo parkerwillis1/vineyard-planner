@@ -9,7 +9,9 @@ export default function SiteLayout() {
   const [showAccountMenu, setShowAccountMenu] = useState(false);
 
   const isPlannerPage = location.pathname.startsWith('/planner');
-  const isHomePage = location.pathname === '/';  // Add this line
+  
+  // Pages that need the constrained layout with padding
+  const needsPadding = ['/signin', '/signup', '/account/settings'].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-white">
@@ -98,11 +100,10 @@ export default function SiteLayout() {
         </div>
       </header>
 
-      {/* Change this line: */}
       <main className={
         isPlannerPage ? "-mt-12" : 
-        isHomePage ? "" : 
-        "max-w-screen-2xl mx-auto px-6 py-10"
+        needsPadding ? "max-w-screen-2xl mx-auto px-6 py-10" : 
+        ""
       }>
         <Outlet key={location.pathname} />
       </main>
