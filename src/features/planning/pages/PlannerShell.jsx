@@ -1046,7 +1046,7 @@ const LTV = (landValue + improvementsValue) > 0
       
       {/* INPUTS TAB */}
       {activeTab === "inputs" && (
-        <div className="space-y-8 pt-10">
+        <div className="space-y-8 pt-14">
           {!st.vineyardLayout?.calculatedLayout && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-center gap-2">
@@ -2348,7 +2348,7 @@ const LTV = (landValue + improvementsValue) > 0
 
         {/* ── Vineyard Establishment Tab ── */}
         {activeTab === "establishment" && (
-        <div className="space-y-8 p-10">
+        <div className="space-y-8 p-14">
             <SectionHeader title="Year 0 Establishment Costs" />
 
             {/* Enhanced Summary Cards */}
@@ -2608,7 +2608,7 @@ const LTV = (landValue + improvementsValue) > 0
 
         {/* ── 10-Year Projection Tab ── */}
         {activeTab === "proj" && (
-        <div className="space-y-8 p-10">
+        <div className="space-y-8 p-14">
             <SectionHeader title={`${projYears}-Year Financial Projection`} />
 
             {/* Enhanced Top-line summary */}
@@ -2813,7 +2813,7 @@ const LTV = (landValue + improvementsValue) > 0
  
         {/* ------- render Details tab only when active ------- */}
         {activeTab === "details" && (
-        <div className="space-y-8 p-10 max-w-full overflow-hidden">
+        <div className="space-y-8 p-14 max-w-full overflow-hidden">
             <SectionHeader title="Vineyard Financial Analysis & Breakdown" />
             
             {/* Executive Summary Card */}
