@@ -1045,8 +1045,12 @@ const LTV = (landValue + improvementsValue) > 0
       )}
       
       {/* INPUTS TAB */}
-      {activeTab === "inputs" && (
+      {activeTab === "design" && (
         <div className="space-y-8 pt-24">
+          <h1 className="text-2xl font-bold text-vine-green-700 border-b pb-3">
+            Financial Inputs for the Vineyard
+          </h1>
+
           {!st.vineyardLayout?.calculatedLayout && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-center gap-2">
