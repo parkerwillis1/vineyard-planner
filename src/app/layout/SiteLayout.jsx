@@ -9,7 +9,7 @@ export default function SiteLayout() {
   const [showAccountMenu, setShowAccountMenu] = useState(false);
 
   const isPlannerPage = location.pathname.startsWith('/planner');
-
+  const isHomePage = location.pathname === '/';  // Add this line
 
   return (
     <div className="min-h-screen bg-white">
@@ -98,7 +98,12 @@ export default function SiteLayout() {
         </div>
       </header>
 
-      <main className={isPlannerPage ? "-mt-12" : "max-w-screen-2xl mx-auto px-6 py-10"}>
+      {/* Change this line: */}
+      <main className={
+        isPlannerPage ? "-mt-12" : 
+        isHomePage ? "" : 
+        "max-w-screen-2xl mx-auto px-6 py-10"
+      }>
         <Outlet key={location.pathname} />
       </main>
     </div>
