@@ -1,225 +1,316 @@
-// src/components/DocumentationPage.jsx
-import React from "react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
-/**
- * 📚 Vineyard Financial Planner – Full User Guide
- *
- * ▸ A single long page, broken into clear, scroll‑friendly sections.
- * ▸ Uses native Tailwind prose classes for comfortable reading.
- * ▸ Covers: concept overview ▸ quick‑start checklist ▸ tab‑by‑tab field
- *   reference ▸ financial logic & formulas ▸ FAQ / troubleshooting.
- */
 export default function DocumentationPage() {
   return (
-    <div className="p-6 lg:p-10 max-w-4xl mx-auto space-y-12 prose prose-blue">
-      {/* back link */}
-      <Link to="/" className="no-underline text-blue-600 hover:underline">
-        ← Back to Planner
-      </Link>
-
-      {/* -------------------------------------------------- */}
-      {/* 1 ▸ INTRODUCTION                                  */}
-      {/* -------------------------------------------------- */}
-      <section>
-        <h1 className="!mb-2 flex items-center gap-2">
-          📄 Vineyard Planner Documentation
-        </h1>
-        <p className="lead !mb-4">
-          This guide explains <strong>why</strong> the Vineyard Financial
-          Planner exists and <strong>how</strong> to use every field, slider,
-          and switch to build a bullet‑proof 1–30&nbsp;year pro‑forma for a
-          small‑to‑mid‑sized vineyard / estate winery.
-        </p>
-        <blockquote>
-          The model is designed for
-          <em> owner‑operators</em> who plan to (a) grow grapes,
-          (b) vinify, bottle and sell their own wine,
-          (c) sell all grape yields to other wineries, and optionally
-          (d) purchase outside fruit to scale production.
-          It balances simplicity with enough rigor to satisfy lenders
-          and investors.
-        </blockquote>
-      </section>
-
-      {/* -------------------------------------------------- */}
-      {/* 2 ▸ QUICK‑START CHECKLIST                         */}
-      {/* -------------------------------------------------- */}
-      <section>
-        <h2>🚀 Quick‑Start (five‑minute) Checklist</h2>
-        <ol className="list-decimal pl-6 space-y-2">
-
-          {/* ① – My Plans */}
-          <li>
-            Click <strong className="text-blue-600">My Plans</strong> in the
-            left sidebar &nbsp;→&nbsp; <em>New Plan</em>. Give it a name (e.g.&nbsp;
-            <code>“5‑acre Hilltop”</code>) and press <strong>Create</strong>.
-            Every change you make is now saved under that plan.
-          </li>
-
-          {/* ② – projection years */}
-          <li>
-            At the very top of the planner set your
-            <strong> Projection&nbsp;Years</strong> (1 – 30).
-          </li>
-
-          {/* ③ – core vineyard parameters */}
-          <li>
-            In <em>Financial Inputs ▸ Core Vineyard Parameters</em> enter acreage,
-            land cost, build cost and choose either
-            <strong> Bottle Wine</strong> or
-            <strong> Sell All Grapes</strong>.
-          </li>
-
-          {/* ④ – setup items */}
-          <li>
-            Toggle any <strong>Setup Items</strong> you plan to install
-            (trellis, irrigation, etc.) and adjust their $/acre.
-          </li>
-
-          {/* ⑤ – equipment / loans */}
-          <li>
-            Add financed <strong>Equipment</strong> and any additional
-            <strong> Loans</strong> (rates &amp; terms are editable).
-          </li>
-
-          {/* ⑥ – projection review */}
-          <li>
-            Jump to the <em>{`<Projection>`}</em> tab – review break‑even,
-            year‑by‑year cash‑flow and tweak assumptions until satisfied.
-          </li>
-        </ol>
-
-        <p className="!mt-4">
-          💡 <em>Tip:</em> Every numeric field updates instantly – keep an eye on
-          the purple “Total Investment” chip and the blue/green/red KPIs in each
-          tab.
-        </p>
-      </section>
-
-      {/* -------------------------------------------------- */}
-      {/* 3 ▸ TAB‑BY‑TAB REFERENCE                          */}
-      {/* -------------------------------------------------- */}
-      <section>
-        <h2>📑 Tab‑by‑Tab Reference</h2>
-
-        {/* 3.1 Financial Inputs */}
-        <h3>1. Financial Inputs</h3>
-        <p>
-          Everything that drives the model – acreage, prices, one‑time &amp;
-          recurring costs, loans and purchases.
-        </p>
-
-        <details open>
-          <summary className="cursor-pointer font-semibold">
-            Core Vineyard Parameters
-          </summary>
-          <dl className="pl-4 space-y-2">
-            <div><dt>Acres</dt><dd>Planted acres (scales nearly every cost &amp; yield figure).</dd></div>
-            <div><dt>Sales Strategy</dt><dd>
-              <strong>Bottle Wine</strong> or <strong>Sell All Grapes</strong>.
-              Switching rewires the revenue formula and reveals the relevant
-              price field.
-            </dd></div>
-            <div><dt>Bottle Price ($)</dt><dd>Visible only in Bottle mode.</dd></div>
-            <div><dt>Grape Sale Price ($/ton)</dt><dd>Visible only in Bulk‑Grape mode.</dd></div>
-            <div><dt>Operating Cost ($/yr)</dt><dd>Auto‑calculated from all operating sections below.</dd></div>
-            <div><dt>Water Cost ($/ac‑yr)</dt><dd>Annual irrigation &amp; pumping cost.</dd></div>
-            <div><dt>Land Price ($/ac)</dt><dd>Year‑0 purchase price.</dd></div>
-            <div><dt>Build Cost ($/ac)</dt><dd>Winery / barn construction per acre.</dd></div>
-          </dl>
-        </details>
-
-        <details>
-          <summary className="cursor-pointer font-semibold">Setup Items</summary>
-          <p>One‑time per‑acre capital outlays. Switch on/off to include or skip.</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Site Prep :</strong> Clearing, ripping, soil‑work.</li>
-            <li><strong>Trellis :</strong> Posts, wire, anchors.</li>
-            <li><strong>Irrigation :</strong> Choose Drip / Sprinkler – cost field updates automatically.</li>
-            <li><strong>Vines :</strong> Plant material + labor.</li>
-            <li><strong>Fence :</strong> Deer / hog exclusion.</li>
-          </ul>
-        </details>
-
-        <details>
-          <summary className="cursor-pointer font-semibold">Insurance &amp; Licensing</summary>
-          <ul className="list-disc pl-5">
-            <li>Toggle <strong>Include Insurance</strong> to add the annual premium.</li>
-            <li><strong>License Cost</strong> covers state / federal permits; paid in the setup year.</li>
-          </ul>
-        </details>
-
-        <details>
-          <summary className="cursor-pointer font-semibold">Equipment (Financed)</summary>
-          <p>Each row is a loan‑amortised purchase. Monthly / annual payments use the standard&nbsp;<code>PMT()</code> formula.</p>
-        </details>
-
-        {/* 3.2 Vineyard Establishment */}
-        <h3>2. Vineyard Establishment</h3>
-        <p>
-          Visual “Year 0 cost sheet” – bar + pie charts show where capital is allocated.
-          Includes a financing summary and <em>Net Capital Required</em>.
-        </p>
-
-        {/* 3.3 Projection */}
-        <h3>3. {`<Projection>`} (1–30 years)</h3>
-        <ul className="list-disc pl-5">
-          <li><strong>Break‑Even Year</strong> – first year cumulative cash‑flow turns positive.</li>
-          <li>Interactive stacked bar chart of revenue / cost / net.</li>
-          <li>Detailed table underneath for export to Excel/CSV (copy‑paste).</li>
-        </ul>
-
-        {/* 3.4 Details */}
-        <h3>4. Details</h3>
-        <p>
-          Deep‑dive analytics: cost distribution, sensitivity scenarios, break‑even
-          chart, bottle economics, marketing strategy and key lender ratios.
-        </p>
-      </section>
-
-      {/* -------------------------------------------------- */}
-      {/* 4 ▸ FINANCIAL LOGIC & FORMULAS                     */}
-      {/* -------------------------------------------------- */}
-      <section>
-        <h2>📊 Financial Logic &amp; Formulas</h2>
-        <table>
-          <thead><tr><th>Metric</th><th>Formula</th></tr></thead>
-          <tbody>
-            <tr><td>Yield (bottles)</td><td><code>Acres × Tons/ac × 756</code></td></tr>
-            <tr><td>Revenue (Bottle mode)</td><td><code>Bottles Sold × Bottle Price</code></td></tr>
-            <tr><td>Revenue (Bulk‑Grape mode)</td><td><code>Tons Sold × Grape Price</code></td></tr>
-            <tr><td>Net Profit</td><td><code>Revenue − Cost</code></td></tr>
-            <tr><td>Cumulative CF</td><td><code>Σ Net Profit to Year n</code></td></tr>
-            <tr><td>LTC</td><td><code>Total Loans ÷ Total Project Cost</code></td></tr>
-            <tr><td>LTV</td><td><code>Total Loans ÷ (Land + Improvements)</code></td></tr>
-          </tbody>
-        </table>
-      </section>
-
-      {/* -------------------------------------------------- */}
-      {/* 5 ▸ FAQ / TROUBLESHOOTING                          */}
-      {/* -------------------------------------------------- */}
-      <section>
-        <h2>❓ FAQ &amp; Troubleshooting</h2>
-        <details>
-          <summary>Why is my break‑even year “&gt; 30”?</summary>
-          <p>
-            Your combined operating cost + debt service is larger than max
-            revenue at full production. Lower debt, raise price, increase acreage
-            or cut costs.
+    <div className="bg-white">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-b from-vine-green-50 to-white py-20">
+        <div className="mx-auto max-w-4xl px-6 text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+            Documentation
+          </h1>
+          <p className="mt-6 text-lg leading-8 text-gray-600">
+            Everything you need to master vineyard financial planning and modeling.
           </p>
-        </details>
-
-        <details>
-          <summary>The PMT looks too high / too low.</summary>
-          <p>
-            Remember the <code>Rate</code> field is APR %, not a decimal.<br />
-            Example: 6 % APR on a 5‑year note → enter <code>6</code>, not
-            <code>0.06</code>.
-          </p>
-        </details>
+        </div>
       </section>
+
+      {/* Quick Start Guide */}
+      <section className="mx-auto max-w-5xl px-6 py-16">
+        <h2 className="text-3xl font-bold text-gray-900 mb-8">🚀 Quick Start Guide</h2>
+        <div className="bg-vine-green-50 rounded-2xl p-8 mb-12">
+          <ol className="space-y-4">
+            <Step 
+              number="1" 
+              title="Set Your Timeline"
+              description="Choose your projection period (1-30 years) using the Years input at the top right."
+            />
+            <Step 
+              number="2" 
+              title="Design Your Vineyard"
+              description="Configure vine spacing, plot shape, and material requirements in the Design tab."
+            />
+            <Step 
+              number="3" 
+              title="Enter Financial Data"
+              description="Input acreage, costs, pricing, and choose between bottled wine or bulk grape sales."
+            />
+            <Step 
+              number="4" 
+              title="Configure Setup Costs"
+              description="Toggle setup items (trellis, irrigation, fencing) and adjust per-acre costs."
+            />
+            <Step 
+              number="5" 
+              title="Add Financing"
+              description="Include equipment purchases and loans with custom rates and terms."
+            />
+            <Step 
+              number="6" 
+              title="Review Projections"
+              description="Analyze break-even timeline, cash flow, and profitability in the projection tabs."
+            />
+          </ol>
+        </div>
+      </section>
+
+      {/* Tab-by-Tab Reference */}
+      <section className="bg-gray-50 py-16">
+        <div className="mx-auto max-w-5xl px-6">
+          <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">📋 Feature Guide</h2>
+          <div className="grid grid-cols-1 gap-6">
+            <FeatureSection
+              title="Design Tab"
+              description="Plan your vineyard layout with precision"
+              features={[
+                "Calculate optimal vine spacing patterns",
+                "Choose vineyard shape (rectangle, square, custom)",
+                "Set length-to-width ratio for your plot",
+                "Configure row orientation for sun exposure",
+                "Auto-calculate total vines, rows, and material needs"
+              ]}
+            />
+            <FeatureSection
+              title="Financial Inputs Tab"
+              description="Configure all financial parameters"
+              features={[
+                "Core parameters: acreage, pricing, and sales strategy",
+                "Setup costs: land, building, site preparation",
+                "Operating costs: pre-planting, planting, cultural operations",
+                "Equipment and loan financing options",
+                "Permits, licenses, and insurance"
+              ]}
+            />
+            <FeatureSection
+              title="Vineyard Setup Tab"
+              description="Visualize Year 0 establishment costs"
+              features={[
+                "Visual breakdown of initial investment",
+                "Interactive cost cards by category",
+                "Financing summary with loan details",
+                "Net capital required calculation",
+                "Per-acre cost analysis"
+              ]}
+            />
+            <FeatureSection
+              title="Projection Tab"
+              description="Multi-year financial forecasting"
+              features={[
+                "Year-by-year revenue and cost projections",
+                "Break-even analysis and timeline",
+                "Cumulative cash flow tracking",
+                "Interactive charts and data tables",
+                "Yield maturation curves (years 1-6+)"
+              ]}
+            />
+            <FeatureSection
+              title="Details Tab"
+              description="Deep-dive analytics and insights"
+              features={[
+                "Comprehensive cost breakdown analysis",
+                "Bottle economics and pricing strategies",
+                "Profitability metrics and ROI calculations",
+                "Lender ratios (LTC, LTV, DSCR)",
+                "Scenario sensitivity analysis"
+              ]}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Key Concepts */}
+      <section className="mx-auto max-w-5xl px-6 py-16">
+        <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">💡 Key Concepts</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <ConceptCard
+            title="Sales Strategies"
+            content={
+              <>
+                <p className="mb-3"><strong>Bottle Wine:</strong> Grow, vinify, and sell your own branded wine. Higher margins but requires winery infrastructure and licensing.</p>
+                <p><strong>Bulk Grapes:</strong> Sell all grape yields to other wineries. Lower revenue per ton but simpler operations and less capital required.</p>
+              </>
+            }
+          />
+          <ConceptCard
+            title="Break-Even Timeline"
+            content={
+              <p>The year when cumulative cash flow turns positive. Typical vineyards break even in years 6-10, depending on financing, costs, and pricing strategy.</p>
+            }
+          />
+          <ConceptCard
+            title="Yield Maturation"
+            content={
+              <p>Vines don't produce full yields immediately. Years 1-3: zero production. Year 4: 1 ton/acre. Year 5: 2.5 tons/acre. Year 6+: full production (3.5 tons/acre average).</p>
+            }
+          />
+          <ConceptCard
+            title="Lender Ratios"
+            content={
+              <>
+                <p className="mb-2"><strong>LTC (Loan-to-Cost):</strong> Total loans ÷ total project cost</p>
+                <p className="mb-2"><strong>LTV (Loan-to-Value):</strong> Total loans ÷ (land + improvements)</p>
+                <p>Lenders typically want LTC below 80% and LTV below 75%.</p>
+              </>
+            }
+          />
+        </div>
+      </section>
+
+      {/* Financial Formulas */}
+      <section className="bg-vine-green-50 py-16">
+        <div className="mx-auto max-w-5xl px-6">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">📊 Financial Formulas</h2>
+          <div className="bg-white rounded-xl shadow-sm p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormulaCard
+                name="Bottle Production"
+                formula="Acres × Tons/acre × 756 bottles/ton"
+              />
+              <FormulaCard
+                name="Wine Revenue"
+                formula="Bottles Sold × Bottle Price"
+              />
+              <FormulaCard
+                name="Grape Revenue"
+                formula="Tons Sold × Price per Ton"
+              />
+              <FormulaCard
+                name="Net Profit"
+                formula="Revenue − Total Costs"
+              />
+              <FormulaCard
+                name="Cumulative Cash Flow"
+                formula="Σ Net Profit (Year 0 through Year N)"
+              />
+              <FormulaCard
+                name="Break-Even Year"
+                formula="First year where Cumulative CF ≥ 0"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="mx-auto max-w-5xl px-6 py-16">
+        <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">❓ Frequently Asked Questions</h2>
+        <div className="space-y-4">
+          <FAQItem
+            question="Why is my break-even year showing '>10'?"
+            answer="Your annual operating costs plus debt service exceed your revenue at full production. Try reducing costs, increasing bottle price, or adjusting your financing structure."
+          />
+          <FAQItem
+            question="How accurate are the default cost estimates?"
+            answer="Our defaults are based on USDA data and industry averages for small-to-medium vineyards. However, costs vary significantly by region, soil type, and local labor rates. Always customize inputs for your specific situation."
+          />
+          <FAQItem
+            question="Can I model a phased expansion?"
+            answer="Yes! Use the 'Setup Year' field to delay vineyard establishment, or create multiple plans to compare different timing scenarios."
+          />
+          <FAQItem
+            question="What's included in 'Operating Cost'?"
+            answer="All recurring annual expenses: pruning, fertilizer, spraying, harvest labor, irrigation, utilities, insurance, property taxes, and general overhead. Equipment financing and debt service are calculated separately."
+          />
+          <FAQItem
+            question="How do I save my plan?"
+            answer="Click the green 'Save' button in the top right. If you're signed in, your plan is automatically saved to your account and accessible from 'My Plans'."
+          />
+          <FAQItem
+            question="Can I export my financial projections?"
+            answer="Yes! You can copy the projection table data and paste it into Excel or Google Sheets. A formal PDF export feature is coming soon."
+          />
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-vine-green-600 py-16">
+        <div className="mx-auto max-w-3xl px-6 text-center">
+          <h2 className="text-3xl font-bold text-white mb-6">
+            Ready to Start Planning?
+          </h2>
+          <p className="text-lg text-vine-green-100 mb-8">
+            Use these tools to create a comprehensive financial model for your vineyard.
+          </p>
+          <Link
+            to="/planner"
+            className="inline-block rounded-md bg-white px-8 py-3 text-base font-semibold text-vine-green-600 shadow-sm hover:bg-vine-green-50"
+          >
+            Open Planner
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// Helper Components
+function Step({ number, title, description }) {
+  return (
+    <li className="flex gap-4">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-vine-green-600 text-white flex items-center justify-center font-bold">
+        {number}
+      </div>
+      <div>
+        <h3 className="font-semibold text-gray-900 mb-1">{title}</h3>
+        <p className="text-gray-600">{description}</p>
+      </div>
+    </li>
+  );
+}
+
+function FeatureSection({ title, description, features }) {
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
+      <p className="text-sm text-gray-600 mb-4">{description}</p>
+      <ul className="space-y-2">
+        {features.map((feature, idx) => (
+          <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+            <span className="text-vine-green-600 mt-0.5">✓</span>
+            <span>{feature}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ConceptCard({ title, content }) {
+  return (
+    <div className="bg-white p-6 rounded-lg border-l-4 border-vine-green-600">
+      <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
+      <div className="text-gray-600">{content}</div>
+    </div>
+  );
+}
+
+function FormulaCard({ name, formula }) {
+  return (
+    <div className="border-l-4 border-vine-green-600 pl-4">
+      <div className="font-semibold text-gray-900 mb-1">{name}</div>
+      <code className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded">{formula}</code>
+    </div>
+  );
+}
+
+function FAQItem({ question, answer }) {
+  const [open, setOpen] = useState(false);
+  
+  return (
+    <div className="bg-white rounded-lg border border-gray-200">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50"
+      >
+        <span className="font-semibold text-gray-900">{question}</span>
+        <span className="text-vine-green-600 text-xl">{open ? '−' : '+'}</span>
+      </button>
+      {open && (
+        <div className="px-6 pb-4 text-gray-600">
+          {answer}
+        </div>
+      )}
     </div>
   );
 }
