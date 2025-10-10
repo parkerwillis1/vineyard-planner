@@ -1,8 +1,44 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function DocumentationPage() {
   const [activeSection, setActiveSection] = useState("planner");
+  const [activeAnchor, setActiveAnchor] = useState("");
+
+  // Track scroll position to highlight active section in TOC
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = document.querySelectorAll('[data-section]');
+      let current = '';
+      
+      sections.forEach((section) => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        if (window.scrollY >= sectionTop - 100) {
+          current = section.getAttribute('data-section');
+        }
+      });
+      
+      setActiveAnchor(current);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeSection]);
+
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const offset = 100; // Account for sticky header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   return (
     <div className="bg-white">
@@ -20,7 +56,7 @@ export default function DocumentationPage() {
 
       {/* Section Switcher */}
       <section className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto max-w-7xl px-6">
           <nav className="flex gap-1">
             <button
               onClick={() => setActiveSection("planner")}
@@ -46,106 +82,176 @@ export default function DocumentationPage() {
         </div>
       </section>
 
-      {/* PLANNER SECTION */}
+      {/* PLANNER SECTION WITH TOC */}
       {activeSection === "planner" && (
-        <>
-          {/* Quick Start Guide */}
-          <section className="mx-auto max-w-5xl px-6 py-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">🚀 Quick Start Guide</h2>
-            <div className="bg-vine-green-50 rounded-2xl p-8 mb-12">
-              <ol className="space-y-4">
-                <Step 
-                  number="1" 
-                  title="Set Your Projection Timeline"
-                  description="Use the 'Years' input at the top right to set your planning horizon (1-30 years). Most vineyard business plans use 10-15 years to capture full maturation and profitability."
-                />
-                <Step 
-                  number="2" 
-                  title="Design Your Vineyard Layout"
-                  description="In the Design tab, configure vine spacing (standard options from 4×8' to 8×12'), choose your plot shape (rectangle, square, or custom ratio), set row orientation for optimal sun exposure, and let the calculator determine total vines needed, row count, and material requirements."
-                />
-                <Step 
-                  number="3" 
-                  title="Input Core Financial Parameters"
-                  description="Enter your acreage, land cost per acre, building/winery construction costs. Choose your sales strategy: bottled wine (direct-to-consumer or wholesale) or bulk grape sales to other wineries. Each strategy has different revenue models and capital requirements."
-                />
-                <Step 
-                  number="4" 
-                  title="Configure Establishment Costs"
-                  description="Toggle setup items (site preparation, trellis systems, irrigation, vine stock, fencing) and customize per-acre costs. The Design tab auto-calculates trellis and irrigation costs based on your vineyard dimensions."
-                />
-                <Step 
-                  number="5" 
-                  title="Add Operating Cost Details"
-                  description="Customize annual operating costs including pre-planting, planting, cultural operations (pruning, canopy management, pest control), harvest and hauling, assessments, overhead, equipment operations, and marketing."
-                />
-                <Step 
-                  number="6" 
-                  title="Model Your Financing"
-                  description="Add equipment purchases with financing terms (tractors, sprayers, harvesters). Include loans (USDA FSA Microloans, Farm Ownership loans, commercial LOCs) with accurate interest rates and terms. The model calculates monthly payments and total debt service."
-                />
-                <Step 
-                  number="7" 
-                  title="Review Projections and Refine"
-                  description="Jump to Vineyard Setup to see Year 0 investment breakdown, then Projection tab for year-by-year cash flow. Review break-even timeline, cumulative profitability, and adjust assumptions until your model reflects realistic scenarios."
-                />
-              </ol>
-            </div>
-          </section>
-
-          {/* Design Tab Deep Dive */}
-          <section className="bg-gray-50 py-16">
-            <div className="mx-auto max-w-5xl px-6">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8">🎨 Design Tab - Complete Reference</h2>
-              
-              <DetailCard title="Vine Spacing Configuration">
-                <h4 className="font-semibold text-gray-900 mb-3">Spacing Pattern</h4>
-                <p className="text-gray-600 mb-4">
-                  Choose from industry-standard spacing patterns or create custom spacing. Common patterns:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                  <li><strong>4' × 8' (High Density):</strong> 1,361 vines/acre. Maximizes production but requires more initial investment and labor. Best for premium wine production.</li>
-                  <li><strong>6' × 10' (Standard):</strong> 726 vines/acre. Balanced approach used by most small-to-medium vineyards. Good equipment access and moderate costs.</li>
-                  <li><strong>8' × 10' (Wide):</strong> 544 vines/acre. Easier tractor access, lower establishment costs, but reduced per-acre yield potential.</li>
-                  <li><strong>8' × 12' (Very Wide):</strong> 454 vines/acre. Used for vigorous varieties or low-input systems. Minimal per-acre costs.</li>
-                  <li><strong>Custom:</strong> Enter your exact vine spacing and row spacing for site-specific designs.</li>
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <div className="flex gap-8">
+            {/* Table of Contents - Sticky Sidebar */}
+            <aside className="hidden lg:block w-64 flex-shrink-0">
+              <nav className="sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">On This Page</h3>
+                <ul className="space-y-1 text-sm">
+                  <TOCItem 
+                    label="Quick Start Guide" 
+                    sectionId="quick-start"
+                    active={activeAnchor === "quick-start"}
+                    onClick={scrollToSection}
+                  />
+                  <TOCItem 
+                    label="Design Tab" 
+                    sectionId="design-tab"
+                    active={activeAnchor === "design-tab"}
+                    onClick={scrollToSection}
+                  />
+                  <TOCItem 
+                    label="Financial Inputs Tab" 
+                    sectionId="financial-inputs"
+                    active={activeAnchor === "financial-inputs"}
+                    onClick={scrollToSection}
+                  />
+                  <TOCItem 
+                    label="Vineyard Setup Tab" 
+                    sectionId="vineyard-setup"
+                    active={activeAnchor === "vineyard-setup"}
+                    onClick={scrollToSection}
+                  />
+                  <TOCItem 
+                    label="10-Year Plan Tab" 
+                    sectionId="projection-tab"
+                    active={activeAnchor === "projection-tab"}
+                    onClick={scrollToSection}
+                  />
+                  <TOCItem 
+                    label="Details Tab" 
+                    sectionId="details-tab"
+                    active={activeAnchor === "details-tab"}
+                    onClick={scrollToSection}
+                  />
+                  <TOCItem 
+                    label="Financial Formulas" 
+                    sectionId="financial-formulas"
+                    active={activeAnchor === "financial-formulas"}
+                    onClick={scrollToSection}
+                  />
+                  <TOCItem 
+                    label="Key Concepts" 
+                    sectionId="key-concepts"
+                    active={activeAnchor === "key-concepts"}
+                    onClick={scrollToSection}
+                  />
+                  <TOCItem 
+                    label="FAQ" 
+                    sectionId="faq"
+                    active={activeAnchor === "faq"}
+                    onClick={scrollToSection}
+                  />
+                  <TOCItem 
+                    label="Best Practices" 
+                    sectionId="best-practices"
+                    active={activeAnchor === "best-practices"}
+                    onClick={scrollToSection}
+                  />
                 </ul>
+              </nav>
+            </aside>
 
-                <h4 className="font-semibold text-gray-900 mb-3 mt-6">Vineyard Shape</h4>
-                <p className="text-gray-600 mb-4">
-                  Define your plot dimensions:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                  <li><strong>Rectangle:</strong> Standard shape. Set length-to-width ratio (2:1 is common - 590' × 295' for 4 acres).</li>
-                  <li><strong>Square:</strong> Equal dimensions on all sides. Simplifies layout but may not fit irregular terrain.</li>
-                  <li><strong>Custom Aspect Ratio:</strong> Enter exact ratio (e.g., 3:1 for long, narrow plots or 1.5:1 for nearly square).</li>
-                </ul>
+            {/* Main Content */}
+            <div className="flex-1 min-w-0">
+              {/* Quick Start Guide */}
+              <section id="quick-start" data-section="quick-start" className="mb-16">
+                <h2 className="text-3xl font-bold text-gray-900 mb-8">🚀 Quick Start Guide</h2>
+                <div className="bg-vine-green-50 rounded-2xl p-8 mb-12">
+                  <ol className="space-y-4">
+                    <Step 
+                      number="1" 
+                      title="Set Your Projection Timeline"
+                      description="Use the 'Years' input at the top right to set your planning horizon (1-30 years). Most vineyard business plans use 10-15 years to capture full maturation and profitability."
+                    />
+                    <Step 
+                      number="2" 
+                      title="Design Your Vineyard Layout"
+                      description="In the Design tab, configure vine spacing (standard options from 4×8' to 8×12'), choose your plot shape (rectangle, square, or custom ratio), set row orientation for optimal sun exposure, and let the calculator determine total vines needed, row count, and material requirements."
+                    />
+                    <Step 
+                      number="3" 
+                      title="Input Core Financial Parameters"
+                      description="Enter your acreage, land cost per acre, building/winery construction costs. Choose your sales strategy: bottled wine (direct-to-consumer or wholesale) or bulk grape sales to other wineries. Each strategy has different revenue models and capital requirements."
+                    />
+                    <Step 
+                      number="4" 
+                      title="Configure Establishment Costs"
+                      description="Toggle setup items (site preparation, trellis systems, irrigation, vine stock, fencing) and customize per-acre costs. The Design tab auto-calculates trellis and irrigation costs based on your vineyard dimensions."
+                    />
+                    <Step 
+                      number="5" 
+                      title="Add Operating Cost Details"
+                      description="Customize annual operating costs including pre-planting, planting, cultural operations (pruning, canopy management, pest control), harvest and hauling, assessments, overhead, equipment operations, and marketing."
+                    />
+                    <Step 
+                      number="6" 
+                      title="Model Your Financing"
+                      description="Add equipment purchases with financing terms (tractors, sprayers, harvesters). Include loans (USDA FSA Microloans, Farm Ownership loans, commercial LOCs) with accurate interest rates and terms. The model calculates monthly payments and total debt service."
+                    />
+                    <Step 
+                      number="7" 
+                      title="Review Projections and Refine"
+                      description="Jump to Vineyard Setup to see Year 0 investment breakdown, then Projection tab for year-by-year cash flow. Review break-even timeline, cumulative profitability, and adjust assumptions until your model reflects realistic scenarios."
+                    />
+                  </ol>
+                </div>
+              </section>
 
-                <h4 className="font-semibold text-gray-900 mb-3 mt-6">Row Orientation</h4>
-                <p className="text-gray-600 mb-4">
-                  Determines sun exposure and trellis post placement:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Horizontal (posts on short sides):</strong> Rows run along the length. Posts at ends. Best for north-south sun exposure.</li>
-                  <li><strong>Vertical (posts on long sides):</strong> Rows run across width. Posts on long edges. Used for east-west orientation.</li>
-                </ul>
+              {/* Design Tab Deep Dive */}
+              <section id="design-tab" data-section="design-tab" className="bg-gray-50 -mx-6 px-6 py-16 mb-16">
+                <h2 className="text-3xl font-bold text-gray-900 mb-8">🎨 Design Tab - Complete Reference</h2>
+                
+                <DetailCard title="Vine Spacing Configuration">
+                  <h4 className="font-semibold text-gray-900 mb-3">Spacing Pattern</h4>
+                  <p className="text-gray-600 mb-4">
+                    Choose from industry-standard spacing patterns or create custom spacing. Common patterns:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
+                    <li><strong>4' × 8' (High Density):</strong> 1,361 vines/acre. Maximizes production but requires more initial investment and labor. Best for premium wine production.</li>
+                    <li><strong>6' × 10' (Standard):</strong> 726 vines/acre. Balanced approach used by most small-to-medium vineyards. Good equipment access and moderate costs.</li>
+                    <li><strong>8' × 10' (Wide):</strong> 544 vines/acre. Easier tractor access, lower establishment costs, but reduced per-acre yield potential.</li>
+                    <li><strong>8' × 12' (Very Wide):</strong> 454 vines/acre. Used for vigorous varieties or low-input systems. Minimal per-acre costs.</li>
+                    <li><strong>Custom:</strong> Enter your exact vine spacing and row spacing for site-specific designs.</li>
+                  </ul>
 
-                <h4 className="font-semibold text-gray-900 mb-3 mt-6">Auto-Calculated Outputs</h4>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Total Vines:</strong> Automatically calculated and propagated to planting costs.</li>
-                  <li><strong>Number of Rows:</strong> Based on row spacing and plot dimensions.</li>
-                  <li><strong>Vines per Acre:</strong> Density metric for planning.</li>
-                  <li><strong>Trellis Materials:</strong> Posts, wire, and hardware calculated from row count and length.</li>
-                  <li><strong>Irrigation Requirements:</strong> Drip tubing and emitter quantities based on vine count and spacing.</li>
-                </ul>
-              </DetailCard>
-            </div>
-          </section>
+                  <h4 className="font-semibold text-gray-900 mb-3 mt-6">Vineyard Shape</h4>
+                  <p className="text-gray-600 mb-4">
+                    Define your plot dimensions:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
+                    <li><strong>Rectangle:</strong> Standard shape. Set length-to-width ratio (2:1 is common - 590' × 295' for 4 acres).</li>
+                    <li><strong>Square:</strong> Equal dimensions on all sides. Simplifies layout but may not fit irregular terrain.</li>
+                    <li><strong>Custom Aspect Ratio:</strong> Enter exact ratio (e.g., 3:1 for long, narrow plots or 1.5:1 for nearly square).</li>
+                  </ul>
+
+                  <h4 className="font-semibold text-gray-900 mb-3 mt-6">Row Orientation</h4>
+                  <p className="text-gray-600 mb-4">
+                    Determines sun exposure and trellis post placement:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Horizontal (posts on short sides):</strong> Rows run along the length. Posts at ends. Best for north-south sun exposure.</li>
+                    <li><strong>Vertical (posts on long sides):</strong> Rows run across width. Posts on long edges. Used for east-west orientation.</li>
+                  </ul>
+
+                  <h4 className="font-semibold text-gray-900 mb-3 mt-6">Auto-Calculated Outputs</h4>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Total Vines:</strong> Automatically calculated and propagated to planting costs.</li>
+                    <li><strong>Number of Rows:</strong> Based on row spacing and plot dimensions.</li>
+                    <li><strong>Vines per Acre:</strong> Density metric for planning.</li>
+                    <li><strong>Trellis Materials:</strong> Posts, wire, and hardware calculated from row count and length.</li>
+                    <li><strong>Irrigation Requirements:</strong> Drip tubing and emitter quantities based on vine count and spacing.</li>
+                  </ul>
+                </DetailCard>
+              </section>
 
           {/* Financial Inputs Tab Deep Dive */}
-          <section className="mx-auto max-w-5xl px-6 py-16">
+          <section id="financial-inputs" data-section="financial-inputs" className="mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-8">💰 Financial Inputs Tab - Complete Reference</h2>
-            
+
             <div className="space-y-8">
               <DetailCard title="Core Vineyard Parameters">
                 <FieldDoc
@@ -434,7 +540,7 @@ export default function DocumentationPage() {
 
           {/* Vineyard Setup Tab Deep Dive */}
           <section className="bg-gray-50 py-16">
-            <div className="mx-auto max-w-5xl px-6">
+            <section id="vineyard-setup" data-section="vineyard-setup" className="bg-gray-50 -mx-6 px-6 py-16 mb-16">
               <h2 className="text-3xl font-bold text-gray-900 mb-8">🏗️ Vineyard Setup Tab - Complete Reference</h2>
               
               <DetailCard title="Year 0 Establishment Overview">
@@ -530,11 +636,11 @@ export default function DocumentationPage() {
                   </p>
                 </div>
               </DetailCard>
-            </div>
+            </section>
           </section>
 
           {/* Projection Tab Deep Dive */}
-          <section className="mx-auto max-w-5xl px-6 py-16">
+          <section id="projection-tab" data-section="projection-tab" className="mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-8">📈 10-Year Plan Tab - Complete Reference</h2>
             
             <div className="space-y-8">
@@ -660,8 +766,7 @@ export default function DocumentationPage() {
           </section>
 
           {/* Details Tab Deep Dive */}
-          <section className="bg-gray-50 py-16">
-            <div className="mx-auto max-w-5xl px-6">
+          <section id="details-tab" data-section="details-tab" className="bg-gray-50 -mx-6 px-6 py-16 mb-16">
               <h2 className="text-3xl font-bold text-gray-900 mb-8">🔍 Details Tab - Complete Reference</h2>
               
               <DetailCard title="Executive Summary Section">
@@ -862,7 +967,7 @@ export default function DocumentationPage() {
                 </p>
                 <ul className="list-disc pl-6 space-y-1 text-gray-600">
                   <li>First revenue year (when production begins)</li>
-                  Unexpected token. Did you mean `{'>'}` or `&gt;`?
+                  <li>First profitable year (annual net &gt; $0)</li>
                   <li>Maximum annual revenue achieved</li>
                   <li>Revenue at full production (Year 6+ steady state)</li>
                 </ul>
@@ -1013,12 +1118,12 @@ export default function DocumentationPage() {
                   </li>
                 </ul>
               </DetailCard>
-            </div>
           </section>
 
           {/* Financial Formulas */}
-          <section className="mx-auto max-w-5xl px-6 py-16">
+          <section id="financial-formulas" data-section="financial-formulas" className="mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">📊 Financial Formulas Reference</h2>
+
             <div className="bg-white rounded-xl shadow-sm p-8 border border-gray-200">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
@@ -1163,8 +1268,7 @@ export default function DocumentationPage() {
           </section>
 
           {/* Key Concepts */}
-          <section className="bg-gray-50 py-16">
-            <div className="mx-auto max-w-5xl px-6">
+          <section id="key-concepts" data-section="key-concepts" className="bg-gray-50 -mx-6 px-6 py-16 mb-16">
               <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">💡 Key Concepts</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <ConceptCard
@@ -1347,11 +1451,10 @@ export default function DocumentationPage() {
                   }
                 />
               </div>
-            </div>
           </section>
 
           {/* FAQ Section */}
-          <section className="mx-auto max-w-5xl px-6 py-16">
+          <section id="faq" data-section="faq" className="mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">❓ Frequently Asked Questions</h2>
             <div className="space-y-4">
               <FAQItem
@@ -1447,9 +1550,8 @@ export default function DocumentationPage() {
           </section>
 
           {/* Best Practices */}
-          <section className="bg-vine-green-50 py-16">
-            <div className="mx-auto max-w-5xl px-6">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">✅ Best Practices & Tips</h2>
+          <section id="best-practices" data-section="best-practices" className="bg-vine-green-50 -mx-6 px-6 py-16 mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">✅ Best Practices & Tips</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="bg-white p-6 rounded-lg border-l-4 border-vine-green-600">
                   <h3 className="text-xl font-semibold text-gray-900 mb-3">📊 Financial Modeling</h3>
@@ -1523,11 +1625,10 @@ export default function DocumentationPage() {
                   </ul>
                 </div>
               </div>
-            </div>
           </section>
 
           {/* CTA Section */}
-          <section className="bg-vine-green-600 py-16">
+          <section className="bg-vine-green-600 py-16 -mx-6 rounded-lg">
             <div className="mx-auto max-w-3xl px-6 text-center">
               <h2 className="text-3xl font-bold text-white mb-6">
                 Ready to Start Planning Your Vineyard?
@@ -1543,169 +1644,81 @@ export default function DocumentationPage() {
               </Link>
             </div>
           </section>
-        </>
-      )}
+        </div> 
+      </div> 
+    </div> 
+  )}
 
-      {/* VINEYARDS SECTION (Coming Soon) */}
       {activeSection === "vineyards" && (
-        <>
-          <section className="mx-auto max-w-5xl px-6 py-16">
-            <div className="text-center mb-12">
-              <div className="inline-block bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-semibold mb-6">
-                🚧 Coming in Phase 2 (2026)
-              </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">
-                My Vineyards - Operational Management Platform
-              </h2>
-              <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                Transform planning into action with real-time vineyard monitoring, compliance tracking, and operational tools.
-              </p>
+        <section className="mx-auto max-w-5xl px-6 py-16">
+          <div className="text-center mb-12">
+            <div className="inline-block bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+              🚧 Coming Soon
             </div>
+            <h2 className="text-4xl font-bold text-gray-900 mb-6">
+              Vineyard Operations Platform
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Real-time monitoring, compliance tracking, and operational management tools coming soon.
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <ComingSoonFeature
-                icon="📡"
-                title="Live Monitoring"
-                description="Real-time sensor data for soil moisture, temperature, humidity, and weather conditions across your vineyard blocks."
-                features={[
-                  "IoT sensor integration",
-                  "24/7 data streaming",
-                  "Block-level monitoring",
-                  "Alert thresholds",
-                  "Historical trending"
-                ]}
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <ComingSoonFeature
+              icon="📡"
+              title="Live Monitoring"
+              description="Real-time sensor data for soil moisture, temperature, and weather conditions."
+              features={["IoT integration", "24/7 monitoring", "Alert thresholds"]}
+            />
 
-              <ComingSoonFeature
-                icon="📋"
-                title="Compliance & Reporting"
-                description="Automated compliance tracking, document management, and regulatory reporting for TTB, state, and local requirements."
-                features={[
-                  "Document library",
-                  "Deadline calendar",
-                  "Spray records",
-                  "Lab results tracking",
-                  "Audit trail"
-                ]}
-              />
+            <ComingSoonFeature
+              icon="📋"
+              title="Compliance & Reporting"
+              description="Automated compliance tracking and regulatory reporting."
+              features={["Document library", "Spray records", "Audit trail"]}
+            />
 
-              <ComingSoonFeature
-                icon="📝"
-                title="Activity Logging"
-                description="Quick logging of daily vineyard activities with photo capture, GPS tagging, and crew time tracking."
-                features={[
-                  "Mobile-first forms",
-                  "Photo documentation",
-                  "Weather auto-log",
-                  "Crew time sheets",
-                  "Activity templates"
-                ]}
-              />
+            <ComingSoonFeature
+              icon="📝"
+              title="Activity Logging"
+              description="Quick logging of daily vineyard activities with photo capture."
+              features={["Mobile forms", "Photo documentation", "Time tracking"]}
+            />
 
-              <ComingSoonFeature
-                icon="🗺️"
-                title="Interactive Maps"
-                description="Visual vineyard mapping with aerial imagery, block boundaries, sensor locations, and condition heat maps."
-                features={[
-                  "Satellite imagery",
-                  "Custom block shapes",
-                  "Sensor placement",
-                  "NDVI overlays",
-                  "Soil mapping"
-                ]}
-              />
+            <ComingSoonFeature
+              icon="🗺️"
+              title="Interactive Maps"
+              description="Visual vineyard mapping with aerial imagery and block boundaries."
+              features={["Satellite imagery", "Block shapes", "NDVI overlays"]}
+            />
 
-              <ComingSoonFeature
-                icon="📊"
-                title="Analytics & Reports"
-                description="Generate professional reports for costs, yields, compliance, and vineyard performance metrics."
-                features={[
-                  "Cost tracking vs plan",
-                  "Yield analysis",
-                  "PDF exports",
-                  "Custom reports",
-                  "Data visualization"
-                ]}
-              />
+            <ComingSoonFeature
+              icon="📊"
+              title="Analytics & Reports"
+              description="Generate professional reports for costs, yields, and performance."
+              features={["Cost tracking", "Yield analysis", "PDF exports"]}
+            />
 
-              <ComingSoonFeature
-                icon="👥"
-                title="Team Management"
-                description="Assign tasks, track work orders, manage crew schedules, and coordinate contractor activities."
-                features={[
-                  "Task assignment",
-                  "Work orders",
-                  "Crew scheduling",
-                  "Contractor logs",
-                  "Role-based access"
-                ]}
-              />
+            <ComingSoonFeature
+              icon="👥"
+              title="Team Management"
+              description="Assign tasks, track work orders, and manage crew schedules."
+              features={["Task assignment", "Work orders", "Crew scheduling"]}
+            />
+          </div>
 
-              <ComingSoonFeature
-                icon="🔔"
-                title="Smart Alerts"
-                description="Customizable notifications for sensor thresholds, compliance deadlines, weather warnings, and task reminders."
-                features={[
-                  "SMS & email alerts",
-                  "Threshold triggers",
-                  "Weather warnings",
-                  "Deadline reminders",
-                  "Custom rules"
-                ]}
-              />
-
-              <ComingSoonFeature
-                icon="🌡️"
-                title="Weather Integration"
-                description="Hyperlocal weather forecasts, GDD tracking, frost alerts, and rainfall monitoring for your exact location."
-                features={[
-                  "7-day forecasts",
-                  "GDD accumulation",
-                  "Frost warnings",
-                  "Rainfall tracking",
-                  "Historical data"
-                ]}
-              />
-
-              <ComingSoonFeature
-                icon="🔗"
-                title="Integrations"
-                description="Connect with accounting software, lab testing services, equipment vendors, and industry platforms."
-                features={[
-                  "QuickBooks sync",
-                  "Lab data import",
-                  "Equipment dealers",
-                  "Wine industry APIs",
-                  "Custom webhooks"
-                ]}
-              />
-            </div>
-
-            <div className="mt-16 bg-blue-50 border-l-4 border-blue-600 p-6 rounded-lg">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                📅 Roadmap Timeline
-              </h3>
-              <div className="space-y-3 text-gray-700">
-                <p><strong>Q2 2026:</strong> Core monitoring dashboard, activity logging, basic compliance tools</p>
-                <p><strong>Q3 2026:</strong> IoT sensor integration, interactive maps, weather data</p>
-                <p><strong>Q4 2026:</strong> Advanced analytics, team management, mobile app</p>
-                <p><strong>2027:</strong> AI-powered insights, predictive analytics, marketplace integrations</p>
-              </div>
-            </div>
-
-            <div className="mt-12 text-center">
-              <Link
-                to="/planner"
-                className="inline-block rounded-md bg-vine-green-600 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-vine-green-700"
-              >
-                Start with Financial Planning →
-              </Link>
-              <p className="mt-4 text-sm text-gray-600">
-                Join the waitlist for early access to vineyard operations features
-              </p>
-            </div>
-          </section>
-        </>
+          <div className="mt-12 text-center">
+            <Link
+              to="/planner"
+              className="inline-block rounded-md bg-vine-green-600 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-vine-green-700"
+            >
+              Start with Financial Planning →
+            </Link>
+            <p className="mt-4 text-sm text-gray-600">
+              Operational features coming in 2026
+            </p>
+          </div>
+        </section>
       )}
     </div>
   );
@@ -1844,6 +1857,23 @@ function FAQItem({ question, answer }) {
         </div>
       )}
     </div>
+  );
+}
+
+function TOCItem({ label, sectionId, active, onClick }) {
+  return (
+    <li>
+      <button
+        onClick={() => onClick(sectionId)}
+        className={`block w-full text-left px-3 py-1.5 rounded transition-colors ${
+          active 
+            ? 'bg-vine-green-100 text-vine-green-700 font-medium' 
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+        }`}
+      >
+        {label}
+      </button>
+    </li>
   );
 }
 
