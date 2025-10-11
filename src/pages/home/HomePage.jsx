@@ -38,12 +38,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* What You Can Do Section */}
+      {/* Planning Tools Section */}
       <section className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
         <div className="mx-auto max-w-2xl lg:text-center mb-16">
-          <h2 className="text-base font-semibold leading-7 text-vine-green-500">What You Can Build</h2>
+          <h2 className="text-base font-semibold leading-7 text-vine-green-500">Financial Planning</h2>
           <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Everything needed for your vineyard business plan
+            Build your vineyard business plan
           </p>
           <p className="mt-6 text-lg leading-8 text-gray-600">
             Create professional financial models that lenders and investors will respect. 
@@ -165,6 +165,39 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Coming Soon - Operations Section */}
+      <section className="bg-gray-50 py-24 sm:py-32">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mx-auto max-w-2xl lg:text-center mb-16">
+            <div className="inline-flex items-center rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-800 mb-4">
+              Coming 2026
+            </div>
+            <h2 className="text-base font-semibold leading-7 text-vine-green-500">Vineyard Operations</h2>
+            <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+              Manage your vineyard in real-time
+            </p>
+            <p className="mt-6 text-lg leading-8 text-gray-600">
+              Once your vineyard is planted, seamlessly transition from planning to operations with tools designed for day-to-day management.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            <FutureFeature
+              title="Interactive Mapping"
+              description="Visualize your vineyard with satellite imagery, custom block boundaries, and sensor placement overlays."
+            />
+            <FutureFeature
+              title="Soil & Environmental Monitoring"
+              description="Track real-time data from IoT sensors measuring pH levels, nitrogen content, moisture, and temperature across your blocks."
+            />
+            <FutureFeature
+              title="Operations Management"
+              description="Log spray schedules, maintain compliance documents, track crew activities, and access historical records for informed decision-making."
+            />
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="bg-vine-green-500">
         <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
@@ -243,6 +276,15 @@ function OutputCard({ title, description, stats }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function FutureFeature({ title, description }) {
+  return (
+    <div className="bg-white rounded-xl border-2 border-gray-200 p-6 hover:border-vine-green-300 transition-colors">
+      <h3 className="text-lg font-semibold text-gray-900 mb-3">{title}</h3>
+      <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
     </div>
   );
 }
