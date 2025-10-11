@@ -109,6 +109,39 @@ export default function DocumentationPage() {
                     active={activeAnchor === "financial-inputs"}
                     onClick={scrollToSection}
                   />
+                  {/* Financial Inputs Subsections */}
+                  <ul className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-2">
+                    <TOCItem 
+                      label="Core Parameters" 
+                      sectionId="core-parameters"
+                      active={activeAnchor === "core-parameters"}
+                      onClick={scrollToSection}
+                    />
+                    <TOCItem 
+                      label="Setup Costs" 
+                      sectionId="setup-costs"
+                      active={activeAnchor === "setup-costs"}
+                      onClick={scrollToSection}
+                    />
+                    <TOCItem 
+                      label="Operating Costs" 
+                      sectionId="operating-costs"
+                      active={activeAnchor === "operating-costs"}
+                      onClick={scrollToSection}
+                    />
+                    <TOCItem 
+                      label="Financing" 
+                      sectionId="financing"
+                      active={activeAnchor === "financing"}
+                      onClick={scrollToSection}
+                    />
+                    <TOCItem 
+                      label="Additional Costs" 
+                      sectionId="additional-costs"
+                      active={activeAnchor === "additional-costs"}
+                      onClick={scrollToSection}
+                    />
+                  </ul>
                   <TOCItem 
                     label="Vineyard Setup Tab" 
                     sectionId="vineyard-setup"
@@ -154,7 +187,7 @@ export default function DocumentationPage() {
                 </ul>
               </nav>
             </aside>
-
+            
             {/* Main Content */}
             <div className="flex-1 min-w-0">
               {/* Quick Start Guide */}
@@ -253,288 +286,303 @@ export default function DocumentationPage() {
             <h2 className="text-3xl font-bold text-gray-900 mb-8">💰 Financial Inputs Tab - Complete Reference</h2>
 
             <div className="space-y-8">
-              <DetailCard title="Core Vineyard Parameters">
-                <FieldDoc
-                  name="Sales Strategy"
-                  type="Dropdown"
-                  options={["Bottle • sell finished wine", "Bulk • sell all grapes"]}
-                  description="Fundamentally changes your business model. Bottled wine requires winery infrastructure, licensing, and more capital but offers higher margins ($20-50+ per bottle vs $1,200-2,500 per ton of grapes). Bulk grape sales require only vineyard operations."
-                />
-                <FieldDoc
-                  name="Acres"
-                  type="Number"
-                  description="Total planted acreage. Scales nearly every cost and revenue calculation. Typical small vineyards: 2-10 acres. Medium: 10-50 acres. Most costs are calculated per-acre then multiplied by this value."
-                />
-                <FieldDoc
-                  name="Bottle Price ($)"
-                  type="Number (appears in Bottle mode)"
-                  description="Wholesale price per 750ml bottle. Direct-to-consumer pricing typically $25-60+. Wholesale to distributors: $12-25. Factors: varietal, quality level, brand recognition, region. Used to calculate: Revenue = Bottles Sold × Bottle Price."
-                />
-                <FieldDoc
-                  name="Grape Sale Price ($/ton)"
-                  type="Number (appears in Bulk mode)"
-                  description="Contract price per ton of grapes delivered to winery. Varies widely by variety and region: $800-1,500/ton (bulk varietals), $1,500-3,000/ton (premium), $3,000-6,000+/ton (ultra-premium Napa/Sonoma). Check regional pricing reports."
-                />
-                <FieldDoc
-                  name="Operating Cost ($/yr)"
-                  type="Auto-calculated (read-only)"
-                  description="Sum of all annual recurring costs: pre-planting, planting, cultural operations, harvest, fees, equipment operations, overhead, and marketing. Excludes one-time setup costs and debt service. Typical range: $3,000-8,000 per acre per year."
-                />
-                <FieldDoc
-                  name="Water Cost ($/acre-yr)"
-                  type="Number"
-                  description="Annual irrigation, pumping, and water district fees per acre. Varies by region and water source. Well water with electric pump: $200-500/acre. Ag district water: $300-800/acre. Includes energy costs for pressurization."
-                />
-                <FieldDoc
-                  name="Land Price ($/acre)"
-                  type="Number"
-                  description="Purchase price per acre. Highly regional: $5,000-20,000/acre (Texas Hill Country, Virginia, Oregon), $50,000-150,000+/acre (Napa, Sonoma, Paso Robles). Financed through land loans or paid with equity."
-                />
-                <FieldDoc
-                  name="Build Cost ($/acre)"
-                  type="Number"
-                  description="Winery, barn, equipment shed, tasting room construction costs allocated per acre. Small winery (3,000-5,000 sq ft): $150,000-400,000 total. Divide by planted acres for per-acre cost. Metal barn/storage: $20,000-50,000."
-                />
-                <FieldDoc
-                  name="Setup Year"
-                  type="Number"
-                  description="Year when vineyard establishment occurs (Year 0 is immediate, Year 1 delays one year, etc.). Use for phased expansion planning. All Year 0 costs are shifted to this year."
-                />
-                <FieldDoc
-                  name="License Cost ($)"
-                  type="Number"
-                  description="One-time application fees for federal TTB winery permit ($0 but requires forms) and state winery license ($100-500). Some states require additional local permits. Does not include annual renewals."
-                />
-                <FieldDoc
-                  name="Available Equity ($)"
-                  type="Number"
-                  description="Cash and liquid assets available for down payment and gap financing. Used to calculate equity gap: Required Equity = Total Project Cost - Total Loans - Available Equity. Negative equity gap indicates you need more capital or financing."
-                />
-              </DetailCard>
-
-              <DetailCard title="Vineyard Setup (One-Time Capital Costs)">
-                <div className="space-y-4">
-                  <SetupItemDoc
-                    name="Site Preparation"
-                    typicalCost="$800-2,500/acre"
-                    description="Land clearing, ripping/deep tillage, contouring, road access, drainage installation. Varies greatly by terrain: flat cleared land ($800-1,200), brushy land requiring clearing ($1,500-2,500+), hillside terracing ($3,000+)."
+              {/* Core Parameters Subsection */}
+              <div id="core-parameters" data-section="core-parameters">
+                <DetailCard title="Core Vineyard Parameters">
+                  <FieldDoc
+                    name="Sales Strategy"
+                    type="Dropdown"
+                    options={["Bottle • sell finished wine", "Bulk • sell all grapes"]}
+                    description="Fundamentally changes your business model. Bottled wine requires winery infrastructure, licensing, and more capital but offers higher margins ($20-50+ per bottle vs $1,200-2,500 per ton of grapes). Bulk grape sales require only vineyard operations."
                   />
-                  <SetupItemDoc
-                    name="Trellis System"
-                    typicalCost="$3,500-6,000/acre"
-                    description="Posts (wood or metal), high-tensile wire (3-5 wires), anchors, hardware. Auto-calculated from Design tab if configured. Manual entry: Standard VSP (Vertical Shoot Positioning) with treated wood posts: $4,000-4,500/acre. Metal posts: $5,500-6,500/acre."
+                  <FieldDoc
+                    name="Acres"
+                    type="Number"
+                    description="Total planted acreage. Scales nearly every cost and revenue calculation. Typical small vineyards: 2-10 acres. Medium: 10-50 acres. Most costs are calculated per-acre then multiplied by this value."
                   />
-                  <SetupItemDoc
-                    name="Irrigation System"
-                    typicalCost="Drip: $3,000-6,000/acre, Sprinkler: $2,000-4,500/acre"
-                    description="Choose system type (Drip or Sprinkler). Drip includes mainline, sub-mains, drip tubing, emitters, filters, pressure regulators, fertigation system. Auto-calculated from Design tab if configured. Sprinkler: overhead or micro-sprinklers, simpler but less precise."
+                  <FieldDoc
+                    name="Bottle Price ($)"
+                    type="Number (appears in Bottle mode)"
+                    description="Wholesale price per 750ml bottle. Direct-to-consumer pricing typically $25-60+. Wholesale to distributors: $12-25. Factors: varietal, quality level, brand recognition, region. Used to calculate: Revenue = Bottles Sold × Bottle Price."
                   />
-                  <SetupItemDoc
-                    name="Vine Stock"
-                    typicalCost="$3-7 per vine ($2,500-5,000/acre)"
-                    description="Rooted grapevines (own-rooted or grafted), planting labor, stakes, grow tubes. Auto-calculated quantity from Design tab. Premium varieties or specialty rootstock: $5-7/vine. Standard varieties: $3-4/vine. Includes freight and handling."
+                  <FieldDoc
+                    name="Grape Sale Price ($/ton)"
+                    type="Number (appears in Bulk mode)"
+                    description="Contract price per ton of grapes delivered to winery. Varies widely by variety and region: $800-1,500/ton (bulk varietals), $1,500-3,000/ton (premium), $3,000-6,000+/ton (ultra-premium Napa/Sonoma). Check regional pricing reports."
                   />
-                  <SetupItemDoc
-                    name="Fencing"
-                    typicalCost="$3,000-8,000/acre"
-                    description="Perimeter deer/hog exclusion fencing. 8' tall woven wire or high-tensile electric: $4-8 per linear foot. 10-acre vineyard perimeter (~2,600 LF): $10,000-20,000 total or $1,000-2,000/acre. Varies widely by shape and terrain."
+                  <FieldDoc
+                    name="Operating Cost ($/yr)"
+                    type="Auto-calculated (read-only)"
+                    description="Sum of all annual recurring costs: pre-planting, planting, cultural operations, harvest, fees, equipment operations, overhead, and marketing. Excludes one-time setup costs and debt service. Typical range: $3,000-8,000 per acre per year."
                   />
-                </div>
-              </DetailCard>
+                  <FieldDoc
+                    name="Water Cost ($/acre-yr)"
+                    type="Number"
+                    description="Annual irrigation, pumping, and water district fees per acre. Varies by region and water source. Well water with electric pump: $200-500/acre. Ag district water: $300-800/acre. Includes energy costs for pressurization."
+                  />
+                  <FieldDoc
+                    name="Land Price ($/acre)"
+                    type="Number"
+                    description="Purchase price per acre. Highly regional: $5,000-20,000/acre (Texas Hill Country, Virginia, Oregon), $50,000-150,000+/acre (Napa, Sonoma, Paso Robles). Financed through land loans or paid with equity."
+                  />
+                  <FieldDoc
+                    name="Build Cost ($/acre)"
+                    type="Number"
+                    description="Winery, barn, equipment shed, tasting room construction costs allocated per acre. Small winery (3,000-5,000 sq ft): $150,000-400,000 total. Divide by planted acres for per-acre cost. Metal barn/storage: $20,000-50,000."
+                  />
+                  <FieldDoc
+                    name="Setup Year"
+                    type="Number"
+                    description="Year when vineyard establishment occurs (Year 0 is immediate, Year 1 delays one year, etc.). Use for phased expansion planning. All Year 0 costs are shifted to this year."
+                  />
+                  <FieldDoc
+                    name="License Cost ($)"
+                    type="Number"
+                    description="One-time application fees for federal TTB winery permit ($0 but requires forms) and state winery license ($100-500). Some states require additional local permits. Does not include annual renewals."
+                  />
+                  <FieldDoc
+                    name="Available Equity ($)"
+                    type="Number"
+                    description="Cash and liquid assets available for down payment and gap financing. Used to calculate equity gap: Required Equity = Total Project Cost - Total Loans - Available Equity. Negative equity gap indicates you need more capital or financing."
+                  />
+                </DetailCard>
+              </div>
 
-              <DetailCard title="Pre-Planting / Site-Prep (Recurring or Staged)">
-                <p className="text-gray-600 mb-4">
-                  Costs incurred before planting vines. Can be done all in Year 0 or staged across multiple years.
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Vine removal ($200-500/acre):</strong> Removing old vines if replanting existing vineyard.</li>
-                  <li><strong>Soil amendments ($100-300/acre):</strong> Lime, gypsum, compost incorporation based on soil tests.</li>
-                  <li><strong>Cover crop ($50-150/acre):</strong> Establishing erosion control and soil health.</li>
-                </ul>
-              </DetailCard>
-
-              <DetailCard title="Planting Costs (Per-Acre or Per-Unit)">
-                <p className="text-gray-600 mb-4">
-                  Costs directly related to getting vines in the ground. Calculated per-acre OR unit cost × quantity.
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Vine stock ($/each):</strong> Auto-populated from Design tab or manual entry. Quantity per acre auto-calculated.</li>
-                  <li><strong>Cartons & wrapping ($80-150/acre):</strong> Shipping containers and protective materials for nursery stock.</li>
-                  <li><strong>Planting labor ($800-1,500/acre):</strong> Hand or machine planting, varies by terrain and crew rates.</li>
-                </ul>
-              </DetailCard>
-
-              <DetailCard title="Cultural Operations (Annual Recurring)">
-                <p className="text-gray-600 mb-4">
-                  Yearly vineyard maintenance and care. Incurred every year after planting.
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Pruning ($120-250/acre):</strong> Winter dormant pruning, typically $15-25 per hour × 8-15 hours/acre.</li>
-                  <li><strong>Canopy management ($80-150/acre):</strong> Shoot thinning, leaf pulling, hedging.</li>
-                  <li><strong>Fertilizer ($60-120/acre):</strong> Nitrogen, micronutrients based on tissue and soil analysis.</li>
-                  <li><strong>Pest control ($100-200/acre):</strong> Fungicides, insecticides, spraying labor and equipment.</li>
-                  <li><strong>Weed control ($40-100/acre):</strong> Herbicides, mowing, cultivation labor.</li>
-                </ul>
-              </DetailCard>
-
-              <DetailCard title="Harvest & Hauling">
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Machine harvest ($200-400/acre):</strong> Per-acre contract rate for mechanical harvester and crew. Alternative: hand harvest ($800-1,500/acre for premium fruit).</li>
-                  <li><strong>Hauling ($/ton):</strong> Transport from vineyard to winery. $15-30/ton depending on distance. Applied to actual tons produced: Cost = Tons × $/ton.</li>
-                  <li><strong>Picking bins or lugs ($20-50/acre):</strong> Container rental or purchase for hand-harvested fruit.</li>
-                </ul>
-              </DetailCard>
-
-              <DetailCard title="Assessments & Fees (Annual)">
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Pierce's Disease Assessment ($3-8/acre):</strong> State-mandated disease control fee (CA, TX, southeast). Check your state ag department.</li>
-                  <li><strong>Marketing order fees ($50-200/acre):</strong> Industry promotion assessments (if applicable in your region).</li>
-                  <li><strong>Certification fees ($100-500 total):</strong> Organic, Biodynamic, or sustainability certification annual costs if pursuing.</li>
-                </ul>
-              </DetailCard>
-
-              <DetailCard title="Cash Overhead (Annual Fixed Costs)">
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Office expense ($1,000-3,000/yr):</strong> Bookkeeping, software, supplies, phone, internet.</li>
-                  <li><strong>Property taxes ($800-2,000/yr per acre-value):</strong> Varies by county; ag exemption often lowers rate.</li>
-                  <li><strong>General liability insurance ($1,500-4,000/yr):</strong> Covers farm operations. Separate from crop insurance.</li>
-                  <li><strong>Crop insurance ($200-600/acre):</strong> Optional USDA crop insurance for revenue/yield protection.</li>
-                  <li><strong>Utilities ($500-2,000/yr):</strong> Electricity for pumps, shop, office. Water district fees if not in Water Cost.</li>
-                </ul>
-              </DetailCard>
-
-              <DetailCard title="Non-Cash Overhead">
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Depreciation ($3,000-8,000/yr):</strong> Accounting expense (not cash outflow). Based on depreciable assets: equipment, buildings, improvements. 5-7 year MACRS for equipment, 15-20 year for land improvements, 27.5-39 year for buildings.</li>
-                  <li><strong>Management/Owner labor (imputed):</strong> Optional: value of your own time managing the vineyard. Not a cash cost but important for true profitability analysis.</li>
-                </ul>
-              </DetailCard>
-
-              <DetailCard title="Equipment Operating Costs">
-                <p className="text-gray-600 mb-4">
-                  Hourly operating costs × annual hours. Separate from equipment purchase financing.
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Fuel & lube ($12-20/hr):</strong> Diesel/gas, oil, filters. Hours depend on acreage: 15-30 hours/acre/yr typical.</li>
-                  <li><strong>Repairs & maintenance ($5-10/hr):</strong> Ongoing equipment repairs, parts, shop labor.</li>
-                  <li><strong>Equipment replacement reserve ($2-5/hr):</strong> Savings for eventual replacement of machinery.</li>
-                </ul>
-              </DetailCard>
-
-              <DetailCard title="Marketing & Management">
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Vineyard management fees ($500-1,200/acre/yr):</strong> If hiring a management company. Includes all cultural operations labor but not materials.</li>
-                  <li><strong>Consulting fees ($100-200/hr or $500-2,000/yr retainer):</strong> Viticultural consultant for disease diagnostics, soil/tissue analysis interpretation, spray programs.</li>
-                  <li><strong>Marketing & promotion (if bottling wine) ($2,000-10,000+/yr):</strong> Website, social media, events, tasting room marketing, wine club materials.</li>
-                </ul>
-              </DetailCard>
-
-              <DetailCard title="Permits & Licenses (One-Time and Annual)">
-                <p className="text-gray-600 mb-4">
-                  Federal, state, and local permits required for wine production and sales. Check your state ABC/alcoholic beverage control agency.
-                </p>
-                <div className="space-y-3">
-                  <div>
-                    <h4 className="font-semibold text-gray-900">One-Time (Year 0):</h4>
-                    <ul className="list-disc pl-6 space-y-1 text-gray-600 mt-2">
-                      <li><strong>TTB Winery Permit (Federal):</strong> $0 application fee, required for all wine production. Processing time: 90-180 days.</li>
-                      <li><strong>State Winery License:</strong> $100-500 depending on state (e.g., Texas TABC Winery Permit G: $150).</li>
-                      <li><strong>Farm Winery Permit:</strong> Some states offer lower-cost farm winery option with production limits.</li>
-                      <li><strong>Winegrower License:</strong> Production-only license if not selling direct.</li>
-                    </ul>
+              {/* Setup Costs Subsection */}
+              <div id="setup-costs" data-section="setup-costs">
+                <DetailCard title="Vineyard Setup (One-Time Capital Costs)">
+                  <div className="space-y-4">
+                    <SetupItemDoc
+                      name="Site Preparation"
+                      typicalCost="$800-2,500/acre"
+                      description="Land clearing, ripping/deep tillage, contouring, road access, drainage installation. Varies greatly by terrain: flat cleared land ($800-1,200), brushy land requiring clearing ($1,500-2,500+), hillside terracing ($3,000+)."
+                    />
+                    <SetupItemDoc
+                      name="Trellis System"
+                      typicalCost="$3,500-6,000/acre"
+                      description="Posts (wood or metal), high-tensile wire (3-5 wires), anchors, hardware. Auto-calculated from Design tab if configured. Manual entry: Standard VSP (Vertical Shoot Positioning) with treated wood posts: $4,000-4,500/acre. Metal posts: $5,500-6,500/acre."
+                    />
+                    <SetupItemDoc
+                      name="Irrigation System"
+                      typicalCost="Drip: $3,000-6,000/acre, Sprinkler: $2,000-4,500/acre"
+                      description="Choose system type (Drip or Sprinkler). Drip includes mainline, sub-mains, drip tubing, emitters, filters, pressure regulators, fertigation system. Auto-calculated from Design tab if configured. Sprinkler: overhead or micro-sprinklers, simpler but less precise."
+                    />
+                    <SetupItemDoc
+                      name="Vine Stock"
+                      typicalCost="$3-7 per vine ($2,500-5,000/acre)"
+                      description="Rooted grapevines (own-rooted or grafted), planting labor, stakes, grow tubes. Auto-calculated quantity from Design tab. Premium varieties or specialty rootstock: $5-7/vine. Standard varieties: $3-4/vine. Includes freight and handling."
+                    />
+                    <SetupItemDoc
+                      name="Fencing"
+                      typicalCost="$3,000-8,000/acre"
+                      description="Perimeter deer/hog exclusion fencing. 8' tall woven wire or high-tensile electric: $4-8 per linear foot. 10-acre vineyard perimeter (~2,600 LF): $10,000-20,000 total or $1,000-2,000/acre. Varies widely by shape and terrain."
+                    />
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mt-4">Annual Renewals:</h4>
-                    <ul className="list-disc pl-6 space-y-1 text-gray-600 mt-2">
-                      <li><strong>Carrier's Permit:</strong> For transporting your own wine (e.g., TABC Carrier's Permit C: $60/yr).</li>
-                      <li><strong>Tasting Room Permit:</strong> On-premise consumption license ($200-800/yr).</li>
-                    </ul>
-                  </div>
-                </div>
-              </DetailCard>
+                </DetailCard>
+              </div>
 
-              <DetailCard title="Equipment (Financed Purchases)">
-                <p className="text-gray-600 mb-4">
-                  Add rows for financed equipment. Each calculates monthly/annual payment using PMT formula.
-                </p>
-                <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">Standard Equipment List:</h4>
-                  <ul className="list-disc pl-6 space-y-1 text-sm text-gray-600">
-                    <li>Compact Tractor (40-60 HP): $25,000-40,000</li>
-                    <li>PTO Mower: $5,000-8,000</li>
-                    <li>Air-Blast Sprayer: $15,000-25,000</li>
-                    <li>Canopy Hedger: $10,000-15,000</li>
-                    <li>Utility ATV/UTV: $8,000-12,000</li>
-                    <li>Row Mulcher: $6,000-9,000</li>
-                    <li>Pre-Pruner: $15,000-20,000</li>
+              {/* Operating Costs Subsection */}
+              <div id="operating-costs" data-section="operating-costs">
+                <DetailCard title="Pre-Planting / Site-Prep (Recurring or Staged)">
+                  <p className="text-gray-600 mb-4">
+                    Costs incurred before planting vines. Can be done all in Year 0 or staged across multiple years.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Vine removal ($200-500/acre):</strong> Removing old vines if replanting existing vineyard.</li>
+                    <li><strong>Soil amendments ($100-300/acre):</strong> Lime, gypsum, compost incorporation based on soil tests.</li>
+                    <li><strong>Cover crop ($50-150/acre):</strong> Establishing erosion control and soil health.</li>
                   </ul>
-                </div>
-                <p className="text-sm text-gray-600">
-                  <strong>Financing:</strong> Equipment loans typically 5-7 years, 4-8% APR. Enter rate as percentage (e.g., 6, not 0.06). Monthly payment = PMT(principal, rate/12, term*12).
-                </p>
-              </DetailCard>
+                </DetailCard>
 
-              <DetailCard title="Loans (Operating and Term Debt)">
-                <p className="text-gray-600 mb-4">
-                  Model multiple loan sources with different terms and rates. Three defaults provided; add custom loans as needed.
-                </p>
-                <div className="space-y-4">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-900 mb-2">USDA FSA Microloan</h4>
-                    <ul className="list-disc pl-6 text-sm text-gray-600 space-y-1">
-                      <li>Max: $50,000 (default $15,000)</li>
-                      <li>Rate: Fixed ~4-6% (check current USDA rates)</li>
-                      <li>Term: Up to 7 years</li>
-                      <li>Use: Equipment, livestock, supplies, small improvements</li>
-                      <li>Application: Local USDA Service Center</li>
+                <DetailCard title="Planting Costs (Per-Acre or Per-Unit)">
+                  <p className="text-gray-600 mb-4">
+                    Costs directly related to getting vines in the ground. Calculated per-acre OR unit cost × quantity.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Vine stock ($/each):</strong> Auto-populated from Design tab or manual entry. Quantity per acre auto-calculated.</li>
+                    <li><strong>Cartons & wrapping ($80-150/acre):</strong> Shipping containers and protective materials for nursery stock.</li>
+                    <li><strong>Planting labor ($800-1,500/acre):</strong> Hand or machine planting, varies by terrain and crew rates.</li>
+                  </ul>
+                </DetailCard>
+
+                <DetailCard title="Cultural Operations (Annual Recurring)">
+                  <p className="text-gray-600 mb-4">
+                    Yearly vineyard maintenance and care. Incurred every year after planting.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Pruning ($120-250/acre):</strong> Winter dormant pruning, typically $15-25 per hour × 8-15 hours/acre.</li>
+                    <li><strong>Canopy management ($80-150/acre):</strong> Shoot thinning, leaf pulling, hedging.</li>
+                    <li><strong>Fertilizer ($60-120/acre):</strong> Nitrogen, micronutrients based on tissue and soil analysis.</li>
+                    <li><strong>Pest control ($100-200/acre):</strong> Fungicides, insecticides, spraying labor and equipment.</li>
+                    <li><strong>Weed control ($40-100/acre):</strong> Herbicides, mowing, cultivation labor.</li>
+                  </ul>
+                </DetailCard>
+
+                <DetailCard title="Harvest & Hauling">
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Machine harvest ($200-400/acre):</strong> Per-acre contract rate for mechanical harvester and crew. Alternative: hand harvest ($800-1,500/acre for premium fruit).</li>
+                    <li><strong>Hauling ($/ton):</strong> Transport from vineyard to winery. $15-30/ton depending on distance. Applied to actual tons produced: Cost = Tons × $/ton.</li>
+                    <li><strong>Picking bins or lugs ($20-50/acre):</strong> Container rental or purchase for hand-harvested fruit.</li>
+                  </ul>
+                </DetailCard>
+
+                <DetailCard title="Assessments & Fees (Annual)">
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Pierce's Disease Assessment ($3-8/acre):</strong> State-mandated disease control fee (CA, TX, southeast). Check your state ag department.</li>
+                    <li><strong>Marketing order fees ($50-200/acre):</strong> Industry promotion assessments (if applicable in your region).</li>
+                    <li><strong>Certification fees ($100-500 total):</strong> Organic, Biodynamic, or sustainability certification annual costs if pursuing.</li>
+                  </ul>
+                </DetailCard>
+
+                <DetailCard title="Cash Overhead (Annual Fixed Costs)">
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Office expense ($1,000-3,000/yr):</strong> Bookkeeping, software, supplies, phone, internet.</li>
+                    <li><strong>Property taxes ($800-2,000/yr per acre-value):</strong> Varies by county; ag exemption often lowers rate.</li>
+                    <li><strong>General liability insurance ($1,500-4,000/yr):</strong> Covers farm operations. Separate from crop insurance.</li>
+                    <li><strong>Crop insurance ($200-600/acre):</strong> Optional USDA crop insurance for revenue/yield protection.</li>
+                    <li><strong>Utilities ($500-2,000/yr):</strong> Electricity for pumps, shop, office. Water district fees if not in Water Cost.</li>
+                  </ul>
+                </DetailCard>
+
+                <DetailCard title="Non-Cash Overhead">
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Depreciation ($3,000-8,000/yr):</strong> Accounting expense (not cash outflow). Based on depreciable assets: equipment, buildings, improvements. 5-7 year MACRS for equipment, 15-20 year for land improvements, 27.5-39 year for buildings.</li>
+                    <li><strong>Management/Owner labor (imputed):</strong> Optional: value of your own time managing the vineyard. Not a cash cost but important for true profitability analysis.</li>
+                  </ul>
+                </DetailCard>
+
+                <DetailCard title="Equipment Operating Costs">
+                  <p className="text-gray-600 mb-4">
+                    Hourly operating costs × annual hours. Separate from equipment purchase financing.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Fuel & lube ($12-20/hr):</strong> Diesel/gas, oil, filters. Hours depend on acreage: 15-30 hours/acre/yr typical.</li>
+                    <li><strong>Repairs & maintenance ($5-10/hr):</strong> Ongoing equipment repairs, parts, shop labor.</li>
+                    <li><strong>Equipment replacement reserve ($2-5/hr):</strong> Savings for eventual replacement of machinery.</li>
+                  </ul>
+                </DetailCard>
+
+                <DetailCard title="Marketing & Management">
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Vineyard management fees ($500-1,200/acre/yr):</strong> If hiring a management company. Includes all cultural operations labor but not materials.</li>
+                    <li><strong>Consulting fees ($100-200/hr or $500-2,000/yr retainer):</strong> Viticultural consultant for disease diagnostics, soil/tissue analysis interpretation, spray programs.</li>
+                    <li><strong>Marketing & promotion (if bottling wine) ($2,000-10,000+/yr):</strong> Website, social media, events, tasting room marketing, wine club materials.</li>
+                  </ul>
+                </DetailCard>
+              </div>
+
+              {/* Financing Subsection */}
+              <div id="financing" data-section="financing">
+                <DetailCard title="Equipment (Financed Purchases)">
+                  <p className="text-gray-600 mb-4">
+                    Add rows for financed equipment. Each calculates monthly/annual payment using PMT formula.
+                  </p>
+                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Standard Equipment List:</h4>
+                    <ul className="list-disc pl-6 space-y-1 text-sm text-gray-600">
+                      <li>Compact Tractor (40-60 HP): $25,000-40,000</li>
+                      <li>PTO Mower: $5,000-8,000</li>
+                      <li>Air-Blast Sprayer: $15,000-25,000</li>
+                      <li>Canopy Hedger: $10,000-15,000</li>
+                      <li>Utility ATV/UTV: $8,000-12,000</li>
+                      <li>Row Mulcher: $6,000-9,000</li>
+                      <li>Pre-Pruner: $15,000-20,000</li>
                     </ul>
                   </div>
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-900 mb-2">USDA FSA Farm Ownership Loan</h4>
-                    <ul className="list-disc pl-6 text-sm text-gray-600 space-y-1">
-                      <li>Max: $600,000 direct, $1.75M guaranteed (default $300,000)</li>
-                      <li>Rate: Fixed ~5-6%</li>
-                      <li>Term: Up to 40 years</li>
-                      <li>Use: Land purchase, construction, major improvements</li>
-                      <li>Requires down payment (typically 10-25%)</li>
-                    </ul>
-                  </div>
-                  <div className="bg-yellow-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-900 mb-2">Commercial Bank Line of Credit</h4>
-                    <ul className="list-disc pl-6 text-sm text-gray-600 space-y-1">
-                      <li>Amount: Varies ($10,000-100,000+ typical)</li>
-                      <li>Rate: Variable, Prime + 2-4% (7-9% current)</li>
-                      <li>Term: 1-5 years, revolving or term</li>
-                      <li>Use: Operating expenses, cash flow smoothing</li>
-                      <li>Requires established business history and collateral</li>
-                    </ul>
-                  </div>
-                </div>
-              </DetailCard>
+                  <p className="text-sm text-gray-600">
+                    <strong>Financing:</strong> Equipment loans typically 5-7 years, 4-8% APR. Enter rate as percentage (e.g., 6, not 0.06). Monthly payment = PMT(principal, rate/12, term*12).
+                  </p>
+                </DetailCard>
 
-              <DetailCard title="Purchased Grapes (for Wine Production)">
-                <p className="text-gray-600 mb-4">
-                  If bottling wine, you may purchase additional grapes to supplement your own production. Common for new vineyards during years 1-5 when estate grapes aren't yet at full production.
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Variety:</strong> Choose grape variety (Cabernet Sauvignon, Merlot, Chardonnay, etc.)</li>
-                  <li><strong>Pounds:</strong> Amount to purchase. 1 ton = 2,000 lbs. Yields ~120-150 gallons or ~600-756 bottles per ton.</li>
-                  <li><strong>Price per lb:</strong> Typically $0.60-1.50/lb ($1,200-3,000/ton) depending on quality and variety.</li>
-                  <li><strong>Annual cost:</strong> Pounds × Price/lb, applied each year of projection.</li>
-                </ul>
-              </DetailCard>
+                <DetailCard title="Loans (Operating and Term Debt)">
+                  <p className="text-gray-600 mb-4">
+                    Model multiple loan sources with different terms and rates. Three defaults provided; add custom loans as needed.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-gray-900 mb-2">USDA FSA Microloan</h4>
+                      <ul className="list-disc pl-6 text-sm text-gray-600 space-y-1">
+                        <li>Max: $50,000 (default $15,000)</li>
+                        <li>Rate: Fixed ~4-6% (check current USDA rates)</li>
+                        <li>Term: Up to 7 years</li>
+                        <li>Use: Equipment, livestock, supplies, small improvements</li>
+                        <li>Application: Local USDA Service Center</li>
+                      </ul>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-gray-900 mb-2">USDA FSA Farm Ownership Loan</h4>
+                      <ul className="list-disc pl-6 text-sm text-gray-600 space-y-1">
+                        <li>Max: $600,000 direct, $1.75M guaranteed (default $300,000)</li>
+                        <li>Rate: Fixed ~5-6%</li>
+                        <li>Term: Up to 40 years</li>
+                        <li>Use: Land purchase, construction, major improvements</li>
+                        <li>Requires down payment (typically 10-25%)</li>
+                      </ul>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-gray-900 mb-2">Commercial Bank Line of Credit</h4>
+                      <ul className="list-disc pl-6 text-sm text-gray-600 space-y-1">
+                        <li>Amount: Varies ($10,000-100,000+ typical)</li>
+                        <li>Rate: Variable, Prime + 2-4% (7-9% current)</li>
+                        <li>Term: 1-5 years, revolving or term</li>
+                        <li>Use: Operating expenses, cash flow smoothing</li>
+                        <li>Requires established business history and collateral</li>
+                      </ul>
+                    </div>
+                  </div>
+                </DetailCard>
+              </div>
 
-              <DetailCard title="Unsold Bottles (Wine Inventory Management)">
-                <p className="text-gray-600 mb-4">
-                  Track bottles withheld from sale for aging, reserves, or non-commercial use (samples, staff, events). Reduces revenue in the year they're withheld.
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li><strong>Category:</strong> Aging (held for later release), Non-Sold (samples/tastings), Free (donations/gifts)</li>
-                  <li><strong>Year:</strong> Which projection year to withhold bottles</li>
-                  <li><strong>Bottles:</strong> Quantity withheld. Formula: Sold Bottles = Produced Bottles - Withheld Bottles</li>
-                  <li><strong>Use case:</strong> Model reserve program (hold 20% of production for 2-year aging before sale)</li>
-                </ul>
-              </DetailCard>
+              {/* Additional Costs Subsection */}
+              <div id="additional-costs" data-section="additional-costs">
+                <DetailCard title="Permits & Licenses (One-Time and Annual)">
+                  <p className="text-gray-600 mb-4">
+                    Federal, state, and local permits required for wine production and sales. Check your state ABC/alcoholic beverage control agency.
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">One-Time (Year 0):</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-gray-600 mt-2">
+                        <li><strong>TTB Winery Permit (Federal):</strong> $0 application fee, required for all wine production. Processing time: 90-180 days.</li>
+                        <li><strong>State Winery License:</strong> $100-500 depending on state (e.g., Texas TABC Winery Permit G: $150).</li>
+                        <li><strong>Farm Winery Permit:</strong> Some states offer lower-cost farm winery option with production limits.</li>
+                        <li><strong>Winegrower License:</strong> Production-only license if not selling direct.</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mt-4">Annual Renewals:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-gray-600 mt-2">
+                        <li><strong>Carrier's Permit:</strong> For transporting your own wine (e.g., TABC Carrier's Permit C: $60/yr).</li>
+                        <li><strong>Tasting Room Permit:</strong> On-premise consumption license ($200-800/yr).</li>
+                      </ul>
+                    </div>
+                  </div>
+                </DetailCard>
+
+                <DetailCard title="Purchased Grapes (for Wine Production)">
+                  <p className="text-gray-600 mb-4">
+                    If bottling wine, you may purchase additional grapes to supplement your own production. Common for new vineyards during years 1-5 when estate grapes aren't yet at full production.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Variety:</strong> Choose grape variety (Cabernet Sauvignon, Merlot, Chardonnay, etc.)</li>
+                    <li><strong>Pounds:</strong> Amount to purchase. 1 ton = 2,000 lbs. Yields ~120-150 gallons or ~600-756 bottles per ton.</li>
+                    <li><strong>Price per lb:</strong> Typically $0.60-1.50/lb ($1,200-3,000/ton) depending on quality and variety.</li>
+                    <li><strong>Annual cost:</strong> Pounds × Price/lb, applied each year of projection.</li>
+                  </ul>
+                </DetailCard>
+
+                <DetailCard title="Unsold Bottles (Wine Inventory Management)">
+                  <p className="text-gray-600 mb-4">
+                    Track bottles withheld from sale for aging, reserves, or non-commercial use (samples, staff, events). Reduces revenue in the year they're withheld.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-600">
+                    <li><strong>Category:</strong> Aging (held for later release), Non-Sold (samples/tastings), Free (donations/gifts)</li>
+                    <li><strong>Year:</strong> Which projection year to withhold bottles</li>
+                    <li><strong>Bottles:</strong> Quantity withheld. Formula: Sold Bottles = Produced Bottles - Withheld Bottles</li>
+                    <li><strong>Use case:</strong> Model reserve program (hold 20% of production for 2-year aging before sale)</li>
+                  </ul>
+                </DetailCard>
+              </div>
             </div>
           </section>
 
