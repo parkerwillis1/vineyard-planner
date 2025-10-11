@@ -67,7 +67,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Optional: Slideshow Indicators */}
+        {/* Slideshow Indicators */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex gap-2">
           {images.map((_, index) => (
             <button
