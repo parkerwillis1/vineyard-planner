@@ -1,11 +1,48 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 export default function HomePage() {
+  const [currentImage, setCurrentImage] = useState(0);
+  
+  const images = [
+    "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1600&q=80", // Vineyard rows
+    "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=1600&q=80", // Grapes close-up
+    "https://images.unsplash.com/photo-1474440692490-2e83ae13ba29?w=1600&q=80", // Vineyard landscape
+    "https://images.unsplash.com/photo-1560703650-6e0c2e5db0e8?w=1600&q=80", // Wine barrels
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % images.length);
+    }, 5000); // Change image every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
   return (
     <div className="relative">
-      {/* Hero Section */}
+      {/* Hero Section with Slideshow */}
       <section className="relative overflow-hidden bg-gradient-to-b from-vine-green-50 to-white">
-        <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
+        {/* Background Slideshow */}
+        <div className="absolute inset-0 z-0">
+          {images.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                index === currentImage ? 'opacity-30' : 'opacity-0'
+              }`}
+              style={{
+                backgroundImage: `url(${image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            />
+          ))}
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-vine-green-50/90 to-white/95" />
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-7xl px-6 py-24 sm:py-32">
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="text-5xl font-bold tracking-tight text-black sm:text-7xl">
               Plan.Grow.Prosper
@@ -30,11 +67,20 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Decorative Elements */}
-        <div className="absolute left-1/2 top-0 -z-10 -translate-x-1/2 blur-3xl" aria-hidden="true">
-          <div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-vine-green-200 to-emerald-200 opacity-30" 
-               style={{clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)'}}
-          />
+        {/* Optional: Slideshow Indicators */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex gap-2">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentImage(index)}
+              className={`h-2 w-2 rounded-full transition-all ${
+                index === currentImage 
+                  ? 'bg-vine-green-500 w-8' 
+                  : 'bg-gray-400 hover:bg-gray-500'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
         </div>
       </section>
 
