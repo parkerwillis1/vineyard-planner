@@ -7,13 +7,10 @@ export default function HomePage() {
       <section className="relative overflow-hidden bg-gradient-to-b from-vine-green-50 to-white">
         <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="mb-8 inline-flex items-center rounded-full bg-vine-green-100 px-4 py-2 text-sm font-semibold text-vine-green-800">
-              🌱 Free Vineyard Planning Tools
-            </div>
-            <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl">
-              Plan Your Vineyard with Confidence
+            <h1 className="text-5xl font-bold tracking-tight text-black sm:text-7xl">
+              Plan.Grow.Prosper
             </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
+            <p className="mt-6 text-lg leading-8 text-black">
               Build detailed financial projections, design your vineyard layout, and model different scenarios—all in one place. No spreadsheets required.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
@@ -173,7 +170,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-vine-green-600">
+      <section className="bg-vine-green-500">
         <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
