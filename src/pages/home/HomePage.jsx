@@ -54,7 +54,6 @@ export default function HomePage() {
         <div className="mx-auto mt-16 max-w-7xl">
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
             <FeatureCard
-              icon="🎨"
               title="Design Your Vineyard Layout"
               description="Configure vine spacing from 4×8' to 8×12', set your plot shape and dimensions, choose row orientation for optimal sun exposure."
               details={[
@@ -66,7 +65,6 @@ export default function HomePage() {
             />
             
             <FeatureCard
-              icon="💰"
               title="Model Your Finances"
               description="Build detailed 10-30 year financial projections with year-by-year revenue, costs, and cash flow analysis."
               details={[
@@ -78,7 +76,6 @@ export default function HomePage() {
             />
 
             <FeatureCard
-              icon="🏦"
               title="Plan Your Financing"
               description="Model USDA FSA loans, commercial bank loans, and equipment financing with accurate payment calculations."
               details={[
@@ -90,7 +87,6 @@ export default function HomePage() {
             />
 
             <FeatureCard
-              icon="📊"
               title="Analyze Different Scenarios"
               description="Test various strategies by adjusting key variables and instantly seeing how they impact profitability."
               details={[
@@ -201,10 +197,9 @@ export default function HomePage() {
   );
 }
 
-function FeatureCard({ icon, title, description, details }) {
+function FeatureCard({title, description, details }) {
   return (
     <div className="relative bg-white rounded-2xl border-2 border-gray-200 p-8 hover:border-vine-green-300 transition-colors">
-      <div className="text-4xl mb-4">{icon}</div>
       <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
       <p className="text-gray-600 mb-6">{description}</p>
       <ul className="space-y-2">
