@@ -16,13 +16,13 @@ export default function HomePage() {
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
                 to="/planner"
-                className="rounded-md bg-vine-green-600 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-vine-green-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vine-green-600"
+                className="rounded-md bg-vine-green-500 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-vine-green-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vine-green-500"
               >
                 Open Planner
               </Link>
               <Link
                 to="/docs"
-                className="text-base font-semibold leading-7 text-gray-900 hover:text-vine-green-600"
+                className="text-base font-semibold leading-7 text-gray-900 hover:text-vine-green-500"
               >
                 View Documentation <span aria-hidden="true">→</span>
               </Link>
@@ -41,7 +41,7 @@ export default function HomePage() {
       {/* What You Can Do Section */}
       <section className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
         <div className="mx-auto max-w-2xl lg:text-center mb-16">
-          <h2 className="text-base font-semibold leading-7 text-vine-green-600">What You Can Build</h2>
+          <h2 className="text-base font-semibold leading-7 text-vine-green-500">What You Can Build</h2>
           <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
             Everything needed for your vineyard business plan
           </p>
@@ -108,7 +108,7 @@ export default function HomePage() {
       <section className="bg-gray-50 py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mx-auto max-w-2xl lg:text-center mb-16">
-            <h2 className="text-base font-semibold leading-7 text-vine-green-600">Simple Process</h2>
+            <h2 className="text-base font-semibold leading-7 text-vine-green-500">Simple Process</h2>
             <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
               From idea to business plan in minutes
             </p>
@@ -144,7 +144,7 @@ export default function HomePage() {
       {/* Example Outputs Section */}
       <section className="mx-auto max-w-7xl px-6 py-24 sm:py-32">
         <div className="mx-auto max-w-2xl lg:text-center mb-16">
-          <h2 className="text-base font-semibold leading-7 text-vine-green-600">Professional Output</h2>
+          <h2 className="text-base font-semibold leading-7 text-vine-green-500">Professional Output</h2>
           <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
             Generate lender-ready reports
           </p>
@@ -183,7 +183,7 @@ export default function HomePage() {
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
                 to="/planner"
-                className="rounded-md bg-white px-8 py-3 text-base font-semibold text-vine-green-600 shadow-sm hover:bg-vine-green-50"
+                className="rounded-md bg-white px-8 py-3 text-base font-semibold text-vine-green-500 shadow-sm hover:bg-vine-green-50"
               >
                 Open Planner Now
               </Link>
@@ -210,7 +210,7 @@ function FeatureCard({ icon, title, description, details }) {
       <ul className="space-y-2">
         {details.map((detail, idx) => (
           <li key={idx} className="flex items-start gap-3 text-sm text-gray-600">
-            <span className="text-vine-green-600 font-bold mt-0.5">→</span>
+            <span className="text-vine-green-500 font-bold mt-0.5">→</span>
             <span>{detail}</span>
           </li>
         ))}
@@ -223,7 +223,7 @@ function ProcessStep({ number, title, description }) {
   return (
     <div className="flex gap-6">
       <div className="flex-shrink-0">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-vine-green-600 text-xl font-bold text-white">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-vine-green-500 text-xl font-bold text-white">
           {number}
         </div>
       </div>
@@ -243,7 +243,7 @@ function OutputCard({ title, description, stats }) {
       <div className="space-y-2">
         {stats.map((stat, idx) => (
           <div key={idx} className="flex items-center gap-2 text-sm">
-            <div className="h-1.5 w-1.5 rounded-full bg-vine-green-600"></div>
+            <div className="h-1.5 w-1.5 rounded-full bg-vine-green-500"></div>
             <span className="text-gray-700">{stat}</span>
           </div>
         ))}
