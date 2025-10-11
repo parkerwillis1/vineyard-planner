@@ -5,16 +5,16 @@ export default function HomePage() {
   const [currentImage, setCurrentImage] = useState(0);
   
   const images = [
-    "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1600&q=80", // Vineyard rows
-    "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=1600&q=80", // Grapes close-up
-    "https://images.unsplash.com/photo-1474440692490-2e83ae13ba29?w=1600&q=80", // Vineyard landscape
-    "https://images.unsplash.com/photo-1560703650-6e0c2e5db0e8?w=1600&q=80", // Wine barrels
+    "/images/vineyard1.jpg",
+    "/images/vineyard2.jpg",
+    "/images/vineyard3.jpg",
+    "/images/vineyard4.jpg",
   ];
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % images.length);
-    }, 5000); // Change image every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [images.length]);
