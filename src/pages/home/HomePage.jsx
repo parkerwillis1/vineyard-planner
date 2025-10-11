@@ -5,10 +5,10 @@ export default function HomePage() {
   const [currentImage, setCurrentImage] = useState(0);
   
   const images = [
-    "/images/vineyard1.jpg",
-    "/images/vineyard2.jpg",
-    "/images/vineyard3.jpg",
-    "/images/vineyard4.jpg",
+    "/images/Vineyard1.jpg",
+    "/images/Vineyard2.jpg",
+    "/images/Vineyard3.jpg",
+    "/images/Vineyard4.jpg",
   ];
 
   useEffect(() => {
