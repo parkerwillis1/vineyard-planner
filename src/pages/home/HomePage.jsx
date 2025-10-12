@@ -42,7 +42,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-b from-vine-green-50/30 to-white/50" />
         </div>
 
-        <div className="relative z-10 mx-auto max-w-7xl px-6 py-40 sm:py-48 lg:py-56">
+        <div className="relative z-10 mx-auto max-w-7xl px-6 py-32 sm:py-40 lg:py-48">
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="text-5xl font-bold tracking-tight text-black sm:text-7xl">
               Plan.Grow.Prosper
