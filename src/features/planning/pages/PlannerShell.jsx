@@ -640,21 +640,7 @@ const totalLoanPrincipal = includedLoans
 // net (out-of-pocket) equity = total Year-0 cost minus total financed
 const netEquityRequired = totalEstCost - totalLoanPrincipal;
 
-  // 1) Pre-Planting (per acre) — stays the same
-    const prePlantingAnnual = stNum.prePlanting
-    .filter(r => r.include)
-    .reduce((sum, r) => sum + r.costPerAcre * stNum.acres, 0)
-
-    // 2) Planting (per acre)
-    // if costPerAcre is undefined, fall back to unitCost * qtyPerAcre
-    const plantingAnnual = stNum.planting
-    .filter(r => r.include)
-    .reduce((sum, r) => {
-    const costPerAcre = r.costPerAcre != null
-        ? r.costPerAcre
-        : (r.unitCost || 0) * (r.qtyPerAcre || 0)
-    return sum + costPerAcre * stNum.acres
-    }, 0)
+  
 
     // 3) Cultural (per acre)
     const culturalAnnual = stNum.cultural
@@ -666,13 +652,12 @@ const netEquityRequired = totalEstCost - totalLoanPrincipal;
     .filter(r => r.include)
     .reduce((sum, r) => sum + r.costPerAcre * stNum.acres, 0)
 
-    // 5) Harvest & Hauling
+    // 5) Harvest & Hauling (per-acre only; per-ton calculated in projection loop)
     const harvestAnnual = stNum.harvest
     .filter(r => r.include)
     .reduce((sum, r) => {
     const byAcre = (r.costPerAcre || 0) * stNum.acres
-    const byTon  = (r.costPerTon   || 0) * (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE)
-    return sum + byAcre + byTon
+    return sum + byAcre
     }, 0)
 
     // 6) Marketing (per acre)
@@ -692,8 +677,6 @@ const netEquityRequired = totalEstCost - totalLoanPrincipal;
 
 // lumped-together annual operating cost:
 const dynamicOperatingCost =
-  prePlantingAnnual +
-  plantingAnnual +
   culturalAnnual +
   harvestAnnual +
   feesAnnual +
@@ -703,15 +686,14 @@ const dynamicOperatingCost =
   marketingAnnual +
   permitAnnual;
 
-// now only add the “other” fixed fees and debt payments:
+// now only add the "other" fixed fees and debt payments:
 const annualFixed =
   dynamicOperatingCost +
   stNum.waterCost * stNum.acres +
   (stNum.insInclude ? stNum.insCost : 0) +
   equipAnnual +
   loanAnnual +
-  grapeAnnual +
-  permitOneTime;
+  grapeAnnual;
 
   const perAcreSetup = Object.values(stNum.setup).reduce(
     (sum, i) => sum + (i.include ? i.cost : 0),
@@ -741,15 +723,15 @@ const annualFixed =
 
   // ---- Year 0 + Operating Years Projection (with explicit Year 0 row) ----
   // Base annual (recurring) operating + fixed costs (exclude one-time establishment)
-  const baseAnnualCost = annualFixed - permitOneTime; 
+  const baseAnnualCost = annualFixed; 
   // (If you intended permitOneTime only in Year 0, ensure it was not already part of annualFixed; adjust if needed.)
   console.log({
     salesMode: st.salesMode,
     grapeSalePrice: stNum.grapeSalePrice
   });
-  // Build operating years 1..projYears
-  let cumulative = -setupCapital;        // start with the establishment outflow
-  const operatingYears = Array.from({ length: projYears }).map((_, idx) => {
+    // Build operating years 1..projYears
+    let cumulative = -(setupCapital + permitOneTime);        // start with the establishment outflow including permits
+    const operatingYears = Array.from({ length: projYears }).map((_, idx) => {
     const year = idx + 1;
 
     const yieldPA = getYieldForYear(year);
@@ -810,7 +792,7 @@ const annualFixed =
       revenue: 0,
       cost: Math.round(setupCapital + permitOneTime),
       net: -Math.round(setupCapital + permitOneTime),
-      cumulative: -Math.round(setupCapital)
+      cumulative: -Math.round(setupCapital + permitOneTime)
     },
     ...operatingYears
   ];
