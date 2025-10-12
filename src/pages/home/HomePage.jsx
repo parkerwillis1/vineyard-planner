@@ -53,7 +53,7 @@ export default function HomePage() {
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
                 to="/planner"
-                className="rounded-md bg-vine-green-500 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-vine-green-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vine-green-500"
+                className="rounded-md bg-vine-green-500 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-white hover:text-vine-green-500 transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vine-green-500"
               >
                 Open Planner
               </Link>
