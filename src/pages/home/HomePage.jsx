@@ -29,7 +29,7 @@ export default function HomePage() {
             <div
               key={index}
               className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentImage ? 'opacity-70' : 'opacity-0'
+                index === currentImage ? 'opacity-90' : 'opacity-0'
               }`}
               style={{
                 backgroundImage: `url(${image})`,
