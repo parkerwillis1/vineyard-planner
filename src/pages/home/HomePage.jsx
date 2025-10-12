@@ -21,10 +21,10 @@ export default function HomePage() {
 
   return (
     <div className="relative">
-      {/* Hero Section with Slideshow - MUCH TALLER */}
+      {/* Hero Section with Slideshow */}
       <section className="relative overflow-hidden bg-gradient-to-b from-vine-green-50 to-white">
         {/* Background Slideshow */}
-        <div className="absolute inset-0 z-0" style={{ minHeight: '90vh' }}>
+        <div className="absolute inset-0 z-0" style={{ minHeight: '70vh' }}>
           {images.map((image, index) => (
             <div
               key={index}
