@@ -39,7 +39,7 @@ export default function HomePage() {
             />
           ))}
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-vine-green-50/50 to-white/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-vine-green-50/30 to-white/50" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-24 sm:py-32">
