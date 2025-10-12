@@ -12,34 +12,46 @@ export default function HomePage() {
   ];
 
   useEffect(() => {
+    // Debug logging
+    console.log("Current image index:", currentImage);
+    console.log("Current image path:", images[currentImage]);
+    
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % images.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [images.length]);
+  }, [currentImage, images]);
 
   return (
     <div className="relative">
       {/* Hero Section with Slideshow */}
       <section className="relative overflow-hidden bg-gradient-to-b from-vine-green-50 to-white">
         {/* Background Slideshow */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0" style={{ minHeight: '500px' }}>
           {images.map((image, index) => (
             <div
               key={index}
               className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentImage ? 'opacity-30' : 'opacity-0'
+                index === currentImage ? 'opacity-70' : 'opacity-0'
               }`}
               style={{
                 backgroundImage: `url(${image})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
+                backgroundColor: 'red', // Debug: will show red if image doesn't load
               }}
-            />
+            >
+              {/* Debug overlay */}
+              {index === currentImage && (
+                <div className="absolute top-4 left-4 bg-black text-white p-2 text-xs z-50">
+                  Active Image: {image}
+                </div>
+              )}
+            </div>
           ))}
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-vine-green-50/90 to-white/95" />
+          {/* Gradient overlay - REDUCED OPACITY FOR TESTING */}
+          <div className="absolute inset-0 bg-gradient-to-b from-vine-green-50/50 to-white/70" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-24 sm:py-32">
