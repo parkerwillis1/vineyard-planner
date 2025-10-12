@@ -24,12 +24,12 @@ export default function HomePage() {
       {/* Hero Section with Slideshow */}
       <section className="relative overflow-hidden bg-gradient-to-b from-vine-green-50 to-white">
         {/* Background Slideshow */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0" style={{ minHeight: '500px' }}>
           {images.map((image, index) => (
             <div
               key={index}
               className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentImage ? 'opacity-30' : 'opacity-0'
+                index === currentImage ? 'opacity-70' : 'opacity-0'
               }`}
               style={{
                 backgroundImage: `url(${image})`,
@@ -39,7 +39,7 @@ export default function HomePage() {
             />
           ))}
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-vine-green-50/90 to-white/95" />
+          <div className="absolute inset-0 bg-gradient-to-b from-vine-green-50/50 to-white/70" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-24 sm:py-32">
