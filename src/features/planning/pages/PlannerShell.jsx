@@ -1018,11 +1018,13 @@ const LTV = (landValue + improvementsValue) > 0
             Vineyard Design & Layout Planning
           </h1>
           
-          <VineyardLayoutConfig
-            acres={stNum.acres}
-            onLayoutChange={handleLayoutChange}
-            currentLayout={st.vineyardLayout}
-          />
+          <CollapsibleSection title="Vine Spacing & Shape Configuration" defaultOpen={true}>
+            <VineyardLayoutConfig
+              acres={stNum.acres}
+              onLayoutChange={handleLayoutChange}
+              currentLayout={st.vineyardLayout}
+            />
+          </CollapsibleSection>
         </div>
       )}
       
