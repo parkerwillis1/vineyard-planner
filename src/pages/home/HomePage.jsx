@@ -24,7 +24,7 @@ export default function HomePage() {
       {/* Hero Section with Slideshow */}
       <section className="relative overflow-hidden bg-gradient-to-b from-vine-green-50 to-white">
         {/* Background Slideshow */}
-        <div className="absolute inset-0 z-0" style={{ minHeight: '500px' }}>
+        <div className="absolute inset-0 z-0" style={{ minHeight: '700px' }}>
           {images.map((image, index) => (
             <div
               key={index}
