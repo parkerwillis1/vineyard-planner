@@ -66,7 +66,7 @@ export default function DocumentationPage() {
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              📊 Planning Tools
+              Planning Tool
             </button>
             <button
               onClick={() => setActiveSection("vineyards")}
@@ -76,7 +76,7 @@ export default function DocumentationPage() {
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              🍇 Vineyard Operations <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Coming Soon</span>
+              Vineyard Operations <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Coming Soon</span>
             </button>
           </nav>
         </div>
@@ -187,12 +187,12 @@ export default function DocumentationPage() {
                 </ul>
               </nav>
             </aside>
-            
+
             {/* Main Content */}
             <div className="flex-1 min-w-0">
               {/* Quick Start Guide */}
               <section id="quick-start" data-section="quick-start" className="mb-16">
-                <h2 className="text-3xl font-bold text-gray-900 mb-8">🚀 Quick Start Guide</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-8">Quick Start Guide</h2>
                 <div className="bg-vine-green-50 rounded-2xl p-8 mb-12">
                   <ol className="space-y-4">
                     <Step 
@@ -236,7 +236,7 @@ export default function DocumentationPage() {
 
               {/* Design Tab Deep Dive */}
               <section id="design-tab" data-section="design-tab" className="bg-gray-50 -mx-6 px-6 py-16 mb-16">
-                <h2 className="text-3xl font-bold text-gray-900 mb-8">🎨 Design Tab - Complete Reference</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-8">Design Tab - Complete Reference</h2>
                 
                 <DetailCard title="Vine Spacing Configuration">
                   <h4 className="font-semibold text-gray-900 mb-3">Spacing Pattern</h4>
@@ -283,7 +283,7 @@ export default function DocumentationPage() {
 
           {/* Financial Inputs Tab Deep Dive */}
           <section id="financial-inputs" data-section="financial-inputs" className="mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">💰 Financial Inputs Tab - Complete Reference</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Financial Inputs Tab - Complete Reference</h2>
 
             <div className="space-y-8">
               {/* Core Parameters Subsection */}
@@ -589,7 +589,7 @@ export default function DocumentationPage() {
           {/* Vineyard Setup Tab Deep Dive */}
           <section className="bg-gray-50 py-16">
             <section id="vineyard-setup" data-section="vineyard-setup" className="bg-gray-50 -mx-6 px-6 py-16 mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8">🏗️ Vineyard Setup Tab - Complete Reference</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-8">Vineyard Setup Tab - Complete Reference</h2>
               
               <DetailCard title="Year 0 Establishment Overview">
                 <p className="text-gray-600 mb-4">
@@ -689,7 +689,7 @@ export default function DocumentationPage() {
 
           {/* Projection Tab Deep Dive */}
           <section id="projection-tab" data-section="projection-tab" className="mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">📈 10-Year Plan Tab - Complete Reference</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">10-Year Plan Tab - Complete Reference</h2>
             
             <div className="space-y-8">
               <DetailCard title="Top-Line Metrics (Hero Cards)">
@@ -815,7 +815,7 @@ export default function DocumentationPage() {
 
           {/* Details Tab Deep Dive */}
           <section id="details-tab" data-section="details-tab" className="bg-gray-50 -mx-6 px-6 py-16 mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8">🔍 Details Tab - Complete Reference</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-8">Details Tab - Complete Reference</h2>
               
               <DetailCard title="Executive Summary Section">
                 <p className="text-gray-600 mb-4">
@@ -981,7 +981,7 @@ export default function DocumentationPage() {
                 </div>
 
                 <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded mt-6">
-                  <p className="text-sm font-semibold text-gray-900 mb-2">⚠️ Important Terminology Note</p>
+                  <p className="text-sm font-semibold text-gray-900 mb-2">Important Terminology Note</p>
                   <p className="text-xs text-gray-700">
                     The model shows these ratios for informational purposes. Actual lender requirements vary by institution, loan program, borrower credit profile, and collateral quality. Always discuss specific requirements with your lender. These are guidelines, not guarantees of approval.
                   </p>
@@ -1170,7 +1170,7 @@ export default function DocumentationPage() {
 
           {/* Financial Formulas */}
           <section id="financial-formulas" data-section="financial-formulas" className="mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">📊 Financial Formulas Reference</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Financial Formulas Reference</h2>
 
             <div className="bg-white rounded-xl shadow-sm p-8 border border-gray-200">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1317,7 +1317,7 @@ export default function DocumentationPage() {
 
           {/* Key Concepts */}
           <section id="key-concepts" data-section="key-concepts" className="bg-gray-50 -mx-6 px-6 py-16 mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">💡 Key Concepts</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">Key Concepts</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <ConceptCard
                   title="Sales Strategies Comparison"
@@ -1503,7 +1503,7 @@ export default function DocumentationPage() {
 
           {/* FAQ Section */}
           <section id="faq" data-section="faq" className="mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">❓ Frequently Asked Questions</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">Frequently Asked Questions</h2>
             <div className="space-y-4">
               <FAQItem
                 question="Why is my break-even year showing '>10'?"
@@ -1599,7 +1599,7 @@ export default function DocumentationPage() {
 
           {/* Best Practices */}
           <section id="best-practices" data-section="best-practices" className="bg-vine-green-50 -mx-6 px-6 py-16 mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">✅ Best Practices & Tips</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Best Practices & Tips</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="bg-white p-6 rounded-lg border-l-4 border-vine-green-600">
                   <h3 className="text-xl font-semibold text-gray-900 mb-3">📊 Financial Modeling</h3>
@@ -1650,7 +1650,7 @@ export default function DocumentationPage() {
                 </div>
 
                 <div className="bg-white p-6 rounded-lg border-l-4 border-yellow-600">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">⚠️ Common Mistakes to Avoid</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Common Mistakes to Avoid</h3>
                   <ul className="list-disc pl-6 space-y-2 text-sm text-gray-600">
                     <li>Underestimating time to profitability (plan for 6-10 years)</li>
                     <li>Over-optimistic yield assumptions (use conservative estimates)</li>
