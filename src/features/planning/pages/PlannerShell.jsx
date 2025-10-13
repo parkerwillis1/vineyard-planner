@@ -1010,8 +1010,8 @@ const LTV = (landValue + improvementsValue) > 0
       {activeTab === "design" && (
         <div className="space-y-8 pt-6">
           {/* Hero Header */}
-          <div className="text-center bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl p-8 mb-8">
-            <h1 className="text-4xl font-bold text-blue-600 mb-3">
+          <div className="text-center p-8 mb-8">
+            <h1 className="text-4xl font-bold text-vine-green-500 mb-3">
               Vineyard Design & Layout
             </h1>
             <p className="text-gray-600 max-w-3xl mx-auto">
