@@ -575,13 +575,15 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
 
 
 // Main component for vineyard layout configuration
-export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) => {
+// Main component for vineyard layout configuration
+export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onAcresChange }) => {
   const [spacingOption, setSpacingOption] = useState("6x10");
   const [customVineSpacing, setCustomVineSpacing] = useState(6);
   const [customRowSpacing, setCustomRowSpacing] = useState(10);
   const [shape, setShape] = useState("rectangle");
   const [aspectRatio, setAspectRatio] = useState(2);
   const [rowOrientation, setRowOrientation] = useState("horizontal");
+  const [trellisSystem, setTrellisSystem] = useState("VSP");
 
   const selectedSpacing = VINE_SPACING_OPTIONS.find(opt => opt.key === spacingOption);
   const isCustom = spacingOption === "custom";
@@ -612,108 +614,130 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) =
   
   return (
     <div className="space-y-6">
-      {/* Spacing Configuration */}
-      <CollapsibleSection title="Vine Spacing Configuration" defaultOpen={true}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-blue-800 mb-2">
-              Spacing Pattern
-            </label>
-            <select
-              value={spacingOption}
-              onChange={(e) => setSpacingOption(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              {VINE_SPACING_OPTIONS.map(opt => (
-                <option key={opt.key} value={opt.key}>
-                  {opt.label} {opt.vinesPerAcre > 0 && `(${opt.vinesPerAcre} vines/acre)`}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {isCustom && (
-            <>
+      {/* Basic Parameters & Variety Mix - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* LEFT COLUMN - Basic Parameters */}
+        <Card className="shadow-lg">
+          <CardContent className="p-8">
+            <h3 className="text-xl font-semibold text-blue-600 mb-6">Basic Parameters</h3>
+            
+            <div className="space-y-6">
+              {/* Total Acres */}
               <div>
-                <label className="block text-sm font-medium text-blue-800 mb-2">
-                  Vine Spacing (feet)
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Total Acres
                 </label>
                 <Input
                   type="number"
-                  min="4"
-                  max="12"
-                  step="0.5"
-                  value={customVineSpacing}
-                  onChange={(e) => setCustomVineSpacing(Number(e.target.value))}
+                  step="0.1"
+                  min="0.1"
+                  value={acres}
+                  onChange={(e) => onAcresChange && onAcresChange(e.target.value)}
+                  className="text-lg"
                 />
               </div>
+
+              {/* Row Spacing */}
               <div>
-                <label className="block text-sm font-medium text-blue-800 mb-2">
-                  Row Spacing (feet)
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Row Spacing (ft)
                 </label>
                 <Input
                   type="number"
                   min="6"
                   max="16"
                   step="0.5"
-                  value={customRowSpacing}
-                  onChange={(e) => setCustomRowSpacing(Number(e.target.value))}
+                  value={rowSpacing}
+                  onChange={(e) => {
+                    setSpacingOption("custom");
+                    setCustomRowSpacing(Number(e.target.value));
+                  }}
+                  className="text-lg"
                 />
               </div>
-            </>
-          )}
-          
-          <div>
-            <label className="block text-sm font-medium text-blue-800 mb-2">
-              Vineyard Shape
-            </label>
-            <select
-              value={shape}
-              onChange={(e) => setShape(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              {VINEYARD_SHAPES.map(shapeOpt => (
-                <option key={shapeOpt.key} value={shapeOpt.key}>
-                  {shapeOpt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {shape !== "square" && (
-            <div>
-              <label className="block text-sm font-medium text-blue-800 mb-2">
-                Length:Width Ratio
-              </label>
-              <select
-                value={aspectRatio}
-                onChange={(e) => setAspectRatio(Number(e.target.value))}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              >
-                {VINEYARD_SHAPES.find(s => s.key === shape)?.aspectRatios.map(ratio => (
-                  <option key={ratio} value={ratio}>
-                    {ratio}:1 {ratio === 1 ? "(Square)" : ratio === 1.5 ? "(Moderate)" : ratio >= 2.5 ? "(Long)" : "(Wide)"}
-                  </option>
-                ))}
-              </select>
+
+              {/* Vine Spacing */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Vine Spacing (ft)
+                </label>
+                <Input
+                  type="number"
+                  min="4"
+                  max="12"
+                  step="0.5"
+                  value={vineSpacing}
+                  onChange={(e) => {
+                    setSpacingOption("custom");
+                    setCustomVineSpacing(Number(e.target.value));
+                  }}
+                  className="text-lg"
+                />
+              </div>
+
+              {/* Trellis System */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Trellis System
+                </label>
+                <select
+                  value={trellisSystem}
+                  onChange={(e) => setTrellisSystem(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-lg"
+                >
+                  <option value="VSP">Vertical Shoot Positioning (VSP)</option>
+                  <option value="Geneva">Geneva Double Curtain</option>
+                  <option value="Scott-Henry">Scott-Henry</option>
+                  <option value="Lyre">Lyre System</option>
+                </select>
+              </div>
             </div>
-          )}
-          
-          <div>
-            <label className="block text-sm font-medium text-blue-800 mb-2">
-              Row Orientation
-            </label>
-            <select
-              value={rowOrientation}
-              onChange={(e) => setRowOrientation(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="horizontal">Horizontal (posts on short sides)</option>
-              <option value="vertical">Vertical (posts on long sides)</option>
-            </select>
+          </CardContent>
+        </Card>
+
+        {/* RIGHT COLUMN - Variety Mix */}
+        <Card className="shadow-lg bg-gray-50">
+          <CardContent className="p-8">
+            <h3 className="text-xl font-semibold text-blue-600 mb-6">Variety Mix</h3>
+            <p className="text-gray-500 text-center py-12">
+              Coming Soon: Allocate percentages for each grape variety (must total 100%)
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Layout Statistics - Full Width Below */}
+      {layout && (
+        <div>
+          <h3 className="text-xl font-semibold text-blue-600 mb-4">Layout Statistics</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-blue-50 rounded-xl p-6 text-center shadow-sm">
+              <div className="text-4xl font-bold text-blue-600 mb-2">
+                {layout.vineLayout.totalVines.toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">Total Vines</div>
+            </div>
+            <div className="bg-gray-100 rounded-xl p-6 text-center shadow-sm">
+              <div className="text-4xl font-bold text-gray-700 mb-2">
+                {layout.vineLayout.numberOfRows}
+              </div>
+              <div className="text-sm text-gray-600">Row Feet</div>
+            </div>
+            <div className="bg-green-50 rounded-xl p-6 text-center shadow-sm">
+              <div className="text-4xl font-bold text-green-600 mb-2">
+                {(acres * 3.5).toFixed(1)}
+              </div>
+              <div className="text-sm text-gray-600">Estimated Tons</div>
+            </div>
+            <div className="bg-blue-100 rounded-xl p-6 text-center shadow-sm">
+              <div className="text-4xl font-bold text-blue-700 mb-2">
+                {(acres * 3.5 * 756).toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">Bottles (750ml)</div>
+            </div>
           </div>
         </div>
-      </CollapsibleSection>
+      )}
       
       {/* Layout Visualization */}
       {layout && (

@@ -1019,80 +1019,12 @@ const LTV = (landValue + improvementsValue) > 0
             </p>
           </div>
 
-          {/* Basic Parameters Card */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column - Basic Parameters */}
-            <Card className="shadow-lg">
-              <CardContent className="p-8">
-                <h3 className="text-xl font-semibold text-blue-600 mb-6">Basic Parameters</h3>
-                
-                {/* Total Acres */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Total Acres
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    value={st.acres}
-                    onChange={(e) => update("acres", e.target.value)}
-                    className="text-lg"
-                  />
-                </div>
-
-                {/* Spacing Options from VineyardLayoutConfig */}
-                <VineyardLayoutConfig
-                  acres={stNum.acres}
-                  onLayoutChange={handleLayoutChange}
-                  currentLayout={st.vineyardLayout}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Right Column - Variety Mix (Future Feature) */}
-            <Card className="shadow-lg bg-gray-50">
-              <CardContent className="p-8">
-                <h3 className="text-xl font-semibold text-blue-600 mb-6">Variety Mix</h3>
-                <p className="text-gray-500 text-center py-8">
-                  Coming Soon: Allocate percentages for each grape variety
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Layout Statistics - Below Both Columns */}
-          {st.vineyardLayout?.calculatedLayout && (
-            <div className="mt-8">
-              <h3 className="text-xl font-semibold text-blue-600 mb-4">Layout Statistics</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 rounded-xl p-6 text-center">
-                  <div className="text-4xl font-bold text-blue-600 mb-2">
-                    {st.vineyardLayout.calculatedLayout.vineLayout.totalVines.toLocaleString()}
-                  </div>
-                  <div className="text-sm text-gray-600">Total Vines</div>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-6 text-center">
-                  <div className="text-4xl font-bold text-gray-700 mb-2">
-                    {st.vineyardLayout.calculatedLayout.vineLayout.numberOfRows}
-                  </div>
-                  <div className="text-sm text-gray-600">Row Feet</div>
-                </div>
-                <div className="bg-green-50 rounded-xl p-6 text-center">
-                  <div className="text-4xl font-bold text-green-600 mb-2">
-                    {(stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE).toFixed(1)}
-                  </div>
-                  <div className="text-sm text-gray-600">Estimated Tons</div>
-                </div>
-                <div className="bg-blue-100 rounded-xl p-6 text-center">
-                  <div className="text-4xl font-bold text-blue-700 mb-2">
-                    {(stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON).toLocaleString()}
-                  </div>
-                  <div className="text-sm text-gray-600">Bottles (750ml)</div>
-                </div>
-              </div>
-            </div>
-          )}
+          <VineyardLayoutConfig
+            acres={stNum.acres}
+            onLayoutChange={handleLayoutChange}
+            currentLayout={st.vineyardLayout}
+            onAcresChange={(value) => update("acres", value)}
+          />
         </div>
       )}
       
