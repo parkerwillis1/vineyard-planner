@@ -200,10 +200,12 @@ const IRRIG_OPTIONS = [
 const AVERAGE_YIELD_TONS_PER_ACRE = 3.5;
 const BOTTLES_PER_TON = 756;
 
-const pmt = (P, r, yrs) => {
-  const m = r / 100 / 12;
+// Payments with decimal interest (e.g., 0.06 for 6%)
+// Handles 0% APR by spreading principal evenly across months.
+const pmt = (P, rDecimal, yrs) => {
+  const m = rDecimal / 12;
   const n = yrs * 12;
-  return m ? (P * m) / (1 - (1 + m) ** -n) : 0;
+  return m ? (P * m) / (1 - (1 + m) ** -n) : (n > 0 ? P / n : 0);
 };
 
 // Section header component for consistency
@@ -487,6 +489,7 @@ const stNum = {
   landPrice:       Number(st.landPrice)   || 0,
   waterCost:       Number(st.waterCost)   || 0,
   insCost:         Number(st.insCost)     || 0,
+  insInclude:      !!st.insInclude,
   licenseCost:     Number(st.licenseCost) || 0,
   availableEquity: Number(st.availableEquity) || 0,
   setupYear:       Number(st.setupYear)   || 0,
@@ -568,11 +571,11 @@ const stNum = {
 
 // ─── aggregate annual financing & equipment costs ───
 const equipAnnual = stNum.equipmentRows.reduce(
-  (sum, r) => r.include ? sum + pmt(r.price, r.rate, r.term) * 12 : sum,
+  (sum, r) => r.include ? sum + pmt(r.price, (Number(r.rate)||0)/100, r.term) * 12 : sum,
   0
 );
 const loanAnnual = stNum.loans.reduce(
-  (sum, l) => l.include ? sum + pmt(l.principal, l.rate / 100, l.term) * 12 : sum,
+  (sum, l) => l.include ? sum + pmt(l.principal, (Number(l.rate)||0)/100, l.term) * 12 : sum,
   0
 );
 const grapeAnnual = stNum.purchases.reduce(
@@ -717,7 +720,8 @@ const annualFixed =
   const fullProdNet = fullProdRevenue - annualFixed;
 
   const isWine         = st.salesMode === "wine";
-  const costPerTon = annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE);
+  const denomTons = stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE;
+  const costPerTon = denomTons > 0 ? (annualFixed / denomTons) : 0;
   const grapePrice = Number(stNum.grapeSalePrice || 0);
   const grossMarginTon = grapePrice - costPerTon;
 
@@ -730,7 +734,7 @@ const annualFixed =
     grapeSalePrice: stNum.grapeSalePrice
   });
     // Build operating years 1..projYears
-    let cumulative = -(setupCapital + permitOneTime);        // start with the establishment outflow including permits
+    let cumulative = -setupCapital;        // start with the establishment outflow including permits
     const operatingYears = Array.from({ length: projYears }).map((_, idx) => {
     const year = idx + 1;
 
@@ -781,7 +785,7 @@ const annualFixed =
     };
   });
 
-  // Year 0 row (pure establishment). revenue 0, cost = setupCapital (all one-time)
+  // Year 0 row (pure establishment). revenue 0, cost = totalEstCost (all one-time)
   const projection = [
     {
       year: 0,
@@ -790,11 +794,11 @@ const annualFixed =
       withheldBottles: 0,
       soldBottles: 0,
       revenue: 0,
-      cost: Math.round(setupCapital + permitOneTime),
-      net: -Math.round(setupCapital + permitOneTime),
-      cumulative: -Math.round(setupCapital + permitOneTime)
+      cost: Math.round(totalEstCost),
+      net: -Math.round(totalEstCost),
+      cumulative: -Math.round(totalEstCost),
     },
-    ...operatingYears
+    ...operatingYears,
   ];
 
   // Break-even = first year >0 where cumulative >= 0
@@ -802,25 +806,15 @@ const annualFixed =
   const breakEven = beIdx >= 0 ? projection[beIdx].year : `>${projYears}`;
 
 
-  const breakdownData = [
-    { name: "Operating Cost",             value: dynamicOperatingCost },
-    { name: "Water Cost",                 value: stNum.waterCost * stNum.acres },
-    { name: "Loan Payments (annual)",     value: loanAnnual },
-    { name: "Equipment Payments (annual)",value: equipAnnual },
-    { name: "Grape Purchases (annual)",   value: grapeAnnual },
-    { name: "Setup Capital (one-time)",   value: setupCapital },
-    { name: "Permits (one-time)",   value: permitOneTime },
-    { name: "Permits (annual)",     value: permitAnnual   },    
-    { name: 'Pre-Planting',    value: prePlantTotal },
-    { name: 'Planting',        value: plantingTotal },
-    { name: "Cultural Ops (Op. Cost)",      value: culturalAnnual },
-    { name: "Harvest & Hauling (Op. Cost)", value: harvestAnnual },
-    { name: "Assessments & Fees (Op. Cost)",value: feesAnnual },
-    { name: "Equipment Ops (Op. Cost)",     value: equipmentOpsCost },
-    { name: "Cash Overhead (Op. Cost)",     value: cashOverhead },
-    { name: "Non-Cash Overhead (Op. Cost)", value: nonCashOverhead },
-    { name: "Marketing (Op. Cost)",         value: marketingAnnual },
-  ];
+const breakdownData = [
+  { name: "Operating Cost",              value: dynamicOperatingCost }, // already includes permits/cultural/fees/etc.
+  { name: "Water Cost",                  value: stNum.waterCost * stNum.acres },
+  { name: "Insurance",                   value: stNum.insInclude ? stNum.insCost : 0 },
+  { name: "Loan Payments (annual)",      value: loanAnnual },
+  { name: "Equipment Payments (annual)", value: equipAnnual },
+  { name: "Grape Purchases (annual)",    value: grapeAnnual },
+  { name: "Setup Capital (one-time)",    value: totalEstCost }, // or setupCapital if you alias it
+];
 
   const update = (k, v) => set({ ...st, [k]: v });
   const num = (k, step = 1) => (
@@ -935,6 +929,9 @@ const costRows = [
       name: 'Water Cost',
       values: [ 0, ...Array(projYears).fill(stNum.waterCost * stNum.acres) ]
     },
+    { name: 'Insurance',                  
+      values: [ 0, ...Array(projYears).fill(stNum.insInclude ? stNum.insCost : 0) ] 
+    },
     {
       name: 'Debt Service (annual)',
       values: [ 0, ...Array(projYears).fill(loanAnnual) ]
@@ -946,10 +943,6 @@ const costRows = [
     {
       name: 'Grape Purchases (annual)',
       values: [ 0, ...Array(projYears).fill(grapeAnnual) ]
-    },
-    {
-      name: 'Permits (annual)',
-      values: [ 0, ...Array(projYears).fill(permitAnnual) ]
     },
   ]
 

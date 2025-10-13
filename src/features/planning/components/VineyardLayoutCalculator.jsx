@@ -99,7 +99,12 @@ export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = 
   
   return {
     dimensions: { width, length, totalSqft },
-    vineLayout: { numberOfRows, vinesPerRow, totalVines, vinesPerAcre: totalVines / acres },
+    vineLayout: {
+      numberOfRows,
+      vinesPerRow,
+      totalVines,
+      vinesPerAcre: acres > 0 ? (totalVines / acres) : 0
+    },
     materials,
     spacing: { vine: vineSpacingFeet, row: rowSpacingFeet },
     orientation
@@ -108,11 +113,12 @@ export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = 
 
 const calculateMaterials = (rows, vinesPerRow, length, rowSpacing, shape) => {
   // Posts: End posts (2 per row) + Middle posts (every 20-24 feet)
-  const endPosts = rows * 2;
-  const postSpacing = 24; // feet between line posts
-  const linePostsPerRow = Math.max(0, Math.floor(length / postSpacing) - 1);
-  const linePosts = rows * linePostsPerRow;
-  const totalPosts = endPosts + linePosts;
+const LINE_POST_SPACING_FT = 20;           // unify spacing used everywhere
+const endPosts = rows * 2;
+const postSpacing = LINE_POST_SPACING_FT;  // feet between line posts
+const linePostsPerRow = Math.max(0, Math.floor(length / postSpacing) - 1);
+const linePosts = rows * linePostsPerRow;
+const totalPosts = endPosts + linePosts;
   
   // Earth anchors (typically 1 per row end, so 2 per row)
   const earthAnchors = rows * 2;
@@ -132,7 +138,7 @@ const calculateMaterials = (rows, vinesPerRow, length, rowSpacing, shape) => {
   
   // Trellis hardware
   const tensioners = rows * wiresPerRow; // 1 per wire per row
-  const anchoreRings = earthAnchors;
+  const anchorRings = earthAnchors;
   
   return {
     posts: {
@@ -160,7 +166,7 @@ const calculateMaterials = (rows, vinesPerRow, length, rowSpacing, shape) => {
       eyeBolts,
       staples,
       tensioners,
-      anchoreRings,
+      anchorRings,
       description: "Wire clips, eye bolts, staples, tensioners, anchor rings"
     }
   };
@@ -179,7 +185,7 @@ export const calculateMaterialCosts = (materials, customPrices = {}) => {
     eyeBolt: 2.50,      // $ per bolt
     staple: 0.05,       // $ per staple
     tensioner: 8.00,    // $ per tensioner
-    anchorRing: 3.50,   // $ per ring
+    anchorRing: 3.50,
     ...customPrices
   };
   
@@ -194,7 +200,7 @@ export const calculateMaterialCosts = (materials, customPrices = {}) => {
               (materials.hardware.eyeBolts * defaultPrices.eyeBolt) +
               (materials.hardware.staples * defaultPrices.staple) +
               (materials.hardware.tensioners * defaultPrices.tensioner) +
-              (materials.hardware.anchoreRings * defaultPrices.anchorRing)
+              (materials.hardware.anchorRings * defaultPrices.anchorRing)
   };
 };
 
