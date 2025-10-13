@@ -97,8 +97,7 @@ const TabNav = ({
   ];
 
   return (
-    <div className={`sticky ${stickyTopClass} z-20 bg-white border-b border-gray-200`}>
-      {/* Add the same max-width container and padding as your content */}
+    <div className={`sticky ${stickyTopClass} z-50 bg-white border-b border-gray-200 shadow-sm`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <nav className="flex items-center justify-between h-14">
           {/* LEFT SIDE - Tabs */}
@@ -1002,7 +1001,7 @@ const LTV = (landValue + improvementsValue) > 0
   
 
   const MainUI = (
-    <div className="w-full overflow-x-hidden">
+    <div className="w-full">
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
 
@@ -3815,7 +3814,7 @@ const LTV = (landValue + improvementsValue) > 0
 
 return (
   <div className="min-h-screen bg-white">
-    <main className="w-full pt-0 overflow-x-hidden">
+    <main className="w-full pt-0">
 
       {/* Hide the big vine-green-500 banner/logo when embedded */}
       {/*<ProjectBanner years={projYears} setYears={setProjYears} /> */}
