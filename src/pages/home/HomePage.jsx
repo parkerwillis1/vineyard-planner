@@ -68,15 +68,15 @@ export default function HomePage() {
         </div>
 
         {/* Slideshow Indicators */}
-        <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10 flex gap-1.5">
+        <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10 flex gap-2">
           {images.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentImage(index)}
-              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+              className={`w-2.5 h-2.5 rounded-full transition-opacity duration-300 ${
                 index === currentImage 
-                  ? 'bg-white' 
-                  : 'bg-white/30 hover:bg-white/50'
+                  ? 'bg-white opacity-100' 
+                  : 'bg-white opacity-30 hover:opacity-60'
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />
