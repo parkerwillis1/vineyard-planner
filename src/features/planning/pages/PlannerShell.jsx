@@ -878,7 +878,8 @@ const handleLayoutChange = useCallback((layout, materialCosts) => {
         breakdown: {
           posts: materialCosts.posts,
           wire: materialCosts.wire, 
-          hardware: materialCosts.hardware
+          hardware: materialCosts.hardware,
+          earthAnchors: materialCosts.earthAnchors
         }
       },
       irrigation: {
