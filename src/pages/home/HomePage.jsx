@@ -39,15 +39,15 @@ export default function HomePage() {
             />
           ))}
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-vine-green-50/30 to-white/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/20" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-32 sm:py-40 lg:py-48">
           <div className="mx-auto max-w-2xl text-center">
-            <h1 className="text-5xl font-bold tracking-tight text-black sm:text-7xl">
+            <h1 className="text-5xl font-bold tracking-tight text-white sm:text-7xl" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
               Plan.Grow.Prosper
             </h1>
-            <p className="mt-6 text-lg leading-8 text-black font-semibold" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            <p className="mt-6 text-lg leading-8 text-white font-bold" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
               Build detailed financial projections, design your vineyard layout, and model different scenarios—all in one place. No spreadsheets required.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
