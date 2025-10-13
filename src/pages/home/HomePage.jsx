@@ -45,7 +45,7 @@ export default function HomePage() {
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-32 sm:py-40 lg:py-48">
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="text-5xl font-bold tracking-tight text-white sm:text-7xl" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
-              Plan.Grow.Prosper
+              Plan.Grow.Prosper.
             </h1>
             <p className="mt-6 text-lg leading-8 text-white font-bold" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
               Build detailed financial projections, design your vineyard layout, and model different scenarios—all in one place. No spreadsheets required.
