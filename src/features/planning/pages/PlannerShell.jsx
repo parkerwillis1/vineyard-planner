@@ -97,7 +97,7 @@ const TabNav = ({
   ];
 
   return (
-  <div className={`sticky ${stickyTopClass} z-50 bg-white border-b border-gray-200 shadow-sm`}>
+  <div className={`sticky ${stickyTopClass} z-50 bg-white border-b border-gray-200 shadow-sm mt-8`}>
     {/* Add the same max-width container and padding as your content */}
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <nav className="flex items-center justify-between h-14">
@@ -1008,7 +1008,7 @@ const LTV = (landValue + improvementsValue) > 0
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
-        <div className="space-y-8 pt-24">
+        <div className="space-y-8 pt-6">
           <h1 className="text-2xl font-bold text-vine-green-700 border-b pb-3">
             Vineyard Design & Layout Planning
           </h1>
@@ -1023,7 +1023,7 @@ const LTV = (landValue + improvementsValue) > 0
       
       {/* INPUTS TAB */}
       {activeTab === "inputs" && (
-        <div className="space-y-8 pt-24">
+        <div className="space-y-8 pt-6">
           <h1 className="text-2xl font-bold text-vine-green-700 border-b pb-3">
             Financial Inputs for the Vineyard
           </h1>
@@ -2329,7 +2329,7 @@ const LTV = (landValue + improvementsValue) > 0
 
         {/* ── Vineyard Establishment Tab ── */}
         {activeTab === "establishment" && (
-          <div className="space-y-8 pt-16">
+          <div className="space-y-8 pt-6">
             <SectionHeader title="Year 0 Establishment Costs" />
 
             {/* Enhanced Summary Cards */}
@@ -2589,7 +2589,7 @@ const LTV = (landValue + improvementsValue) > 0
 
         {/* ── 10-Year Projection Tab ── */}
         {activeTab === "proj" && (
-        <div className="space-y-8 pt-16">
+        <div className="space-y-8 pt-6">
             <SectionHeader title={`${projYears}-Year Financial Projection`} />
 
             {/* Enhanced Top-line summary */}
@@ -2794,7 +2794,7 @@ const LTV = (landValue + improvementsValue) > 0
  
         {/* ------- render Details tab only when active ------- */}
         {activeTab === "details" && (
-        <div className="space-y-8 pt-16 max-w-full overflow-hidden">
+        <div className="space-y-8 pt-6 max-w-full overflow-hidden">
             <SectionHeader title="Vineyard Financial Analysis & Breakdown" />
             
             {/* Executive Summary Card */}
