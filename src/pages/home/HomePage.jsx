@@ -72,12 +72,13 @@ export default function HomePage() {
           {images.map((_, index) => (
             <button
               key={index}
+              type="button"
               onClick={() => setCurrentImage(index)}
-              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                index === currentImage
-                  ? 'bg-white scale-125 opacity-100'
-                  : 'bg-white/30 hover:opacity-70'
-              }`}
+              className={`size-1.5 rounded-full p-0 m-0 border-0 appearance-none leading-none shrink-0 transition-all duration-300
+                ${index === currentImage
+                  ? 'bg-white opacity-100 scale-110'
+                  : 'bg-white/30 hover:opacity-70'}
+              `}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}
