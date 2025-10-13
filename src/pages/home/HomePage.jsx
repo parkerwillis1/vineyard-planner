@@ -68,13 +68,13 @@ export default function HomePage() {
         </div>
 
         {/* Slideshow Indicators */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-2">
           {images.map((_, index) => (
             <button
               key={index}
               type="button"
               onClick={() => setCurrentImage(index)}
-              className={`size-1.5 rounded-full p-0 m-0 border-0 appearance-none leading-none shrink-0 transition-all duration-300
+              className={`w-2.5 h-2.5 rounded-full p-0 m-0 border-0 appearance-none leading-none shrink-0 outline-none focus:outline-none transition-all duration-300
                 ${index === currentImage
                   ? 'bg-white opacity-100 scale-110'
                   : 'bg-white/30 hover:opacity-70'}
