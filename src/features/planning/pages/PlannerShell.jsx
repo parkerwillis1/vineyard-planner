@@ -872,7 +872,8 @@ const handleLayoutChange = useCallback((layout, materialCosts) => {
       ...prev.setup,
       trellis: {
         include: true,
-        cost: Math.round((materialCosts.posts + materialCosts.wire + materialCosts.hardware) / acres),
+        cost: Math.round(
+          (materialCosts.posts + materialCosts.wire + materialCosts.hardware + materialCosts.earthAnchors) / acres),
         calculated: true,
         breakdown: {
           posts: materialCosts.posts,
