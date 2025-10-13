@@ -59,7 +59,7 @@ export default function HomePage() {
               </Link>
               <Link
                 to="/docs"
-                className="text-base font-semibold leading-7 text-gray-900 hover:text-vine-green-500"
+                className="text-base font-semibold leading-7 text-white hover:text-vine-green-500"
               >
                 View Documentation <span aria-hidden="true">→</span>
               </Link>
