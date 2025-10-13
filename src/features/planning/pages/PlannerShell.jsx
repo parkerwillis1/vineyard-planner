@@ -210,9 +210,9 @@ const pmt = (P, rDecimal, yrs) => {
 
 // Section header component for consistency
 const SectionHeader = ({ title }) => (
-  <h2 className="text-2xl font-bold text-vine-green-700 pb-3 border-b border-gray-200">
+  <h1 className="text-2xl font-bold text-vine-green-700 border-b pb-3">
     {title}
-  </h2>
+  </h1>
 );
 
 // Card container for each section
