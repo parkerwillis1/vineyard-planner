@@ -97,9 +97,10 @@ const TabNav = ({
   ];
 
   return (
-    <div className={`sticky ${stickyTopClass} z-50 bg-white border-b border-gray-200 shadow-sm`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <nav className="flex items-center justify-between h-14">
+  <div className={`sticky ${stickyTopClass} z-50 bg-white border-b border-gray-200 shadow-sm mt-4`}>
+    {/* Add the same max-width container and padding as your content */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="flex items-center justify-between h-14">
           {/* LEFT SIDE - Tabs */}
           <div className="flex items-center gap-1 overflow-x-auto">
             {tabs.map(t => (
