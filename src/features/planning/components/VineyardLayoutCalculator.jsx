@@ -691,6 +691,21 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                   <option value="Lyre">Lyre System</option>
                 </select>
               </div>
+
+              {/* Row Orientation */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Row Orientation
+                </label>
+                <select
+                  value={rowOrientation}
+                  onChange={(e) => setRowOrientation(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-lg"
+                >
+                  <option value="horizontal">Horizontal (posts on short sides)</option>
+                  <option value="vertical">Vertical (posts on long sides)</option>
+                </select>
+              </div>
             </div>
           </CardContent>
         </Card>
