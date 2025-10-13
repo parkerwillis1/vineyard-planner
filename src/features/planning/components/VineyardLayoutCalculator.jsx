@@ -1,6 +1,7 @@
-// VineyardLayoutCalculator.js - Fixed version
+// VineyardLayoutCalculator.js - Fixed version with Collapsible Sections
 import React, { useMemo, useState, useCallback } from 'react';
 import { MaterialCostsVisualizer } from "@/features/planning/components/MaterialCostsVisualizer";
+import { ChevronDown } from "lucide-react";
 
 import ReactFlow, {
   MiniMap,
@@ -12,6 +13,36 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+
+/* --------------------------------------------------------- */
+/*  Collapsible Section Component                            */
+/* --------------------------------------------------------- */
+function CollapsibleSection({ title, children, defaultOpen = true }) {
+  const [open, setOpen] = React.useState(defaultOpen);
+
+  return (
+    <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-6">
+      {/* clickable header */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between bg-blue-50 px-6 py-4 border-b
+                   focus:outline-none hover:bg-blue-100 transition-colors"
+      >
+        <h3 className="font-medium text-blue-700 text-lg">{title}</h3>
+
+        {/* chevron */}
+        <ChevronDown
+          className={`h-5 w-5 text-blue-500 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {/* body – only rendered when open */}
+      {open && <CardContent className="p-6">{children}</CardContent>}
+    </Card>
+  );
+}
 
 // Standard spacing options used in commercial viticulture
 export const VINE_SPACING_OPTIONS = [
@@ -256,7 +287,7 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
   const padding = 80;                              // px frame padding
 
   // -------- spacing between rows / vines (no clamps) --------
-  // Use “fit-first” but without caps, so the drawing matches the true ratio.
+  // Use "fit-first" but without caps, so the drawing matches the true ratio.
   let rowCenterSpacingPx;     // distance between row centers (px)
   let vineCenterSpacingPx;    // distance between vine centers within a row (px)
 
@@ -576,178 +607,178 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout }) =
   return (
     <div className="space-y-6">
       {/* Spacing Configuration */}
-      <Card>
-        <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-blue-800 mb-4">Vine Spacing Configuration</h3>
+      <CollapsibleSection title="Vine Spacing Configuration" defaultOpen={true}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-blue-800 mb-2">
+              Spacing Pattern
+            </label>
+            <select
+              value={spacingOption}
+              onChange={(e) => setSpacingOption(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              {VINE_SPACING_OPTIONS.map(opt => (
+                <option key={opt.key} value={opt.key}>
+                  {opt.label} {opt.vinesPerAcre > 0 && `(${opt.vinesPerAcre} vines/acre)`}
+                </option>
+              ))}
+            </select>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-blue-800 mb-2">
-                Spacing Pattern
-              </label>
-              <select
-                value={spacingOption}
-                onChange={(e) => setSpacingOption(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              >
-                {VINE_SPACING_OPTIONS.map(opt => (
-                  <option key={opt.key} value={opt.key}>
-                    {opt.label} {opt.vinesPerAcre > 0 && `(${opt.vinesPerAcre} vines/acre)`}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            {isCustom && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-blue-800 mb-2">
-                    Vine Spacing (feet)
-                  </label>
-                  <Input
-                    type="number"
-                    min="4"
-                    max="12"
-                    step="0.5"
-                    value={customVineSpacing}
-                    onChange={(e) => setCustomVineSpacing(Number(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-blue-800 mb-2">
-                    Row Spacing (feet)
-                  </label>
-                  <Input
-                    type="number"
-                    min="6"
-                    max="16"
-                    step="0.5"
-                    value={customRowSpacing}
-                    onChange={(e) => setCustomRowSpacing(Number(e.target.value))}
-                  />
-                </div>
-              </>
-            )}
-            
-            <div>
-              <label className="block text-sm font-medium text-blue-800 mb-2">
-                Vineyard Shape
-              </label>
-              <select
-                value={shape}
-                onChange={(e) => setShape(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              >
-                {VINEYARD_SHAPES.map(shapeOpt => (
-                  <option key={shapeOpt.key} value={shapeOpt.key}>
-                    {shapeOpt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            {shape !== "square" && (
+          {isCustom && (
+            <>
               <div>
                 <label className="block text-sm font-medium text-blue-800 mb-2">
-                  Length:Width Ratio
+                  Vine Spacing (feet)
                 </label>
-                <select
-                  value={aspectRatio}
-                  onChange={(e) => setAspectRatio(Number(e.target.value))}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                >
-                  {VINEYARD_SHAPES.find(s => s.key === shape)?.aspectRatios.map(ratio => (
-                    <option key={ratio} value={ratio}>
-                      {ratio}:1 {ratio === 1 ? "(Square)" : ratio === 1.5 ? "(Moderate)" : ratio >= 2.5 ? "(Long)" : "(Wide)"}
-                    </option>
-                  ))}
-                </select>
+                <Input
+                  type="number"
+                  min="4"
+                  max="12"
+                  step="0.5"
+                  value={customVineSpacing}
+                  onChange={(e) => setCustomVineSpacing(Number(e.target.value))}
+                />
               </div>
-            )}
-            
+              <div>
+                <label className="block text-sm font-medium text-blue-800 mb-2">
+                  Row Spacing (feet)
+                </label>
+                <Input
+                  type="number"
+                  min="6"
+                  max="16"
+                  step="0.5"
+                  value={customRowSpacing}
+                  onChange={(e) => setCustomRowSpacing(Number(e.target.value))}
+                />
+              </div>
+            </>
+          )}
+          
+          <div>
+            <label className="block text-sm font-medium text-blue-800 mb-2">
+              Vineyard Shape
+            </label>
+            <select
+              value={shape}
+              onChange={(e) => setShape(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              {VINEYARD_SHAPES.map(shapeOpt => (
+                <option key={shapeOpt.key} value={shapeOpt.key}>
+                  {shapeOpt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {shape !== "square" && (
             <div>
               <label className="block text-sm font-medium text-blue-800 mb-2">
-                Row Orientation
+                Length:Width Ratio
               </label>
               <select
-                value={rowOrientation}
-                onChange={(e) => setRowOrientation(e.target.value)}
+                value={aspectRatio}
+                onChange={(e) => setAspectRatio(Number(e.target.value))}
                 className="w-full p-2 border border-gray-300 rounded-md"
               >
-                <option value="horizontal">Horizontal (posts on short sides)</option>
-                <option value="vertical">Vertical (posts on long sides)</option>
+                {VINEYARD_SHAPES.find(s => s.key === shape)?.aspectRatios.map(ratio => (
+                  <option key={ratio} value={ratio}>
+                    {ratio}:1 {ratio === 1 ? "(Square)" : ratio === 1.5 ? "(Moderate)" : ratio >= 2.5 ? "(Long)" : "(Wide)"}
+                  </option>
+                ))}
               </select>
             </div>
+          )}
+          
+          <div>
+            <label className="block text-sm font-medium text-blue-800 mb-2">
+              Row Orientation
+            </label>
+            <select
+              value={rowOrientation}
+              onChange={(e) => setRowOrientation(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option value="horizontal">Horizontal (posts on short sides)</option>
+              <option value="vertical">Vertical (posts on long sides)</option>
+            </select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CollapsibleSection>
       
       {/* Layout Visualization */}
-      {layout && <VineyardLayoutVisualizer layout={layout} acres={acres} orientation={rowOrientation} />}
+      {layout && (
+        <CollapsibleSection title="Vineyard Layout Visualization" defaultOpen={true}>
+          <VineyardLayoutVisualizer layout={layout} acres={acres} orientation={rowOrientation} />
+        </CollapsibleSection>
+      )}
       
       {/* Enhanced Material Costs */}
-      {layout && materialCosts && <MaterialCostsVisualizer materialCosts={materialCosts} layout={layout} />}
+      {layout && materialCosts && (
+        <CollapsibleSection title="Material Cost Summary" defaultOpen={true}>
+          <MaterialCostsVisualizer materialCosts={materialCosts} layout={layout} />
+        </CollapsibleSection>
+      )}
       
       {/* Detailed Material Requirements */}
       {layout && materialCosts && (
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-blue-800 mb-4">Detailed Material Requirements</h3>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-blue-50">
-                    <th className="text-left p-3 font-medium text-blue-800">Category</th>
-                    <th className="text-left p-3 font-medium text-blue-800">Quantity</th>
-                    <th className="text-right p-3 font-medium text-blue-800">Est. Cost</th>
-                    <th className="text-left p-3 font-medium text-blue-800">Notes</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  <tr>
-                    <td className="p-3 font-medium">Posts</td>
-                    <td className="p-3">{layout.materials.posts.total} total</td>
-                    <td className="p-3 text-right">${materialCosts.posts.toLocaleString()}</td>
-                    <td className="p-3">{layout.materials.posts.description}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium">Earth Anchors</td>
-                    <td className="p-3">{layout.materials.earthAnchors.count}</td>
-                    <td className="p-3 text-right">${materialCosts.earthAnchors.toLocaleString()}</td>
-                    <td className="p-3">{layout.materials.earthAnchors.description}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium">Trellis Wire</td>
-                    <td className="p-3">{layout.materials.wire.totalFeet.toLocaleString()} ft</td>
-                    <td className="p-3 text-right">${materialCosts.wire.toLocaleString()}</td>
-                    <td className="p-3">{layout.materials.wire.gaugeRecommended}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium">Drip Irrigation</td>
-                    <td className="p-3">{layout.materials.irrigation.dripTubing.toLocaleString()} ft + {layout.materials.irrigation.emitters} emitters</td>
-                    <td className="p-3 text-right">${materialCosts.irrigation.toLocaleString()}</td>
-                    <td className="p-3">Tubing + emitters</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium">Hardware</td>
-                    <td className="p-3">Various</td>
-                    <td className="p-3 text-right">${materialCosts.hardware.toLocaleString()}</td>
-                    <td className="p-3">{layout.materials.hardware.description}</td>
-                  </tr>
-                  <tr className="bg-blue-50 font-semibold">
-                    <td className="p-3">Total Materials</td>
-                    <td className="p-3">-</td>
-                    <td className="p-3 text-right">
-                      ${Object.values(materialCosts).reduce((sum, cost) => sum + cost, 0).toLocaleString()}
-                    </td>
-                    <td className="p-3">Trellis & irrigation materials</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <CollapsibleSection title="Detailed Material Requirements" defaultOpen={false}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-blue-50">
+                  <th className="text-left p-3 font-medium text-blue-800">Category</th>
+                  <th className="text-left p-3 font-medium text-blue-800">Quantity</th>
+                  <th className="text-right p-3 font-medium text-blue-800">Est. Cost</th>
+                  <th className="text-left p-3 font-medium text-blue-800">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                <tr>
+                  <td className="p-3 font-medium">Posts</td>
+                  <td className="p-3">{layout.materials.posts.total} total</td>
+                  <td className="p-3 text-right">${materialCosts.posts.toLocaleString()}</td>
+                  <td className="p-3">{layout.materials.posts.description}</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-medium">Earth Anchors</td>
+                  <td className="p-3">{layout.materials.earthAnchors.count}</td>
+                  <td className="p-3 text-right">${materialCosts.earthAnchors.toLocaleString()}</td>
+                  <td className="p-3">{layout.materials.earthAnchors.description}</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-medium">Trellis Wire</td>
+                  <td className="p-3">{layout.materials.wire.totalFeet.toLocaleString()} ft</td>
+                  <td className="p-3 text-right">${materialCosts.wire.toLocaleString()}</td>
+                  <td className="p-3">{layout.materials.wire.gaugeRecommended}</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-medium">Drip Irrigation</td>
+                  <td className="p-3">{layout.materials.irrigation.dripTubing.toLocaleString()} ft + {layout.materials.irrigation.emitters} emitters</td>
+                  <td className="p-3 text-right">${materialCosts.irrigation.toLocaleString()}</td>
+                  <td className="p-3">Tubing + emitters</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-medium">Hardware</td>
+                  <td className="p-3">Various</td>
+                  <td className="p-3 text-right">${materialCosts.hardware.toLocaleString()}</td>
+                  <td className="p-3">{layout.materials.hardware.description}</td>
+                </tr>
+                <tr className="bg-blue-50 font-semibold">
+                  <td className="p-3">Total Materials</td>
+                  <td className="p-3">-</td>
+                  <td className="p-3 text-right">
+                    ${Object.values(materialCosts).reduce((sum, cost) => sum + cost, 0).toLocaleString()}
+                  </td>
+                  <td className="p-3">Trellis & irrigation materials</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CollapsibleSection>
       )}
     </div>
   );
