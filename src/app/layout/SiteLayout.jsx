@@ -57,7 +57,6 @@ export default function SiteLayout() {
                     to="/pricing"
                     className="px-4 py-2 bg-gradient-to-r from-vine-green-500 to-vine-green-600 text-white rounded-lg font-semibold text-sm hover:shadow-lg transition-all duration-200 flex items-center gap-2"
                   >
-                    <span>💎</span>
                     <span>Upgrade</span>
                   </Link>
                 )}
