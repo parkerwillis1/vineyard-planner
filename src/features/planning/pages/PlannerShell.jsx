@@ -101,7 +101,7 @@ const TabNav = ({
   ];
 
   return (
-  <div className={`sticky ${stickyTopClass} z-40 bg-white border-b border-gray-200 shadow-sm`}>
+  <div className={`sticky ${stickyTopClass} z-50 bg-white border-b border-gray-200 shadow-sm mt-16`}>
     {/* Add the same max-width container and padding as your content */}
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <nav className="flex items-center justify-between h-14">
@@ -2680,18 +2680,18 @@ const LTV = (landValue + improvementsValue) > 0
                   </div>
                   
                   <div className="relative">
-                    <select
-                      value={selectedChart}
-                      onChange={(e) => setSelectedChart(e.target.value)}
-                      className="appearance-none px-4 py-3 pr-10 border border-gray-200 rounded-xl text-base font-medium bg-white shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer min-w-[240px]"
-                    >
-                      <option value="revenue">Revenue Projection</option>
-                      <option value="profit">Annual Profit/Loss</option>
-                      <option value="cashflow">Cash Flow Analysis</option>
-                      <option value="cumulative">Cumulative Profit</option>
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                  </div>
+                  <select
+                    value={selectedChart}
+                    onChange={(e) => setSelectedChart(e.target.value)}
+                    className="appearance-none px-4 py-3 pr-10 border border-gray-200 rounded-xl text-base font-medium bg-white shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer min-w-[240px]"
+                  >
+                    <option value="revenue">Revenue Projection</option>
+                    <option value="profit">Annual Profit/Loss</option>
+                    <option value="cashflow">Cash Flow Analysis</option>
+                    <option value="cumulative">Cumulative Profit</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                </div>
                 </div>
 
                 {/* Chart Subtitle */}
@@ -3960,7 +3960,7 @@ return (
          isSaving={saving}
          dirty={dirty}
          lastSaved={lastSaved}
-         stickyTopClass="top-14"
+         stickyTopClass={stickyTopClass}
        />
  
        {/* centered content container */}
