@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 
 import SiteLayout from "./app/layout/SiteLayout.jsx";
@@ -9,12 +9,18 @@ import DocumentationPage  from "./shared/components/DocumentationPage.jsx";
 import PlansPage          from "./shared/components/PlansPage.jsx";
 import AboutPage from "./pages/about/AboutPage.jsx";
 import AccountSettingsPage from "./pages/account/AccountSettingsPage.jsx";
+import PricingPage from "./pages/pricing/PricingPage.jsx";
+
 
 import PlannerShell       from "./features/planning/pages/PlannerShell.jsx";
 
 import SignIn             from "./auth/SignIn.jsx";
 import SignUp             from "./auth/SignUp.jsx";
 import { useAuth }        from "./auth/AuthContext.jsx";
+
+// ⭐ NEW: Import subscription system
+import { SubscriptionProvider } from "./shared/hooks/useSubscription.js";
+import { UpgradeModal } from "./shared/components/UpgradeModal.jsx";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth() || {};
@@ -24,21 +30,46 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
-  return (
-    <Routes>
-      <Route element={<SiteLayout />}>
-        <Route index element={<HomePage />} />
-        <Route path="planner" element={<PlannerShell embedded />} />
-        <Route path="vineyards" element={<VineyardsPage />} />
-        <Route path="about" element={<AboutPage />} />
-        <Route path="docs" element={<DocumentationPage />} />
-        <Route path="plans" element={<PlansPage />} />
-        <Route path="account/settings" element={<AccountSettingsPage />} />
-      </Route>
+  // ⭐ NEW: Global upgrade modal state
+  const [upgradeModalModule, setUpgradeModalModule] = useState(null);
 
-      <Route path="/signin" element={<SignIn />} />
-      <Route path="/signup" element={<SignUp />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+  // ⭐ NEW: Listen for upgrade modal events from anywhere in the app
+  useEffect(() => {
+    const handleShowUpgradeModal = (event) => {
+      setUpgradeModalModule(event.detail.moduleId);
+    };
+
+    window.addEventListener('show-upgrade-modal', handleShowUpgradeModal);
+    return () => window.removeEventListener('show-upgrade-modal', handleShowUpgradeModal);
+  }, []);
+
+  return (
+    // ⭐ NEW: Wrap entire app with subscription provider
+    <SubscriptionProvider>
+      <Routes>
+        <Route element={<SiteLayout />}>
+          <Route index element={<HomePage />} />
+          <Route path="planner" element={<PlannerShell embedded />} />
+          <Route path="vineyards" element={<VineyardsPage />} />
+          <Route path="about" element={<AboutPage />} />
+          <Route path="docs" element={<DocumentationPage />} />
+          <Route path="pricing" element={<PricingPage />} />
+          <Route path="plans" element={<PlansPage />} />
+          <Route path="account/settings" element={<AccountSettingsPage />} />
+        </Route>
+
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
+      {/* ⭐ NEW: Global upgrade modal (rendered once, triggered from anywhere) */}
+      {upgradeModalModule && (
+        <UpgradeModal 
+          moduleId={upgradeModalModule}
+          onClose={() => setUpgradeModalModule(null)}
+        />
+      )}
+    </SubscriptionProvider>
   );
 }

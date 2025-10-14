@@ -101,9 +101,8 @@ const TabNav = ({
   ];
 
   return (
-  <div className={`sticky ${stickyTopClass} z-50 bg-white border-b border-gray-200 shadow-sm mt-16`}>
-    {/* Add the same max-width container and padding as your content */}
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className={`sticky top-[120px] z-40 bg-white border-b border-gray-200 shadow-sm mt-8`}> {/* ⭐ CHANGED: Fixed positioning below header + ModuleNav */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <nav className="flex items-center justify-between h-14">
           {/* LEFT SIDE - Tabs */}
           <div className="flex items-center gap-1 overflow-x-auto">
@@ -276,8 +275,6 @@ export default function PlannerShell({ embedded = false }) {
 
   const location = useLocation();
   console.log('📍 Location in PlannerShell:', location.pathname);
-  const stickyTopClass = embedded ? "top-[65px]" : "top-0"; // ~56–64px header
-
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
   useEffect(() => {
@@ -3960,7 +3957,6 @@ return (
          isSaving={saving}
          dirty={dirty}
          lastSaved={lastSaved}
-         stickyTopClass={stickyTopClass}
        />
  
        {/* centered content container */}
