@@ -144,7 +144,7 @@ const TabNav = ({
 
             <button
               onClick={onSave}
-              className="px-4 py-2 text-sm rounded-md bg-text-blue-600 text-white hover:bg-vine-green-500 font-medium transition disabled:opacity-50"
+              className="px-4 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-vine-green-500 font-medium transition disabled:opacity-50"
               disabled={isSaving}
             >
               {isSaving ? 'Saving…' : 'Save'}
