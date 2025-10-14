@@ -542,33 +542,6 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizon
           <span className="font-medium text-gray-700">Vineyard Boundary</span>
         </div>
       </div>
-
-      {/* Stats */}
-      <div className="mt-6 bg-gradient-to-r from-green-500 to-emerald-600 p-5 rounded-xl text-white shadow-lg">
-        <h5 className="font-bold text-lg mb-3 flex items-center gap-2">📊 Layout Statistics</h5>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
-            <div className="text-green-100 text-xs uppercase tracking-wide">Density</div>
-            <div className="text-xl font-bold">{Math.round(vineLayout.vinesPerAcre)}</div>
-            <div className="text-green-100 text-xs">vines/acre</div>
-          </div>
-          <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
-            <div className="text-green-100 text-xs uppercase tracking-wide">Total Area</div>
-            <div className="text-xl font-bold">{acres}</div>
-            <div className="text-green-100 text-xs">acres</div>
-          </div>
-          <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
-            <div className="text-green-100 text-xs uppercase tracking-wide">Row Length</div>
-            <div className="text-xl font-bold">{Math.round(dimensions.length)}'</div>
-            <div className="text-green-100 text-xs">feet</div>
-          </div>
-          <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
-            <div className="text-green-100 text-xs uppercase tracking-wide">Total Vines</div>
-            <div className="text-xl font-bold">{vineLayout.totalVines.toLocaleString()}</div>
-            <div className="text-green-100 text-xs">plants</div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
