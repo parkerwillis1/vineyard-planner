@@ -2662,7 +2662,7 @@ const LTV = (landValue + improvementsValue) > 0
             </div>
 
             {/* Chart Selector with Multiple Views */}
-            <SectionCard title="">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-16 p-8">
               <div className="mb-6">
                 {/* Chart Selector Dropdown */}
                 <div className="flex items-center justify-between mb-6">
@@ -2780,7 +2780,7 @@ const LTV = (landValue + improvementsValue) > 0
                   </div>
                 )}
               </div>
-            </SectionCard>
+            </div>
                   
             {/* Annual Financials Chart */}
             {/* <SectionCard title="Annual Revenue vs Cost vs Net">
