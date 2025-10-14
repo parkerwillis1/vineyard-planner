@@ -154,6 +154,15 @@ export default function SiteLayout() {
             )}
 
             <NavLink 
+              to="/docs" 
+              className={({isActive}) =>
+                isActive ? "text-vine-green-500 font-semibold text-base" : "text-gray-700 hover:text-vine-green-500"
+              }
+            >
+              Documentation
+            </NavLink>
+
+            <NavLink 
               to="/about" 
               className={({isActive}) =>
                 isActive ? "text-vine-green-500 font-semibold text-base" : "text-gray-700 hover:text-vine-green-500"
@@ -165,14 +174,6 @@ export default function SiteLayout() {
 
           {/* Right side */}
           <div className="ml-auto flex items-center gap-4">
-            <NavLink 
-              to="/docs" 
-              className={({isActive}) =>
-                isActive ? "text-vine-green-500 font-semibold text-base" : "text-gray-700 hover:text-vine-green-500"
-              }
-            >
-              Documentation
-            </NavLink>
 
             {user ? (
               <>
