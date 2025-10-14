@@ -725,18 +725,30 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
       {layout && (
         <div>
           <h3 className="text-xl font-semibold text-blue-600 mb-4">Layout Statistics</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-blue-50 rounded-xl p-6 text-center shadow-sm">
               <div className="text-4xl font-bold text-blue-600 mb-2">
                 {layout.vineLayout.totalVines.toLocaleString()}
               </div>
               <div className="text-sm text-gray-600">Total Vines</div>
             </div>
+            <div className="bg-purple-50 rounded-xl p-6 text-center shadow-sm">
+              <div className="text-4xl font-bold text-purple-600 mb-2">
+                {Math.round(layout.vineLayout.vinesPerAcre)}
+              </div>
+              <div className="text-sm text-gray-600">Vines/Acre</div>
+            </div>
             <div className="bg-gray-100 rounded-xl p-6 text-center shadow-sm">
               <div className="text-4xl font-bold text-gray-700 mb-2">
                 {layout.vineLayout.numberOfRows}
               </div>
-              <div className="text-sm text-gray-600">Row Feet</div>
+              <div className="text-sm text-gray-600">Rows</div>
+            </div>
+            <div className="bg-amber-50 rounded-xl p-6 text-center shadow-sm">
+              <div className="text-4xl font-bold text-amber-600 mb-2">
+                {Math.round(layout.orientation === "vertical" ? layout.dimensions.length : layout.dimensions.width)}'
+              </div>
+              <div className="text-sm text-gray-600">Row Length</div>
             </div>
             <div className="bg-green-50 rounded-xl p-6 text-center shadow-sm">
               <div className="text-4xl font-bold text-green-600 mb-2">
