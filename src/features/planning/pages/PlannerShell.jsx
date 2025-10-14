@@ -101,7 +101,7 @@ const TabNav = ({
   ];
 
   return (
-    <div className={`sticky top-[120px] z-40 bg-white border-b border-gray-200 shadow-sm mt-8`}> {/* ⭐ CHANGED: Fixed positioning below header + ModuleNav */}
+    <div className="sticky top-[65px] z-40 bg-white border-b border-gray-200 shadow-sm mt-8"> {/* ⭐ CHANGED: Stick below header only */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <nav className="flex items-center justify-between h-14">
           {/* LEFT SIDE - Tabs */}
