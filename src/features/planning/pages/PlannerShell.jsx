@@ -31,7 +31,11 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceLine
+  ReferenceLine,
+  AreaChart,
+  Area,
+  LineChart,
+  Line
 } from "recharts";
 
 import { useAuth } from "@/auth/AuthContext";
@@ -265,6 +269,8 @@ export default function PlannerShell({ embedded = false }) {
   const [activeTab, setActiveTab]       = useState("design");
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
+  const [selectedChart, setSelectedChart] = useState("revenue");
+
 
   const { id: planId } = useParams();   // comes from route "/plans/:id"
 
@@ -2658,6 +2664,123 @@ const LTV = (landValue + improvementsValue) > 0
               </div>
             </div>
 
+            {/* Chart Selector with Multiple Views */}
+            <SectionCard title="">
+              <div className="mb-6">
+                {/* Chart Selector Dropdown */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <TrendingUp className="w-6 h-6 text-blue-600" />
+                    <h3 className="text-2xl font-bold text-gray-800">
+                      {selectedChart === "revenue" && "Revenue Projection"}
+                      {selectedChart === "profit" && "Annual Profit/Loss"}
+                      {selectedChart === "cashflow" && "Cash Flow Analysis"}
+                      {selectedChart === "cumulative" && "Cumulative Profit"}
+                    </h3>
+                  </div>
+                  
+                  <select
+                    value={selectedChart}
+                    onChange={(e) => setSelectedChart(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium bg-white hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="revenue">Revenue Projection</option>
+                    <option value="profit">Annual Profit/Loss</option>
+                    <option value="cashflow">Cash Flow Analysis</option>
+                    <option value="cumulative">Cumulative Profit</option>
+                  </select>
+                </div>
+
+                {/* Chart Subtitle */}
+                <p className="text-gray-500 text-sm mb-6">
+                  {selectedChart === "revenue" && "Annual revenue from grape sales"}
+                  {selectedChart === "profit" && "Annual profit after operating expenses"}
+                  {selectedChart === "cashflow" && "Revenue vs Operating Costs"}
+                  {selectedChart === "cumulative" && "Total profit/loss over time"}
+                </p>
+
+                {/* Revenue Projection Chart */}
+                {selectedChart === "revenue" && (
+                  <div className="h-96">
+                    <ResponsiveContainer key={`rc-${location.pathname}-${activeTab}-revenue`} width="100%" height="100%">
+                      <AreaChart data={projection.filter(p => p.year > 0)} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+                        <defs>
+                          <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0.05}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `$${(val/1000).toFixed(0)}K`} />
+                        <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, "Revenue"]} />
+                        <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fill="url(#revenueGradient)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Annual Profit/Loss Chart */}
+                {selectedChart === "profit" && (
+                  <div className="h-96">
+                    <ResponsiveContainer key={`rc-${location.pathname}-${activeTab}-profit`} width="100%" height="100%">
+                      <BarChart data={projection} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `$${(val/1000).toFixed(0)}K`} />
+                        <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, "Net Profit/Loss"]} />
+                        <ReferenceLine y={0} stroke="#000" strokeWidth={1} />
+                        <Bar dataKey="net" radius={[4, 4, 0, 0]}>
+                          {projection.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.net >= 0 ? "#10b981" : "#ef4444"} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Cash Flow Analysis Chart */}
+                {selectedChart === "cashflow" && (
+                  <div className="h-96">
+                    <ResponsiveContainer key={`rc-${location.pathname}-${activeTab}-cashflow`} width="100%" height="100%">
+                      <BarChart data={projection} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `$${(val/1000).toFixed(0)}K`} />
+                        <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, undefined]} />
+                        <Legend />
+                        <Bar dataKey="revenue" name="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="cost" name="Operating Costs" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Cumulative Profit Chart */}
+                {selectedChart === "cumulative" && (
+                  <div className="h-96">
+                    <ResponsiveContainer key={`rc-${location.pathname}-${activeTab}-cumulative`} width="100%" height="100%">
+                      <LineChart data={projection} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `$${(val/1000).toFixed(0)}K`} />
+                        <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, "Cumulative Profit"]} />
+                        <ReferenceLine y={0} stroke="#000" strokeWidth={1} strokeDasharray="3 3" />
+                        <Line 
+                          type="monotone" 
+                          dataKey="cumulative" 
+                          stroke="#8b5cf6" 
+                          strokeWidth={3}
+                          dot={{ fill: "#8b5cf6", r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            </SectionCard>
                   
             {/* Annual Financials Chart */}
             <SectionCard title="Annual Revenue vs Cost vs Net">
