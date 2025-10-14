@@ -241,7 +241,7 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
         className="w-full flex items-center justify-between bg-vine-green-50 px-6 py-4 border-b
                    focus:outline-none"
       >
-        <h3 className="font-medium text-vine-green-700 text-lg">{title}</h3>
+        <h3 className="font-medium text-black text-lg">{title}</h3>
 
         {/* chevron */}
         <ChevronDown
