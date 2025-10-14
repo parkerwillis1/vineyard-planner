@@ -2679,16 +2679,19 @@ const LTV = (landValue + improvementsValue) > 0
                     </h3>
                   </div>
                   
-                  <select
-                    value={selectedChart}
-                    onChange={(e) => setSelectedChart(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium bg-white hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="revenue">Revenue Projection</option>
-                    <option value="profit">Annual Profit/Loss</option>
-                    <option value="cashflow">Cash Flow Analysis</option>
-                    <option value="cumulative">Cumulative Profit</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedChart}
+                      onChange={(e) => setSelectedChart(e.target.value)}
+                      className="appearance-none px-4 py-3 pr-10 border border-gray-200 rounded-xl text-base font-medium bg-white shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer min-w-[240px]"
+                    >
+                      <option value="revenue">Revenue Projection</option>
+                      <option value="profit">Annual Profit/Loss</option>
+                      <option value="cashflow">Cash Flow Analysis</option>
+                      <option value="cumulative">Cumulative Profit</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
 
                 {/* Chart Subtitle */}
@@ -2783,7 +2786,7 @@ const LTV = (landValue + improvementsValue) > 0
             </SectionCard>
                   
             {/* Annual Financials Chart */}
-            <SectionCard title="Annual Revenue vs Cost vs Net">
+            {/* <SectionCard title="Annual Revenue vs Cost vs Net">
             <div className="h-64">
                 <ResponsiveContainer
                   key={`rc-${location.pathname}-${activeTab}`}
@@ -2811,7 +2814,7 @@ const LTV = (landValue + improvementsValue) > 0
                 </BarChart>
                 </ResponsiveContainer>
             </div>
-            </SectionCard>
+            </SectionCard> */}
 
             {/* Detailed Projection Table */}
             <SectionCard title="Year-by-Year Table">
