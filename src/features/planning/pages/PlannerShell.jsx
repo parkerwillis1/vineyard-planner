@@ -6,7 +6,7 @@ import { supabase } from '@/shared/lib/supabaseClient';
 import { savePlanner, loadPlanner} from '@/shared/lib/saveLoadPlanner';
 import { useLocation } from 'react-router-dom';
 import { savePlan, loadPlan }    from '@/shared/lib/plansApi';
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, TrendingUp, DollarSign, Grape } from "lucide-react";
 import { 
   VineyardLayoutConfig, 
   calculateVineyardLayout, 
@@ -2601,62 +2601,59 @@ const LTV = (landValue + improvementsValue) > 0
 
             {/* Enhanced Top-line summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              <div className="bg-gradient-to-br from-vine-green-500 to-vine-green-600 rounded-2xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold opacity-90">Break-Even Point</h3>
-                  <div className="text-3xl">⚖️</div>
+              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-blue-600" />
+                  </div>
                 </div>
-                <p className="text-5xl font-black mb-4">Year {breakEven}</p>
-                <p className="text-vine-green-100 text-sm leading-relaxed">
-                  When your vineyard starts generating positive cumulative cash flow
-                </p>
-                <div className="mt-4 p-3 bg-vine-green-500 bg-opacity-30 rounded-lg">
-                  <p className="text-xs font-medium">
-                    Investment Recovery: {projection.length > 0 && beIdx >= 0 
-                      ? `${((beIdx + 1) / projYears * 100).toFixed(0)}%` 
-                      : ">100%"} of projection period
-                  </p>
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-blue-600 mb-2">Year {breakEven}</div>
+                  <div className="text-sm text-gray-500">Break Even</div>
+                </div>
+                {projection.length > 0 && beIdx >= 0 && (
+                  <div className="mt-4 text-center text-xs text-gray-400">
+                    Investment Recovery: {((beIdx + 1) / projYears * 100).toFixed(0)}% of projection period
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-green-600 mb-2">
+                    ${projection
+                      .filter(p => p.year > 0)
+                      .reduce((sum, p) => sum + p.revenue, 0)
+                      .toLocaleString()}
+                  </div>
+                  <div className="text-sm text-gray-500">Total Revenue</div>
+                </div>
+                <div className="mt-4 text-center text-xs text-gray-400">
+                  Avg Annual: ${Math.round(projection.filter(p => p.year > 0).reduce((sum, p) => sum + p.revenue, 0) / projYears).toLocaleString()}
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold opacity-90">Total Revenue</h3>
-                  <div className="text-3xl">💵</div>
+              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <Grape className="w-6 h-6 text-purple-600" />
+                  </div>
                 </div>
-                <p className="text-5xl font-black mb-4">
-                  ${projection
-                    .filter(p => p.year > 0)
-                    .reduce((sum, p) => sum + p.revenue, 0)
-                    .toLocaleString()}
-                </p>
-                <p className="text-green-100 text-sm leading-relaxed">
-                  Cumulative revenue over {projYears} years of operation
-                </p>
-                <div className="mt-4 p-3 bg-green-400 bg-opacity-30 rounded-lg">
-                  <p className="text-xs font-medium">
-                    Avg Annual: ${Math.round(projection.filter(p => p.year > 0).reduce((sum, p) => sum + p.revenue, 0) / projYears).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold opacity-90">Final Profit</h3>
-                  <div className="text-3xl">🎯</div>
-                </div>
-                <p className="text-5xl font-black mb-4">
-                  ${projection[projection.length - 1].cumulative.toLocaleString()}
-                </p>
-                <p className="text-purple-100 text-sm leading-relaxed">
-                  Cumulative profit after {projYears} years including all costs
-                </p>
-                <div className="mt-4 p-3 bg-purple-400 bg-opacity-30 rounded-lg">
-                  <p className="text-xs font-medium">
-                    ROI: {projection.length > 0 
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-purple-600 mb-2">
+                    {projection.length > 0 
                       ? `${Math.round((projection[projection.length - 1].cumulative / totalEstCost) * 100)}%` 
                       : "0%"}
-                  </p>
+                  </div>
+                  <div className="text-sm text-gray-500">Annual ROI</div>
+                </div>
+                <div className="mt-4 text-center text-xs text-gray-400">
+                  Final Profit: ${projection[projection.length - 1].cumulative.toLocaleString()}
                 </div>
               </div>
             </div>
