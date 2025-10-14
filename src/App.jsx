@@ -19,7 +19,7 @@ import SignUp             from "./auth/SignUp.jsx";
 import { useAuth }        from "./auth/AuthContext.jsx";
 
 // ⭐ NEW: Import subscription system
-import { SubscriptionProvider } from "./shared/hooks/useSubscription.js";
+import { SubscriptionProvider } from "./shared/hooks/useSubscription.jsx";
 import { UpgradeModal } from "./shared/components/UpgradeModal.jsx";
 
 function ProtectedRoute({ children }) {
