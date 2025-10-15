@@ -2932,7 +2932,6 @@ const LTV = (landValue + improvementsValue) > 0
                   <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-vine-green-500 hover:shadow-xl transition-shadow duration-300">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-vine-green-600 uppercase font-bold tracking-wider">Break-Even Year</p>
-                      <div className="text-2xl">⏱️</div>
                     </div>
                     <p className="text-4xl font-black text-vine-green-800 mb-3">Year {breakEven}</p>
                     <p className="text-sm text-gray-600 leading-relaxed">
@@ -2950,7 +2949,6 @@ const LTV = (landValue + improvementsValue) > 0
                   <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-green-700 uppercase font-bold tracking-wider">Total Investment</p>
-                      <div className="text-2xl">💰</div>
                     </div>
                     <p className="text-4xl font-black text-green-900 mb-3">${totalEstCost.toLocaleString()}</p>
                     <p className="text-sm text-gray-600 leading-relaxed">
@@ -2966,7 +2964,6 @@ const LTV = (landValue + improvementsValue) > 0
                   <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500 hover:shadow-xl transition-shadow duration-300">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs text-purple-700 uppercase font-bold tracking-wider">{projYears}-Year ROI</p>
-                      <div className="text-2xl">📈</div>
                     </div>
                     <p className="text-4xl font-black text-purple-900 mb-3">
                       {projection.length > 0 
@@ -2992,7 +2989,6 @@ const LTV = (landValue + improvementsValue) > 0
                 {/* Financial snapshot section */}
                 <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
                   <h3 className="text-xl font-bold text-vine-green-800 mb-6 flex items-center gap-3">
-                    <span className="text-2xl">📊</span>
                     Financial Snapshot
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
