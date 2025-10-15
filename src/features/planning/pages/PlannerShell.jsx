@@ -2662,7 +2662,7 @@ const LTV = (landValue + improvementsValue) > 0
             </div>
 
             {/* Chart Selector with Multiple Views */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-16 p-8">
+            <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-16 p-8">
               <div className="mb-6">
                 {/* Chart Selector Dropdown */}
                 <div className="flex items-center justify-between mb-6">
