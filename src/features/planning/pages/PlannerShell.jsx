@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/shared/lib/supabaseClient';
 import { savePlanner, loadPlanner} from '@/shared/lib/saveLoadPlanner';
 import { useLocation } from 'react-router-dom';
-import { savePlan, loadPlan }    from '@/shared/lib/plansApi';
+import { savePlan, loadPlan, listPlans, createPlan } from '@/shared/lib/plansApi';
 import { 
   ChevronDown, 
   TrendingUp, 
@@ -107,6 +107,11 @@ const TabNav = ({
   isSaving,
   dirty,
   lastSaved,
+  currentPlanId,        
+  currentPlanName,      
+  onPlanChange,         
+  onNewPlan,
+  plans,
   stickyTopClass = "top-0",
 }) => {
   const tabs = [
@@ -118,25 +123,50 @@ const TabNav = ({
   ];
 
   return (
-    <div className="sticky top-[65px] z-40 bg-white border-b border-gray-200 shadow-sm mt-8"> {/* ⭐ CHANGED: Stick below header only */}
+    <div className="sticky top-[65px] z-40 bg-white border-b border-gray-200 shadow-sm mt-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <nav className="flex items-center justify-between h-14">
-          {/* LEFT SIDE - Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto">
-            {tabs.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setActive(t.id)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  active === t.id
-                    ? "border-vine-green-600 text-vine-green-700"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+        <nav className="flex items-center justify-between h-14">
+          {/* LEFT SIDE - Plan Selector + Tabs */}
+          <div className="flex items-center gap-4 overflow-x-auto">
+            {/* Plan Selector */}
+            <div className="flex items-center gap-2 border-r border-gray-200 pr-4">
+              <select
+                value={currentPlanId || ''}
+                onChange={(e) => onPlanChange(e.target.value)}
+                className="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 min-w-[180px]"
               >
-                <span className="hidden sm:inline">{t.label}</span>
-                <span className="sm:hidden">{t.shortLabel || t.label}</span>
+                <option value="">Default Plan</option>
+                {plans && plans.map(plan => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={onNewPlan}
+                className="text-sm text-vine-green-600 hover:text-vine-green-700 font-medium"
+              >
+                + New
               </button>
-            ))}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center gap-1">
+              {tabs.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setActive(t.id)}
+                  className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                    active === t.id
+                      ? "border-vine-green-600 text-vine-green-700"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  <span className="hidden sm:inline">{t.label}</span>
+                  <span className="sm:hidden">{t.shortLabel || t.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* RIGHT SIDE - Controls */}
@@ -289,6 +319,9 @@ export default function PlannerShell({ embedded = false }) {
   const [establishmentView, setEstablishmentView] = useState('breakdown');
   const [taskCompletion, setTaskCompletion] = useState({});
 
+  const [plans, setPlans] = useState([]);
+  const [currentPlanName, setCurrentPlanName] = useState('');
+
 
   const { id: planId } = useParams();   // comes from route "/plans/:id"
 
@@ -423,33 +456,48 @@ export default function PlannerShell({ embedded = false }) {
   const user = auth?.user || null; // null until signed in
 
   useEffect(() => {
-  if (!user) return;                  // wait for logged in
-  let isCancelled = false;
+    if (!user) return;
+    let isCancelled = false;
 
-  (async () => {
-    const { data, error } = planId
-      ? await loadPlan(planId)  
-      : await loadPlanner();
-    if (error) {
-      console.error('Load planner error', error);
-      return;
-    }
-    if (data && !isCancelled) {
-      // MERGE: defaults  ← saved object  (saved values win if they exist)
-      if (data.st) set({ ...DEFAULT_ST, ...data.st });
+    (async () => {
+      const { data, error } = planId
+        ? await loadPlan(planId)  
+        : await loadPlanner();
+      if (error) {
+        console.error('Load planner error', error);
+        return;
+      }
+      if (data && !isCancelled) {
+        if (data.st) set({ ...DEFAULT_ST, ...data.st });
+        if (data.projYears) setProjYears(data.projYears);
+        if (data.taskCompletion) setTaskCompletion(data.taskCompletion); // ⭐ ADD THIS
+        setDirty(false);
+        setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
+      }
+    })();
 
-      if (data.projYears) setProjYears(data.projYears);
+    return () => { isCancelled = true; };
+  }, [user, planId]);
 
-      setDirty(false);
-      setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
-    }
-
-  })();
-
-  return () => { isCancelled = true; };
-}, [user, planId]);   // run when user changes
-
-
+  // Load list of plans
+  useEffect(() => {
+    if (!user) return;
+    
+    (async () => {
+      const { data, error } = await listPlans();
+      if (!error && data) {
+        setPlans(data);
+        
+        // Set current plan name if viewing a specific plan
+        if (planId) {
+          const currentPlan = data.find(p => p.id === planId);
+          if (currentPlan) {
+            setCurrentPlanName(currentPlan.name);
+          }
+        }
+      }
+    })();
+  }, [user, planId]);
 
   const [st, set] = useState(DEFAULT_ST);
 
@@ -462,44 +510,85 @@ export default function PlannerShell({ embedded = false }) {
     set(newState);
   };
 
-    async function handleManualSave() {
-      if (!user) {
-        alert('Sign in to save your plan.');
+  // Navigate to a different plan
+  const handlePlanChange = (newPlanId) => {
+    if (dirty) {
+      // eslint-disable-next-line no-restricted-globals
+      if (!confirm('You have unsaved changes. Switch plans anyway?')) {
         return;
       }
-
-      try {
-        setSaving(true);
-
-        /* ----------------------------------------------------
-          If we’re editing a specific plan (route /app/:id)
-          save that row; otherwise fall back to the personal
-          “default” planner record.
-        ---------------------------------------------------- */
-        let error;
-        if (planId) {
-          ({ error } = await savePlan(planId, { st, projYears })); // ✅ row‑specific
-        } else {
-          ({ error } = await savePlanner({ st, projYears }));      // default profile
-        }
-
-        if (error) {
-          console.error(error);
-          alert('Save failed: ' + (error.message || 'Unknown error'));
-        } else {
-          setDirty(false);          // mark form clean
-          setLastSaved(new Date()); // record timestamp
-        }
-      } finally {
-        setSaving(false);
-      }
     }
+    
+    if (newPlanId) {
+      window.location.href = `/app/${newPlanId}`;
+    } else {
+      window.location.href = '/app';
+    }
+  };
+
+// Create a new plan
+const handleNewPlan = async () => {
+  if (!user) {
+    alert('Sign in to create a plan.');
+    return;
+  }
+
+  const planName = prompt('Enter plan name:');
+  if (!planName) return;
+
+  try {
+    const { data, error } = await createPlan(planName, { st, projYears, taskCompletion });
+    if (error) {
+      alert('Failed to create plan: ' + error.message);
+    } else if (data) {
+      window.location.href = `/app/${data.id}`;
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Failed to create plan');
+  }
+};
+
+   async function handleManualSave() {
+    if (!user) {
+      alert('Sign in to save your plan.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      // Include taskCompletion in the save payload
+      const payload = { 
+        st, 
+        projYears,
+        taskCompletion // ⭐ ADD THIS
+      };
+
+      let error;
+      if (planId) {
+        ({ error } = await savePlan(planId, payload));
+      } else {
+        ({ error } = await savePlanner(payload));
+      }
+
+      if (error) {
+        console.error(error);
+        alert('Save failed: ' + (error.message || 'Unknown error'));
+      } else {
+        setDirty(false);
+        setLastSaved(new Date());
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // Mark planner state dirty when st or projYears change *after* an initial save/load baseline
   useEffect(() => {
-    // If we have never saved/loaded (lastSaved is still null) don't mark dirty yet
     if (lastSaved === null) return;
     setDirty(true);
-  }, [st, projYears, lastSaved]);
+  }, [st, projYears, taskCompletion, lastSaved]);
 
 // ─── normalize EVERY string → number ───
 const stNum = {
@@ -4489,15 +4578,20 @@ return (
       {/*<ProjectBanner years={projYears} setYears={setProjYears} /> */}
  
        <TabNav
-         active={activeTab}
-         setActive={setActiveTab}
-         projYears={projYears}
-         setYears={setProjYears}
-         totalEstCost={totalEstCost}
-         onSave={handleManualSave}
-         isSaving={saving}
-         dirty={dirty}
-         lastSaved={lastSaved}
+        active={activeTab}
+        setActive={setActiveTab}
+        projYears={projYears}
+        setYears={setProjYears}
+        totalEstCost={totalEstCost}
+        onSave={handleManualSave}
+        isSaving={saving}
+        dirty={dirty}
+        lastSaved={lastSaved}
+        currentPlanId={planId}
+        currentPlanName={currentPlanName}
+        onPlanChange={handlePlanChange}
+        onNewPlan={handleNewPlan}
+        plans={plans}
        />
  
        {/* centered content container */}
