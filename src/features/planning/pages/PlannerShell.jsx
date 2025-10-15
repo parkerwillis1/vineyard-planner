@@ -2473,7 +2473,7 @@ const LTV = (landValue + improvementsValue) > 0
                 label="Total Investment" 
                 value={`$${estData.reduce((s,d) => s + d.value, 0).toLocaleString()}`}
                 color="red"
-                icon={<Gem className="w-6 h-6" />}
+                icon={<DollarSign className="w-6 h-6" />}
                 description={`$${Math.round(estData.reduce((s,d) => s + d.value, 0) / stNum.acres).toLocaleString()} per acre`}
               />
             </div>
