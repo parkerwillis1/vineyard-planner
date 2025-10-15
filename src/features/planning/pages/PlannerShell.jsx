@@ -20,7 +20,8 @@ import {
   Gem,
   Check,
   Clock,
-  Calendar
+  Calendar,
+  Wrench
 } from "lucide-react";
 import { 
   VineyardLayoutConfig, 
@@ -286,6 +287,7 @@ export default function PlannerShell({ embedded = false }) {
   const [dirty, setDirty] = useState(false);
   const [selectedChart, setSelectedChart] = useState("revenue");
   const [establishmentView, setEstablishmentView] = useState('breakdown');
+  const [taskCompletion, setTaskCompletion] = useState({});
 
 
   const { id: planId } = useParams();   // comes from route "/plans/:id"
@@ -1085,91 +1087,152 @@ const LTV = (landValue + improvementsValue) > 0
   );
 };
 
-  // Progress Tracker Component
-  const EstablishmentProgressTracker = ({ stNum, prePlantTotal, plantingTotal, totalEstCost, permitOneTime }) => {
+  // Progress Tracker Component with Interactive Checkboxes
+const EstablishmentProgressTracker = ({ 
+  stNum, 
+  prePlantTotal, 
+  plantingTotal, 
+  totalEstCost, 
+  permitOneTime,
+  taskCompletion,
+  setTaskCompletion 
+}) => {
   // Calculate progress data
-    const tasks = [
-    // Pre-Planting Phase
+  const taskCategories = [
     {
+      id: 'sitePrep',
       category: 'Site Preparation',
-      icon: <Tractor className="w-5 h-5" />,
-      color: 'amber',
-      tasks: stNum.prePlanting.filter(r => r.include).map(row => ({
+      icon: <Wrench className="w-5 h-5" />,
+      color: 'orange',
+      tasks: stNum.prePlanting.filter(r => r.include).map((row, idx) => ({
+        id: `sitePrep-${idx}`,
         name: row.label,
+        description: 'Comprehensive soil analysis for pH, nutrients, and drainage',
         cost: row.costPerAcre * stNum.acres,
         duration: '2 weeks',
         month: 'Month 1-2',
-        completed: false
       }))
     },
-    // Planting Phase
     {
+      id: 'planting',
       category: 'Planting',
       icon: <Sprout className="w-5 h-5" />,
       color: 'green',
-      tasks: stNum.planting.filter(r => r.include).map(row => {
+      tasks: stNum.planting.filter(r => r.include).map((row, idx) => {
         const costPerAcre = row.costPerAcre != null ? row.costPerAcre : (row.unitCost || 0) * (row.qtyPerAcre || 0);
         return {
+          id: `planting-${idx}`,
           name: row.label,
+          description: row.label.toLowerCase().includes('stock') 
+            ? 'Order certified vine stock from nursery'
+            : 'Final soil amendments and marking planting locations',
           cost: costPerAcre * stNum.acres,
           duration: row.label.toLowerCase().includes('stock') ? '1 week' : '2 weeks',
           month: row.label.toLowerCase().includes('stock') ? 'Month 2' : 'Month 7-8',
-          completed: false
         };
       })
     },
-    // Infrastructure Phase
     {
+      id: 'infrastructure',
       category: 'Infrastructure',
       icon: <HardHat className="w-5 h-5" />,
       color: 'blue',
       tasks: Object.entries(stNum.setup)
-        .filter(([, obj]) => obj.include)
-        .map(([key, obj]) => ({
+        .filter(([key, obj]) => obj.include && key !== 'vines')
+        .map(([key, obj], idx) => ({
+          id: `infrastructure-${idx}`,
           name: key.charAt(0).toUpperCase() + key.slice(1) + (obj.system ? ` (${obj.system})` : ''),
+          description: key === 'irrigation' 
+            ? 'Install drainage systems and improve water management'
+            : 'Install infrastructure and prepare site',
           cost: obj.cost * stNum.acres,
           duration: key === 'irrigation' ? '4 weeks' : '2-3 weeks',
           month: 'Month 3-6',
-          completed: false
         }))
     },
-    // Permits & Licenses
     {
-      category: 'Permits & Licenses',
-      icon: <FileText className="w-5 h-5" />,
+      id: 'equipment',
+      category: 'Equipment',
+      icon: <Wrench className="w-5 h-5" />,
       color: 'purple',
-      tasks: [
-        { name: 'Business License', cost: stNum.licenseCost, duration: '1 week', month: 'Month 1', completed: false },
-        ...stNum.permits.filter(p => p.include).map(p => ({
-          name: p.label,
-          cost: p.cost,
-          duration: '2 weeks',
-          month: 'Month 1-2',
-          completed: false
-        }))
-      ]
+      tasks: stNum.equipmentRows.filter(r => r.include).map((row, idx) => ({
+        id: `equipment-${idx}`,
+        name: 'Equipment Purchase',
+        description: 'Acquire tractors, sprayers, and vineyard equipment',
+        cost: row.price,
+        duration: '2 weeks',
+        month: 'Month 9',
+      }))
     }
   ];
 
-  const totalTasks = tasks.reduce((sum, cat) => sum + cat.tasks.length, 0);
-  const completedTasks = 0; // This would be dynamic based on user input
-  const investedAmount = 0; // This would track actual spending
-  const remainingAmount = totalEstCost;
-  const progressPercent = (completedTasks / totalTasks) * 100;
+  // Calculate totals
+  const allTasks = taskCategories.flatMap(cat => cat.tasks);
+  const totalTasks = allTasks.length;
+  const completedTasks = allTasks.filter(task => taskCompletion[task.id]).length;
+  const progressPercent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+  
+  // Calculate financial progress
+  const investedAmount = allTasks
+    .filter(task => taskCompletion[task.id])
+    .reduce((sum, task) => sum + task.cost, 0);
+  const remainingAmount = totalEstCost - investedAmount;
+
+  // Toggle task completion
+  const toggleTask = (taskId) => {
+    setTaskCompletion(prev => ({
+      ...prev,
+      [taskId]: !prev[taskId]
+    }));
+  };
+
+  // Color mappings
+  const colorMap = {
+    orange: {
+      bg: 'bg-orange-50',
+      text: 'text-orange-700',
+      icon: 'bg-orange-100 text-orange-600',
+      border: 'border-orange-200',
+      check: 'bg-orange-500 border-orange-500'
+    },
+    green: {
+      bg: 'bg-green-50',
+      text: 'text-green-700',
+      icon: 'bg-green-100 text-green-600',
+      border: 'border-green-200',
+      check: 'bg-green-500 border-green-500'
+    },
+    blue: {
+      bg: 'bg-blue-50',
+      text: 'text-blue-700',
+      icon: 'bg-blue-100 text-blue-600',
+      border: 'border-blue-200',
+      check: 'bg-blue-500 border-blue-500'
+    },
+    purple: {
+      bg: 'bg-purple-50',
+      text: 'text-purple-700',
+      icon: 'bg-purple-100 text-purple-600',
+      border: 'border-purple-200',
+      check: 'bg-purple-500 border-purple-500'
+    }
+  };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Progress Overview */}
-      <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-2xl font-bold text-gray-900">Establishment Progress</h3>
-          <span className="text-sm text-gray-600">{completedTasks} of {totalTasks} Complete</span>
+          <h3 className="text-xl font-bold text-gray-900">Establishment Progress</h3>
+          <span className="text-sm text-gray-600 font-medium">
+            {completedTasks} of {totalTasks} Complete
+          </span>
         </div>
         
         {/* Progress Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+        <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
           <div 
-            className="bg-vine-green-500 h-3 rounded-full transition-all duration-500"
+            className="bg-green-500 h-2 rounded-full transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -1177,107 +1240,114 @@ const LTV = (landValue + improvementsValue) > 0
         {/* Financial Summary */}
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-green-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-green-600">${investedAmount.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Invested</div>
+            <div className="text-2xl font-bold text-green-600">
+              ${investedAmount.toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600 mt-1">Invested</div>
           </div>
           <div className="bg-orange-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-orange-600">${remainingAmount.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Remaining</div>
+            <div className="text-2xl font-bold text-orange-600">
+              ${remainingAmount.toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600 mt-1">Remaining</div>
           </div>
           <div className="bg-blue-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-blue-600">{progressPercent.toFixed(1)}%</div>
-            <div className="text-sm text-gray-600">Complete</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {progressPercent.toFixed(1)}%
+            </div>
+            <div className="text-sm text-gray-600 mt-1">Complete</div>
           </div>
         </div>
       </div>
 
-      {/* Task Categories */}
-      {tasks.map((category, catIdx) => (
-        <div key={catIdx} className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
-          <div className={`bg-${category.color}-50 px-6 py-4 border-b flex items-center justify-between`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full bg-${category.color}-100 flex items-center justify-center text-${category.color}-600`}>
-                {category.icon}
-              </div>
-              <h3 className={`text-lg font-semibold text-${category.color}-700`}>{category.category}</h3>
-            </div>
-            <span className={`text-sm font-medium text-${category.color}-600`}>
-              {category.tasks.filter(t => t.completed).length}/{category.tasks.length}
-            </span>
-          </div>
+      {/* Task Grid - 2 columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {taskCategories.map((category) => {
+          if (category.tasks.length === 0) return null;
+          
+          const colors = colorMap[category.color];
+          const categoryCompleted = category.tasks.filter(t => taskCompletion[t.id]).length;
+          const categoryTotal = category.tasks.length;
 
-          <div className="divide-y divide-gray-200">
-            {category.tasks.map((task, taskIdx) => (
-              <div key={taskIdx} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start gap-4">
-                  {/* Checkbox */}
-                  <div className="flex-shrink-0 pt-1">
-                    <div className={`w-6 h-6 rounded-full border-2 ${
-                      task.completed 
-                        ? `bg-${category.color}-500 border-${category.color}-500` 
-                        : 'border-gray-300'
-                    } flex items-center justify-center`}>
-                      {task.completed && (
-                        <Check className="w-4 h-4 text-white" />
-                      )}
-                    </div>
+          return (
+            <div key={category.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {/* Header */}
+              <div className="px-6 py-4 flex items-center justify-between border-b">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full ${colors.icon} flex items-center justify-center`}>
+                    {category.icon}
                   </div>
-
-                  {/* Task Details */}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className={`font-medium ${task.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                        {task.name}
-                      </h4>
-                      <span className="text-sm font-semibold text-gray-900 ml-4">
-                        ${task.cost.toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {task.duration}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        Year 0 - {task.month}
-                      </span>
-                    </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{category.category}</h3>
+                    <p className="text-xs text-gray-500">{categoryCompleted}/{categoryTotal}</p>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Category Subtotal */}
-          <div className={`bg-${category.color}-50 px-6 py-3 border-t flex items-center justify-between`}>
-            <span className={`text-sm font-semibold text-${category.color}-700`}>
-              {category.category} Total
-            </span>
-            <span className={`text-sm font-bold text-${category.color}-700`}>
-              ${category.tasks.reduce((sum, t) => sum + t.cost, 0).toLocaleString()}
-            </span>
-          </div>
-        </div>
-      ))}
+              {/* Tasks */}
+              <div className="divide-y divide-gray-100">
+                {category.tasks.map((task) => {
+                  const isCompleted = taskCompletion[task.id];
+                  
+                  return (
+                    <div 
+                      key={task.id}
+                      className={`p-4 transition-colors cursor-pointer hover:bg-gray-50 ${
+                        isCompleted ? colors.bg : ''
+                      }`}
+                      onClick={() => toggleTask(task.id)}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Checkbox */}
+                        <div className="flex-shrink-0 pt-0.5">
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isCompleted 
+                              ? colors.check
+                              : 'border-gray-300 bg-white'
+                          }`}>
+                            {isCompleted && (
+                              <Check className="w-4 h-4 text-white" />
+                            )}
+                          </div>
+                        </div>
 
-      {/* Grand Total */}
-      <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl border-2 border-red-200 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-              <Gem className="w-6 h-6 text-red-600" />
+                        {/* Task Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h4 className={`font-medium text-sm ${
+                              isCompleted 
+                                ? 'text-gray-500 line-through' 
+                                : 'text-gray-900'
+                            }`}>
+                              {task.name}
+                            </h4>
+                            <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                              ${task.cost.toLocaleString()}
+                            </span>
+                          </div>
+                          
+                          <p className={`text-xs mb-2 ${
+                            isCompleted ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
+                            {task.description}
+                          </p>
+
+                          <div className="flex items-center gap-3 text-xs text-gray-500">
+                            <span>Year 0 - {task.month}</span>
+                            <span>•</span>
+                            <span>{task.duration}</span>
+                            <span>•</span>
+                            <span>${task.cost.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-red-900">Total Investment Required</h3>
-              <p className="text-sm text-red-600">${Math.round(totalEstCost / stNum.acres).toLocaleString()} per acre</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-black text-red-900">${totalEstCost.toLocaleString()}</div>
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -3057,6 +3127,7 @@ const LTV = (landValue + improvementsValue) > 0
             )}
 
             {/* PROGRESS TRACKER VIEW */}
+            {/* PROGRESS TRACKER VIEW */}
             {establishmentView === 'progress' && (
               <EstablishmentProgressTracker 
                 stNum={stNum}
@@ -3064,6 +3135,8 @@ const LTV = (landValue + improvementsValue) > 0
                 plantingTotal={plantingTotal}
                 totalEstCost={totalEstCost}
                 permitOneTime={permitOneTime}
+                taskCompletion={taskCompletion}
+                setTaskCompletion={setTaskCompletion}
               />
             )}
           </div>
