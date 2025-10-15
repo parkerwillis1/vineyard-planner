@@ -6,7 +6,19 @@ import { supabase } from '@/shared/lib/supabaseClient';
 import { savePlanner, loadPlanner} from '@/shared/lib/saveLoadPlanner';
 import { useLocation } from 'react-router-dom';
 import { savePlan, loadPlan }    from '@/shared/lib/plansApi';
-import { ChevronDown, TrendingUp, DollarSign, Grape } from "lucide-react";
+import { 
+  ChevronDown, 
+  TrendingUp, 
+  DollarSign, 
+  Grape,
+  MapPin,
+  Tractor,
+  Sprout,
+  Construction,
+  FileText,
+  ScrollText,
+  Gem
+} from "lucide-react";
 import { 
   VineyardLayoutConfig, 
   calculateVineyardLayout, 
@@ -18,6 +30,7 @@ import {
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
 import { Checkbox } from "@/shared/components/ui/checkbox";
+
 // Remove the unused Table imports
 import {
   BarChart,
@@ -987,20 +1000,86 @@ const LTV = (landValue + improvementsValue) > 0
 
 
   // StatsCard component for consistent stat displays
-  const StatsCard = ({ label, value, color = "vine-green-500", description, icon }) => (
-  <div className={`p-6 bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-xl text-center shadow-lg border-2 border-${color}-200 transform hover:scale-105 transition-all duration-200`}>
-    {icon && (
-      <div className="mb-3 text-3xl">{icon}</div>
-    )}
-    <p className={`text-xs text-${color}-700 uppercase mb-2 font-bold tracking-wider`}>
-      {label}
-    </p>
-    <p className={`text-3xl font-black text-${color}-900 mb-2`}>{value}</p>
-    {description && (
-      <p className="text-xs text-gray-600 leading-tight">{description}</p>
-    )}
-  </div>
-);
+  const StatsCard = ({ label, value, color = "vine-green", description, icon }) => {
+  // Define color mappings for consistent styling
+  const colorMap = {
+    emerald: {
+      bg: "from-emerald-50 to-emerald-100",
+      border: "border-emerald-200",
+      text: "text-emerald-700",
+      value: "text-emerald-900",
+      iconBg: "bg-emerald-100",
+      iconColor: "text-emerald-600"
+    },
+    amber: {
+      bg: "from-amber-50 to-amber-100",
+      border: "border-amber-200",
+      text: "text-amber-700",
+      value: "text-amber-900",
+      iconBg: "bg-amber-100",
+      iconColor: "text-amber-600"
+    },
+    green: {
+      bg: "from-green-50 to-green-100",
+      border: "border-green-200",
+      text: "text-green-700",
+      value: "text-green-900",
+      iconBg: "bg-green-100",
+      iconColor: "text-green-600"
+    },
+    blue: {
+      bg: "from-blue-50 to-blue-100",
+      border: "border-blue-200",
+      text: "text-blue-700",
+      value: "text-blue-900",
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600"
+    },
+    purple: {
+      bg: "from-purple-50 to-purple-100",
+      border: "border-purple-200",
+      text: "text-purple-700",
+      value: "text-purple-900",
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-600"
+    },
+    indigo: {
+      bg: "from-indigo-50 to-indigo-100",
+      border: "border-indigo-200",
+      text: "text-indigo-700",
+      value: "text-indigo-900",
+      iconBg: "bg-indigo-100",
+      iconColor: "text-indigo-600"
+    },
+    red: {
+      bg: "from-red-50 to-red-100",
+      border: "border-red-200",
+      text: "text-red-700",
+      value: "text-red-900",
+      iconBg: "bg-red-100",
+      iconColor: "text-red-600"
+    }
+  };
+
+  const colors = colorMap[color] || colorMap.green;
+
+  return (
+    <div className={`p-6 bg-gradient-to-br ${colors.bg} rounded-xl text-center shadow-lg border-2 ${colors.border} transform hover:scale-105 transition-all duration-200`}>
+      {icon && (
+        <div className={`w-12 h-12 ${colors.iconBg} rounded-full flex items-center justify-center mx-auto mb-3 ${colors.iconColor}`}>
+          {icon}
+        </div>
+      )}
+      <p className={`text-xs ${colors.text} uppercase mb-2 font-bold tracking-wider`}>
+        {label}
+      </p>
+      <p className={`text-3xl font-black ${colors.value} mb-2`}>{value}</p>
+      {description && (
+        <p className="text-xs text-gray-600 leading-tight">{description}</p>
+      )}
+    </div>
+  );
+};
 
   
 
@@ -2347,22 +2426,22 @@ const LTV = (landValue + improvementsValue) > 0
               <StatsCard 
                 label="Land" 
                 value={`$${(stNum.landPrice * stNum.acres).toLocaleString()}`}
-                color="green"
-                icon="🏞️"
+                color="emerald"
+                icon={<MapPin className="w-6 h-6" />}
                 description="Property acquisition"
               />
               <StatsCard 
                 label="Pre-Planting" 
                 value={`$${prePlantTotal.toLocaleString()}`}
-                color="yellow"
-                icon="🚜"
+                color="amber"
+                icon={<Tractor className="w-6 h-6" />}
                 description="Site preparation"
               />
               <StatsCard 
                 label="Planting" 
                 value={`$${plantingTotal.toLocaleString()}`}
-                color="emerald"
-                icon="🌱"
+                color="green"
+                icon={<Sprout className="w-6 h-6" />}
                 description="Vines & materials"
               />
               <StatsCard 
@@ -2371,33 +2450,33 @@ const LTV = (landValue + improvementsValue) > 0
                   .filter(d => !['Land Purchase','License','One-time Permits','Pre-Planting','Planting'].includes(d.name))
                   .reduce((s,d) => s + d.value, 0)
                   .toLocaleString()}`}
-                color="vine-green-500"
-                icon="🏗️"
+                color="blue"
+                icon={<Construction className="w-6 h-6" />}
                 description="Infrastructure"
               />
               <StatsCard 
                 label="License" 
                 value={`$${stNum.licenseCost.toLocaleString()}`}
                 color="purple"
-                icon="📋"
+                icon={<FileText className="w-6 h-6" />}
                 description="Permits & fees"
               />
               <StatsCard 
                 label="Permits" 
                 value={`$${permitOneTime.toLocaleString()}`}
                 color="indigo"
-                icon="📄"
+                icon={<ScrollText className="w-6 h-6" />}
                 description="Legal requirements"
               />
-              <div className="sm:col-span-2 md:col-span-3 lg:col-span-4 xl:col-span-6">
-                <StatsCard 
-                  label="Total Investment" 
-                  value={`$${estData.reduce((s,d) => s + d.value, 0).toLocaleString()}`}
-                  color="red"
-                  icon="💎"
-                  description={`$${Math.round(estData.reduce((s,d) => s + d.value, 0) / stNum.acres).toLocaleString()} per acre`}
-                />
-              </div>
+             <div className="sm:col-span-2 md:col-span-3 lg:col-span-4 xl:col-span-6">
+              <StatsCard 
+                label="Total Investment" 
+                value={`$${estData.reduce((s,d) => s + d.value, 0).toLocaleString()}`}
+                color="red"
+                icon={<Gem className="w-6 h-6" />}
+                description={`$${Math.round(estData.reduce((s,d) => s + d.value, 0) / stNum.acres).toLocaleString()} per acre`}
+              />
+            </div>
             </div>
 
             {/* Bar + Pie Charts */}
