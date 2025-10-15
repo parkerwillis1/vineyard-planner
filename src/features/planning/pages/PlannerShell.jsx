@@ -14,10 +14,13 @@ import {
   MapPin,
   Tractor,
   Sprout,
-  Construction,
+  HardHat,
   FileText,
   ScrollText,
-  Gem
+  Gem,
+  Check,
+  Clock,
+  Calendar
 } from "lucide-react";
 import { 
   VineyardLayoutConfig, 
@@ -282,6 +285,7 @@ export default function PlannerShell({ embedded = false }) {
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
   const [selectedChart, setSelectedChart] = useState("revenue");
+  const [establishmentView, setEstablishmentView] = useState('breakdown');
 
 
   const { id: planId } = useParams();   // comes from route "/plans/:id"
@@ -1081,7 +1085,203 @@ const LTV = (landValue + improvementsValue) > 0
   );
 };
 
-  
+  // Progress Tracker Component
+  const EstablishmentProgressTracker = ({ stNum, prePlantTotal, plantingTotal, totalEstCost, permitOneTime }) => {
+  // Calculate progress data
+    const tasks = [
+    // Pre-Planting Phase
+    {
+      category: 'Site Preparation',
+      icon: <Tractor className="w-5 h-5" />,
+      color: 'amber',
+      tasks: stNum.prePlanting.filter(r => r.include).map(row => ({
+        name: row.label,
+        cost: row.costPerAcre * stNum.acres,
+        duration: '2 weeks',
+        month: 'Month 1-2',
+        completed: false
+      }))
+    },
+    // Planting Phase
+    {
+      category: 'Planting',
+      icon: <Sprout className="w-5 h-5" />,
+      color: 'green',
+      tasks: stNum.planting.filter(r => r.include).map(row => {
+        const costPerAcre = row.costPerAcre != null ? row.costPerAcre : (row.unitCost || 0) * (row.qtyPerAcre || 0);
+        return {
+          name: row.label,
+          cost: costPerAcre * stNum.acres,
+          duration: row.label.toLowerCase().includes('stock') ? '1 week' : '2 weeks',
+          month: row.label.toLowerCase().includes('stock') ? 'Month 2' : 'Month 7-8',
+          completed: false
+        };
+      })
+    },
+    // Infrastructure Phase
+    {
+      category: 'Infrastructure',
+      icon: <HardHat className="w-5 h-5" />,
+      color: 'blue',
+      tasks: Object.entries(stNum.setup)
+        .filter(([, obj]) => obj.include)
+        .map(([key, obj]) => ({
+          name: key.charAt(0).toUpperCase() + key.slice(1) + (obj.system ? ` (${obj.system})` : ''),
+          cost: obj.cost * stNum.acres,
+          duration: key === 'irrigation' ? '4 weeks' : '2-3 weeks',
+          month: 'Month 3-6',
+          completed: false
+        }))
+    },
+    // Permits & Licenses
+    {
+      category: 'Permits & Licenses',
+      icon: <FileText className="w-5 h-5" />,
+      color: 'purple',
+      tasks: [
+        { name: 'Business License', cost: stNum.licenseCost, duration: '1 week', month: 'Month 1', completed: false },
+        ...stNum.permits.filter(p => p.include).map(p => ({
+          name: p.label,
+          cost: p.cost,
+          duration: '2 weeks',
+          month: 'Month 1-2',
+          completed: false
+        }))
+      ]
+    }
+  ];
+
+  const totalTasks = tasks.reduce((sum, cat) => sum + cat.tasks.length, 0);
+  const completedTasks = 0; // This would be dynamic based on user input
+  const investedAmount = 0; // This would track actual spending
+  const remainingAmount = totalEstCost;
+  const progressPercent = (completedTasks / totalTasks) * 100;
+
+  return (
+    <div className="space-y-8">
+      {/* Progress Overview */}
+      <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-2xl font-bold text-gray-900">Establishment Progress</h3>
+          <span className="text-sm text-gray-600">{completedTasks} of {totalTasks} Complete</span>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+          <div 
+            className="bg-vine-green-500 h-3 rounded-full transition-all duration-500"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+
+        {/* Financial Summary */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-green-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-green-600">${investedAmount.toLocaleString()}</div>
+            <div className="text-sm text-gray-600">Invested</div>
+          </div>
+          <div className="bg-orange-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-orange-600">${remainingAmount.toLocaleString()}</div>
+            <div className="text-sm text-gray-600">Remaining</div>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-blue-600">{progressPercent.toFixed(1)}%</div>
+            <div className="text-sm text-gray-600">Complete</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Task Categories */}
+      {tasks.map((category, catIdx) => (
+        <div key={catIdx} className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+          <div className={`bg-${category.color}-50 px-6 py-4 border-b flex items-center justify-between`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full bg-${category.color}-100 flex items-center justify-center text-${category.color}-600`}>
+                {category.icon}
+              </div>
+              <h3 className={`text-lg font-semibold text-${category.color}-700`}>{category.category}</h3>
+            </div>
+            <span className={`text-sm font-medium text-${category.color}-600`}>
+              {category.tasks.filter(t => t.completed).length}/{category.tasks.length}
+            </span>
+          </div>
+
+          <div className="divide-y divide-gray-200">
+            {category.tasks.map((task, taskIdx) => (
+              <div key={taskIdx} className="p-6 hover:bg-gray-50 transition-colors">
+                <div className="flex items-start gap-4">
+                  {/* Checkbox */}
+                  <div className="flex-shrink-0 pt-1">
+                    <div className={`w-6 h-6 rounded-full border-2 ${
+                      task.completed 
+                        ? `bg-${category.color}-500 border-${category.color}-500` 
+                        : 'border-gray-300'
+                    } flex items-center justify-center`}>
+                      {task.completed && (
+                        <Check className="w-4 h-4 text-white" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Task Details */}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className={`font-medium ${task.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                        {task.name}
+                      </h4>
+                      <span className="text-sm font-semibold text-gray-900 ml-4">
+                        ${task.cost.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {task.duration}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        Year 0 - {task.month}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Category Subtotal */}
+          <div className={`bg-${category.color}-50 px-6 py-3 border-t flex items-center justify-between`}>
+            <span className={`text-sm font-semibold text-${category.color}-700`}>
+              {category.category} Total
+            </span>
+            <span className={`text-sm font-bold text-${category.color}-700`}>
+              ${category.tasks.reduce((sum, t) => sum + t.cost, 0).toLocaleString()}
+            </span>
+          </div>
+        </div>
+      ))}
+
+      {/* Grand Total */}
+      <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl border-2 border-red-200 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+              <Gem className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-red-900">Total Investment Required</h3>
+              <p className="text-sm text-red-600">${Math.round(totalEstCost / stNum.acres).toLocaleString()} per acre</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-black text-red-900">${totalEstCost.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
   const MainUI = (
     <div className="w-full">
@@ -2419,261 +2619,454 @@ const LTV = (landValue + improvementsValue) > 0
         {/* ── Vineyard Establishment Tab ── */}
         {activeTab === "establishment" && (
           <div className="space-y-8 pt-6">
-            <SectionHeader title="Year 0 Establishment Costs" />
-
-            {/* Enhanced Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
-              <StatsCard 
-                label="Land" 
-                value={`$${(stNum.landPrice * stNum.acres).toLocaleString()}`}
-                color="emerald"
-                icon={<MapPin className="w-6 h-6" />}
-                description="Property acquisition"
-              />
-              <StatsCard 
-                label="Pre-Planting" 
-                value={`$${prePlantTotal.toLocaleString()}`}
-                color="amber"
-                icon={<Tractor className="w-6 h-6" />}
-                description="Site preparation"
-              />
-              <StatsCard 
-                label="Planting" 
-                value={`$${plantingTotal.toLocaleString()}`}
-                color="green"
-                icon={<Sprout className="w-6 h-6" />}
-                description="Vines & materials"
-              />
-              <StatsCard 
-                label="Setup" 
-                value={`$${estData
-                  .filter(d => !['Land Purchase','License','One-time Permits','Pre-Planting','Planting'].includes(d.name))
-                  .reduce((s,d) => s + d.value, 0)
-                  .toLocaleString()}`}
-                color="blue"
-                icon={<Construction className="w-6 h-6" />}
-                description="Infrastructure"
-              />
-              <StatsCard 
-                label="License" 
-                value={`$${stNum.licenseCost.toLocaleString()}`}
-                color="purple"
-                icon={<FileText className="w-6 h-6" />}
-                description="Permits & fees"
-              />
-              <StatsCard 
-                label="Permits" 
-                value={`$${permitOneTime.toLocaleString()}`}
-                color="indigo"
-                icon={<ScrollText className="w-6 h-6" />}
-                description="Legal requirements"
-              />
-             <div className="sm:col-span-2 md:col-span-3 lg:col-span-4 xl:col-span-6">
-              <StatsCard 
-                label="Total Investment" 
-                value={`$${estData.reduce((s,d) => s + d.value, 0).toLocaleString()}`}
-                color="red"
-                icon={<DollarSign className="w-6 h-6" />}
-                description={`$${Math.round(estData.reduce((s,d) => s + d.value, 0) / stNum.acres).toLocaleString()} per acre`}
-              />
-            </div>
+            <div className="flex items-center justify-between border-b pb-4">
+              <SectionHeader title="Year 0 Establishment Costs" />
+              
+              {/* View Toggle */}
+              <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                <button
+                  onClick={() => setEstablishmentView('breakdown')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    establishmentView === 'breakdown'
+                      ? 'bg-white text-vine-green-700 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Cost Breakdown
+                </button>
+                <button
+                  onClick={() => setEstablishmentView('progress')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    establishmentView === 'progress'
+                      ? 'bg-white text-vine-green-700 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Progress Tracker
+                </button>
+              </div>
             </div>
 
-            {/* Bar + Pie Charts */}
-            <SectionCard title="Cost Breakdown">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Bar Chart */}
-                <div className="h-64">
-                <ResponsiveContainer
-                  key={`rc-${location.pathname}-${activeTab}`}
-                  width="100%"
-                  height="100%"
-                >
-                    <BarChart data={estData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                      <defs>
-                        <linearGradient id="establishmentGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9}/>
-                          <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.7}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#475569' }} stroke="#94a3b8" />
-                      <YAxis tickFormatter={n => `$${n.toLocaleString()}`} tick={{ fontSize: 12, fill: '#475569' }} stroke="#94a3b8" />
-                      <Tooltip 
-                        formatter={(val) => [`$${val.toLocaleString()}`, 'Cost']} 
-                        contentStyle={{ 
-                          backgroundColor: 'white', 
-                          border: '2px solid #e2e8f0', 
-                          borderRadius: '12px', 
-                          boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
-                        }}
-                      />
-                      <Bar dataKey="value" fill="url(#establishmentGradient)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
-                </div>
-
-                {/* Upgraded Pie Chart */}
-                <div className="h-64">
-                <ResponsiveContainer
-                  key={`rc-${location.pathname}-${activeTab}`}
-                  width="100%"
-                  height="100%"
-                >
-                    <PieChart>
-                    {/* Shift pie left for legend on the right */}
-                    <Pie
-                        data={estData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="40%"
-                        cy="50%"
-                        outerRadius={80}
-                        label={false}
-                        labelLine={false}
-                    >
-                        {estData.map((_, i) => (
-                        <Cell
-                            key={i}
-                            fill={[
-                            "#1F77B4", // muted vine-green-500
-                            "#FF7F0E", // orange
-                            "#2CA02C", // green
-                            "#D62728", // red
-                            "#9467BD", // purple
-                            "#8C564B"  // brown
-                            ][i % 6]}
-                        />
-                        ))}
-                    </Pie>
-
-                    <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, 'Cost']} />
-
-                    <Legend
-                        layout="vertical"
-                        align="right"
-                        verticalAlign="middle"
-                        formatter={(value, entry) => {
-                        const pct = (entry.payload.value / estData.reduce((s, e) => s + e.value, 0)) * 100;
-                        return `${value} ${pct.toFixed(0)}%`;
-                        }}
-                        wrapperStyle={{ fontSize: '0.875rem' }}
+            {/* BREAKDOWN VIEW */}
+            {establishmentView === 'breakdown' && (
+              <>
+                {/* Enhanced Summary Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
+                  <StatsCard 
+                    label="Land" 
+                    value={`$${(stNum.landPrice * stNum.acres).toLocaleString()}`}
+                    color="emerald"
+                    icon={<MapPin className="w-6 h-6" />}
+                    description="Property acquisition"
+                  />
+                  <StatsCard 
+                    label="Pre-Planting" 
+                    value={`$${prePlantTotal.toLocaleString()}`}
+                    color="amber"
+                    icon={<Tractor className="w-6 h-6" />}
+                    description="Site preparation"
+                  />
+                  <StatsCard 
+                    label="Planting" 
+                    value={`$${plantingTotal.toLocaleString()}`}
+                    color="green"
+                    icon={<Sprout className="w-6 h-6" />}
+                    description="Vines & materials"
+                  />
+                  <StatsCard 
+                    label="Setup" 
+                    value={`$${estData
+                      .filter(d => !['Land Purchase','License','One-time Permits','Pre-Planting','Planting'].includes(d.name))
+                      .reduce((s,d) => s + d.value, 0)
+                      .toLocaleString()}`}
+                    color="blue"
+                    icon={<HardHat className="w-6 h-6" />}
+                    description="Infrastructure"
+                  />
+                  <StatsCard 
+                    label="License" 
+                    value={`$${stNum.licenseCost.toLocaleString()}`}
+                    color="purple"
+                    icon={<FileText className="w-6 h-6" />}
+                    description="Permits & fees"
+                  />
+                  <StatsCard 
+                    label="Permits" 
+                    value={`$${permitOneTime.toLocaleString()}`}
+                    color="indigo"
+                    icon={<ScrollText className="w-6 h-6" />}
+                    description="Legal requirements"
+                  />
+                  <div className="sm:col-span-2 md:col-span-3 lg:col-span-4 xl:col-span-6">
+                    <StatsCard 
+                      label="Total Investment" 
+                      value={`$${estData.reduce((s,d) => s + d.value, 0).toLocaleString()}`}
+                      color="red"
+                      icon={<Gem className="w-6 h-6" />}
+                      description={`$${Math.round(estData.reduce((s,d) => s + d.value, 0) / stNum.acres).toLocaleString()} per acre`}
                     />
-                    </PieChart>
-                </ResponsiveContainer>
-                </div>
-            </div>
-            </SectionCard>
-
-            {/* ── Expense Details Table ── */}
-            <SectionCard title="Establishment Expense Details">
-            <div className="overflow-x-auto">
-                <table className="min-w-full bg-white divide-y divide-gray-200">
-                <thead className="bg-vine-green-50">
-                    <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">
-                        Item
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
-                        Total Cost
-                    </th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                    {estData.map((entry, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {entry.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                        ${entry.value.toLocaleString()}
-                        </td>
-                    </tr>
-                    ))}
-                    {/* Grand-total row */}
-                    <tr className="bg-vine-green-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700">
-                        Total
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700 text-right">
-                        ${estData.reduce((sum, e) => sum + e.value, 0).toLocaleString()}
-                    </td>
-                    </tr>
-                </tbody>
-                </table>
-            </div>
-            </SectionCard>
-            {/* ── Financing & Net Equity Required ── */}
-            <SectionCard title="Financing & Net Capital Required">
-            <div className="space-y-4">
-                {/* Loan Options Table (only included loans) */}
-                <div className="overflow-x-auto">
-                <table className="min-w-full bg-white divide-y divide-gray-200">
-                    <thead className="bg-vine-green-50">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">
-                        Lender
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
-                        Principal
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
-                        Rate
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
-                        Term (yrs)
-                        </th>
-                    </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                    {includedLoans.map((loan, i) => (
-                        <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {loan.label || `Loan ${i + 1}`}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                            ${loan.principal.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                        {loan.rate.toFixed(2)}%
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                            {loan.term}
-                        </td>
-                        </tr>
-                    ))}
-                    <tr className="bg-vine-green-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700">
-                        Total Loans
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700 text-right">
-                        ${totalLoanPrincipal.toLocaleString()}
-                        </td>
-                        <td colSpan={2}></td>
-                    </tr>
-                    </tbody>
-                </table>
+                  </div>
                 </div>
 
-                {/* Net Equity Summary */}
-                <div className="text-right">
-                <p className="text-sm text-gray-600">
-                    <span className="font-medium">Total Establishment Cost:</span>{" "}
-                    ${totalEstCost.toLocaleString()}
-                </p>
-                <p className="text-lg font-semibold text-purple-800">
-                    <span className="font-medium">Net Capital Required:</span>{" "}
-                    ${netEquityRequired.toLocaleString()}
-                </p>
-                <p className="text-xs text-gray-500">
-                    (Total cost minus all available loan financing)
-                </p>
-                </div>
-            </div>
-            </SectionCard>
+                {/* Bar + Pie Charts */}
+                <SectionCard title="Cost Breakdown">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Bar Chart */}
+                    <div className="h-64">
+                      <ResponsiveContainer
+                        key={`rc-${location.pathname}-${activeTab}`}
+                        width="100%"
+                        height="100%"
+                      >
+                        <BarChart data={estData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                          <defs>
+                            <linearGradient id="establishmentGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9}/>
+                              <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.7}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#475569' }} stroke="#94a3b8" />
+                          <YAxis tickFormatter={n => `$${n.toLocaleString()}`} tick={{ fontSize: 12, fill: '#475569' }} stroke="#94a3b8" />
+                          <Tooltip 
+                            formatter={(val) => [`$${val.toLocaleString()}`, 'Cost']} 
+                            contentStyle={{ 
+                              backgroundColor: 'white', 
+                              border: '2px solid #e2e8f0', 
+                              borderRadius: '12px', 
+                              boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
+                            }}
+                          />
+                          <Bar dataKey="value" fill="url(#establishmentGradient)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
 
+                    {/* Pie Chart */}
+                    <div className="h-64">
+                      <ResponsiveContainer
+                        key={`rc-${location.pathname}-${activeTab}`}
+                        width="100%"
+                        height="100%"
+                      >
+                        <PieChart>
+                          <Pie
+                            data={estData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="40%"
+                            cy="50%"
+                            outerRadius={80}
+                            label={false}
+                            labelLine={false}
+                          >
+                            {estData.map((_, i) => (
+                              <Cell
+                                key={i}
+                                fill={[
+                                  "#1F77B4",
+                                  "#FF7F0E",
+                                  "#2CA02C",
+                                  "#D62728",
+                                  "#9467BD",
+                                  "#8C564B"
+                                ][i % 6]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, 'Cost']} />
+                          <Legend
+                            layout="vertical"
+                            align="right"
+                            verticalAlign="middle"
+                            formatter={(value, entry) => {
+                              const pct = (entry.payload.value / estData.reduce((s, e) => s + e.value, 0)) * 100;
+                              return `${value} ${pct.toFixed(0)}%`;
+                            }}
+                            wrapperStyle={{ fontSize: '0.875rem' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </SectionCard>
 
-        </div>
+                {/* Detailed Breakdown Tables */}
+                <SectionCard title="Detailed Cost Breakdown">
+                  <div className="space-y-8">
+                    {/* Pre-Planting Costs */}
+                    <div>
+                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
+                        <Tractor className="w-5 h-5" />
+                        Pre-Planting Costs
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full bg-white divide-y divide-gray-200 border rounded-lg">
+                          <thead className="bg-amber-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-amber-700 uppercase">Item</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-amber-700 uppercase">$/Acre</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-amber-700 uppercase">Total Cost</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {stNum.prePlanting.filter(r => r.include).map((row, i) => (
+                              <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                <td className="px-6 py-4 text-sm text-gray-900">{row.label}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 text-right">${row.costPerAcre.toLocaleString()}</td>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
+                                  ${(row.costPerAcre * stNum.acres).toLocaleString()}
+                                </td>
+                              </tr>
+                            ))}
+                            <tr className="bg-amber-50 font-semibold">
+                              <td className="px-6 py-4 text-sm text-amber-700">Subtotal</td>
+                              <td className="px-6 py-4 text-sm text-amber-700 text-right">
+                                ${(prePlantTotal / stNum.acres).toFixed(0)}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-amber-700 text-right">
+                                ${prePlantTotal.toLocaleString()}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Planting Costs */}
+                    <div>
+                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
+                        <Sprout className="w-5 h-5" />
+                        Planting Costs
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full bg-white divide-y divide-gray-200 border rounded-lg">
+                          <thead className="bg-green-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase">Item</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">Unit Cost</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">Qty/Acre</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">$/Acre</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">Total Cost</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {stNum.planting.filter(r => r.include).map((row, i) => {
+                              const costPerAcre = row.costPerAcre != null ? row.costPerAcre : (row.unitCost || 0) * (row.qtyPerAcre || 0);
+                              return (
+                                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                  <td className="px-6 py-4 text-sm text-gray-900">{row.label}</td>
+                                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                                    ${(row.unitCost || 0).toFixed(2)}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                                    {row.qtyPerAcre || '—'}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                                    ${costPerAcre.toLocaleString()}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
+                                    ${(costPerAcre * stNum.acres).toLocaleString()}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            <tr className="bg-green-50 font-semibold">
+                              <td className="px-6 py-4 text-sm text-green-700" colSpan={3}>Subtotal</td>
+                              <td className="px-6 py-4 text-sm text-green-700 text-right">
+                                ${(plantingTotal / stNum.acres).toFixed(0)}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-green-700 text-right">
+                                ${plantingTotal.toLocaleString()}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Setup/Infrastructure Costs */}
+                    <div>
+                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
+                        <HardHat className="w-5 h-5" />
+                        Infrastructure Setup
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full bg-white divide-y divide-gray-200 border rounded-lg">
+                          <thead className="bg-blue-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase">Item</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-blue-700 uppercase">$/Acre</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-blue-700 uppercase">Total Cost</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {Object.entries(stNum.setup)
+                              .filter(([, obj]) => obj.include)
+                              .map(([key, obj], i) => (
+                                <tr key={key} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                  <td className="px-6 py-4 text-sm text-gray-900 capitalize">
+                                    {key}
+                                    {obj.system && <span className="ml-2 text-xs text-gray-500">({obj.system})</span>}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                                    ${obj.cost.toLocaleString()}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
+                                    ${(obj.cost * stNum.acres).toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                            <tr className={stNum.buildPrice > 0 ? 'bg-white' : 'hidden'}>
+                              <td className="px-6 py-4 text-sm text-gray-900">Building</td>
+                              <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                                ${stNum.buildPrice.toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
+                                ${(stNum.buildPrice * stNum.acres).toLocaleString()}
+                              </td>
+                            </tr>
+                            <tr className="bg-blue-50 font-semibold">
+                              <td className="px-6 py-4 text-sm text-blue-700">Subtotal</td>
+                              <td className="px-6 py-4 text-sm text-blue-700 text-right">
+                                ${(perAcreSetup).toFixed(0)}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-blue-700 text-right">
+                                ${(perAcreSetup * stNum.acres).toLocaleString()}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Licenses & Permits */}
+                    <div>
+                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        Licenses & Permits
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full bg-white divide-y divide-gray-200 border rounded-lg">
+                          <thead className="bg-purple-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase">Item</th>
+                              <th className="px-6 py-3 text-center text-xs font-medium text-purple-700 uppercase">Type</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase">Cost</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            <tr className="bg-white">
+                              <td className="px-6 py-4 text-sm text-gray-900">Business License</td>
+                              <td className="px-6 py-4 text-sm text-gray-600 text-center">One-time</td>
+                              <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
+                                ${stNum.licenseCost.toLocaleString()}
+                              </td>
+                            </tr>
+                            {stNum.permits.filter(p => p.include).map((permit, i) => (
+                              <tr key={permit.key} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                                <td className="px-6 py-4 text-sm text-gray-900">{permit.label}</td>
+                                <td className="px-6 py-4 text-sm text-gray-600 text-center">
+                                  {['federal', 'state', 'winegrower', 'farm'].includes(permit.key) ? 'One-time' : 'Annual'}
+                                </td>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
+                                  ${permit.cost.toLocaleString()}
+                                </td>
+                              </tr>
+                            ))}
+                            <tr className="bg-purple-50 font-semibold">
+                              <td className="px-6 py-4 text-sm text-purple-700" colSpan={2}>Subtotal</td>
+                              <td className="px-6 py-4 text-sm text-purple-700 text-right">
+                                ${(stNum.licenseCost + permitOneTime).toLocaleString()}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </SectionCard>
+
+                {/* Financing Section */}
+                <SectionCard title="Financing & Net Capital Required">
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full bg-white divide-y divide-gray-200">
+                        <thead className="bg-vine-green-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">
+                              Lender
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
+                              Principal
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
+                              Rate
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
+                              Term (yrs)
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {includedLoans.map((loan, i) => (
+                            <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {loan.label || `Loan ${i + 1}`}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                                ${loan.principal.toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                                {loan.rate.toFixed(2)}%
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                                {loan.term}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="bg-vine-green-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700">
+                              Total Loans
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700 text-right">
+                              ${totalLoanPrincipal.toLocaleString()}
+                            </td>
+                            <td colSpan={2}></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Total Establishment Cost:</span>{" "}
+                        ${totalEstCost.toLocaleString()}
+                      </p>
+                      <p className="text-lg font-semibold text-purple-800">
+                        <span className="font-medium">Net Capital Required:</span>{" "}
+                        ${netEquityRequired.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        (Total cost minus all available loan financing)
+                      </p>
+                    </div>
+                  </div>
+                </SectionCard>
+              </>
+            )}
+
+            {/* PROGRESS TRACKER VIEW */}
+            {establishmentView === 'progress' && (
+              <EstablishmentProgressTracker 
+                stNum={stNum}
+                prePlantTotal={prePlantTotal}
+                plantingTotal={plantingTotal}
+                totalEstCost={totalEstCost}
+                permitOneTime={permitOneTime}
+              />
+            )}
+          </div>
         )}
 
         {/* ── 10-Year Projection Tab ── */}
