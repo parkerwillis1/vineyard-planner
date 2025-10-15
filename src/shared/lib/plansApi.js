@@ -23,10 +23,19 @@ export async function loadPlan(planId) {
 }
 
 export async function savePlan(planId, payload) {
-  return supabase
+  console.log('📤 savePlan called:', { planId, payload });
+  
+  const result = await supabase
     .from('vineyard_plans')
-    .update({ data: payload, updated_at: new Date().toISOString() })
-    .eq('id', planId);
+    .update({ 
+      data: payload, 
+      updated_at: new Date().toISOString() 
+    })
+    .eq('id', planId)
+    .select(); // ⭐ ADD .select() to return the updated row
+  
+  console.log('📥 savePlan result:', result);
+  return result;
 }
 
 export async function createPlan(name, payload = null) {

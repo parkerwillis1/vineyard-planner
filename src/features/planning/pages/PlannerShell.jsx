@@ -126,16 +126,16 @@ const TabNav = ({
   return (
     <div className="sticky top-[65px] z-40 bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-[1920px] mx-auto px-6">
-        {/* Top Row - Plan Selector */}
-        <div className="flex items-center justify-between py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="flex items-center justify-between h-16">
+          {/* LEFT: Plan Selector */}
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
               Plan
             </span>
             <select
               value={currentPlanId || ''}
               onChange={(e) => onPlanChange(e.target.value)}
-              className="text-sm font-medium border border-gray-300 rounded-lg px-4 py-2 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 min-w-[200px] transition-colors"
+              className="text-sm font-medium border border-gray-300 rounded-lg px-3 py-1.5 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 min-w-[180px] transition-colors"
             >
               <option value="">Default Plan</option>
               {plans && plans.map(plan => (
@@ -146,38 +146,21 @@ const TabNav = ({
             </select>
             <button
               onClick={onNewPlan}
-              className="px-4 py-2 text-sm font-medium text-vine-green-600 bg-vine-green-50 hover:bg-vine-green-100 rounded-lg transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 text-sm font-medium text-vine-green-600 hover:text-vine-green-700 whitespace-nowrap"
             >
-              <span className="text-lg leading-none">+</span>
-              <span>New Plan</span>
+              + New Plan
             </button>
           </div>
 
-          <div className="flex items-center gap-4">
-            {dirty && (
-              <span className="text-xs text-orange-600 font-medium">
-                • Unsaved changes
-              </span>
-            )}
-            {lastSaved && !dirty && (
-              <span className="text-xs text-gray-500">
-                Saved {lastSaved.toLocaleTimeString()}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Row - Tabs & Controls */}
-        <div className="flex items-center justify-between py-2">
-          {/* Tabs */}
-          <div className="flex items-center gap-2">
+          {/* CENTER: Tabs */}
+          <div className="flex items-center gap-1 mx-6 flex-1 justify-center">
             {tabs.map(t => (
               <button
                 key={t.id}
                 onClick={() => setActive(t.id)}
-                className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
                   active === t.id
-                    ? "bg-vine-green-100 text-vine-green-700 shadow-sm"
+                    ? "bg-vine-green-100 text-vine-green-700"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
@@ -186,9 +169,15 @@ const TabNav = ({
             ))}
           </div>
 
-          {/* Right Controls */}
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+          {/* RIGHT: Controls */}
+          <div className="flex items-center gap-4 min-w-0">
+            {dirty && (
+              <span className="text-xs text-orange-600 font-medium whitespace-nowrap">
+                • Unsaved changes
+              </span>
+            )}
+            
+            <label className="flex items-center gap-2 text-sm text-gray-700 whitespace-nowrap">
               <span className="font-medium">Years</span>
               <Input
                 type="number"
@@ -198,20 +187,20 @@ const TabNav = ({
                 onChange={(e) =>
                   setYears(Math.max(1, Math.min(30, Number(e.target.value) || 1)))
                 }
-                className="w-20 text-center"
+                className="w-16 text-center"
               />
             </label>
 
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm whitespace-nowrap">
               <span className="font-medium text-gray-700">Total</span>
-              <span className="px-4 py-1.5 rounded-lg bg-purple-100 text-purple-700 font-semibold">
+              <span className="px-3 py-1 rounded-lg bg-purple-100 text-purple-700 font-semibold">
                 ${totalEstCost.toLocaleString()}
               </span>
             </div>
 
             <button
               onClick={onSave}
-              className="px-6 py-2.5 text-sm rounded-lg bg-vine-green-600 text-white hover:bg-vine-green-700 font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 text-sm rounded-lg bg-vine-green-600 text-white hover:bg-vine-green-700 font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               disabled={isSaving}
             >
               {isSaving ? 'Saving…' : 'Save'}
@@ -570,6 +559,8 @@ export default function PlannerShell({ embedded = false }) {
   };
 
    async function handleManualSave() {
+    console.log('🔵 Save button clicked');
+    
     if (!user) {
       alert('Sign in to save your plan.');
       return;
@@ -577,6 +568,13 @@ export default function PlannerShell({ embedded = false }) {
 
     try {
       setSaving(true);
+      console.log('🔵 Starting save...', {
+        planId,
+        hasUser: !!user,
+        stKeys: Object.keys(st),
+        projYears,
+        taskCompletionKeys: Object.keys(taskCompletion)
+      });
 
       const payload = { 
         st, 
@@ -586,34 +584,46 @@ export default function PlannerShell({ embedded = false }) {
 
       let error;
       if (planId) {
+        console.log('🔵 Saving to plan:', planId);
         ({ error } = await savePlan(planId, payload));
       } else {
+        console.log('🔵 Saving to default planner');
         ({ error } = await savePlanner(payload));
       }
 
       if (error) {
-        console.error(error);
+        console.error('🔴 Save error:', error);
         alert('Save failed: ' + (error.message || 'Unknown error'));
       } else {
+        console.log('✅ Save successful!');
+        
+        // IMPORTANT: Set dirty to false BEFORE reloading plans
         setDirty(false);
         setLastSaved(new Date());
         
-        // ⭐ Reload the plans list to update the dropdown
+        // Reload the plans list
         const { data } = await listPlans();
         if (data) {
           setPlans(data);
         }
+        
+        console.log('✅ Plans list reloaded, dirty set to false');
       }
+    } catch (err) {
+      console.error('🔴 Save exception:', err);
+      alert('Save failed: ' + err.message);
     } finally {
       setSaving(false);
+      console.log('🔵 Save complete, saving flag cleared');
     }
   }
 
   // Mark planner state dirty when st or projYears change *after* an initial save/load baseline
   useEffect(() => {
-    if (lastSaved === null) return;
+  // Don't mark dirty if we haven't loaded yet OR if we're currently saving
+    if (lastSaved === null || saving) return;
     setDirty(true);
-  }, [st, projYears, taskCompletion, lastSaved]);
+  }, [st, projYears, taskCompletion]);
 
 // ─── normalize EVERY string → number ───
 const stNum = {

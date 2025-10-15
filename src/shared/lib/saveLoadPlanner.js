@@ -50,6 +50,8 @@ export async function loadPlannerById(planId) {
  * Accepts object: { st, projYears }
  */
 export async function savePlanner(payload) {
+  console.log('📤 savePlanner called:', { payload });
+  
   const { data: { user }, error: userErr } = await supabase.auth.getUser();
   if (userErr || !user) {
     return { error: userErr || new Error('No user') };
@@ -62,12 +64,13 @@ export async function savePlanner(payload) {
       version: 1,
       savedAt: new Date().toISOString()
     },
-    // updated_at will auto-update if you have a trigger; if not, define column default now()
   };
 
-  const { error } = await supabase
+  const result = await supabase
     .from('vineyard_profiles')
-    .upsert(row, { onConflict: 'user_id' });
-
-  return { error: error || null };
+    .upsert(row, { onConflict: 'user_id' })
+    .select(); // ⭐ ADD .select() to return the row
+  
+  console.log('📥 savePlanner result:', result);
+  return { error: result.error || null };
 }
