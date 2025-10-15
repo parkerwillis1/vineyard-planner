@@ -1,6 +1,7 @@
 // src/VineyardPlannerApp.jsx
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/shared/lib/supabaseClient';
 import { savePlanner, loadPlanner} from '@/shared/lib/saveLoadPlanner';
@@ -115,64 +116,80 @@ const TabNav = ({
   stickyTopClass = "top-0",
 }) => {
   const tabs = [
-    { id: "design",        label: "Design", shortLabel: "Design" },
-    { id: "inputs",        label: "Financial Inputs", shortLabel: "Inputs" },
-    { id: "establishment", label: "Vineyard Setup", shortLabel: "Setup" },
-    { id: "proj",          label: `${projYears}-Year Plan`, shortLabel: `${projYears}Yr` },
-    { id: "details",       label: "Details", shortLabel: "Details" },
+    { id: "design",        label: "Design" },
+    { id: "inputs",        label: "Financial Inputs" },
+    { id: "establishment", label: "Vineyard Setup" },
+    { id: "proj",          label: `${projYears}-Year Plan` },
+    { id: "details",       label: "Details" },
   ];
 
   return (
-    <div className="sticky top-[65px] z-40 bg-white border-b border-gray-200 shadow-sm mt-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <nav className="flex items-center justify-between h-14">
-          {/* LEFT SIDE - Plan Selector + Tabs */}
-          <div className="flex items-center gap-4 overflow-x-auto">
-            {/* Plan Selector */}
-            <div className="flex items-center gap-2 border-r border-gray-200 pr-4">
-              <select
-                value={currentPlanId || ''}
-                onChange={(e) => onPlanChange(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 min-w-[180px]"
-              >
-                <option value="">Default Plan</option>
-                {plans && plans.map(plan => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={onNewPlan}
-                className="text-sm text-vine-green-600 hover:text-vine-green-700 font-medium"
-              >
-                + New
-              </button>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex items-center gap-1">
-              {tabs.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setActive(t.id)}
-                  className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                    active === t.id
-                      ? "border-vine-green-600 text-vine-green-700"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  <span className="hidden sm:inline">{t.label}</span>
-                  <span className="sm:hidden">{t.shortLabel || t.label}</span>
-                </button>
+    <div className="sticky top-[65px] z-40 bg-white border-b border-gray-200 shadow-sm">
+      <div className="max-w-[1920px] mx-auto px-6">
+        {/* Top Row - Plan Selector */}
+        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Plan
+            </span>
+            <select
+              value={currentPlanId || ''}
+              onChange={(e) => onPlanChange(e.target.value)}
+              className="text-sm font-medium border border-gray-300 rounded-lg px-4 py-2 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 min-w-[200px] transition-colors"
+            >
+              <option value="">Default Plan</option>
+              {plans && plans.map(plan => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name}
+                </option>
               ))}
-            </div>
+            </select>
+            <button
+              onClick={onNewPlan}
+              className="px-4 py-2 text-sm font-medium text-vine-green-600 bg-vine-green-50 hover:bg-vine-green-100 rounded-lg transition-colors flex items-center gap-1"
+            >
+              <span className="text-lg leading-none">+</span>
+              <span>New Plan</span>
+            </button>
           </div>
 
-          {/* RIGHT SIDE - Controls */}
           <div className="flex items-center gap-4">
-            <label className="hidden md:flex items-center gap-2 text-sm text-gray-700">
-              Years
+            {dirty && (
+              <span className="text-xs text-orange-600 font-medium">
+                • Unsaved changes
+              </span>
+            )}
+            {lastSaved && !dirty && (
+              <span className="text-xs text-gray-500">
+                Saved {lastSaved.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Row - Tabs & Controls */}
+        <div className="flex items-center justify-between py-2">
+          {/* Tabs */}
+          <div className="flex items-center gap-2">
+            {tabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setActive(t.id)}
+                className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                  active === t.id
+                    ? "bg-vine-green-100 text-vine-green-700 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Right Controls */}
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <span className="font-medium">Years</span>
               <Input
                 type="number"
                 min={1}
@@ -181,26 +198,26 @@ const TabNav = ({
                 onChange={(e) =>
                   setYears(Math.max(1, Math.min(30, Number(e.target.value) || 1)))
                 }
-                className="w-16 text-center"
+                className="w-20 text-center"
               />
             </label>
 
-            <span className="hidden lg:flex items-center gap-2 text-sm text-gray-700">
-              Total
-              <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-medium text-gray-700">Total</span>
+              <span className="px-4 py-1.5 rounded-lg bg-purple-100 text-purple-700 font-semibold">
                 ${totalEstCost.toLocaleString()}
               </span>
-            </span>
+            </div>
 
             <button
               onClick={onSave}
-              className="px-4 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-vine-green-500 font-medium transition disabled:opacity-50"
+              className="px-6 py-2.5 text-sm rounded-lg bg-vine-green-600 text-white hover:bg-vine-green-700 font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSaving}
             >
               {isSaving ? 'Saving…' : 'Save'}
             </button>
           </div>
-        </nav>
+        </div>
       </div>
     </div>
   );
@@ -322,6 +339,7 @@ export default function PlannerShell({ embedded = false }) {
   const [plans, setPlans] = useState([]);
   const [currentPlanName, setCurrentPlanName] = useState('');
 
+  const navigate = useNavigate();
 
   const { id: planId } = useParams();   // comes from route "/plans/:id"
 
@@ -514,40 +532,42 @@ export default function PlannerShell({ embedded = false }) {
   const handlePlanChange = (newPlanId) => {
     if (dirty) {
       // eslint-disable-next-line no-restricted-globals
-      if (!confirm('You have unsaved changes. Switch plans anyway?')) {
+      if (!window.confirm('You have unsaved changes. Switch plans anyway?')) {
         return;
       }
     }
     
     if (newPlanId) {
-      window.location.href = `/app/${newPlanId}`;
+      navigate(`/app/${newPlanId}`);
     } else {
-      window.location.href = '/app';
+      navigate('/app');
     }
   };
 
-// Create a new plan
-const handleNewPlan = async () => {
-  if (!user) {
-    alert('Sign in to create a plan.');
-    return;
-  }
-
-  const planName = prompt('Enter plan name:');
-  if (!planName) return;
-
-  try {
-    const { data, error } = await createPlan(planName, { st, projYears, taskCompletion });
-    if (error) {
-      alert('Failed to create plan: ' + error.message);
-    } else if (data) {
-      window.location.href = `/app/${data.id}`;
+  // Create a new plan
+  const handleNewPlan = async () => {
+    if (!user) {
+      alert('Sign in to create a plan.');
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    alert('Failed to create plan');
-  }
-};
+
+    // eslint-disable-next-line no-restricted-globals
+    const planName = window.prompt('Enter plan name:');
+    if (!planName) return;
+
+    try {
+      const { data, error } = await createPlan(planName, { st, projYears, taskCompletion });
+      if (error) {
+        alert('Failed to create plan: ' + error.message);
+      } else if (data) {
+        // ⭐ Use navigate instead of window.location
+        navigate(`/app/${data.id}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to create plan');
+    }
+  };
 
    async function handleManualSave() {
     if (!user) {
@@ -558,11 +578,10 @@ const handleNewPlan = async () => {
     try {
       setSaving(true);
 
-      // Include taskCompletion in the save payload
       const payload = { 
         st, 
         projYears,
-        taskCompletion // ⭐ ADD THIS
+        taskCompletion
       };
 
       let error;
@@ -578,6 +597,12 @@ const handleNewPlan = async () => {
       } else {
         setDirty(false);
         setLastSaved(new Date());
+        
+        // ⭐ Reload the plans list to update the dropdown
+        const { data } = await listPlans();
+        if (data) {
+          setPlans(data);
+        }
       }
     } finally {
       setSaving(false);
