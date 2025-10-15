@@ -2791,201 +2791,156 @@ const LTV = (landValue + improvementsValue) > 0
                   </div>
                 </SectionCard>
 
-                {/* Detailed Breakdown Tables */}
-                <SectionCard title="Detailed Cost Breakdown">
-                  <div className="space-y-8">
-                    {/* Pre-Planting Costs */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
-                        <Tractor className="w-5 h-5" />
-                        Pre-Planting Costs
-                      </h4>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full bg-white divide-y divide-gray-200 border rounded-lg">
-                          <thead className="bg-amber-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-amber-700 uppercase">Item</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-amber-700 uppercase">$/Acre</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-amber-700 uppercase">Total Cost</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {stNum.prePlanting.filter(r => r.include).map((row, i) => (
-                              <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                <td className="px-6 py-4 text-sm text-gray-900">{row.label}</td>
-                                <td className="px-6 py-4 text-sm text-gray-900 text-right">${row.costPerAcre.toLocaleString()}</td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                  ${(row.costPerAcre * stNum.acres).toLocaleString()}
-                                </td>
-                              </tr>
-                            ))}
-                            <tr className="bg-amber-50 font-semibold">
-                              <td className="px-6 py-4 text-sm text-amber-700">Subtotal</td>
-                              <td className="px-6 py-4 text-sm text-amber-700 text-right">
-                                ${(prePlantTotal / stNum.acres).toFixed(0)}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-amber-700 text-right">
-                                ${prePlantTotal.toLocaleString()}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
+                {/* Detailed Breakdown - Card Style */}
+                <div className="space-y-8">
+                  {/* Pre-Planting Costs */}
+                  <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+                    <div className="bg-amber-50 px-6 py-4 border-b flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                        <Tractor className="w-5 h-5 text-amber-600" />
                       </div>
+                      <h4 className="text-lg font-semibold text-amber-700">Pre-Planting Costs</h4>
                     </div>
-
-                    {/* Planting Costs */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
-                        <Sprout className="w-5 h-5" />
-                        Planting Costs
-                      </h4>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full bg-white divide-y divide-gray-200 border rounded-lg">
-                          <thead className="bg-green-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase">Item</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">Unit Cost</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">Qty/Acre</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">$/Acre</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">Total Cost</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {stNum.planting.filter(r => r.include).map((row, i) => {
-                              const costPerAcre = row.costPerAcre != null ? row.costPerAcre : (row.unitCost || 0) * (row.qtyPerAcre || 0);
-                              return (
-                                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="px-6 py-4 text-sm text-gray-900">{row.label}</td>
-                                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                                    ${(row.unitCost || 0).toFixed(2)}
-                                  </td>
-                                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                                    {row.qtyPerAcre || '—'}
-                                  </td>
-                                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                                    ${costPerAcre.toLocaleString()}
-                                  </td>
-                                  <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                    ${(costPerAcre * stNum.acres).toLocaleString()}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                            <tr className="bg-green-50 font-semibold">
-                              <td className="px-6 py-4 text-sm text-green-700" colSpan={3}>Subtotal</td>
-                              <td className="px-6 py-4 text-sm text-green-700 text-right">
-                                ${(plantingTotal / stNum.acres).toFixed(0)}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-green-700 text-right">
-                                ${plantingTotal.toLocaleString()}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
+                    <div className="divide-y divide-gray-200">
+                      {stNum.prePlanting.filter(r => r.include).map((row, i) => (
+                        <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{row.label}</div>
+                            <div className="text-sm text-gray-500">${row.costPerAcre.toLocaleString()}/acre</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-semibold text-gray-900">
+                              ${(row.costPerAcre * stNum.acres).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-
-                    {/* Setup/Infrastructure Costs */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
-                        <HardHat className="w-5 h-5" />
-                        Infrastructure Setup
-                      </h4>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full bg-white divide-y divide-gray-200 border rounded-lg">
-                          <thead className="bg-blue-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase">Item</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-blue-700 uppercase">$/Acre</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-blue-700 uppercase">Total Cost</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {Object.entries(stNum.setup)
-                              .filter(([, obj]) => obj.include)
-                              .map(([key, obj], i) => (
-                                <tr key={key} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="px-6 py-4 text-sm text-gray-900 capitalize">
-                                    {key}
-                                    {obj.system && <span className="ml-2 text-xs text-gray-500">({obj.system})</span>}
-                                  </td>
-                                  <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                                    ${obj.cost.toLocaleString()}
-                                  </td>
-                                  <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                    ${(obj.cost * stNum.acres).toLocaleString()}
-                                  </td>
-                                </tr>
-                              ))}
-                            <tr className={stNum.buildPrice > 0 ? 'bg-white' : 'hidden'}>
-                              <td className="px-6 py-4 text-sm text-gray-900">Building</td>
-                              <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                                ${stNum.buildPrice.toLocaleString()}
-                              </td>
-                              <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                ${(stNum.buildPrice * stNum.acres).toLocaleString()}
-                              </td>
-                            </tr>
-                            <tr className="bg-blue-50 font-semibold">
-                              <td className="px-6 py-4 text-sm text-blue-700">Subtotal</td>
-                              <td className="px-6 py-4 text-sm text-blue-700 text-right">
-                                ${(perAcreSetup).toFixed(0)}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-blue-700 text-right">
-                                ${(perAcreSetup * stNum.acres).toLocaleString()}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* Licenses & Permits */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        Licenses & Permits
-                      </h4>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full bg-white divide-y divide-gray-200 border rounded-lg">
-                          <thead className="bg-purple-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase">Item</th>
-                              <th className="px-6 py-3 text-center text-xs font-medium text-purple-700 uppercase">Type</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase">Cost</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            <tr className="bg-white">
-                              <td className="px-6 py-4 text-sm text-gray-900">Business License</td>
-                              <td className="px-6 py-4 text-sm text-gray-600 text-center">One-time</td>
-                              <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                ${stNum.licenseCost.toLocaleString()}
-                              </td>
-                            </tr>
-                            {stNum.permits.filter(p => p.include).map((permit, i) => (
-                              <tr key={permit.key} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                                <td className="px-6 py-4 text-sm text-gray-900">{permit.label}</td>
-                                <td className="px-6 py-4 text-sm text-gray-600 text-center">
-                                  {['federal', 'state', 'winegrower', 'farm'].includes(permit.key) ? 'One-time' : 'Annual'}
-                                </td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                  ${permit.cost.toLocaleString()}
-                                </td>
-                              </tr>
-                            ))}
-                            <tr className="bg-purple-50 font-semibold">
-                              <td className="px-6 py-4 text-sm text-purple-700" colSpan={2}>Subtotal</td>
-                              <td className="px-6 py-4 text-sm text-purple-700 text-right">
-                                ${(stNum.licenseCost + permitOneTime).toLocaleString()}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
+                    <div className="bg-amber-50 px-6 py-3 border-t flex items-center justify-between">
+                      <span className="text-sm font-semibold text-amber-700">Subtotal</span>
+                      <span className="text-lg font-bold text-amber-700">${prePlantTotal.toLocaleString()}</span>
                     </div>
                   </div>
-                </SectionCard>
+
+                  {/* Planting Costs */}
+                  <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+                    <div className="bg-green-50 px-6 py-4 border-b flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                        <Sprout className="w-5 h-5 text-green-600" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-green-700">Planting Costs</h4>
+                    </div>
+                    <div className="divide-y divide-gray-200">
+                      {stNum.planting.filter(r => r.include).map((row, i) => {
+                        const costPerAcre = row.costPerAcre != null ? row.costPerAcre : (row.unitCost || 0) * (row.qtyPerAcre || 0);
+                        return (
+                          <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">{row.label}</div>
+                              <div className="text-sm text-gray-500">
+                                ${(row.unitCost || 0).toFixed(2)} × {row.qtyPerAcre || 0}/acre = ${costPerAcre.toLocaleString()}/acre
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-semibold text-gray-900">
+                                ${(costPerAcre * stNum.acres).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="bg-green-50 px-6 py-3 border-t flex items-center justify-between">
+                      <span className="text-sm font-semibold text-green-700">Subtotal</span>
+                      <span className="text-lg font-bold text-green-700">${plantingTotal.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Infrastructure Setup */}
+                  <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+                    <div className="bg-blue-50 px-6 py-4 border-b flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <HardHat className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-blue-700">Infrastructure Setup</h4>
+                    </div>
+                    <div className="divide-y divide-gray-200">
+                      {Object.entries(stNum.setup)
+                        .filter(([key, obj]) => obj.include && key !== 'vines') // ⭐ Exclude vines
+                        .map(([key, obj], i) => (
+                          <div key={key} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 capitalize">
+                                {key}
+                                {obj.system && <span className="ml-2 text-sm text-gray-500">({obj.system})</span>}
+                              </div>
+                              <div className="text-sm text-gray-500">${obj.cost.toLocaleString()}/acre</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-semibold text-gray-900">
+                                ${(obj.cost * stNum.acres).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      {stNum.buildPrice > 0 && (
+                        <div className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">Building</div>
+                            <div className="text-sm text-gray-500">${stNum.buildPrice.toLocaleString()}/acre</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-semibold text-gray-900">
+                              ${(stNum.buildPrice * stNum.acres).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="bg-blue-50 px-6 py-3 border-t flex items-center justify-between">
+                      <span className="text-sm font-semibold text-blue-700">Subtotal</span>
+                      <span className="text-lg font-bold text-blue-700">${(perAcreSetup * stNum.acres).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Licenses & Permits */}
+                  <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+                    <div className="bg-purple-50 px-6 py-4 border-b flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-purple-700">Licenses & Permits</h4>
+                    </div>
+                    <div className="divide-y divide-gray-200">
+                      <div className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">Business License</div>
+                          <div className="text-sm text-gray-500">One-time fee</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-semibold text-gray-900">${stNum.licenseCost.toLocaleString()}</div>
+                        </div>
+                      </div>
+                      {stNum.permits.filter(p => p.include).map((permit, i) => (
+                        <div key={permit.key} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{permit.label}</div>
+                            <div className="text-sm text-gray-500">
+                              {['federal', 'state', 'winegrower', 'farm'].includes(permit.key) ? 'One-time' : 'Annual'}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-semibold text-gray-900">${permit.cost.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-purple-50 px-6 py-3 border-t flex items-center justify-between">
+                      <span className="text-sm font-semibold text-purple-700">Subtotal</span>
+                      <span className="text-lg font-bold text-purple-700">${(stNum.licenseCost + permitOneTime).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Financing Section */}
                 <SectionCard title="Financing & Net Capital Required">
