@@ -517,23 +517,68 @@ export default function PlannerShell({ embedded = false }) {
     set(newState);
   };
 
-  // Navigate to a different plan
-  const handlePlanChange = (newPlanId) => {
-    if (dirty) {
-      // eslint-disable-next-line no-restricted-globals
-      if (!window.confirm('You have unsaved changes. Switch plans anyway?')) {
-        return;
-      }
+  const handlePlanChange = async (newPlanId) => {
+  if (dirty) {
+    // eslint-disable-next-line no-restricted-globals
+    if (!window.confirm('You have unsaved changes. Switch plans anyway?')) {
+      return;
+    }
+  }
+  
+  console.log('🔄 Switching to plan:', newPlanId);
+  
+  try {
+    // Load the new plan data
+    const { data, error } = newPlanId
+      ? await loadPlan(newPlanId)
+      : await loadPlanner();
+    
+    if (error) {
+      console.error('Failed to load plan:', error);
+      alert('Failed to load plan: ' + error.message);
+      return;
     }
     
-    if (newPlanId) {
-      navigate(`/app/${newPlanId}`);
+    // Update state with new plan data
+    if (data) {
+      if (data.st) set({ ...DEFAULT_ST, ...data.st });
+      if (data.projYears) setProjYears(data.projYears);
+      if (data.taskCompletion) setTaskCompletion(data.taskCompletion);
+      else setTaskCompletion({}); // Reset if no task completion data
     } else {
-      navigate('/app');
+      // Load defaults if no data
+      set(DEFAULT_ST);
+      setProjYears(10);
+      setTaskCompletion({});
     }
-  };
+    
+    // Update URL without navigation (stays on same page)
+    if (newPlanId) {
+      window.history.pushState({}, '', `/app/${newPlanId}`);
+    } else {
+      window.history.pushState({}, '', '/app');
+    }
+    
+    // Update current plan name
+    if (newPlanId) {
+      const plan = plans.find(p => p.id === newPlanId);
+      if (plan) setCurrentPlanName(plan.name);
+    } else {
+      setCurrentPlanName('');
+    }
+    
+    setDirty(false);
+    setLastSaved(new Date());
+    
+    console.log('✅ Plan switched successfully');
+  } catch (err) {
+    console.error('Error switching plan:', err);
+    alert('Failed to switch plan');
+  }
+};
 
-  // Create a new plan
+  // Navigate to a different plan
+  // Create new plan
   const handleNewPlan = async () => {
     if (!user) {
       alert('Sign in to create a plan.');
@@ -544,21 +589,50 @@ export default function PlannerShell({ embedded = false }) {
     const planName = window.prompt('Enter plan name:');
     if (!planName) return;
 
+    console.log('📝 Creating new plan:', planName);
+
     try {
-      const { data, error } = await createPlan(planName, { st, projYears, taskCompletion });
+      // Create plan with current state
+      const { data, error } = await createPlan(planName, { 
+        st, 
+        projYears, 
+        taskCompletion 
+      });
+      
       if (error) {
         alert('Failed to create plan: ' + error.message);
-      } else if (data) {
-        // ⭐ Use navigate instead of window.location
-        navigate(`/app/${data.id}`);
+        return;
+      }
+      
+      if (data && data.id) {
+        console.log('✅ Plan created:', data.id);
+        
+        // Reload plans list
+        const { data: plansData } = await listPlans();
+        if (plansData) {
+          setPlans(plansData);
+        }
+        
+        // Update URL without navigation
+        window.history.pushState({}, '', `/app/${data.id}`);
+        
+        // Update current plan name
+        setCurrentPlanName(planName);
+        
+        // Mark as clean since we just saved
+        setDirty(false);
+        setLastSaved(new Date());
+        
+        console.log('✅ Switched to new plan');
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error creating plan:', err);
       alert('Failed to create plan');
     }
   };
 
-   async function handleManualSave() {
+  // ⭐⭐⭐ ADD THIS NEW FUNCTION HERE ⭐⭐⭐
+  async function handleManualSave() {
     console.log('🔵 Save button clicked');
     
     if (!user) {
@@ -621,8 +695,8 @@ export default function PlannerShell({ embedded = false }) {
   // Mark planner state dirty when st or projYears change *after* an initial save/load baseline
   useEffect(() => {
   // Don't mark dirty if we haven't loaded yet OR if we're currently saving
-    if (lastSaved === null || saving) return;
-    setDirty(true);
+  if (lastSaved === null || saving) return;
+  setDirty(true);
   }, [st, projYears, taskCompletion]);
 
 // ─── normalize EVERY string → number ───
