@@ -552,17 +552,18 @@ export default function PlannerShell({ embedded = false }) {
       setTaskCompletion({});
     }
     
-    // Update URL without navigation (stays on same page)
     if (newPlanId) {
-      window.history.pushState({}, '', `/app/${newPlanId}`);
+      navigate(`/app/${newPlanId}`, { replace: true });
     } else {
-      window.history.pushState({}, '', '/app');
+      navigate('/app', { replace: true });
     }
     
-    // Update current plan name
+    // Update current plan name for display
     if (newPlanId) {
       const plan = plans.find(p => p.id === newPlanId);
-      if (plan) setCurrentPlanName(plan.name);
+      if (plan) {
+        setCurrentPlanName(plan.name);
+      }
     } else {
       setCurrentPlanName('');
     }
@@ -570,10 +571,11 @@ export default function PlannerShell({ embedded = false }) {
     setDirty(false);
     setLastSaved(new Date());
     
-    console.log('✅ Plan switched successfully');
+    console.log('✅ Plan switch complete');
+    
   } catch (err) {
-    console.error('Error switching plan:', err);
-    alert('Failed to switch plan');
+    console.error('💥 Error switching plan:', err);
+    alert('Failed to switch plan: ' + err.message);
   }
 };
 
