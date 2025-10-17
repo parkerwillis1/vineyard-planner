@@ -518,6 +518,8 @@ export default function PlannerShell({ embedded = false }) {
   };
 
   const handlePlanChange = async (newPlanId) => {
+  console.log('🔄 handlePlanChange called:', { newPlanId, currentPlanId: planId });
+  
   if (dirty) {
     // eslint-disable-next-line no-restricted-globals
     if (!window.confirm('You have unsaved changes. Switch plans anyway?')) {
@@ -525,33 +527,65 @@ export default function PlannerShell({ embedded = false }) {
     }
   }
   
-  console.log('🔄 Switching to plan:', newPlanId);
-  
   try {
-    // Load the new plan data
-    const { data, error } = newPlanId
-      ? await loadPlan(newPlanId)
-      : await loadPlanner();
+    let loadedData = null;
     
-    if (error) {
-      console.error('Failed to load plan:', error);
-      alert('Failed to load plan: ' + error.message);
-      return;
+    if (newPlanId) {
+      // Loading a specific plan
+      console.log('📥 Loading plan:', newPlanId);
+      const { data, error } = await loadPlan(newPlanId);
+      
+      if (error) {
+        console.error('❌ Failed to load plan:', error);
+        alert('Failed to load plan: ' + error.message);
+        return;
+      }
+      
+      loadedData = data;
+      console.log('✅ Plan loaded:', { hasData: !!data, keys: data ? Object.keys(data) : [] });
+      
+    } else {
+      // Loading default planner
+      console.log('📥 Loading default planner');
+      const { data, error } = await loadPlanner();
+      
+      if (error) {
+        console.error('❌ Failed to load default planner:', error);
+      }
+      
+      loadedData = data;
     }
     
-    // Update state with new plan data
-    if (data) {
-      if (data.st) set({ ...DEFAULT_ST, ...data.st });
-      if (data.projYears) setProjYears(data.projYears);
-      if (data.taskCompletion) setTaskCompletion(data.taskCompletion);
-      else setTaskCompletion({}); // Reset if no task completion data
+    // Update state with loaded data
+    if (loadedData) {
+      if (loadedData.st) {
+        console.log('📝 Updating st with:', Object.keys(loadedData.st));
+        set({ ...DEFAULT_ST, ...loadedData.st });
+      } else {
+        console.log('⚠️ No st in loaded data, using defaults');
+        set(DEFAULT_ST);
+      }
+      
+      if (loadedData.projYears) {
+        setProjYears(loadedData.projYears);
+      } else {
+        setProjYears(10);
+      }
+      
+      if (loadedData.taskCompletion) {
+        setTaskCompletion(loadedData.taskCompletion);
+      } else {
+        setTaskCompletion({});
+      }
     } else {
-      // Load defaults if no data
+      // No data, load defaults
+      console.log('📝 No data loaded, using defaults');
       set(DEFAULT_ST);
       setProjYears(10);
       setTaskCompletion({});
     }
     
+    // Update URL using navigate (React Router way)
     if (newPlanId) {
       navigate(`/app/${newPlanId}`, { replace: true });
     } else {
@@ -577,7 +611,7 @@ export default function PlannerShell({ embedded = false }) {
     console.error('💥 Error switching plan:', err);
     alert('Failed to switch plan: ' + err.message);
   }
-};
+  };
 
   // Navigate to a different plan
   // Create new plan
@@ -615,8 +649,8 @@ export default function PlannerShell({ embedded = false }) {
           setPlans(plansData);
         }
         
-        // Update URL without navigation
-        window.history.pushState({}, '', `/app/${data.id}`);
+        // ⭐ FIX: Use data.id (the newly created plan's ID)
+        navigate(`/app/${data.id}`, { replace: true });
         
         // Update current plan name
         setCurrentPlanName(planName);
@@ -633,7 +667,6 @@ export default function PlannerShell({ embedded = false }) {
     }
   };
 
-  // ⭐⭐⭐ ADD THIS NEW FUNCTION HERE ⭐⭐⭐
   async function handleManualSave() {
     console.log('🔵 Save button clicked');
     
