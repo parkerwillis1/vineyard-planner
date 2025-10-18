@@ -472,25 +472,32 @@ export default function PlannerShell({ embedded = false }) {
       const { data, error } = planId
         ? await loadPlan(planId)  
         : await loadPlanner();
+      
       if (error) {
         console.error('Load planner error', error);
         setLoading(false);
         return;
       }
+      
       if (data && !isCancelled) {
         if (data.st) set({ ...DEFAULT_ST, ...data.st });
         if (data.projYears) setProjYears(data.projYears);
-        if (data.taskCompletion) setTaskCompletion(data.taskCompletion); // ⭐ ADD THIS
+        if (data.taskCompletion) setTaskCompletion(data.taskCompletion);
         setDirty(false);
         setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
+      } else if (!isCancelled) {
+        
+        setDirty(false);
+        setLastSaved(new Date()); // Mark as "saved" (defaults loaded)
       }
+      
       setLoading(false);
-
     })();
 
-    return () => { isCancelled = true; };
-    setLoading(false);
-    
+    return () => { 
+      isCancelled = true; 
+      setLoading(false);
+    };
   }, [user, planId]);
 
   // Load list of plans
