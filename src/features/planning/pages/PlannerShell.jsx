@@ -321,6 +321,7 @@ export default function PlannerShell({ embedded = false }) {
   const [activeTab, setActiveTab]       = useState("design");
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [selectedChart, setSelectedChart] = useState("revenue");
   const [establishmentView, setEstablishmentView] = useState('breakdown');
   const [taskCompletion, setTaskCompletion] = useState({});
@@ -467,11 +468,13 @@ export default function PlannerShell({ embedded = false }) {
     let isCancelled = false;
 
     (async () => {
+      setLoading(true);
       const { data, error } = planId
         ? await loadPlan(planId)  
         : await loadPlanner();
       if (error) {
         console.error('Load planner error', error);
+        setLoading(false);
         return;
       }
       if (data && !isCancelled) {
@@ -481,9 +484,13 @@ export default function PlannerShell({ embedded = false }) {
         setDirty(false);
         setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
       }
+      setLoading(false);
+
     })();
 
     return () => { isCancelled = true; };
+    setLoading(false);
+    
   }, [user, planId]);
 
   // Load list of plans
@@ -528,6 +535,7 @@ export default function PlannerShell({ embedded = false }) {
   }
   
   try {
+    setLoading(true);
     let loadedData = null;
     
     if (newPlanId) {
@@ -538,6 +546,7 @@ export default function PlannerShell({ embedded = false }) {
       if (error) {
         console.error('❌ Failed to load plan:', error);
         alert('Failed to load plan: ' + error.message);
+        setLoading(false);
         return;
       }
       
@@ -604,12 +613,15 @@ export default function PlannerShell({ embedded = false }) {
     
     setDirty(false);
     setLastSaved(new Date());
+
+     setLoading(false);
     
     console.log('✅ Plan switch complete');
     
   } catch (err) {
     console.error('💥 Error switching plan:', err);
     alert('Failed to switch plan: ' + err.message);
+    setLoading(false);
   }
   };
 
@@ -729,10 +741,16 @@ export default function PlannerShell({ embedded = false }) {
 
   // Mark planner state dirty when st or projYears change *after* an initial save/load baseline
   useEffect(() => {
-  // Don't mark dirty if we haven't loaded yet OR if we're currently saving
-  if (lastSaved === null || saving) return;
-  setDirty(true);
-  }, [st, projYears, taskCompletion]);
+    // Don't mark dirty if we haven't loaded yet OR if we're currently saving OR if we're loading
+    if (lastSaved === null || saving || loading) return;
+    
+    // Don't trigger on initial mount or when switching plans
+    const timeoutId = setTimeout(() => {
+      setDirty(true);
+    }, 100); // Small delay to avoid marking dirty during loads
+    
+    return () => clearTimeout(timeoutId);
+  }, [st, projYears, taskCompletion, loading]);
 
 // ─── normalize EVERY string → number ───
 const stNum = {
