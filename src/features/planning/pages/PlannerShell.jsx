@@ -556,156 +556,164 @@ export default function PlannerShell({ embedded = false }) {
 
   const [st, set] = useState(DEFAULT_ST);
 
-  // --- Saving state ---
-  const [saving, setSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState(null);
+// --- Saving state ---
+const [saving, setSaving] = useState(false);
+const [lastSaved, setLastSaved] = useState(null);
 
-  // --- Snapshot of last loaded/saved state (used to decide "dirty")
-  const baselineRef = useRef(null);
+// --- Snapshot of last loaded/saved state (used to decide "dirty")
+const baselineRef = useRef(null);
+const hydratingRef = useRef(false);
 
-  const hydratingRef = useRef(false);
+// --- State mirrors (so baseline commits reflect the actual applied state)
+const stRef = React.useRef(st);
+const projYearsRef = React.useRef(projYears);
+const taskCompletionRef = React.useRef(taskCompletion);
 
-  // --- Auth context (SAFE destructure) ---
-  const auth = useAuth();
-  const user = auth?.user || null;
+useEffect(() => { stRef.current = st; }, [st]);
+useEffect(() => { projYearsRef.current = projYears; }, [projYears]);
+useEffect(() => { taskCompletionRef.current = taskCompletion; }, [taskCompletion]);
 
-  useEffect(() => {
-    if (!user) return;
-    let isCancelled = false;
+// --- Auth context (SAFE destructure) ---
+const auth = useAuth();
+const user = auth?.user || null;
 
-    (async () => {
-      hydratingRef.current = true;
-      setLoading(true);
-      const { data, error } = planId ? await loadPlan(planId) : await loadPlanner();
+// --- Load current plan (or default planner) and commit a clean baseline
+useEffect(() => {
+  if (!user) return;
+  let isCancelled = false;
 
-      if (error) {
-        console.error('Load planner error', error);
-        setLoading(false);
-        hydratingRef.current = false;
-        return;
-      }
+  (async () => {
+    hydratingRef.current = true;
+    setLoading(true);
 
-      if (data && !isCancelled) {
-        if (data.st) set({ ...DEFAULT_ST, ...data.st });
-        if (data.projYears) setProjYears(data.projYears);
-        if (data.taskCompletion) setTaskCompletion(data.taskCompletion);
-
-        // after applying loaded data to state:
-        setDirty(false);
-        setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
-
-        // ✅ baseline after loading data (stable snapshot)
-        baselineRef.current = makeSnapshot({
-          st: data?.st ? { ...DEFAULT_ST, ...data.st } : DEFAULT_ST,
-          projYears: data?.projYears ?? 10,
-          taskCompletion: data?.taskCompletion ?? {},
-        });
-
-
-      } else if (!isCancelled) {
-        // defaults path
-        setDirty(false);
-        setLastSaved(new Date());
-
-        // ✅ baseline for defaults (stable snapshot)
-        baselineRef.current = makeSnapshot({
-          st: DEFAULT_ST,
-          projYears: 10,
-          taskCompletion: {},
-        });
-      }
-
+    const { data, error } = planId ? await loadPlan(planId) : await loadPlanner();
+    if (error) {
+      console.error('Load planner error', error);
       setLoading(false);
       hydratingRef.current = false;
-    })();
+      return;
+    }
 
-    return () => {
-      isCancelled = true;
-      setLoading(false);
-    };
-  }, [user, planId]);
+    if (!isCancelled && data) {
+      // Apply loaded data to state
+      set(data?.st ? { ...DEFAULT_ST, ...data.st } : DEFAULT_ST);
+      setProjYears(data?.projYears ?? 10);
+      setTaskCompletion(data?.taskCompletion ?? {});
+      setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
+      setDirty(false);
+    } else if (!isCancelled) {
+      // Defaults path
+      set(DEFAULT_ST);
+      setProjYears(10);
+      setTaskCompletion({});
+      setLastSaved(new Date());
+      setDirty(false);
+    }
 
+    setLoading(false);
 
-  // Load list of plans
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const { data, error } = await listPlans();
-      if (!error && data) {
-        setPlans(data);
-        if (planId) {
-          const currentPlan = data.find(p => p.id === planId);
-          if (currentPlan) {
-            setCurrentPlanName(currentPlan.name);
-          }
-        }
+    // ✅ Commit baseline from the *actual current state* on next frame
+    requestAnimationFrame(() => {
+      if (isCancelled) return;
+      baselineRef.current = makeSnapshot({
+        st: stRef.current,
+        projYears: projYearsRef.current,
+        taskCompletion: taskCompletionRef.current,
+      });
+      setDirty(false);
+      hydratingRef.current = false;
+    });
+  })();
+
+  return () => { isCancelled = true; };
+}, [user, planId]);
+
+// --- Load list of plans (for selector + current name)
+useEffect(() => {
+  if (!user) return;
+  (async () => {
+    const { data, error } = await listPlans();
+    if (!error && data) {
+      setPlans(data);
+      if (planId) {
+        const currentPlan = data.find(p => p.id === planId);
+        if (currentPlan) setCurrentPlanName(currentPlan.name);
       }
-    })();
-  }, [user, planId]);
-
-  // 🔽 ADD THIS RIGHT BELOW
-  useEffect(() => {
-    if (!planId || !plans?.length) {
-      setCurrentPlanName('');
-      return;
     }
-    const p = plans.find(pl => pl.id === planId);
+  })();
+}, [user, planId]);
+
+// --- Keep current plan name in sync with URL id + plans list
+useEffect(() => {
+  if (!planId || !plans?.length) {
+    setCurrentPlanName('');
+    return;
+  }
+  const p = plans.find(pl => pl.id === planId);
+  setCurrentPlanName(p ? p.name : '');
+}, [planId, plans]);
+
+// --- Track unsaved changes vs. baseline (skip during hydration/loading)
+useEffect(() => {
+  if (hydratingRef.current || loading || !baselineRef.current) return;
+
+  const currentStr = makeSnapshot({ st, projYears, taskCompletion });
+  const isDirty = currentStr !== baselineRef.current;
+
+  // Optional debug (safe to remove)
+  if (isDirty) {
+    try {
+      const baseObj = JSON.parse(baselineRef.current);
+      const currObj = JSON.parse(currentStr);
+      const diffs = diffObjects(baseObj, currObj);
+      console.groupCollapsed('🔎 Dirty diffs');
+      console.table(diffs.slice(0, 20));
+      if (diffs.length > 20) console.log(`(+${diffs.length - 20} more)`);
+      console.groupEnd();
+    } catch {}
+  }
+
+  setDirty(prev => (prev !== isDirty ? isDirty : prev));
+}, [st, projYears, taskCompletion, lastSaved, loading]);
+
+// --- (Optional) defend against React Strict Mode double-invoke baseline drift
+useEffect(() => {
+  if (!hydratingRef.current && baselineRef.current == null) {
+    baselineRef.current = makeSnapshot({
+      st: stRef.current,
+      projYears: projYearsRef.current,
+      taskCompletion: taskCompletionRef.current,
+    });
+  }
+  // run once post-mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+// --- Helpers
+const setWithLog = (newState) => {
+  console.log('🔥 SET CALLED', new Error().stack);
+  set(newState);
+};
+
+// --- Change plan by updating the URL only (load happens in the effect above)
+const handlePlanChange = (nextId) => {
+  console.log('🔄 handlePlanChange (URL-only):', { nextId, currentPlanId: planId });
+
+  if (dirty && !window.confirm('You have unsaved changes. Switch plans anyway?')) {
+    return;
+  }
+
+  // Optimistically reflect name in header
+  if (nextId) {
+    const p = plans.find(pl => pl.id === nextId);
     setCurrentPlanName(p ? p.name : '');
-  }, [planId, plans]);
+  } else {
+    setCurrentPlanName('');
+  }
 
-
-  // --- Track unsaved changes based on baseline snapshot
-  //     NOTE: this must come AFTER st/lastSaved/baselineRef are declared.
-  useEffect(() => {
-    if (hydratingRef.current || loading || !baselineRef.current) return;
-
-    const currentStr = makeSnapshot({ st, projYears, taskCompletion });
-    const isDirty = currentStr !== baselineRef.current;
-
-    if (isDirty) {
-      // DEBUG: show exactly what's different (remove after you’re satisfied)
-      try {
-        const baseObj = JSON.parse(baselineRef.current);
-        const currObj = JSON.parse(currentStr);
-        const diffs = diffObjects(baseObj, currObj);
-        console.groupCollapsed('🔎 Dirty diffs');
-        console.table(diffs.slice(0, 20));
-        if (diffs.length > 20) console.log(`(+${diffs.length - 20} more)`);
-        console.groupEnd();
-      } catch {}
-    }
-
-    setDirty(prev => (prev !== isDirty ? isDirty : prev));
-  }, [st, projYears, taskCompletion, lastSaved, loading]);
-
-
-
-  const setWithLog = (newState) => {
-    console.log('🔥 SET CALLED', new Error().stack);
-    set(newState);
-  };
-
-
-  const handlePlanChange = (nextId) => {
-    console.log('🔄 handlePlanChange (URL-only):', { nextId, currentPlanId: planId });
-
-    if (dirty && !window.confirm('You have unsaved changes. Switch plans anyway?')) {
-      return;
-    }
-
-    // show the name immediately in the header/tab (optimistic)
-    if (nextId) {
-      const p = plans.find(pl => pl.id === nextId);
-      setCurrentPlanName(p ? p.name : '');
-    } else {
-      setCurrentPlanName('');
-    }
-
-    // 🔁 Do NOT fetch here. Just change the URL id segment.
-    // Your useEffect([user, planId]) will load/apply the plan state.
-    replacePlanIdInUrl(nextId || '');
-  };
-
+  // Do NOT fetch here. Just change the URL; useEffect([user, planId]) will load/apply.
+  replacePlanIdInUrl(nextId || '');
+};
 
 
   // Navigate to a different plan
