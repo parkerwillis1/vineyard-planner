@@ -494,6 +494,11 @@ export default function PlannerShell({ embedded = false }) {
   };
 }, [activeTab]);
 
+// Scroll to top whenever active tab changes
+useEffect(() => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}, [activeTab]);
+
   const getYieldForYear = (year) => {
     if (year <= 3) return 0;
     if (year === 4) return 1;
@@ -621,6 +626,8 @@ useEffect(() => { taskCompletionRef.current = taskCompletion; }, [taskCompletion
 // --- Auth context (SAFE destructure) ---
 const auth = useAuth();
 const user = auth?.user || null;
+
+
 
 // --- Load current plan (or default planner) and commit a clean baseline
 useEffect(() => {
