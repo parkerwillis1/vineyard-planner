@@ -60,6 +60,35 @@ import { useAuth } from "@/auth/AuthContext";
 /*  ⚙️  TOP-OF-PAGE UI HELPERS (all inline – no extra files needed)   */
 /* ------------------------------------------------------------------ */
 
+// Treat these as "non-persistent" — changes here should NOT trigger the dirty badge
+const VOLATILE_KEYS = new Set([
+  'calculatedLayout',
+  'materialCosts',
+  'lastComputed',
+  '__temp',
+  'updated_at',
+  'created_at',
+]);
+
+// Deep-clone while dropping volatile keys & functions
+function pruneVolatile(obj) {
+  return JSON.parse(
+    JSON.stringify(obj, (key, value) => {
+      if (VOLATILE_KEYS.has(key)) return undefined;
+      if (typeof value === 'function') return undefined;
+      return value;
+    })
+  );
+}
+
+// Produce a stable snapshot string for comparison / baseline
+function makeSnapshot({ st, projYears, taskCompletion }) {
+  return JSON.stringify({
+    st: pruneVolatile(st),
+    projYears,
+    taskCompletion: pruneVolatile(taskCompletion),
+  });
+}
 
 
 const ProjectBanner = ({ years, setYears }) => (
@@ -512,26 +541,28 @@ export default function PlannerShell({ embedded = false }) {
         if (data.projYears) setProjYears(data.projYears);
         if (data.taskCompletion) setTaskCompletion(data.taskCompletion);
 
+        // after applying loaded data to state:
         setDirty(false);
         setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
 
-        // ✅ baseline after loading data
-        baselineRef.current = JSON.stringify({
+        // ✅ baseline after loading data (stable snapshot)
+        baselineRef.current = makeSnapshot({
           st: data?.st ? { ...DEFAULT_ST, ...data.st } : DEFAULT_ST,
           projYears: data?.projYears ?? 10,
-          taskCompletion: data?.taskCompletion ?? {}
+          taskCompletion: data?.taskCompletion ?? {},
         });
+
 
       } else if (!isCancelled) {
         // defaults path
         setDirty(false);
         setLastSaved(new Date());
 
-        // ✅ baseline for defaults
-        baselineRef.current = JSON.stringify({
+        // ✅ baseline for defaults (stable snapshot)
+        baselineRef.current = makeSnapshot({
           st: DEFAULT_ST,
           projYears: 10,
-          taskCompletion: {}
+          taskCompletion: {},
         });
       }
 
@@ -576,15 +607,15 @@ export default function PlannerShell({ embedded = false }) {
   // --- Track unsaved changes based on baseline snapshot
   //     NOTE: this must come AFTER st/lastSaved/baselineRef are declared.
   useEffect(() => {
-    // Don’t check during initial load
+    // Don’t check during initial load/hydration
     if (loading || !baselineRef.current) return;
 
-    const snapshot = JSON.stringify({ st, projYears, taskCompletion });
+    const snapshot = makeSnapshot({ st, projYears, taskCompletion });
     const isDirty = snapshot !== baselineRef.current;
 
-    // Only update if the value actually changed (prevents flicker)
-    setDirty((prev) => (prev !== isDirty ? isDirty : prev));
+    setDirty(prev => (prev !== isDirty ? isDirty : prev));
   }, [st, projYears, taskCompletion, lastSaved, loading]);
+
 
 
   const setWithLog = (newState) => {
