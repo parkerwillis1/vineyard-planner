@@ -576,10 +576,16 @@ export default function PlannerShell({ embedded = false }) {
   // --- Track unsaved changes based on baseline snapshot
   //     NOTE: this must come AFTER st/lastSaved/baselineRef are declared.
   useEffect(() => {
-    if (!baselineRef.current) return; // no baseline yet (still loading)
+    // Don’t check during initial load
+    if (loading || !baselineRef.current) return;
+
     const snapshot = JSON.stringify({ st, projYears, taskCompletion });
-    setDirty(snapshot !== baselineRef.current);
-  }, [st, projYears, taskCompletion, lastSaved]);
+    const isDirty = snapshot !== baselineRef.current;
+
+    // Only update if the value actually changed (prevents flicker)
+    setDirty((prev) => (prev !== isDirty ? isDirty : prev));
+  }, [st, projYears, taskCompletion, lastSaved, loading]);
+
 
   const setWithLog = (newState) => {
     console.log('🔥 SET CALLED', new Error().stack);
