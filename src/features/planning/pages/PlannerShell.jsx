@@ -212,80 +212,95 @@ const TabNav = ({
   return (
     <div className="sticky top-[65px] z-40 bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-[1920px] mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
-          {/* LEFT: Plans Dropdown */}
-          <div className="relative" ref={planMenuRef}>
-            <button
-              onClick={() => setShowPlanMenu(!showPlanMenu)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 transition-colors"
-            >
-              <span className="text-gray-700">
-                {currentPlanName || 'Default Plan'}
-              </span>
-              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showPlanMenu ? 'rotate-180' : ''}`} />
-            </button>
+        <div className="grid grid-cols-3 items-center h-16 gap-6">
+          {/* LEFT: Plans Dropdown + Save Button */}
+          <div className="flex items-center gap-3">
+            <div className="relative" ref={planMenuRef}>
+              <button
+                onClick={() => setShowPlanMenu(!showPlanMenu)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 transition-colors min-w-[200px]"
+              >
+                <span className="text-gray-700 truncate">
+                  {currentPlanName || 'Default Plan'}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${showPlanMenu ? 'rotate-180' : ''}`} />
+              </button>
 
-            {/* Dropdown Menu */}
-            {showPlanMenu && (
-              <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
-                {/* Default Plan */}
-                <button
-                  onClick={() => {
-                    onPlanChange('');
-                    setShowPlanMenu(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                    !currentPlanId ? 'bg-vine-green-50 text-vine-green-700 font-medium' : 'text-gray-700'
-                  }`}
-                >
-                  Default Plan
-                </button>
-
-                {/* Divider */}
-                {plans && plans.length > 0 && (
-                  <div className="border-t border-gray-200 my-2"></div>
-                )}
-
-                {/* User's Plans */}
-                {plans && plans.map(plan => (
+              {/* Dropdown Menu */}
+              {showPlanMenu && (
+                <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
+                  {/* Default Plan */}
                   <button
-                    key={plan.id}
                     onClick={() => {
-                      onPlanChange(plan.id);
+                      onPlanChange('');
                       setShowPlanMenu(false);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                      currentPlanId === plan.id ? 'bg-vine-green-50 text-vine-green-700 font-medium' : 'text-gray-700'
+                      !currentPlanId ? 'bg-vine-green-50 text-vine-green-700 font-medium' : 'text-gray-700'
                     }`}
                   >
-                    {plan.name}
+                    Default Plan
                   </button>
-                ))}
 
-                {/* Divider */}
-                <div className="border-t border-gray-200 my-2"></div>
+                  {/* Divider */}
+                  {plans && plans.length > 0 && (
+                    <div className="border-t border-gray-200 my-2"></div>
+                  )}
 
-                {/* Create New Plan */}
-                <button
-                  onClick={() => {
-                    setShowPlanMenu(false);
-                    onNewPlan();
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-vine-green-600 hover:bg-vine-green-50 font-medium transition-colors"
-                >
-                  + Create New Plan
-                </button>
-              </div>
-            )}
+                  {/* User's Plans */}
+                  {plans && plans.map(plan => (
+                    <button
+                      key={plan.id}
+                      onClick={() => {
+                        onPlanChange(plan.id);
+                        setShowPlanMenu(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                        currentPlanId === plan.id ? 'bg-vine-green-50 text-vine-green-700 font-medium' : 'text-gray-700'
+                      }`}
+                    >
+                      {plan.name}
+                    </button>
+                  ))}
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-200 my-2"></div>
+
+                  {/* Create New Plan */}
+                  <button
+                    onClick={() => {
+                      setShowPlanMenu(false);
+                      onNewPlan();
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-vine-green-600 hover:bg-vine-green-50 font-medium transition-colors"
+                  >
+                    + Create New Plan
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Smart Save Button */}
+            <button
+              onClick={onSave}
+              disabled={isSaving || !dirty}
+              className={`px-6 py-2.5 text-sm rounded-lg font-semibold transition-all shadow-sm disabled:cursor-not-allowed whitespace-nowrap ${
+                dirty
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-green-600 text-white cursor-default'
+              }`}
+            >
+              {isSaving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
+            </button>
           </div>
 
-          {/* CENTER: Tabs */}
-          <div className="flex items-center gap-1 flex-1 justify-center mx-6">
+          {/* CENTER: Tabs (always centered) */}
+          <div className="flex items-center justify-center gap-2">
             {tabs.map(t => (
               <button
                 key={t.id}
                 onClick={() => setActive(t.id)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
+                className={`px-5 py-2.5 text-base font-semibold rounded-lg transition-all whitespace-nowrap ${
                   active === t.id
                     ? "bg-vine-green-100 text-vine-green-700"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -296,8 +311,8 @@ const TabNav = ({
             ))}
           </div>
 
-          {/* RIGHT: Controls */}
-          <div className="flex items-center gap-4 min-w-0">
+          {/* RIGHT: Years + Total */}
+          <div className="flex items-center justify-end gap-4">
             <label className="flex items-center gap-2 text-sm text-gray-700 whitespace-nowrap">
               <span className="font-medium">Years</span>
               <Input
@@ -314,23 +329,10 @@ const TabNav = ({
 
             <div className="flex items-center gap-2 text-sm whitespace-nowrap">
               <span className="font-medium text-gray-700">Total</span>
-              <span className="px-3 py-1 rounded-lg bg-purple-100 text-purple-700 font-semibold">
+              <span className="px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700 font-semibold">
                 ${totalEstCost.toLocaleString()}
               </span>
             </div>
-
-            {/* Smart Save Button */}
-            <button
-              onClick={onSave}
-              disabled={isSaving || !dirty}
-              className={`px-5 py-2 text-sm rounded-lg font-medium transition-all shadow-sm disabled:cursor-not-allowed whitespace-nowrap ${
-                dirty
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-green-600 text-white cursor-default'
-              }`}
-            >
-              {isSaving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
-            </button>
           </div>
         </div>
       </div>
