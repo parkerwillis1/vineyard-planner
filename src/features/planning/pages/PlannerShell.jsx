@@ -347,42 +347,14 @@ export default function PlannerShell({ embedded = false }) {
 
 
   // Works for /app/:id, /plans/:id, /app/planner/:id, /x/y/:id, etc.
+  // Right below: const location = useLocation();
   const replacePlanIdInUrl = React.useCallback(
-    (nextId /* string | '' */) => {
-      const { pathname, search, hash } = location;
-      const parts = pathname.split("/").filter(Boolean); // ["app","planner","123","establishment"]
-
-      // 1) Try to find the segment equal to the current planId from useParams()
-      let idx = -1;
-      if (planId) {
-        idx = parts.findIndex(p => p === planId);
-      }
-
-      // 2) Fallback: if not found, assume an id is the segment after "app" or "plans"
-      if (idx < 0) {
-        const first = parts[0] || "";
-        if ((first === "app" || first === "plans") && parts.length >= 2) {
-          idx = 1;
-        }
-      }
-
-      // 3) If we still couldn't find an index, append/remove at the end as a last resort
-      let newParts = parts.slice();
-      if (idx >= 0) {
-        if (nextId) newParts[idx] = nextId;   // replace id in-place
-        else        newParts.splice(idx, 1);  // remove id segment for default
-      } else {
-        if (nextId) newParts.push(nextId);
-        // else leave as-is for default
-      }
-
-      const newPath = "/" + newParts.join("/");
-      navigate(newPath + search + hash, { replace: true });
+    (nextId) => {
+      const newPath = nextId ? `/planner/${nextId}` : `/planner`;
+      navigate(newPath, { replace: true });
     },
-    [location, navigate, planId]
+    [navigate]
   );
-
-
 
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
@@ -576,13 +548,10 @@ export default function PlannerShell({ embedded = false }) {
   // Load list of plans
   useEffect(() => {
     if (!user) return;
-    
     (async () => {
       const { data, error } = await listPlans();
       if (!error && data) {
         setPlans(data);
-        
-        // Set current plan name if viewing a specific plan
         if (planId) {
           const currentPlan = data.find(p => p.id === planId);
           if (currentPlan) {
@@ -592,6 +561,17 @@ export default function PlannerShell({ embedded = false }) {
       }
     })();
   }, [user, planId]);
+
+  // 🔽 ADD THIS RIGHT BELOW
+  useEffect(() => {
+    if (!planId || !plans?.length) {
+      setCurrentPlanName('');
+      return;
+    }
+    const p = plans.find(pl => pl.id === planId);
+    setCurrentPlanName(p ? p.name : '');
+  }, [planId, plans]);
+
 
   // --- Track unsaved changes based on baseline snapshot
   //     NOTE: this must come AFTER st/lastSaved/baselineRef are declared.

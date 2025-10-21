@@ -50,6 +50,7 @@ export default function App() {
         <Route element={<SiteLayout />}>
           <Route index element={<HomePage />} />
           <Route path="planner" element={<PlannerShell embedded />} />
+          <Route path="planner/:id" element={<PlannerShell embedded />} />
           <Route path="vineyards" element={<VineyardsPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="docs" element={<DocumentationPage />} />
