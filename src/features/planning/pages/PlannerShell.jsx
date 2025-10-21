@@ -476,28 +476,40 @@ export default function PlannerShell({ embedded = false }) {
     [navigate]
   );
 
-  // Recharts/measurement-based components sometimes mount at width=0.
-  // Nudge a layout pass whenever route or tab changes.
+  // Force scroll to top whenever tab changes + handle chart resizing
   useEffect(() => {
-    console.log('🟡 PlannerShell MOUNTED');
-    // Only dispatch resize events when we're on tabs with charts
+    console.log('🟡 Tab changed to:', activeTab);
+    
+    // FORCE SCROLL TO TOP IMMEDIATELY
+    // Try all possible scroll targets
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    
+    // Also check if main container is scrolling
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      mainElement.scrollTop = 0;
+    }
+    
+    // Find any overflow containers and reset them
+    const containers = document.querySelectorAll('.overflow-auto, .overflow-y-auto, .overflow-scroll');
+    containers.forEach(container => {
+      container.scrollTop = 0;
+    });
+    
+    console.log('✅ Scrolled to top');
+    
+    // Then handle chart resizing for recharts (after scroll)
     if (['establishment', 'proj', 'details'].includes(activeTab)) {
       const id = requestAnimationFrame(() => {
         window.dispatchEvent(new Event('resize'));
       });
       return () => {
-      cancelAnimationFrame(id);
-    };
-  }
-  return () => {
-    console.log('🔴 PlannerShell UNMOUNTING');
-  };
-}, [activeTab]);
-
-// Scroll to top whenever active tab changes
-useEffect(() => {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}, [activeTab]);
+        cancelAnimationFrame(id);
+      };
+    }
+  }, [activeTab]);
 
   const getYieldForYear = (year) => {
     if (year <= 3) return 0;
