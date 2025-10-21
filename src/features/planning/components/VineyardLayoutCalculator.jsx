@@ -432,62 +432,23 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation, polygonPa
             </>
           )}
 
-          {/* Row Lines */}
+          {/* Row Lines - simplified, no individual post markers */}
           {rows.map((row, index) => (
-            <React.Fragment key={`row-${index}`}>
-              <Polyline
-                path={row.path}
-                options={{
-                  strokeColor: '#8b4513',
-                  strokeOpacity: 0.7,
-                  strokeWeight: 2,
-                }}
-              />
-              {/* End posts */}
-              <Marker
-                position={row.path[0]}
-                icon={{
-                  path: window.google.maps.SymbolPath.CIRCLE,
-                  scale: 5,
-                  fillColor: '#d2691e',
-                  fillOpacity: 1,
-                  strokeColor: '#fff',
-                  strokeWeight: 1,
-                }}
-              />
-              <Marker
-                position={row.path[1]}
-                icon={{
-                  path: window.google.maps.SymbolPath.CIRCLE,
-                  scale: 5,
-                  fillColor: '#d2691e',
-                  fillOpacity: 1,
-                  strokeColor: '#fff',
-                  strokeWeight: 1,
-                }}
-              />
-              {/* Line posts every 20 feet */}
-              {row.linePosts.map((post, postIndex) => (
-                <Marker
-                  key={`post-${index}-${postIndex}`}
-                  position={post}
-                  icon={{
-                    path: window.google.maps.SymbolPath.CIRCLE,
-                    scale: 3,
-                    fillColor: '#8b4513',
-                    fillOpacity: 0.8,
-                    strokeColor: '#fff',
-                    strokeWeight: 1,
-                  }}
-                />
-              ))}
-            </React.Fragment>
+            <Polyline
+              key={`row-${index}`}
+              path={row.path}
+              options={{
+                strokeColor: '#8b4513',
+                strokeOpacity: 0.6,
+                strokeWeight: 1.5,
+              }}
+            />
           ))}
         </GoogleMap>
       </div>
 
       {/* Legend */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+      <div className="grid grid-cols-2 gap-3 text-sm">
         <div className="flex items-center gap-2 bg-white p-2 rounded border">
           <div className="w-4 h-4 bg-green-500 opacity-40 border-2 border-green-700 rounded"></div>
           <span>Vineyard Boundary</span>
@@ -496,20 +457,12 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation, polygonPa
           <div className="w-8 h-1 bg-amber-700"></div>
           <span>Trellis Rows</span>
         </div>
-        <div className="flex items-center gap-2 bg-white p-2 rounded border">
-          <div className="w-3 h-3 bg-amber-700 rounded-full"></div>
-          <span>End Posts</span>
-        </div>
-        <div className="flex items-center gap-2 bg-white p-2 rounded border">
-          <div className="w-2 h-2 bg-amber-800 rounded-full"></div>
-          <span>Line Posts (20')</span>
-        </div>
       </div>
     </div>
   );
 };
 
-// Generate row lines based on polygon and spacing
+// Generate row lines based on polygon and spacing (simplified - no post markers)
 const generateRowLines = (polygonPath, numberOfRows, rowSpacing, orientation) => {
   if (!polygonPath || polygonPath.length < 3 || !window.google) return [];
 
@@ -522,7 +475,6 @@ const generateRowLines = (polygonPath, numberOfRows, rowSpacing, orientation) =>
   const maxLng = Math.max(...lngs);
 
   const rows = [];
-  const LINE_POST_SPACING_FT = 20;
 
   // Convert row spacing from feet to approximate degrees
   // At this latitude, approximately 1 degree lat = 364,000 feet
@@ -545,22 +497,8 @@ const generateRowLines = (polygonPath, numberOfRows, rowSpacing, orientation) =>
       end = { lat: latOffset, lng: maxLng };
     }
 
-    // Calculate line posts along the row
-    const rowLength = calculateDistance(start, end);
-    const numLinePosts = Math.floor(rowLength / LINE_POST_SPACING_FT) - 1;
-    const linePosts = [];
-
-    for (let j = 1; j <= numLinePosts; j++) {
-      const fraction = j / (numLinePosts + 1);
-      linePosts.push({
-        lat: start.lat + (end.lat - start.lat) * fraction,
-        lng: start.lng + (end.lng - start.lng) * fraction
-      });
-    }
-
     rows.push({
-      path: [start, end],
-      linePosts
+      path: [start, end]
     });
   }
 
