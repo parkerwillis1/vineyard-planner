@@ -1,18 +1,19 @@
-// VineyardLayoutCalculator.js - Fixed version with Collapsible Sections
-import React, { useMemo, useState, useCallback } from 'react';
+// VineyardLayoutCalculator.jsx - Google Maps Based Vineyard Planner
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { GoogleMap, LoadScript, Polygon, Marker, Polyline } from '@react-google-maps/api';
 import { MaterialCostsVisualizer } from "@/features/planning/components/MaterialCostsVisualizer";
-import { ChevronDown } from "lucide-react";
-
-import ReactFlow, {
-  MiniMap,
-  Controls,
-  Background,
-  useNodesState,
-  useEdgesState,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+import { ChevronDown, MapPin, Trash2, Edit3 } from "lucide-react";
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+
+const GOOGLE_MAPS_API_KEY = 'AIzaSyAEwV8iVPfyCuZDYaX8rstuSUMK8ZOF6V8';
+const LIBRARIES = ['drawing', 'geometry'];
+
+// Texas Hill Country default center (Fredericksburg area)
+const DEFAULT_CENTER = {
+  lat: 30.2672,
+  lng: -98.8792
+};
 
 /* --------------------------------------------------------- */
 /*  Collapsible Section Component                            */
@@ -22,23 +23,18 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
 
   return (
     <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-6">
-      {/* clickable header */}
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between bg-blue-50 px-6 py-4 border-b
                    focus:outline-none hover:bg-blue-100 transition-colors"
       >
         <h3 className="font-medium text-blue-700 text-lg">{title}</h3>
-
-        {/* chevron */}
         <ChevronDown
           className={`h-5 w-5 text-blue-500 transition-transform ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
-
-      {/* body – only rendered when open */}
       {open && <CardContent className="p-6">{children}</CardContent>}
     </Card>
   );
@@ -54,51 +50,80 @@ export const VINE_SPACING_OPTIONS = [
   { key: "custom", vine: 0, row: 0, label: "Custom Spacing", vinesPerAcre: 0 }
 ];
 
-export const VINEYARD_SHAPES = [
-  { key: "rectangle", label: "Rectangle", aspectRatios: [1, 1.5, 2, 2.5, 3] },
-  { key: "square", label: "Square", aspectRatios: [1] },
-  { key: "l_shape", label: "L-Shape", aspectRatios: [1.5, 2] },
-  { key: "irregular", label: "Irregular", aspectRatios: [1.5] }
-];
+// Calculate acreage from GPS polygon coordinates
+const calculatePolygonArea = (path) => {
+  if (!window.google || !path || path.length < 3) return 0;
 
-// Calculate actual vineyard dimensions and material requirements
-export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = "rectangle", aspectRatio = 2, orientation = "horizontal") => {
-  const sqftPerAcre = 43560;
-  const totalSqft = acres * sqftPerAcre;
-  
-  // Calculate basic dimensions
-  let width, length;
-  if (shape === "square") {
-    width = length = Math.sqrt(totalSqft);
-  } else {
-    width = Math.sqrt(totalSqft / aspectRatio);
-    length = width * aspectRatio;
-  }
-  
-  // Calculate vine layout based on orientation
-  const rowSpacingFeet = rowSpacing;
-  const vineSpacingFeet = vineSpacing;
-  
-    let numberOfRows, vinesPerRow;
+  const googlePath = path.map(point => new window.google.maps.LatLng(point.lat, point.lng));
+  const polygon = new window.google.maps.Polygon({ paths: googlePath });
+  const areaSquareMeters = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
 
-    if (orientation === "vertical") {
-    // Vertical: fewer rows (across width), more vines per row (down length)
-    numberOfRows = Math.floor(width / rowSpacingFeet);
-    vinesPerRow = Math.floor(length / vineSpacingFeet);
-    } else {
-    // Horizontal: more rows (down length), fewer vines per row (across width)
-    numberOfRows = Math.floor(length / rowSpacingFeet);
-    vinesPerRow = Math.floor(width / vineSpacingFeet);
+  // Convert square meters to acres (1 acre = 4046.86 square meters)
+  const acres = areaSquareMeters / 4046.86;
+  return acres;
+};
+
+// Calculate distance between two GPS points in feet
+const calculateDistance = (point1, point2) => {
+  if (!window.google) return 0;
+
+  const lat1 = new window.google.maps.LatLng(point1.lat, point1.lng);
+  const lat2 = new window.google.maps.LatLng(point2.lat, point2.lng);
+  const distanceMeters = window.google.maps.geometry.spherical.computeDistanceBetween(lat1, lat2);
+
+  // Convert meters to feet (1 meter = 3.28084 feet)
+  return distanceMeters * 3.28084;
+};
+
+// Calculate vineyard layout from actual GPS polygon
+export const calculateVineyardLayout = (polygonPath, vineSpacing, rowSpacing, orientation = "horizontal") => {
+  if (!polygonPath || polygonPath.length < 3) return null;
+
+  const acres = calculatePolygonArea(polygonPath);
+
+  // Find the longest edge to determine row direction
+  let maxDistance = 0;
+  let maxEdgeStart = null;
+  let maxEdgeEnd = null;
+
+  for (let i = 0; i < polygonPath.length; i++) {
+    const nextIndex = (i + 1) % polygonPath.length;
+    const distance = calculateDistance(polygonPath[i], polygonPath[nextIndex]);
+    if (distance > maxDistance) {
+      maxDistance = distance;
+      maxEdgeStart = polygonPath[i];
+      maxEdgeEnd = polygonPath[nextIndex];
     }
+  }
+
+  // Calculate approximate dimensions
+  const perimeter = polygonPath.reduce((sum, point, i) => {
+    const nextIndex = (i + 1) % polygonPath.length;
+    return sum + calculateDistance(point, polygonPath[nextIndex]);
+  }, 0);
+
+  const avgSideLength = perimeter / polygonPath.length;
+  const length = maxDistance;
+  const width = avgSideLength;
+
+  // Calculate vine layout
+  let numberOfRows, vinesPerRow, rowLength;
+
+  if (orientation === "vertical") {
+    numberOfRows = Math.floor(width / rowSpacing);
+    vinesPerRow = Math.floor(length / vineSpacing);
+    rowLength = length;
+  } else {
+    numberOfRows = Math.floor(length / rowSpacing);
+    vinesPerRow = Math.floor(width / vineSpacing);
+    rowLength = width;
+  }
 
   const totalVines = numberOfRows * vinesPerRow;
-  
-  // Calculate material requirements based on orientation
-  const rowLength = orientation === "vertical" ? length : width;
-  const materials = calculateMaterials(numberOfRows, vinesPerRow, rowLength, rowSpacingFeet, shape);
-  
+  const materials = calculateMaterials(numberOfRows, vinesPerRow, rowLength, rowSpacing);
+
   return {
-    dimensions: { width, length, totalSqft },
+    dimensions: { width, length, acres },
     vineLayout: {
       numberOfRows,
       vinesPerRow,
@@ -106,40 +131,31 @@ export const calculateVineyardLayout = (acres, vineSpacing, rowSpacing, shape = 
       vinesPerAcre: acres > 0 ? (totalVines / acres) : 0
     },
     materials,
-    spacing: { vine: vineSpacingFeet, row: rowSpacingFeet },
-    orientation
+    spacing: { vine: vineSpacing, row: rowSpacing },
+    orientation,
+    polygonPath
   };
 };
 
-const calculateMaterials = (rows, vinesPerRow, length, rowSpacing, shape) => {
-  // Posts: End posts (2 per row) + Middle posts (every 20-24 feet)
-const LINE_POST_SPACING_FT = 20;           // unify spacing used everywhere
-const endPosts = rows * 2;
-const postSpacing = LINE_POST_SPACING_FT;  // feet between line posts
-const linePostsPerRow = Math.max(0, Math.floor(length / postSpacing) - 1);
-const linePosts = rows * linePostsPerRow;
-const totalPosts = endPosts + linePosts;
-  
-  // Earth anchors (typically 1 per row end, so 2 per row)
+const calculateMaterials = (rows, vinesPerRow, length, rowSpacing) => {
+  const LINE_POST_SPACING_FT = 20;
+  const endPosts = rows * 2;
+  const linePostsPerRow = Math.max(0, Math.floor(length / LINE_POST_SPACING_FT) - 1);
+  const linePosts = rows * linePostsPerRow;
+  const totalPosts = endPosts + linePosts;
+
   const earthAnchors = rows * 2;
-  
-  // Wire: 3 wires per row (typical trellis system)
   const wiresPerRow = 3;
-  const wireLength = rows * length * wiresPerRow; // feet
-  
-  // Drip irrigation: 1 line per row
-  const dripTubingLength = rows * length; // feet
-  const dripEmitters = vinesPerRow * rows; // 1 per vine
-  
-  // Hardware estimates
-  const wireClips = totalPosts * wiresPerRow * 2; // 2 clips per wire per post
-  const eyeBolts = endPosts * wiresPerRow; // eye bolts for end posts
-  const staples = linePosts * wiresPerRow * 2; // staples for line posts
-  
-  // Trellis hardware
-  const tensioners = rows * wiresPerRow; // 1 per wire per row
+  const wireLength = rows * length * wiresPerRow;
+  const dripTubingLength = rows * length;
+  const dripEmitters = vinesPerRow * rows;
+
+  const wireClips = totalPosts * wiresPerRow * 2;
+  const eyeBolts = endPosts * wiresPerRow;
+  const staples = linePosts * wiresPerRow * 2;
+  const tensioners = rows * wiresPerRow;
   const anchorRings = earthAnchors;
-  
+
   return {
     posts: {
       endPosts,
@@ -175,22 +191,22 @@ const totalPosts = endPosts + linePosts;
 // Cost estimation based on materials
 export const calculateMaterialCosts = (materials, customPrices = {}) => {
   const defaultPrices = {
-    endPost: 25,        // $ per post (treated wood)
-    linePost: 15,       // $ per post
-    earthAnchor: 45,    // $ per anchor
-    wirePerFoot: 0.75,  // $ per foot
-    dripTubingPerFoot: 0.35, // $ per foot
-    emitter: 1.20,      // $ per emitter
-    wireClip: 0.15,     // $ per clip
-    eyeBolt: 2.50,      // $ per bolt
-    staple: 0.05,       // $ per staple
-    tensioner: 8.00,    // $ per tensioner
+    endPost: 25,
+    linePost: 15,
+    earthAnchor: 45,
+    wirePerFoot: 0.75,
+    dripTubingPerFoot: 0.35,
+    emitter: 1.20,
+    wireClip: 0.15,
+    eyeBolt: 2.50,
+    staple: 0.05,
+    tensioner: 8.00,
     anchorRing: 3.50,
     ...customPrices
   };
-  
+
   return {
-    posts: (materials.posts.endPosts * defaultPrices.endPost) + 
+    posts: (materials.posts.endPosts * defaultPrices.endPost) +
            (materials.posts.linePosts * defaultPrices.linePost),
     earthAnchors: materials.earthAnchors.count * defaultPrices.earthAnchor,
     wire: materials.wire.totalFeet * defaultPrices.wirePerFoot,
@@ -204,372 +220,367 @@ export const calculateMaterialCosts = (materials, customPrices = {}) => {
   };
 };
 
-// Custom vine node component
-const VineNode = ({ data }) => {
-  const { spacing, isEndPost, isVine, rowNumber, vineNumber } = data;
-  
-  if (isEndPost) {
-    return (
-      <div className="vine-post">
-        <div 
-          className="w-2 h-8 bg-amber-700 rounded-sm shadow-sm"
-          title={`End post - Row ${rowNumber}`}
-        />
-      </div>
-    );
-  }
-  
-  if (isVine) {
-    return (
-      <div className="vine-plant">
-        <div 
-          className="w-3 h-3 bg-green-600 rounded-full shadow-sm border border-green-700"
-          title={`Vine ${vineNumber} - Row ${rowNumber}`}
-        />
-      </div>
-    );
-  }
-  
-  return null;
-};
+// Google Maps Vineyard Visualizer Component
+export const VineyardLayoutVisualizer = ({ layout, acres, orientation, polygonPath, vineSpacing, rowSpacing, onPolygonChange }) => {
+  const mapRef = useRef(null);
+  const [drawingMode, setDrawingMode] = useState(false);
+  const [tempPath, setTempPath] = useState([]);
+  const [rows, setRows] = useState([]);
 
-// Custom trellis wire edge component
-const TrellisWire = ({ 
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  style = {},
-  data,
-}) => {
-  const edgePath = `M${sourceX},${sourceY}L${targetX},${targetY}`;
-  
-  return (
-    <>
-      <path
-        id={id}
-        style={{ ...style, strokeWidth: 2, stroke: '#8B4513' }}
-        className="react-flow__edge-path"
-        d={edgePath}
-      />
-    </>
-  );
-};
+  const mapOptions = {
+    mapTypeId: 'satellite',
+    mapTypeControl: true,
+    streetViewControl: false,
+    fullscreenControl: true,
+    zoomControl: true,
+  };
 
-const nodeTypes = {
-  vine: VineNode,
-};
+  // Calculate row lines when polygon or spacing changes
+  useEffect(() => {
+    if (!polygonPath || polygonPath.length < 3 || !layout) return;
 
-const edgeTypes = {
-  trellis: TrellisWire,
-};
+    const newRows = generateRowLines(polygonPath, layout.vineLayout.numberOfRows, rowSpacing, orientation);
+    setRows(newRows);
+  }, [polygonPath, layout, rowSpacing, orientation]);
 
-// VINEYARD LAYOUT VISUALIZER — accurate 20ft line posts + true-scale spacing
-export const VineyardLayoutVisualizer = ({ layout, acres, orientation = "horizontal" }) => {
-  if (!layout) {
+  const handleMapClick = (e) => {
+    if (!drawingMode) return;
+
+    const newPoint = {
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng()
+    };
+
+    const newPath = [...tempPath, newPoint];
+
+    // Check if clicked near first point to close polygon
+    if (tempPath.length >= 3) {
+      const firstPoint = tempPath[0];
+      const distance = calculateDistance(newPoint, firstPoint);
+
+      if (distance < 50) { // Within 50 feet of first point
+        onPolygonChange(tempPath);
+        setTempPath([]);
+        setDrawingMode(false);
+        return;
+      }
+    }
+
+    setTempPath(newPath);
+  };
+
+  const handleStartDrawing = () => {
+    setDrawingMode(true);
+    setTempPath([]);
+  };
+
+  const handleClearPolygon = () => {
+    onPolygonChange([]);
+    setTempPath([]);
+    setDrawingMode(false);
+  };
+
+  const handleCancelDrawing = () => {
+    setTempPath([]);
+    setDrawingMode(false);
+  };
+
+  if (!polygonPath || polygonPath.length === 0) {
     return (
       <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-8 rounded-xl border-2 border-green-200 shadow-lg">
         <div className="text-center">
-          <div className="text-6xl mb-4">🍇</div>
-          <p className="text-gray-600 text-lg">Configure your vineyard layout to see visualization</p>
-          <p className="text-gray-500 text-sm mt-2">Set acreage and spacing to begin planning</p>
+          <MapPin className="w-16 h-16 mx-auto mb-4 text-green-600" />
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Map Your Vineyard</h3>
+          <p className="text-gray-600 mb-4">Click points on the map to outline your vineyard boundary</p>
+          <button
+            onClick={handleStartDrawing}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
+          >
+            Start Drawing Boundary
+          </button>
         </div>
       </div>
     );
   }
 
-  const { dimensions, vineLayout, spacing } = layout; // dimensions.width/length are in FEET
-
-  // Scene scale: convert feet -> pixels so the whole parcel fits
-  const maxWidthPx = 1200;
-  const maxHeightPx = 800;
-  const scale = Math.min(maxWidthPx / dimensions.width, maxHeightPx / dimensions.length); // px/ft
-
-  const scaledWidth = dimensions.width * scale;   // px
-  const scaledHeight = dimensions.length * scale; // px
-  const padding = 80;                              // px frame padding
-
-  // -------- spacing between rows / vines (no clamps) --------
-  // Use "fit-first" but without caps, so the drawing matches the true ratio.
-  let rowCenterSpacingPx;     // distance between row centers (px)
-  let vineCenterSpacingPx;    // distance between vine centers within a row (px)
-
-  if (orientation === "vertical") {
-    // rows across width, vines go down the length
-    rowCenterSpacingPx  = scaledWidth  / Math.max(1, vineLayout.numberOfRows);
-    vineCenterSpacingPx = scaledHeight / Math.max(1, vineLayout.vinesPerRow);
-  } else {
-    // rows down the length, vines go across the width
-    rowCenterSpacingPx  = scaledHeight / Math.max(1, vineLayout.numberOfRows);
-    vineCenterSpacingPx = scaledWidth  / Math.max(1, vineLayout.vinesPerRow);
-  }
-
-  // ---------- <defs> ----------
-  const defs = (
-    <defs>
-      <linearGradient id="groundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#f0fdf4" />
-        <stop offset="50%" stopColor="#dcfce7" />
-        <stop offset="100%" stopColor="#bbf7d0" />
-      </linearGradient>
-      <linearGradient id="boundaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#16a34a" stopOpacity="0.8" />
-        <stop offset="100%" stopColor="#15803d" stopOpacity="0.9" />
-      </linearGradient>
-      <linearGradient id="postGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#d2691e" />
-        <stop offset="50%" stopColor="#8b4513" />
-        <stop offset="100%" stopColor="#654321" />
-      </linearGradient>
-      <radialGradient id="vineGradient" cx="50%" cy="30%">
-        <stop offset="0%" stopColor="#22c55e" />
-        <stop offset="70%" stopColor="#16a34a" />
-        <stop offset="100%" stopColor="#15803d" />
-      </radialGradient>
-      <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#8b4513" stopOpacity="0.9" />
-        <stop offset="50%" stopColor="#a0522d" stopOpacity="1" />
-        <stop offset="100%" stopColor="#8b4513" stopOpacity="0.9" />
-      </linearGradient>
-      <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="1" dy="2" stdDeviation="1" floodColor="rgba(0,0,0,0.2)" />
-      </filter>
-
-      {/* patterns sized by current (true-scale) spacing */}
-      <pattern id="vineRowPattern" patternUnits="userSpaceOnUse" width={vineCenterSpacingPx} height="20">
-        <circle cx={vineCenterSpacingPx/2} cy="10" r="3.5" fill="url(#vineGradient)" />
-        <circle cx={vineCenterSpacingPx/2 - 1} cy="8" r="2" fill="#22c55e" opacity="0.8" />
-        <circle cx={vineCenterSpacingPx/2 + 1} cy="8" r="2" fill="#16a34a" opacity="0.7" />
-        <circle cx={vineCenterSpacingPx/2 - 0.5} cy="8.5" r="1.2" fill="rgba(255,255,255,0.4)" />
-      </pattern>
-
-      <pattern id="verticalVinePattern" patternUnits="userSpaceOnUse" width="20" height={vineCenterSpacingPx}>
-        <circle cx="10" cy={vineCenterSpacingPx/2} r="3.5" fill="url(#vineGradient)" />
-        <circle cx="8" cy={vineCenterSpacingPx/2 - 1} r="2" fill="#22c55e" opacity="0.8" />
-        <circle cx="8" cy={vineCenterSpacingPx/2 + 1} r="2" fill="#16a34a" opacity="0.7" />
-        <circle cx="8.5" cy={vineCenterSpacingPx/2 - 0.5} r="1.2" fill="rgba(255,255,255,0.4)" />
-      </pattern>
-
-      <clipPath id="vineyardClip">
-        <rect x={padding} y={padding} width={scaledWidth} height={scaledHeight} rx="8" />
-      </clipPath>
-    </defs>
-  );
+  // Calculate center of polygon for map centering
+  const center = polygonPath.length > 0
+    ? {
+        lat: polygonPath.reduce((sum, p) => sum + p.lat, 0) / polygonPath.length,
+        lng: polygonPath.reduce((sum, p) => sum + p.lng, 0) / polygonPath.length
+      }
+    : DEFAULT_CENTER;
 
   return (
-    <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 p-6 rounded-xl border-2 border-green-200 shadow-xl">
-      <div className="mb-6">
-        <h4 className="text-2xl font-bold text-green-800 mb-3 flex items-center gap-2">🍇 Vineyard Layout Visualization</h4>
-        <div className="flex flex-wrap gap-6 text-sm text-gray-700 bg-white/50 p-3 rounded-lg backdrop-blur-sm">
-          <div className="flex items-center gap-2"><span className="text-blue-600">📐</span><span className="font-medium">{Math.round(dimensions.width)}' × {Math.round(dimensions.length)}'</span></div>
-          <div className="flex items-center gap-2"><span className="text-green-600">🍇</span><span className="font-medium">{vineLayout.totalVines.toLocaleString()} vines</span></div>
-          <div className="flex items-center gap-2"><span className="text-purple-600">📏</span><span className="font-medium">{spacing.vine}' × {spacing.row}' spacing</span></div>
-          <div className="flex items-center gap-2"><span className="text-amber-600">🚜</span><span className="font-medium">{vineLayout.numberOfRows} rows</span></div>
-          <div className="flex items-center gap-2"><span className="text-emerald-600">📊</span><span className="font-medium">{Math.round(vineLayout.vinesPerAcre)} vines/acre</span></div>
-        </div>
+    <div className="space-y-4">
+      {/* Map Controls */}
+      <div className="flex gap-3">
+        <button
+          onClick={handleStartDrawing}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <Edit3 className="w-4 h-4" />
+          Redraw Boundary
+        </button>
+        <button
+          onClick={handleClearPolygon}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+        >
+          <Trash2 className="w-4 h-4" />
+          Clear
+        </button>
+        {drawingMode && (
+          <button
+            onClick={handleCancelDrawing}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+        )}
       </div>
 
-      <div className="bg-white/70 p-4 rounded-xl shadow-inner backdrop-blur-sm border border-green-200/50">
-        <svg
-          width="100%"
-          height="900"
-          viewBox={`0 0 ${Math.max(1200, scaledWidth + padding * 2)} ${Math.max(950, scaledHeight + padding * 2)}`}
-          className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-lg"
-          style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}
+      {/* Drawing Instructions */}
+      {drawingMode && (
+        <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+          <p className="font-medium text-blue-900">
+            Click on the map to add points. Click near the first point to complete the polygon.
+          </p>
+          <p className="text-sm text-blue-700 mt-1">
+            Points placed: {tempPath.length}
+          </p>
+        </div>
+      )}
+
+      {/* Layout Stats */}
+      {layout && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div className="bg-green-50 p-3 rounded-lg">
+            <div className="font-semibold text-green-700">Acreage</div>
+            <div className="text-2xl font-bold text-green-900">{layout.dimensions.acres.toFixed(2)}</div>
+          </div>
+          <div className="bg-purple-50 p-3 rounded-lg">
+            <div className="font-semibold text-purple-700">Total Vines</div>
+            <div className="text-2xl font-bold text-purple-900">{layout.vineLayout.totalVines.toLocaleString()}</div>
+          </div>
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <div className="font-semibold text-blue-700">Rows</div>
+            <div className="text-2xl font-bold text-blue-900">{layout.vineLayout.numberOfRows}</div>
+          </div>
+          <div className="bg-amber-50 p-3 rounded-lg">
+            <div className="font-semibold text-amber-700">Vines/Acre</div>
+            <div className="text-2xl font-bold text-amber-900">{Math.round(layout.vineLayout.vinesPerAcre)}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Google Map */}
+      <div className="h-[600px] rounded-xl overflow-hidden shadow-lg border-2 border-gray-200">
+        <GoogleMap
+          mapContainerStyle={{ width: '100%', height: '100%' }}
+          center={center}
+          zoom={17}
+          options={mapOptions}
+          onClick={handleMapClick}
+          onLoad={(map) => { mapRef.current = map; }}
         >
-          {defs}
+          {/* Main Polygon */}
+          {polygonPath.length >= 3 && (
+            <Polygon
+              paths={polygonPath}
+              options={{
+                fillColor: '#10b981',
+                fillOpacity: 0.2,
+                strokeColor: '#059669',
+                strokeOpacity: 0.8,
+                strokeWeight: 3,
+              }}
+            />
+          )}
 
-          <rect width="100%" height="100%" fill="url(#groundGradient)" />
+          {/* Temporary drawing path */}
+          {tempPath.length > 0 && (
+            <>
+              <Polyline
+                path={tempPath}
+                options={{
+                  strokeColor: '#3b82f6',
+                  strokeOpacity: 0.8,
+                  strokeWeight: 3,
+                }}
+              />
+              {tempPath.map((point, index) => (
+                <Marker
+                  key={index}
+                  position={point}
+                  icon={{
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    scale: 6,
+                    fillColor: '#3b82f6',
+                    fillOpacity: 1,
+                    strokeColor: '#fff',
+                    strokeWeight: 2,
+                  }}
+                />
+              ))}
+            </>
+          )}
 
-          {/* title bg then text */}
-          <rect x={padding + scaledWidth/2 - 60} y={padding - 45} width="120" height="20" fill="rgba(255,255,255,0.9)" rx="4" />
-          <text x={padding + scaledWidth/2} y={padding - 30} fontSize="16" fill="#065f46" fontWeight="700" textAnchor="middle" fontFamily="serif">
-            {acres} Acre Vineyard
-          </text>
-
-          {/* boundary */}
-          <rect x={padding} y={padding} width={scaledWidth} height={scaledHeight} fill="none" stroke="url(#boundaryGradient)" strokeWidth="2" rx="8" strokeDasharray="5,3" />
-
-          {/* ROWS */}
-          {Array.from({ length: vineLayout.numberOfRows }, (_, i) => {
-            let rowLengthPx, rowLengthFt, rowPosPx;
-
-            if (orientation === "vertical") {
-              // rows vertical: run along length; posts on top/bottom
-              rowLengthFt = dimensions.length;      // feet
-              rowLengthPx = scaledHeight;           // pixels
-              const x = padding + i * rowCenterSpacingPx + rowCenterSpacingPx / 2;
-              rowPosPx = { x, y: null };
-
-              // End posts
-              const start = { x: x - 4, y: padding - 25 };
-              const end   = { x: x - 4, y: padding + scaledHeight + 5 };
-
-              // Wires
-              const wire = { x1: x, y1: padding - 12, x2: x, y2: padding + scaledHeight + 12 };
-
-              // ----- MIDDLE POSTS EVERY 20 FT (by FEET) -----
-              const sections = Math.max(1, Math.floor(rowLengthFt / 20));     // 20 ft spacing
-              const linePostsCount = Math.max(0, sections - 1);
-              const segmentPx = rowLengthPx / sections;
-
-              return (
-                <g key={i}>
-                  {/* end posts */}
-                  <g transform={`translate(${start.x}, ${start.y})`}>
-                    <rect width="8" height="20" fill="url(#postGradient)" rx="2" filter="url(#dropShadow)"/>
-                    <rect x="1" y="1" width="2" height="18" fill="rgba(255,255,255,0.3)" rx="1"/>
-                  </g>
-                  <g transform={`translate(${end.x}, ${end.y})`}>
-                    <rect width="8" height="20" fill="url(#postGradient)" rx="2" filter="url(#dropShadow)"/>
-                    <rect x="1" y="1" width="2" height="18" fill="rgba(255,255,255,0.3)" rx="1"/>
-                  </g>
-
-                  {/* line posts */}
-                  {Array.from({ length: linePostsCount }, (_, p) => {
-                    const py = padding + (p + 1) * segmentPx - 6;
-                    return (
-                      <g key={p} transform={`translate(${x - 2}, ${py})`}>
-                        <rect width="4" height="12" fill="url(#postGradient)" rx="1" opacity="0.9" />
-                      </g>
-                    );
-                  })}
-
-                  {/* wires */}
-                  {[0,1,2].map(w => (
-                    <line key={w} x1={wire.x1 + w*2 - 2} y1={wire.y1} x2={wire.x2 + w*2 - 2} y2={wire.y2}
-                      stroke="url(#wireGradient)" strokeWidth="2" opacity="0.8" />
-                  ))}
-
-                  {/* vines */}
-                  <rect x={x - 10} y={padding + 1} width="20" height={scaledHeight - 2} fill="url(#verticalVinePattern)" opacity="0.9" clipPath="url(#vineyardClip)"/>
-
-                  {/* labels */}
-                  <text x={x + 3} y={padding - 30} fontSize="11" fill="#15803d" fontWeight="600">{vineLayout.vinesPerRow}</text>
-                  <text x={x} y={padding + scaledHeight + 35} fontSize="10" fill="#6b7280" fontWeight="500" textAnchor="middle">{i + 1}</text>
-                </g>
-              );
-            }
-
-            // HORIZONTAL ROWS: run across width; posts left/right
-            rowLengthFt = dimensions.width;   // feet
-            rowLengthPx = scaledWidth;        // pixels
-            const y = padding + i * rowCenterSpacingPx + rowCenterSpacingPx / 2;
-            rowPosPx = { x: null, y };
-
-            const start = { x: padding - 25, y: y - 10 };
-            const end   = { x: padding + scaledWidth + 5, y: y - 10 };
-            const wire  = { x1: padding - 12, y1: y, x2: padding + scaledWidth + 12, y2: y };
-
-            // ----- MIDDLE POSTS EVERY 20 FT (by FEET) -----
-            const sections = Math.max(1, Math.floor(rowLengthFt / 20));  // 20 ft spacing
-            const linePostsCount = Math.max(0, sections - 1);
-            const segmentPx = rowLengthPx / sections;
-
-            return (
-              <g key={i}>
-                {/* end posts */}
-                <g transform={`translate(${start.x}, ${start.y})`}>
-                  <rect width="8" height="20" fill="url(#postGradient)" rx="2" filter="url(#dropShadow)"/>
-                  <rect x="1" y="1" width="2" height="18" fill="rgba(255,255,255,0.3)" rx="1"/>
-                </g>
-                <g transform={`translate(${end.x}, ${end.y})`}>
-                  <rect width="8" height="20" fill="url(#postGradient)" rx="2" filter="url(#dropShadow)"/>
-                  <rect x="1" y="1" width="2" height="18" fill="rgba(255,255,255,0.3)" rx="1"/>
-                </g>
-
-                {/* line posts */}
-                {Array.from({ length: linePostsCount }, (_, p) => {
-                  const px = padding + (p + 1) * segmentPx - 2;
-                  return (
-                    <g key={p} transform={`translate(${px}, ${y - 6})`}>
-                      <rect width="4" height="12" fill="url(#postGradient)" rx="1" opacity="0.9" />
-                    </g>
-                  );
-                })}
-
-                {/* wires */}
-                {[0,1,2].map(w => (
-                  <line key={w} x1={wire.x1} y1={wire.y1 + w*2 - 2} x2={wire.x2} y2={wire.y2 + w*2 - 2}
-                    stroke="url(#wireGradient)" strokeWidth="2" opacity="0.8" />
-                ))}
-
-                {/* vines */}
-                <rect x={padding + 1} y={y - 10} width={scaledWidth - 2} height="20" fill="url(#vineRowPattern)" opacity="0.9" clipPath="url(#vineyardClip)"/>
-
-                {/* labels */}
-                <text x={padding + scaledWidth + 10} y={y + 3} fontSize="11" fill="#15803d" fontWeight="600">
-                  {vineLayout.vinesPerRow} vines
-                </text>
-                <text x={padding - 35} y={y + 3} fontSize="10" fill="#6b7280" fontWeight="500" textAnchor="middle">
-                  {i + 1}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* bottom width scale */}
-          <g transform={`translate(${padding}, ${padding + scaledHeight + 45})`}>
-            <line x1="0" y1="0" x2={scaledWidth} y2="0" stroke="#374151" strokeWidth="1" />
-            <line x1="0" y1="-3" x2="0" y2="3" stroke="#374151" strokeWidth="1" />
-            <line x1={scaledWidth} y1="-3" x2={scaledWidth} y2="3" stroke="#374151" strokeWidth="1" />
-            <text x={scaledWidth / 2} y="15" fontSize="12" fill="#374151" fontWeight="600" textAnchor="middle">
-              {Math.round(dimensions.width)}'
-            </text>
-          </g>
-        </svg>
+          {/* Row Lines */}
+          {rows.map((row, index) => (
+            <React.Fragment key={`row-${index}`}>
+              <Polyline
+                path={row.path}
+                options={{
+                  strokeColor: '#8b4513',
+                  strokeOpacity: 0.7,
+                  strokeWeight: 2,
+                }}
+              />
+              {/* End posts */}
+              <Marker
+                position={row.path[0]}
+                icon={{
+                  path: window.google.maps.SymbolPath.CIRCLE,
+                  scale: 5,
+                  fillColor: '#d2691e',
+                  fillOpacity: 1,
+                  strokeColor: '#fff',
+                  strokeWeight: 1,
+                }}
+              />
+              <Marker
+                position={row.path[1]}
+                icon={{
+                  path: window.google.maps.SymbolPath.CIRCLE,
+                  scale: 5,
+                  fillColor: '#d2691e',
+                  fillOpacity: 1,
+                  strokeColor: '#fff',
+                  strokeWeight: 1,
+                }}
+              />
+              {/* Line posts every 20 feet */}
+              {row.linePosts.map((post, postIndex) => (
+                <Marker
+                  key={`post-${index}-${postIndex}`}
+                  position={post}
+                  icon={{
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    scale: 3,
+                    fillColor: '#8b4513',
+                    fillOpacity: 0.8,
+                    strokeColor: '#fff',
+                    strokeWeight: 1,
+                  }}
+                />
+              ))}
+            </React.Fragment>
+          ))}
+        </GoogleMap>
       </div>
 
       {/* Legend */}
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
-          <div className="w-4 h-4 bg-gradient-to-br from-green-400 to-green-600 rounded-full shadow-sm"></div>
-          <span className="font-medium text-gray-700">Vine Plants</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <div className="flex items-center gap-2 bg-white p-2 rounded border">
+          <div className="w-4 h-4 bg-green-500 opacity-40 border-2 border-green-700 rounded"></div>
+          <span>Vineyard Boundary</span>
         </div>
-        <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
-          <div className="w-3 h-6 bg-gradient-to-br from-amber-600 to-amber-800 rounded-sm shadow-sm"></div>
-          <span className="font-medium text-gray-700">Posts</span>
+        <div className="flex items-center gap-2 bg-white p-2 rounded border">
+          <div className="w-8 h-1 bg-amber-700"></div>
+          <span>Trellis Rows</span>
         </div>
-        <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
-          <div className="w-8 h-1 bg-gradient-to-r from-amber-700 to-amber-600 rounded-full shadow-sm"></div>
-          <span className="font-medium text-gray-700">Trellis Wire</span>
+        <div className="flex items-center gap-2 bg-white p-2 rounded border">
+          <div className="w-3 h-3 bg-amber-700 rounded-full"></div>
+          <span>End Posts</span>
         </div>
-        <div className="flex items-center gap-3 bg-white/60 p-3 rounded-lg backdrop-blur-sm">
-          <div className="w-4 h-4 border-2 border-green-500 rounded bg-green-100"></div>
-          <span className="font-medium text-gray-700">Vineyard Boundary</span>
+        <div className="flex items-center gap-2 bg-white p-2 rounded border">
+          <div className="w-2 h-2 bg-amber-800 rounded-full"></div>
+          <span>Line Posts (20')</span>
         </div>
       </div>
     </div>
   );
 };
 
+// Generate row lines based on polygon and spacing
+const generateRowLines = (polygonPath, numberOfRows, rowSpacing, orientation) => {
+  if (!polygonPath || polygonPath.length < 3 || !window.google) return [];
 
-// Main component for vineyard layout configuration
+  // Find bounding box
+  const lats = polygonPath.map(p => p.lat);
+  const lngs = polygonPath.map(p => p.lng);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+
+  const rows = [];
+  const LINE_POST_SPACING_FT = 20;
+
+  // Convert row spacing from feet to approximate degrees
+  // At this latitude, approximately 1 degree lat = 364,000 feet
+  // 1 degree lng varies by latitude, approximately 300,000 feet at 30° lat
+  const latDegPerFoot = 1 / 364000;
+  const lngDegPerFoot = 1 / 300000;
+
+  for (let i = 0; i < numberOfRows; i++) {
+    let start, end;
+
+    if (orientation === "vertical") {
+      // Rows run north-south
+      const lngOffset = minLng + (i * rowSpacing * lngDegPerFoot);
+      start = { lat: minLat, lng: lngOffset };
+      end = { lat: maxLat, lng: lngOffset };
+    } else {
+      // Rows run east-west
+      const latOffset = minLat + (i * rowSpacing * latDegPerFoot);
+      start = { lat: latOffset, lng: minLng };
+      end = { lat: latOffset, lng: maxLng };
+    }
+
+    // Calculate line posts along the row
+    const rowLength = calculateDistance(start, end);
+    const numLinePosts = Math.floor(rowLength / LINE_POST_SPACING_FT) - 1;
+    const linePosts = [];
+
+    for (let j = 1; j <= numLinePosts; j++) {
+      const fraction = j / (numLinePosts + 1);
+      linePosts.push({
+        lat: start.lat + (end.lat - start.lat) * fraction,
+        lng: start.lng + (end.lng - start.lng) * fraction
+      });
+    }
+
+    rows.push({
+      path: [start, end],
+      linePosts
+    });
+  }
+
+  return rows;
+};
+
 // Main component for vineyard layout configuration
 export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onAcresChange }) => {
   const [spacingOption, setSpacingOption] = useState("6x10");
   const [customVineSpacing, setCustomVineSpacing] = useState(6);
   const [customRowSpacing, setCustomRowSpacing] = useState(10);
-  const [shape, setShape] = useState("rectangle");
-  const [aspectRatio, setAspectRatio] = useState(2);
   const [rowOrientation, setRowOrientation] = useState("horizontal");
   const [trellisSystem, setTrellisSystem] = useState("VSP");
+  const [polygonPath, setPolygonPath] = useState([]);
 
   const selectedSpacing = VINE_SPACING_OPTIONS.find(opt => opt.key === spacingOption);
   const isCustom = spacingOption === "custom";
-  
+
   const vineSpacing = isCustom ? customVineSpacing : selectedSpacing.vine;
   const rowSpacing = isCustom ? customRowSpacing : selectedSpacing.row;
-  
+
   const layout = useMemo(() => {
-    if (acres > 0 && vineSpacing > 0 && rowSpacing > 0) {
-      return calculateVineyardLayout(acres, vineSpacing, rowSpacing, shape, aspectRatio, rowOrientation);
+    if (polygonPath.length >= 3 && vineSpacing > 0 && rowSpacing > 0) {
+      return calculateVineyardLayout(polygonPath, vineSpacing, rowSpacing, rowOrientation);
     }
     return null;
-  }, [acres, vineSpacing, rowSpacing, shape, aspectRatio, rowOrientation]); 
+  }, [polygonPath, vineSpacing, rowSpacing, rowOrientation]);
 
   const materialCosts = useMemo(() => {
     if (layout) {
@@ -577,39 +588,30 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
     }
     return null;
   }, [layout]);
-  
+
+  // Update acres when polygon changes
+  useEffect(() => {
+    if (layout && onAcresChange) {
+      onAcresChange(layout.dimensions.acres.toFixed(2));
+    }
+  }, [layout, onAcresChange]);
+
   // Notify parent component of layout changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (layout && materialCosts && onLayoutChange) {
       onLayoutChange(layout, materialCosts);
     }
   }, [layout, materialCosts, onLayoutChange]);
-  
+
   return (
-    <div className="space-y-6">
-      {/* Basic Parameters & Variety Mix - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* LEFT COLUMN - Basic Parameters */}
+    <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={LIBRARIES}>
+      <div className="space-y-6">
+        {/* Basic Parameters */}
         <Card className="shadow-lg">
           <CardContent className="p-8">
-            <h3 className="text-xl font-semibold text-blue-600 mb-6">Basic Parameters</h3>
-            
-            <div className="space-y-6">
-              {/* Total Acres */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Total Acres
-                </label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={acres}
-                  onChange={(e) => onAcresChange && onAcresChange(e.target.value)}
-                  className="text-lg"
-                />
-              </div>
+            <h3 className="text-xl font-semibold text-blue-600 mb-6">Vineyard Configuration</h3>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Row Spacing */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -675,141 +677,92 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                   onChange={(e) => setRowOrientation(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md text-lg"
                 >
-                  <option value="horizontal">Horizontal (posts on short sides)</option>
-                  <option value="vertical">Vertical (posts on long sides)</option>
+                  <option value="horizontal">Horizontal (East-West)</option>
+                  <option value="vertical">Vertical (North-South)</option>
                 </select>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* RIGHT COLUMN - Variety Mix */}
-        <Card className="shadow-lg bg-gray-50">
-          <CardContent className="p-8">
-            <h3 className="text-xl font-semibold text-blue-600 mb-6">Variety Mix</h3>
-            <p className="text-gray-500 text-center py-12">
-              Coming Soon: Allocate percentages for each grape variety (must total 100%)
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+        {/* Map Visualization */}
+        <CollapsibleSection title="Vineyard Map & Boundary" defaultOpen={true}>
+          <VineyardLayoutVisualizer
+            layout={layout}
+            acres={acres}
+            orientation={rowOrientation}
+            polygonPath={polygonPath}
+            vineSpacing={vineSpacing}
+            rowSpacing={rowSpacing}
+            onPolygonChange={setPolygonPath}
+          />
+        </CollapsibleSection>
 
-      {/* Layout Statistics - Full Width Below */}
-      {layout && (
-        <div>
-          <h3 className="text-xl font-semibold text-blue-600 mb-4">Layout Statistics</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-blue-50 rounded-xl p-6 text-center shadow-sm">
-              <div className="text-4xl font-bold text-blue-600 mb-2">
-                {layout.vineLayout.totalVines.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">Total Vines</div>
+        {/* Material Costs */}
+        {layout && materialCosts && (
+          <CollapsibleSection title="Material Cost Summary" defaultOpen={true}>
+            <MaterialCostsVisualizer materialCosts={materialCosts} layout={layout} />
+          </CollapsibleSection>
+        )}
+
+        {/* Detailed Material Requirements */}
+        {layout && materialCosts && (
+          <CollapsibleSection title="Detailed Material Requirements" defaultOpen={false}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-blue-50">
+                    <th className="text-left p-3 font-medium text-blue-800">Category</th>
+                    <th className="text-left p-3 font-medium text-blue-800">Quantity</th>
+                    <th className="text-right p-3 font-medium text-blue-800">Est. Cost</th>
+                    <th className="text-left p-3 font-medium text-blue-800">Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  <tr>
+                    <td className="p-3 font-medium">Posts</td>
+                    <td className="p-3">{layout.materials.posts.total} total</td>
+                    <td className="p-3 text-right">${materialCosts.posts.toLocaleString()}</td>
+                    <td className="p-3">{layout.materials.posts.description}</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-medium">Earth Anchors</td>
+                    <td className="p-3">{layout.materials.earthAnchors.count}</td>
+                    <td className="p-3 text-right">${materialCosts.earthAnchors.toLocaleString()}</td>
+                    <td className="p-3">{layout.materials.earthAnchors.description}</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-medium">Trellis Wire</td>
+                    <td className="p-3">{layout.materials.wire.totalFeet.toLocaleString()} ft</td>
+                    <td className="p-3 text-right">${materialCosts.wire.toLocaleString()}</td>
+                    <td className="p-3">{layout.materials.wire.gaugeRecommended}</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-medium">Drip Irrigation</td>
+                    <td className="p-3">{layout.materials.irrigation.dripTubing.toLocaleString()} ft + {layout.materials.irrigation.emitters} emitters</td>
+                    <td className="p-3 text-right">${materialCosts.irrigation.toLocaleString()}</td>
+                    <td className="p-3">Tubing + emitters</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-medium">Hardware</td>
+                    <td className="p-3">Various</td>
+                    <td className="p-3 text-right">${materialCosts.hardware.toLocaleString()}</td>
+                    <td className="p-3">{layout.materials.hardware.description}</td>
+                  </tr>
+                  <tr className="bg-blue-50 font-semibold">
+                    <td className="p-3">Total Materials</td>
+                    <td className="p-3">-</td>
+                    <td className="p-3 text-right">
+                      ${Object.values(materialCosts).reduce((sum, cost) => sum + cost, 0).toLocaleString()}
+                    </td>
+                    <td className="p-3">Trellis & irrigation materials</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div className="bg-purple-50 rounded-xl p-6 text-center shadow-sm">
-              <div className="text-4xl font-bold text-purple-600 mb-2">
-                {Math.round(layout.vineLayout.vinesPerAcre)}
-              </div>
-              <div className="text-sm text-gray-600">Vines/Acre</div>
-            </div>
-            <div className="bg-gray-100 rounded-xl p-6 text-center shadow-sm">
-              <div className="text-4xl font-bold text-gray-700 mb-2">
-                {layout.vineLayout.numberOfRows}
-              </div>
-              <div className="text-sm text-gray-600">Rows</div>
-            </div>
-            <div className="bg-amber-50 rounded-xl p-6 text-center shadow-sm">
-              <div className="text-4xl font-bold text-amber-600 mb-2">
-                {Math.round(layout.orientation === "vertical" ? layout.dimensions.length : layout.dimensions.width)}'
-              </div>
-              <div className="text-sm text-gray-600">Row Length</div>
-            </div>
-            <div className="bg-green-50 rounded-xl p-6 text-center shadow-sm">
-              <div className="text-4xl font-bold text-green-600 mb-2">
-                {(acres * 3.5).toFixed(1)}
-              </div>
-              <div className="text-sm text-gray-600">Estimated Tons</div>
-            </div>
-            <div className="bg-blue-100 rounded-xl p-6 text-center shadow-sm">
-              <div className="text-4xl font-bold text-blue-700 mb-2">
-                {(acres * 3.5 * 756).toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">Bottles (750ml)</div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Layout Visualization */}
-      {layout && (
-        <CollapsibleSection title="Vineyard Layout Visualization" defaultOpen={true}>
-          <VineyardLayoutVisualizer layout={layout} acres={acres} orientation={rowOrientation} />
-        </CollapsibleSection>
-      )}
-      
-      {/* Enhanced Material Costs */}
-      {layout && materialCosts && (
-        <CollapsibleSection title="Material Cost Summary" defaultOpen={true}>
-          <MaterialCostsVisualizer materialCosts={materialCosts} layout={layout} />
-        </CollapsibleSection>
-      )}
-      
-      {/* Detailed Material Requirements */}
-      {layout && materialCosts && (
-        <CollapsibleSection title="Detailed Material Requirements" defaultOpen={false}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-blue-50">
-                  <th className="text-left p-3 font-medium text-blue-800">Category</th>
-                  <th className="text-left p-3 font-medium text-blue-800">Quantity</th>
-                  <th className="text-right p-3 font-medium text-blue-800">Est. Cost</th>
-                  <th className="text-left p-3 font-medium text-blue-800">Notes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                <tr>
-                  <td className="p-3 font-medium">Posts</td>
-                  <td className="p-3">{layout.materials.posts.total} total</td>
-                  <td className="p-3 text-right">${materialCosts.posts.toLocaleString()}</td>
-                  <td className="p-3">{layout.materials.posts.description}</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-medium">Earth Anchors</td>
-                  <td className="p-3">{layout.materials.earthAnchors.count}</td>
-                  <td className="p-3 text-right">${materialCosts.earthAnchors.toLocaleString()}</td>
-                  <td className="p-3">{layout.materials.earthAnchors.description}</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-medium">Trellis Wire</td>
-                  <td className="p-3">{layout.materials.wire.totalFeet.toLocaleString()} ft</td>
-                  <td className="p-3 text-right">${materialCosts.wire.toLocaleString()}</td>
-                  <td className="p-3">{layout.materials.wire.gaugeRecommended}</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-medium">Drip Irrigation</td>
-                  <td className="p-3">{layout.materials.irrigation.dripTubing.toLocaleString()} ft + {layout.materials.irrigation.emitters} emitters</td>
-                  <td className="p-3 text-right">${materialCosts.irrigation.toLocaleString()}</td>
-                  <td className="p-3">Tubing + emitters</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-medium">Hardware</td>
-                  <td className="p-3">Various</td>
-                  <td className="p-3 text-right">${materialCosts.hardware.toLocaleString()}</td>
-                  <td className="p-3">{layout.materials.hardware.description}</td>
-                </tr>
-                <tr className="bg-blue-50 font-semibold">
-                  <td className="p-3">Total Materials</td>
-                  <td className="p-3">-</td>
-                  <td className="p-3 text-right">
-                    ${Object.values(materialCosts).reduce((sum, cost) => sum + cost, 0).toLocaleString()}
-                  </td>
-                  <td className="p-3">Trellis & irrigation materials</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </CollapsibleSection>
-      )}
-    </div>
+          </CollapsibleSection>
+        )}
+      </div>
+    </LoadScript>
   );
 };
