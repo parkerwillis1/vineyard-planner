@@ -517,6 +517,7 @@ export default function PlannerShell({ embedded = false }) {
   // --- Snapshot of last loaded/saved state (used to decide "dirty")
   const baselineRef = useRef(null);
 
+  const hydratingRef = useRef(false);
 
   // --- Auth context (SAFE destructure) ---
   const auth = useAuth();
@@ -527,12 +528,14 @@ export default function PlannerShell({ embedded = false }) {
     let isCancelled = false;
 
     (async () => {
+      hydratingRef.current = true;
       setLoading(true);
       const { data, error } = planId ? await loadPlan(planId) : await loadPlanner();
 
       if (error) {
         console.error('Load planner error', error);
         setLoading(false);
+        hydratingRef.current = false;
         return;
       }
 
@@ -567,6 +570,7 @@ export default function PlannerShell({ embedded = false }) {
       }
 
       setLoading(false);
+      hydratingRef.current = false;
     })();
 
     return () => {
@@ -608,7 +612,7 @@ export default function PlannerShell({ embedded = false }) {
   //     NOTE: this must come AFTER st/lastSaved/baselineRef are declared.
   useEffect(() => {
     // Don’t check during initial load/hydration
-    if (loading || !baselineRef.current) return;
+  if (hydratingRef.current || loading || !baselineRef.current) return;
 
     const snapshot = makeSnapshot({ st, projYears, taskCompletion });
     const isDirty = snapshot !== baselineRef.current;
@@ -738,7 +742,7 @@ export default function PlannerShell({ embedded = false }) {
       // Mark clean + refresh baseline so the dot disappears
       setDirty(false);
       setLastSaved(new Date());
-      baselineRef.current = JSON.stringify({ st, projYears, taskCompletion });
+      baselineRef.current = makeSnapshot({ st, projYears, taskCompletion });
 
       // Reload the plans list so header name reflects any rename
       const { data } = await listPlans();
