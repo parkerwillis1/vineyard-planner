@@ -70,23 +70,69 @@ const VOLATILE_KEYS = new Set([
   'created_at',
 ]);
 
+function diffObjects(a, b, path = '') {
+  const diffs = [];
+  const aKeys = new Set(Object.keys(a || {}));
+  const bKeys = new Set(Object.keys(b || {}));
+  for (const k of new Set([...aKeys, ...bKeys])) {
+    const p = path ? `${path}.${k}` : k;
+    const av = a?.[k];
+    const bv = b?.[k];
+    const bothObjects =
+      av && bv && typeof av === 'object' && typeof bv === 'object' &&
+      !Array.isArray(av) && !Array.isArray(bv);
+
+    if (bothObjects) {
+      diffs.push(...diffObjects(av, bv, p));
+      continue;
+    }
+
+    const same =
+      (Array.isArray(av) && Array.isArray(bv) && JSON.stringify(av) === JSON.stringify(bv)) ||
+      av === bv;
+
+    if (!same) diffs.push({ path: p, a: av, b: bv });
+  }
+  return diffs;
+}
+
+
 // Deep-clone while dropping volatile keys & functions
-function pruneVolatile(obj) {
-  return JSON.parse(
-    JSON.stringify(obj, (key, value) => {
-      if (VOLATILE_KEYS.has(key)) return undefined;
-      if (typeof value === 'function') return undefined;
-      return value;
-    })
-  );
+function pruneAndNormalize(value, key = '') {
+  if (VOLATILE_KEYS.has(key)) return undefined;
+
+  if (Array.isArray(value)) {
+    return value.map((v) => pruneAndNormalize(v));
+  }
+
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const k of Object.keys(value)) {
+      const v = pruneAndNormalize(value[k], k);
+      if (v !== undefined) out[k] = v;
+    }
+    return out;
+  }
+
+  // numeric-like string? normalize it to a number
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) {
+    const n = Number(value);
+    // only convert if it's safe/finite (avoid IDs that look numeric but overflow)
+    if (Number.isFinite(n)) return n;
+  }
+
+  // functions are never persisted
+  if (typeof value === 'function') return undefined;
+
+  return value;
 }
 
 // Produce a stable snapshot string for comparison / baseline
 function makeSnapshot({ st, projYears, taskCompletion }) {
   return JSON.stringify({
-    st: pruneVolatile(st),
-    projYears,
-    taskCompletion: pruneVolatile(taskCompletion),
+    st: pruneAndNormalize(st),
+    projYears: pruneAndNormalize(projYears),
+    taskCompletion: pruneAndNormalize(taskCompletion),
   });
 }
 
@@ -611,11 +657,23 @@ export default function PlannerShell({ embedded = false }) {
   // --- Track unsaved changes based on baseline snapshot
   //     NOTE: this must come AFTER st/lastSaved/baselineRef are declared.
   useEffect(() => {
-    // Don’t check during initial load/hydration
-  if (hydratingRef.current || loading || !baselineRef.current) return;
+    if (hydratingRef.current || loading || !baselineRef.current) return;
 
-    const snapshot = makeSnapshot({ st, projYears, taskCompletion });
-    const isDirty = snapshot !== baselineRef.current;
+    const currentStr = makeSnapshot({ st, projYears, taskCompletion });
+    const isDirty = currentStr !== baselineRef.current;
+
+    if (isDirty) {
+      // DEBUG: show exactly what's different (remove after you’re satisfied)
+      try {
+        const baseObj = JSON.parse(baselineRef.current);
+        const currObj = JSON.parse(currentStr);
+        const diffs = diffObjects(baseObj, currObj);
+        console.groupCollapsed('🔎 Dirty diffs');
+        console.table(diffs.slice(0, 20));
+        if (diffs.length > 20) console.log(`(+${diffs.length - 20} more)`);
+        console.groupEnd();
+      } catch {}
+    }
 
     setDirty(prev => (prev !== isDirty ? isDirty : prev));
   }, [st, projYears, taskCompletion, lastSaved, loading]);
