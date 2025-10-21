@@ -1,5 +1,5 @@
 // src/VineyardPlannerApp.jsx
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
@@ -144,6 +144,12 @@ const TabNav = ({
                 </option>
               ))}
             </select>
+
+            {/* NEW: always show the current plan name */}
+            <span className="text-sm text-gray-600 truncate max-w-[220px]">
+              {currentPlanName || 'Default Plan'}
+            </span>
+
             <button
               onClick={onNewPlan}
               className="px-3 py-1.5 text-sm font-medium text-vine-green-600 hover:text-vine-green-700 whitespace-nowrap"
@@ -460,8 +466,8 @@ export default function PlannerShell({ embedded = false }) {
 
 
   // --- Auth context (SAFE destructure) ---
-  const auth = useAuth();          // may be null if provider missing
-  const user = auth?.user || null; // null until signed in
+  const auth = useAuth();
+  const user = auth?.user || null;
 
   useEffect(() => {
     if (!user) return;
@@ -469,36 +475,51 @@ export default function PlannerShell({ embedded = false }) {
 
     (async () => {
       setLoading(true);
-      const { data, error } = planId
-        ? await loadPlan(planId)  
-        : await loadPlanner();
-      
+      const { data, error } = planId ? await loadPlan(planId) : await loadPlanner();
+
       if (error) {
         console.error('Load planner error', error);
         setLoading(false);
         return;
       }
-      
+
       if (data && !isCancelled) {
         if (data.st) set({ ...DEFAULT_ST, ...data.st });
         if (data.projYears) setProjYears(data.projYears);
         if (data.taskCompletion) setTaskCompletion(data.taskCompletion);
+
         setDirty(false);
         setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
+
+        // ✅ baseline after loading data
+        baselineRef.current = JSON.stringify({
+          st: data?.st ? { ...DEFAULT_ST, ...data.st } : DEFAULT_ST,
+          projYears: data?.projYears ?? 10,
+          taskCompletion: data?.taskCompletion ?? {}
+        });
+
       } else if (!isCancelled) {
-        
+        // defaults path
         setDirty(false);
-        setLastSaved(new Date()); // Mark as "saved" (defaults loaded)
+        setLastSaved(new Date());
+
+        // ✅ baseline for defaults
+        baselineRef.current = JSON.stringify({
+          st: DEFAULT_ST,
+          projYears: 10,
+          taskCompletion: {}
+        });
       }
-      
+
       setLoading(false);
     })();
 
-    return () => { 
-      isCancelled = true; 
+    return () => {
+      isCancelled = true;
       setLoading(false);
     };
   }, [user, planId]);
+
 
   // Load list of plans
   useEffect(() => {
@@ -520,117 +541,120 @@ export default function PlannerShell({ embedded = false }) {
     })();
   }, [user, planId]);
 
+    // --- Track unsaved changes ---
+    useEffect(() => {
+      if (!baselineRef.current) return; // no baseline yet
+      const snapshot = JSON.stringify({ st, projYears, taskCompletion });
+      setDirty(snapshot !== baselineRef.current);
+    }, [st, projYears, taskCompletion, lastSaved]);
+
+
+    // --- Main planner state ---
   const [st, set] = useState(DEFAULT_ST);
 
-     // --- Saving state ---
+  // --- Saving state ---
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+
+  // --- Snapshot of last loaded/saved state (used to decide "dirty")
+  const baselineRef = useRef(null);
+
+  // --- Track unsaved changes based on baseline snapshot
+  //     NOTE: this must come AFTER st/lastSaved/baselineRef are declared.
+  useEffect(() => {
+    if (!baselineRef.current) return; // no baseline yet (still loading)
+    const snapshot = JSON.stringify({ st, projYears, taskCompletion });
+    setDirty(snapshot !== baselineRef.current);
+  }, [st, projYears, taskCompletion, lastSaved]);
 
   const setWithLog = (newState) => {
     console.log('🔥 SET CALLED', new Error().stack);
     set(newState);
   };
 
-  const handlePlanChange = async (newPlanId) => {
-  console.log('🔄 handlePlanChange called:', { newPlanId, currentPlanId: planId });
-  
-  if (dirty) {
-    // eslint-disable-next-line no-restricted-globals
-    if (!window.confirm('You have unsaved changes. Switch plans anyway?')) {
-      return;
-    }
-  }
-  
-  try {
-    setLoading(true);
-    let loadedData = null;
-    
-    if (newPlanId) {
-      // Loading a specific plan
-      console.log('📥 Loading plan:', newPlanId);
-      const { data, error } = await loadPlan(newPlanId);
-      
-      if (error) {
-        console.error('❌ Failed to load plan:', error);
-        alert('Failed to load plan: ' + error.message);
-        setLoading(false);
+
+    const handlePlanChange = async (newPlanId) => {
+    console.log('🔄 handlePlanChange called:', { newPlanId, currentPlanId: planId });
+
+    if (dirty) {
+      // eslint-disable-next-line no-restricted-globals
+      if (!window.confirm('You have unsaved changes. Switch plans anyway?')) {
         return;
       }
-      
-      loadedData = data;
-      console.log('✅ Plan loaded:', { hasData: !!data, keys: data ? Object.keys(data) : [] });
-      
-    } else {
-      // Loading default planner
-      console.log('📥 Loading default planner');
-      const { data, error } = await loadPlanner();
-      
-      if (error) {
-        console.error('❌ Failed to load default planner:', error);
-      }
-      
-      loadedData = data;
     }
-    
-    // Update state with loaded data
-    if (loadedData) {
-      if (loadedData.st) {
+
+    try {
+      setLoading(true);
+      let loadedData = null;
+
+      if (newPlanId) {
+        // Load a specific plan
+        console.log('📥 Loading plan:', newPlanId);
+        const { data, error } = await loadPlan(newPlanId);
+        if (error) {
+          console.error('❌ Failed to load plan:', error);
+          alert('Failed to load plan: ' + error.message);
+          setLoading(false);
+          return;
+        }
+        loadedData = data;
+      } else {
+        // Load the default planner
+        console.log('📥 Loading default planner');
+        const { data, error } = await loadPlanner();
+        if (error) {
+          console.error('❌ Failed to load default planner:', error);
+        }
+        loadedData = data;
+      }
+
+      // Apply loaded state
+      if (loadedData?.st) {
         console.log('📝 Updating st with:', Object.keys(loadedData.st));
         set({ ...DEFAULT_ST, ...loadedData.st });
       } else {
         console.log('⚠️ No st in loaded data, using defaults');
         set(DEFAULT_ST);
       }
-      
-      if (loadedData.projYears) {
-        setProjYears(loadedData.projYears);
-      } else {
-        setProjYears(10);
-      }
-      
-      if (loadedData.taskCompletion) {
-        setTaskCompletion(loadedData.taskCompletion);
-      } else {
-        setTaskCompletion({});
-      }
-    } else {
-      // No data, load defaults
-      console.log('📝 No data loaded, using defaults');
-      set(DEFAULT_ST);
-      setProjYears(10);
-      setTaskCompletion({});
-    }
-    
-    // Update URL using navigate (React Router way)
-    if (newPlanId) {
-      navigate(`/app/${newPlanId}`, { replace: true });
-    } else {
-      navigate('/app', { replace: true });
-    }
-    
-    // Update current plan name for display
-    if (newPlanId) {
-      const plan = plans.find(p => p.id === newPlanId);
-      if (plan) {
-        setCurrentPlanName(plan.name);
-      }
-    } else {
-      setCurrentPlanName('');
-    }
-    
-    setDirty(false);
-    setLastSaved(new Date());
 
-     setLoading(false);
-    
-    console.log('✅ Plan switch complete');
-    
-  } catch (err) {
-    console.error('💥 Error switching plan:', err);
-    alert('Failed to switch plan: ' + err.message);
-    setLoading(false);
-  }
+      if (loadedData?.projYears) setProjYears(loadedData.projYears);
+      else setProjYears(10);
+
+      if (loadedData?.taskCompletion) setTaskCompletion(loadedData.taskCompletion);
+      else setTaskCompletion({});
+
+      // Build base from current path (keeps you on the same section, no "home" bounce)
+      const base = '/' + (location.pathname.split('/')[1] || 'app');
+      const newPath = newPlanId ? `${base}/${newPlanId}` : base;
+      navigate(newPath, { replace: true });
+
+      // Update header name
+      if (newPlanId) {
+        const plan = plans.find(p => p.id === newPlanId);
+        setCurrentPlanName(plan ? plan.name : '');
+      } else {
+        setCurrentPlanName('');
+      }
+
+      // Mark clean + set new baseline for the loaded snapshot
+      setDirty(false);
+      setLastSaved(new Date());
+      baselineRef.current = JSON.stringify({
+        st: loadedData?.st ? { ...DEFAULT_ST, ...loadedData.st } : DEFAULT_ST,
+        projYears: loadedData?.projYears ?? 10,
+        taskCompletion: loadedData?.taskCompletion ?? {},
+      });
+
+      setLoading(false);
+      console.log('✅ Plan switch complete');
+
+    } catch (err) {
+      console.error('💥 Error switching plan:', err);
+      alert('Failed to switch plan: ' + err.message);
+      setLoading(false);
+    }
   };
+
 
   // Navigate to a different plan
   // Create new plan
@@ -686,9 +710,9 @@ export default function PlannerShell({ embedded = false }) {
     }
   };
 
-  async function handleManualSave() {
+    async function handleManualSave() {
     console.log('🔵 Save button clicked');
-    
+
     if (!user) {
       alert('Sign in to save your plan.');
       return;
@@ -704,11 +728,7 @@ export default function PlannerShell({ embedded = false }) {
         taskCompletionKeys: Object.keys(taskCompletion)
       });
 
-      const payload = { 
-        st, 
-        projYears,
-        taskCompletion
-      };
+      const payload = { st, projYears, taskCompletion };
 
       let error;
       if (planId) {
@@ -722,21 +742,25 @@ export default function PlannerShell({ embedded = false }) {
       if (error) {
         console.error('🔴 Save error:', error);
         alert('Save failed: ' + (error.message || 'Unknown error'));
-      } else {
-        console.log('✅ Save successful!');
-        
-        // IMPORTANT: Set dirty to false BEFORE reloading plans
-        setDirty(false);
-        setLastSaved(new Date());
-        
-        // Reload the plans list
-        const { data } = await listPlans();
-        if (data) {
-          setPlans(data);
-        }
-        
-        console.log('✅ Plans list reloaded, dirty set to false');
+        return;
       }
+
+      console.log('✅ Save successful!');
+      // Mark clean + refresh baseline so the dot disappears
+      setDirty(false);
+      setLastSaved(new Date());
+      baselineRef.current = JSON.stringify({ st, projYears, taskCompletion });
+
+      // Reload the plans list so header name reflects any rename
+      const { data } = await listPlans();
+      if (data) {
+        setPlans(data);
+        if (planId) {
+          const current = data.find(p => p.id === planId);
+          if (current) setCurrentPlanName(current.name);
+        }
+      }
+
     } catch (err) {
       console.error('🔴 Save exception:', err);
       alert('Save failed: ' + err.message);
@@ -745,19 +769,6 @@ export default function PlannerShell({ embedded = false }) {
       console.log('🔵 Save complete, saving flag cleared');
     }
   }
-
-  // Mark planner state dirty when st or projYears change *after* an initial save/load baseline
-  useEffect(() => {
-    // Don't mark dirty if we haven't loaded yet OR if we're currently saving OR if we're loading
-    if (lastSaved === null || saving || loading) return;
-    
-    // Don't trigger on initial mount or when switching plans
-    const timeoutId = setTimeout(() => {
-      setDirty(true);
-    }, 100); // Small delay to avoid marking dirty during loads
-    
-    return () => clearTimeout(timeoutId);
-  }, [st, projYears, taskCompletion, loading]);
 
 // ─── normalize EVERY string → number ───
 const stNum = {
