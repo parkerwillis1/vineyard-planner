@@ -4873,12 +4873,8 @@ const EstablishmentProgressTracker = ({
 
 return (
   <div className="min-h-screen bg-white">
-    <main className="w-full pt-0">
-
-      {/* Hide the big vine-green-500 banner/logo when embedded */}
-      {/*<ProjectBanner years={projYears} setYears={setProjYears} /> */}
- 
-       <TabNav
+    <main className="w-full">
+      <TabNav
         active={activeTab}
         setActive={setActiveTab}
         projYears={projYears}
@@ -4893,7 +4889,7 @@ return (
         onPlanChange={handlePlanChange}
         onNewPlan={handleNewPlan}
         plans={plans}
-       />
+      />
  
        {/* centered content container */}
        <div className="w-full">
