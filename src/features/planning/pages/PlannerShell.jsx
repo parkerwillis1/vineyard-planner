@@ -334,7 +334,13 @@ export default function PlannerShell({ embedded = false }) {
 
   const navigate = useNavigate();
 
-  const { id: planId } = useParams();   // comes from route "/plans/:id"
+  // Accept any of: /app/:id, /plans/:id, /app/:planId, etc.
+  const params = useParams();
+  const planId = params.id ?? params.planId ?? params.plan ?? null;
+
+  // (optional – helpful while debugging)
+  console.log('🧭 params:', params, '→ planId:', planId);
+   // comes from route "/plans/:id"
 
   const location = useLocation();
   console.log('📍 Location in PlannerShell:', location.pathname);
@@ -651,7 +657,7 @@ export default function PlannerShell({ embedded = false }) {
       if (loadedData?.taskCompletion) setTaskCompletion(loadedData.taskCompletion);
       else setTaskCompletion({});
 
-      replacePlanIdInUrl(newPlanId || "");
+      //replacePlanIdInUrl(newPlanId || "");
 
       // Update header name
       if (newPlanId) {
