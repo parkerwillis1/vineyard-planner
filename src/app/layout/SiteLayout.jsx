@@ -60,7 +60,7 @@ export default function SiteLayout() {
             </Link>
 
             {/* Left nav */}
-            <nav className="flex items-center gap-8">
+            <nav className="flex items-center gap-8 ml-12">
               <NavLink 
                 to="/" 
                 end 
