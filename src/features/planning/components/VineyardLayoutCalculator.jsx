@@ -285,59 +285,66 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation, polygonPa
     setDrawingMode(false);
   };
 
-  if (!polygonPath || polygonPath.length === 0) {
-    return (
-      <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-8 rounded-xl border-2 border-green-200 shadow-lg">
-        <div className="text-center">
-          <MapPin className="w-16 h-16 mx-auto mb-4 text-green-600" />
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Map Your Vineyard</h3>
-          <p className="text-gray-600 mb-4">Click points on the map to outline your vineyard boundary</p>
-          <button
-            onClick={handleStartDrawing}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
-          >
-            Start Drawing Boundary
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // Calculate center of polygon for map centering
-  const center = polygonPath.length > 0
+  const center = polygonPath && polygonPath.length > 0
     ? {
         lat: polygonPath.reduce((sum, p) => sum + p.lat, 0) / polygonPath.length,
         lng: polygonPath.reduce((sum, p) => sum + p.lng, 0) / polygonPath.length
       }
     : DEFAULT_CENTER;
 
+  const hasPolygon = polygonPath && polygonPath.length > 0;
+
   return (
     <div className="space-y-4">
+      {/* Initial prompt when no polygon */}
+      {!hasPolygon && !drawingMode && (
+        <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border-2 border-green-200">
+          <div className="flex items-center gap-4">
+            <MapPin className="w-12 h-12 text-green-600 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">Map Your Vineyard</h3>
+              <p className="text-gray-600 text-sm">Click "Start Drawing" below, then click points on the satellite map to outline your vineyard boundary.</p>
+            </div>
+            <button
+              onClick={handleStartDrawing}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold whitespace-nowrap"
+            >
+              Start Drawing
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Map Controls */}
-      <div className="flex gap-3">
-        <button
-          onClick={handleStartDrawing}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        >
-          <Edit3 className="w-4 h-4" />
-          Redraw Boundary
-        </button>
-        <button
-          onClick={handleClearPolygon}
-          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
-        >
-          <Trash2 className="w-4 h-4" />
-          Clear
-        </button>
-        {drawingMode && (
+      {hasPolygon && (
+        <div className="flex gap-3">
           <button
-            onClick={handleCancelDrawing}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            onClick={handleStartDrawing}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            Cancel
+            <Edit3 className="w-4 h-4" />
+            Redraw Boundary
           </button>
-        )}
-      </div>
+          <button
+            onClick={handleClearPolygon}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* Cancel button when drawing */}
+      {drawingMode && (
+        <button
+          onClick={handleCancelDrawing}
+          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          Cancel Drawing
+        </button>
+      )}
 
       {/* Drawing Instructions */}
       {drawingMode && (
