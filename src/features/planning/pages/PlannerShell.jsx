@@ -187,6 +187,9 @@ const TabNav = ({
   plans,
   stickyTopClass = "top-0",
 }) => {
+  const [showPlanMenu, setShowPlanMenu] = React.useState(false);
+  const planMenuRef = React.useRef(null);
+
   const tabs = [
     { id: "design",        label: "Design" },
     { id: "inputs",        label: "Financial Inputs" },
@@ -195,43 +198,89 @@ const TabNav = ({
     { id: "details",       label: "Details" },
   ];
 
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (planMenuRef.current && !planMenuRef.current.contains(event.target)) {
+        setShowPlanMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div className="sticky top-[65px] z-40 bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-[1920px] mx-auto px-6">
         <div className="flex items-center justify-between h-16">
-          {/* LEFT: Plan Selector */}
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-              Plan
-            </span>
-            <select
-              value={currentPlanId || ''}
-              onChange={(e) => onPlanChange(e.target.value)}
-              className="text-sm font-medium border border-gray-300 rounded-lg px-3 py-1.5 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 min-w-[180px] transition-colors"
-            >
-              <option value="">Default Plan</option>
-              {plans && plans.map(plan => (
-                <option key={plan.id} value={plan.id}>
-                  {plan.name}
-                </option>
-              ))}
-            </select>
-
-            {/* NEW: always show the current plan name */}
-            <span className="text-sm text-gray-600 truncate max-w-[220px]">
-              {currentPlanName || 'Default Plan'}
-            </span>
-
+          {/* LEFT: Plans Dropdown */}
+          <div className="relative" ref={planMenuRef}>
             <button
-              onClick={onNewPlan}
-              className="px-3 py-1.5 text-sm font-medium text-vine-green-600 hover:text-vine-green-700 whitespace-nowrap"
+              onClick={() => setShowPlanMenu(!showPlanMenu)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 transition-colors"
             >
-              + New Plan
+              <span className="text-gray-700">
+                {currentPlanName || 'Default Plan'}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showPlanMenu ? 'rotate-180' : ''}`} />
             </button>
+
+            {/* Dropdown Menu */}
+            {showPlanMenu && (
+              <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
+                {/* Default Plan */}
+                <button
+                  onClick={() => {
+                    onPlanChange('');
+                    setShowPlanMenu(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                    !currentPlanId ? 'bg-vine-green-50 text-vine-green-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  Default Plan
+                </button>
+
+                {/* Divider */}
+                {plans && plans.length > 0 && (
+                  <div className="border-t border-gray-200 my-2"></div>
+                )}
+
+                {/* User's Plans */}
+                {plans && plans.map(plan => (
+                  <button
+                    key={plan.id}
+                    onClick={() => {
+                      onPlanChange(plan.id);
+                      setShowPlanMenu(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                      currentPlanId === plan.id ? 'bg-vine-green-50 text-vine-green-700 font-medium' : 'text-gray-700'
+                    }`}
+                  >
+                    {plan.name}
+                  </button>
+                ))}
+
+                {/* Divider */}
+                <div className="border-t border-gray-200 my-2"></div>
+
+                {/* Create New Plan */}
+                <button
+                  onClick={() => {
+                    setShowPlanMenu(false);
+                    onNewPlan();
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-vine-green-600 hover:bg-vine-green-50 font-medium transition-colors"
+                >
+                  + Create New Plan
+                </button>
+              </div>
+            )}
           </div>
 
           {/* CENTER: Tabs */}
-          <div className="flex items-center gap-1 mx-6 flex-1 justify-center">
+          <div className="flex items-center gap-1 flex-1 justify-center mx-6">
             {tabs.map(t => (
               <button
                 key={t.id}
@@ -249,12 +298,6 @@ const TabNav = ({
 
           {/* RIGHT: Controls */}
           <div className="flex items-center gap-4 min-w-0">
-            {dirty && (
-              <span className="text-xs text-orange-600 font-medium whitespace-nowrap">
-                • Unsaved changes
-              </span>
-            )}
-            
             <label className="flex items-center gap-2 text-sm text-gray-700 whitespace-nowrap">
               <span className="font-medium">Years</span>
               <Input
@@ -276,12 +319,17 @@ const TabNav = ({
               </span>
             </div>
 
+            {/* Smart Save Button */}
             <button
               onClick={onSave}
-              className="px-5 py-2 text-sm rounded-lg bg-vine-green-600 text-white hover:bg-vine-green-700 font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              disabled={isSaving}
+              disabled={isSaving || !dirty}
+              className={`px-5 py-2 text-sm rounded-lg font-medium transition-all shadow-sm disabled:cursor-not-allowed whitespace-nowrap ${
+                dirty
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-green-600 text-white cursor-default'
+              }`}
             >
-              {isSaving ? 'Saving…' : 'Save'}
+              {isSaving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
             </button>
           </div>
         </div>
@@ -289,11 +337,6 @@ const TabNav = ({
     </div>
   );
 };
-
-/* ------------------------------------------------------------------ */
-
-
-
 
 /* ====== MASTER DATA ====== */
 const EQUIP_OPTIONS = [
