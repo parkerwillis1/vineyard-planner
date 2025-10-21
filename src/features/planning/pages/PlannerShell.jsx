@@ -1,11 +1,8 @@
 // src/VineyardPlannerApp.jsx
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import { useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { supabase } from '@/shared/lib/supabaseClient';
 import { savePlanner, loadPlanner} from '@/shared/lib/saveLoadPlanner';
-import { useLocation } from 'react-router-dom';
 import { savePlan, loadPlan, listPlans, createPlan } from '@/shared/lib/plansApi';
 import { 
   ChevronDown, 
@@ -464,6 +461,15 @@ export default function PlannerShell({ embedded = false }) {
     
   }), []);
 
+  const [st, set] = useState(DEFAULT_ST);
+
+  // --- Saving state ---
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+
+  // --- Snapshot of last loaded/saved state (used to decide "dirty")
+  const baselineRef = useRef(null);
+
 
   // --- Auth context (SAFE destructure) ---
   const auth = useAuth();
@@ -540,24 +546,6 @@ export default function PlannerShell({ embedded = false }) {
       }
     })();
   }, [user, planId]);
-
-    // --- Track unsaved changes ---
-    useEffect(() => {
-      if (!baselineRef.current) return; // no baseline yet
-      const snapshot = JSON.stringify({ st, projYears, taskCompletion });
-      setDirty(snapshot !== baselineRef.current);
-    }, [st, projYears, taskCompletion, lastSaved]);
-
-
-    // --- Main planner state ---
-  const [st, set] = useState(DEFAULT_ST);
-
-  // --- Saving state ---
-  const [saving, setSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState(null);
-
-  // --- Snapshot of last loaded/saved state (used to decide "dirty")
-  const baselineRef = useRef(null);
 
   // --- Track unsaved changes based on baseline snapshot
   //     NOTE: this must come AFTER st/lastSaved/baselineRef are declared.
