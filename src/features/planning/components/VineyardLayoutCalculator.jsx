@@ -534,19 +534,29 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
     return null;
   }, [layout]);
 
-  // Update acres when polygon changes
+  // Update acres when polygon changes (avoid infinite loop with ref)
+  const lastAcresRef = useRef(null);
   useEffect(() => {
     if (layout && onAcresChange) {
-      onAcresChange(layout.dimensions.acres.toFixed(2));
+      const newAcres = layout.dimensions.acres.toFixed(2);
+      if (lastAcresRef.current !== newAcres) {
+        lastAcresRef.current = newAcres;
+        onAcresChange(newAcres);
+      }
     }
-  }, [layout, onAcresChange]);
+  }, [layout]);
 
-  // Notify parent component of layout changes
+  // Notify parent component of layout changes (avoid infinite loop)
+  const lastLayoutRef = useRef(null);
   useEffect(() => {
     if (layout && materialCosts && onLayoutChange) {
-      onLayoutChange(layout, materialCosts);
+      const layoutString = JSON.stringify(layout);
+      if (lastLayoutRef.current !== layoutString) {
+        lastLayoutRef.current = layoutString;
+        onLayoutChange(layout, materialCosts);
+      }
     }
-  }, [layout, materialCosts, onLayoutChange]);
+  }, [layout, materialCosts]);
 
   return (
     <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={LIBRARIES}>
