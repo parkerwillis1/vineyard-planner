@@ -1086,7 +1086,10 @@ const netEquityRequired = totalEstCost - totalLoanPrincipal;
     .filter(r => r.include)
     .reduce((sum, r) => sum + r.costPerAcre * stNum.acres, 0)
 
-    // 5) Harvest & Hauling (per-acre only; per-ton calculated in projection loop)
+    // 5) Harvest & Hauling
+    // NOTE: Each harvest item should use EITHER costPerAcre OR costPerTon, not both
+    // - costPerAcre is included in harvestAnnual (fixed cost)
+    // - costPerTon is added per-year in projection loop (variable cost based on actual yield)
     const harvestAnnual = stNum.harvest
     .filter(r => r.include)
     .reduce((sum, r) => {
@@ -1143,18 +1146,20 @@ const annualFixed =
   </div>
   );
 
-  const fullProdRevenue =
+  // Maximum potential revenue at full production (assumes all bottles/grapes sold)
+  const maxPotentialRevenue =
   st.salesMode === "wine"
     ? stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON * stNum.bottlePrice
     : stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * stNum.grapeSalePrice;   // $/ton
 
-  const fullProdNet = fullProdRevenue - annualFixed;
+  const maxPotentialNet = maxPotentialRevenue - annualFixed;
 
   const isWine         = st.salesMode === "wine";
+  // Cost per ton at full production (based on mature yield of 3.5 tons/acre)
   const denomTons = stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE;
-  const costPerTon = denomTons > 0 ? (annualFixed / denomTons) : 0;
+  const costPerTonAtFullProduction = denomTons > 0 ? (annualFixed / denomTons) : 0;
   const grapePrice = Number(stNum.grapeSalePrice || 0);
-  const grossMarginTon = grapePrice - costPerTon;
+  const grossMarginTon = grapePrice - costPerTonAtFullProduction;
 
   // ---- Year 0 + Operating Years Projection (with explicit Year 0 row) ----
   // Base annual (recurring) operating + fixed costs (exclude one-time establishment)
@@ -1188,8 +1193,9 @@ const annualFixed =
       : tonsTotal   * grapePrice;            // bulk‑grape path
 
 
-    // Harvest per‑ton variable portion (already counted inside dynamicOperatingCost earlier if you included costPerTon;
-    // here we isolate any per‑ton you want *added*; if already included remove this block)
+    // Harvest per-ton variable costs (yield-dependent, added per year)
+    // NOTE: This is separate from costPerAcre which was already included in baseAnnualCost
+    // Each harvest item should use EITHER costPerAcre OR costPerTon to avoid double-counting
     const harvestPerTon = stNum.harvest
       .filter(r => r.include)
       .reduce((s,r) => s + (Number(r.costPerTon) || 0), 0);
@@ -2254,6 +2260,10 @@ const EstablishmentProgressTracker = ({
 
         {/* Harvest & Hauling */}
         <CollapsibleSection title="Harvest & Hauling">
+        <div className="mb-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded text-sm">
+          <p className="font-medium text-blue-900">Important: Use either $/acre OR $/ton for each service, not both.</p>
+          <p className="text-blue-700 mt-1">Per-acre costs are fixed annually. Per-ton costs vary with actual harvest yield.</p>
+        </div>
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
@@ -3949,9 +3959,9 @@ const EstablishmentProgressTracker = ({
                     {/* Left column - Revenue metrics */}
                     <div className="min-w-0">
                       <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border-l-4 border-green-400">
-                        <span className="font-semibold text-green-900">Annual Revenue (full production)</span>
+                        <span className="font-semibold text-green-900">Max Potential Revenue (full production)</span>
                         <span className="font-black text-xl text-green-800">
-                         ${fullProdRevenue.toLocaleString()}
+                         ${maxPotentialRevenue.toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between items-center p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border-l-4 border-red-400">
@@ -3959,9 +3969,9 @@ const EstablishmentProgressTracker = ({
                         <span className="font-black text-xl text-red-800">${annualFixed.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center p-4 bg-gradient-to-r from-vine-green-50 to-vine-green-100 rounded-lg border-l-4 border-vine-green-500">
-                        <span className="font-semibold text-vine-green-800">Annual Net Profit (full production)</span>
+                        <span className="font-semibold text-vine-green-800">Max Potential Net (full production)</span>
                         <span className="font-black text-xl text-vine-green-700">
-                          ${fullProdNet.toLocaleString()}
+                          ${maxPotentialNet.toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -4006,8 +4016,8 @@ const EstablishmentProgressTracker = ({
                         <>
                           <div className="p-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-lg border-l-4 border-amber-400">
                             <div className="flex justify-between items-center">
-                              <span className="font-semibold text-amber-900">Cost per Ton</span>
-                              <span className="font-black text-xl text-amber-800">${costPerTon.toFixed(0)}</span>
+                              <span className="font-semibold text-amber-900">Cost per Ton (at full production)</span>
+                              <span className="font-black text-xl text-amber-800">${costPerTonAtFullProduction.toFixed(0)}</span>
                             </div>
                           </div>
                           <div className="p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg border-l-4 border-emerald-400">
@@ -4372,9 +4382,9 @@ const EstablishmentProgressTracker = ({
                     <li>First profitable year: <span className="font-medium">Year {projection.findIndex(p => p.net > 0) + 1}</span></li>
                     <li>Maximum annual revenue: <span className="font-medium">${Math.max(...projection.map(p => p.revenue)).toLocaleString()}</span></li>
                     <li>
-                      Revenue at full production:&nbsp;
+                      Max potential revenue (full production):&nbsp;
                       <span className="font-medium">
-                        ${fullProdRevenue.toLocaleString()}
+                        ${maxPotentialRevenue.toLocaleString()}
                       </span>
                     </li>
                     </ul>
