@@ -668,6 +668,9 @@ export default function PlannerShell({ embedded = false }) {
     }
   };
 
+  setDirty(false);
+
+
     async function handleManualSave() {
     console.log('🔵 Save button clicked');
 
