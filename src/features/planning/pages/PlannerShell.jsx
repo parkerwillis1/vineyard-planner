@@ -703,6 +703,9 @@ const handlePlanChange = (nextId) => {
     return;
   }
 
+  hydratingRef.current = true;
+  setDirty(false); // Clear dirty flag immediately
+
   // Optimistically reflect name in header
   if (nextId) {
     const p = plans.find(pl => pl.id === nextId);
@@ -724,14 +727,12 @@ const handlePlanChange = (nextId) => {
       return;
     }
 
-    // eslint-disable-next-line no-restricted-globals
     const planName = window.prompt('Enter plan name:');
     if (!planName) return;
 
     console.log('📝 Creating new plan:', planName);
 
     try {
-      // Create plan with current state
       const { data, error } = await createPlan(planName, { 
         st, 
         projYears, 
@@ -752,14 +753,23 @@ const handlePlanChange = (nextId) => {
           setPlans(plansData);
         }
         
+        hydratingRef.current = true;
+        setDirty(false);
+        
         replacePlanIdInUrl(data.id);
         
         // Update current plan name
         setCurrentPlanName(planName);
-        
-        // Mark as clean since we just saved
-        setDirty(false);
         setLastSaved(new Date());
+        
+        requestAnimationFrame(() => {
+          baselineRef.current = makeSnapshot({
+            st: stRef.current,
+            projYears: projYearsRef.current,
+            taskCompletion: taskCompletionRef.current,
+          });
+          hydratingRef.current = false;
+        });
         
         console.log('✅ Switched to new plan');
       }
