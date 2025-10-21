@@ -607,84 +607,26 @@ export default function PlannerShell({ embedded = false }) {
   };
 
 
-    const handlePlanChange = async (newPlanId) => {
-    console.log('🔄 handlePlanChange called:', { newPlanId, currentPlanId: planId });
+  const handlePlanChange = (nextId) => {
+    console.log('🔄 handlePlanChange (URL-only):', { nextId, currentPlanId: planId });
 
-    if (dirty) {
-      // eslint-disable-next-line no-restricted-globals
-      if (!window.confirm('You have unsaved changes. Switch plans anyway?')) {
-        return;
-      }
+    if (dirty && !window.confirm('You have unsaved changes. Switch plans anyway?')) {
+      return;
     }
 
-    try {
-      setLoading(true);
-      let loadedData = null;
-
-      if (newPlanId) {
-        // Load a specific plan
-        console.log('📥 Loading plan:', newPlanId);
-        const { data, error } = await loadPlan(newPlanId);
-        if (error) {
-          console.error('❌ Failed to load plan:', error);
-          alert('Failed to load plan: ' + error.message);
-          setLoading(false);
-          return;
-        }
-        loadedData = data;
-      } else {
-        // Load the default planner
-        console.log('📥 Loading default planner');
-        const { data, error } = await loadPlanner();
-        if (error) {
-          console.error('❌ Failed to load default planner:', error);
-        }
-        loadedData = data;
-      }
-
-      // Apply loaded state
-      if (loadedData?.st) {
-        console.log('📝 Updating st with:', Object.keys(loadedData.st));
-        set({ ...DEFAULT_ST, ...loadedData.st });
-      } else {
-        console.log('⚠️ No st in loaded data, using defaults');
-        set(DEFAULT_ST);
-      }
-
-      if (loadedData?.projYears) setProjYears(loadedData.projYears);
-      else setProjYears(10);
-
-      if (loadedData?.taskCompletion) setTaskCompletion(loadedData.taskCompletion);
-      else setTaskCompletion({});
-
-      //replacePlanIdInUrl(newPlanId || "");
-
-      // Update header name
-      if (newPlanId) {
-        const plan = plans.find(p => p.id === newPlanId);
-        setCurrentPlanName(plan ? plan.name : '');
-      } else {
-        setCurrentPlanName('');
-      }
-
-      // Mark clean + set new baseline for the loaded snapshot
-      setDirty(false);
-      setLastSaved(new Date());
-      baselineRef.current = JSON.stringify({
-        st: loadedData?.st ? { ...DEFAULT_ST, ...loadedData.st } : DEFAULT_ST,
-        projYears: loadedData?.projYears ?? 10,
-        taskCompletion: loadedData?.taskCompletion ?? {},
-      });
-
-      setLoading(false);
-      console.log('✅ Plan switch complete');
-
-    } catch (err) {
-      console.error('💥 Error switching plan:', err);
-      alert('Failed to switch plan: ' + err.message);
-      setLoading(false);
+    // show the name immediately in the header/tab (optimistic)
+    if (nextId) {
+      const p = plans.find(pl => pl.id === nextId);
+      setCurrentPlanName(p ? p.name : '');
+    } else {
+      setCurrentPlanName('');
     }
+
+    // 🔁 Do NOT fetch here. Just change the URL id segment.
+    // Your useEffect([user, planId]) will load/apply the plan state.
+    replacePlanIdInUrl(nextId || '');
   };
+
 
 
   // Navigate to a different plan
