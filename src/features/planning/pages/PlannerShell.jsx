@@ -339,38 +339,43 @@ export default function PlannerShell({ embedded = false }) {
   const location = useLocation();
   console.log('📍 Location in PlannerShell:', location.pathname);
 
-  // Replace just the plan id in the URL, keep the rest of the path/query/hash.
+
+  // Works for /app/:id, /plans/:id, /app/planner/:id, /x/y/:id, etc.
   const replacePlanIdInUrl = React.useCallback(
     (nextId /* string | '' */) => {
       const { pathname, search, hash } = location;
-      // e.g. "/plans/abc/establishment" -> ["plans","abc","establishment"]
-      // e.g. "/app/abc"                 -> ["app","abc"]
-      const parts = pathname.split("/").filter(Boolean);
+      const parts = pathname.split("/").filter(Boolean); // ["app","planner","123","establishment"]
 
-      // Identify a route that looks like "/plans/:id/..." or "/app/:id/..."
-      const first = parts[0] || "";
-      const idIndex = (first === "plans" || first === "app") ? 1 : -1;
+      // 1) Try to find the segment equal to the current planId from useParams()
+      let idx = -1;
+      if (planId) {
+        idx = parts.findIndex(p => p === planId);
+      }
 
-      let newParts;
-      if (idIndex >= 0) {
-        newParts = parts.slice();
-        if (nextId) {
-          // Set/replace the id
-          newParts[idIndex] = nextId;
-        } else {
-          // Remove the id segment (default planner path)
-          newParts.splice(idIndex, 1);
+      // 2) Fallback: if not found, assume an id is the segment after "app" or "plans"
+      if (idx < 0) {
+        const first = parts[0] || "";
+        if ((first === "app" || first === "plans") && parts.length >= 2) {
+          idx = 1;
         }
+      }
+
+      // 3) If we still couldn't find an index, append/remove at the end as a last resort
+      let newParts = parts.slice();
+      if (idx >= 0) {
+        if (nextId) newParts[idx] = nextId;   // replace id in-place
+        else        newParts.splice(idx, 1);  // remove id segment for default
       } else {
-        // Fallback: if we can't detect the pattern, just append the id
-        newParts = nextId ? [...parts, nextId] : parts.slice();
+        if (nextId) newParts.push(nextId);
+        // else leave as-is for default
       }
 
       const newPath = "/" + newParts.join("/");
       navigate(newPath + search + hash, { replace: true });
     },
-    [location, navigate]
+    [location, navigate, planId]
   );
+
 
 
   // Recharts/measurement-based components sometimes mount at width=0.
