@@ -585,6 +585,7 @@ useEffect(() => {
   (async () => {
     hydratingRef.current = true;
     setLoading(true);
+    setDirty(false); // ⭐ Clear dirty immediately
 
     const { data, error } = planId ? await loadPlan(planId) : await loadPlanner();
     if (error) {
@@ -600,29 +601,27 @@ useEffect(() => {
       setProjYears(data?.projYears ?? 10);
       setTaskCompletion(data?.taskCompletion ?? {});
       setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
-      setDirty(false);
     } else if (!isCancelled) {
       // Defaults path
       set(DEFAULT_ST);
       setProjYears(10);
       setTaskCompletion({});
       setLastSaved(new Date());
-      setDirty(false);
     }
 
     setLoading(false);
 
-    // ✅ Commit baseline from the *actual current state* on next frame
-    requestAnimationFrame(() => {
+    // ✅ Commit baseline from the *actual current state* after a longer delay
+    setTimeout(() => {
       if (isCancelled) return;
       baselineRef.current = makeSnapshot({
         st: stRef.current,
         projYears: projYearsRef.current,
         taskCompletion: taskCompletionRef.current,
       });
-      setDirty(false);
-      hydratingRef.current = false;
-    });
+      setDirty(false); // ⭐ Clear dirty again after baseline is set
+      hydratingRef.current = false; // ⭐ Only clear hydrating flag AFTER baseline is committed
+    }, 100); // Increased delay to ensure all state updates have settled
   })();
 
   return () => { isCancelled = true; };
@@ -655,7 +654,15 @@ useEffect(() => {
 
 // --- Track unsaved changes vs. baseline (skip during hydration/loading)
 useEffect(() => {
-  if (hydratingRef.current || loading || !baselineRef.current) return;
+  if (hydratingRef.current || loading || !baselineRef.current || !lastSaved) {
+    console.log('⏸️  Dirty tracking blocked:', { 
+      hydrating: hydratingRef.current, 
+      loading, 
+      hasBaseline: !!baselineRef.current,
+      hasLastSaved: !!lastSaved 
+    });
+    return;
+  }
 
   const currentStr = makeSnapshot({ st, projYears, taskCompletion });
   const isDirty = currentStr !== baselineRef.current;
