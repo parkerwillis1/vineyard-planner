@@ -338,6 +338,41 @@ export default function PlannerShell({ embedded = false }) {
 
   const location = useLocation();
   console.log('📍 Location in PlannerShell:', location.pathname);
+
+  // Replace just the plan id in the URL, keep the rest of the path/query/hash.
+  const replacePlanIdInUrl = React.useCallback(
+    (nextId /* string | '' */) => {
+      const { pathname, search, hash } = location;
+      // e.g. "/plans/abc/establishment" -> ["plans","abc","establishment"]
+      // e.g. "/app/abc"                 -> ["app","abc"]
+      const parts = pathname.split("/").filter(Boolean);
+
+      // Identify a route that looks like "/plans/:id/..." or "/app/:id/..."
+      const first = parts[0] || "";
+      const idIndex = (first === "plans" || first === "app") ? 1 : -1;
+
+      let newParts;
+      if (idIndex >= 0) {
+        newParts = parts.slice();
+        if (nextId) {
+          // Set/replace the id
+          newParts[idIndex] = nextId;
+        } else {
+          // Remove the id segment (default planner path)
+          newParts.splice(idIndex, 1);
+        }
+      } else {
+        // Fallback: if we can't detect the pattern, just append the id
+        newParts = nextId ? [...parts, nextId] : parts.slice();
+      }
+
+      const newPath = "/" + newParts.join("/");
+      navigate(newPath + search + hash, { replace: true });
+    },
+    [location, navigate]
+  );
+
+
   // Recharts/measurement-based components sometimes mount at width=0.
   // Nudge a layout pass whenever route or tab changes.
   useEffect(() => {
@@ -611,10 +646,7 @@ export default function PlannerShell({ embedded = false }) {
       if (loadedData?.taskCompletion) setTaskCompletion(loadedData.taskCompletion);
       else setTaskCompletion({});
 
-      // Build base from current path (keeps you on the same section, no "home" bounce)
-      const base = '/' + (location.pathname.split('/')[1] || 'app');
-      const newPath = newPlanId ? `${base}/${newPlanId}` : base;
-      navigate(newPath, { replace: true });
+      replacePlanIdInUrl(newPlanId || "");
 
       // Update header name
       if (newPlanId) {
@@ -680,8 +712,7 @@ export default function PlannerShell({ embedded = false }) {
           setPlans(plansData);
         }
         
-        // ⭐ FIX: Use data.id (the newly created plan's ID)
-        navigate(`/app/${data.id}`, { replace: true });
+        replacePlanIdInUrl(data.id);
         
         // Update current plan name
         setCurrentPlanName(planName);
