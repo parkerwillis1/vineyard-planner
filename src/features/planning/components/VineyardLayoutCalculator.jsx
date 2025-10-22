@@ -565,148 +565,139 @@ export const VineyardLayoutVisualizer = ({
         </p>
       </div>
 
-      {/* Initial prompt when current field has no polygon */}
-      {currentField && (!currentField.polygonPath || currentField.polygonPath.length === 0) && !drawingMode && (
-        <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border-2 border-green-200">
-          <div className="flex items-center gap-4">
-            <MapPin className="w-12 h-12 text-green-600 flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">Map {currentField.name}</h3>
-              <p className="text-gray-600 text-sm">Click "Start Drawing" below, then click points on the satellite map to outline this field's boundary.</p>
-            </div>
-            <button
-              onClick={handleStartDrawing}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold whitespace-nowrap"
-            >
-              Start Drawing
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Map Controls - Always visible */}
+      <div className="flex gap-3 flex-wrap items-center">
+        {/* Fields Dropdown */}
+        <div className="relative" ref={fieldMenuRef}>
+          <button
+            onClick={() => setShowFieldMenu(!showFieldMenu)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          >
+            <span className="text-gray-700">
+              {currentField?.name || 'Field 1'} ({fields.length} field{fields.length !== 1 ? 's' : ''})
+            </span>
+            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showFieldMenu ? 'rotate-180' : ''}`} />
+          </button>
 
-      {/* Map Controls */}
-      {currentField && currentField.polygonPath && currentField.polygonPath.length > 0 && (
-        <div className="flex gap-3">
-          {/* Fields Dropdown */}
-          <div className="relative" ref={fieldMenuRef}>
-            <button
-              onClick={() => setShowFieldMenu(!showFieldMenu)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-            >
-              <span className="text-gray-700">
-                {currentField.name} ({fields.length} field{fields.length !== 1 ? 's' : ''})
-              </span>
-              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showFieldMenu ? 'rotate-180' : ''}`} />
-            </button>
-
-            {/* Dropdown Menu */}
-            {showFieldMenu && (
-              <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50 max-h-96 overflow-y-auto">
-                {/* Field List */}
-                <div className="px-3 py-2">
-                  <div className="space-y-2">
-                    {fields.map((field) => (
-                      <div
-                        key={field.id}
-                        className={`p-3 rounded border ${
-                          field.id === currentFieldId ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 flex-1">
-                            <button
-                              onClick={() => handleToggleFieldVisibility(field.id)}
-                              className="text-gray-600 hover:text-gray-800"
-                            >
-                              {field.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                            </button>
-                            {editingFieldName === field.id ? (
-                              <Input
-                                value={newFieldName}
-                                onChange={(e) => setNewFieldName(e.target.value)}
-                                onBlur={() => handleRenameField(field.id, newFieldName)}
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter') handleRenameField(field.id, newFieldName);
-                                }}
-                                className="text-sm h-8"
-                                autoFocus
-                              />
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  handleGoToField(field);
-                                  setShowFieldMenu(false);
-                                }}
-                                className="font-medium text-sm hover:text-blue-600 flex-1 text-left"
-                              >
-                                {field.name}
-                              </button>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1">
+          {/* Dropdown Menu */}
+          {showFieldMenu && (
+            <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50 max-h-96 overflow-y-auto">
+              {/* Field List */}
+              <div className="px-3 py-2">
+                <div className="space-y-2">
+                  {fields.map((field) => (
+                    <div
+                      key={field.id}
+                      className={`p-3 rounded border ${
+                        field.id === currentFieldId ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-1">
+                          <button
+                            onClick={() => handleToggleFieldVisibility(field.id)}
+                            className="text-gray-600 hover:text-gray-800"
+                          >
+                            {field.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                          </button>
+                          {editingFieldName === field.id ? (
+                            <Input
+                              value={newFieldName}
+                              onChange={(e) => setNewFieldName(e.target.value)}
+                              onBlur={() => handleRenameField(field.id, newFieldName)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') handleRenameField(field.id, newFieldName);
+                              }}
+                              className="text-sm h-8"
+                              autoFocus
+                            />
+                          ) : (
                             <button
                               onClick={() => {
-                                setEditingFieldName(field.id);
-                                setNewFieldName(field.name);
+                                handleGoToField(field);
+                                setShowFieldMenu(false);
                               }}
-                              className="p-1 text-gray-600 hover:text-blue-600"
+                              className="font-medium text-sm hover:text-blue-600 flex-1 text-left"
                             >
-                              <Edit3 className="w-4 h-4" />
+                              {field.name}
                             </button>
-                            {fields.length > 1 && (
-                              <button
-                                onClick={() => handleDeleteField(field.id)}
-                                className="p-1 text-gray-600 hover:text-red-600"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
+                          )}
                         </div>
-                        {field.polygonPath && field.polygonPath.length >= 3 && (
-                          <div className="mt-2 text-xs text-gray-600">
-                            {calculatePolygonArea(field.polygonPath).toFixed(2)} acres
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setEditingFieldName(field.id);
+                              setNewFieldName(field.name);
+                            }}
+                            className="p-1 text-gray-600 hover:text-blue-600"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          {fields.length > 1 && (
+                            <button
+                              onClick={() => handleDeleteField(field.id)}
+                              className="p-1 text-gray-600 hover:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                      {field.polygonPath && field.polygonPath.length >= 3 && (
+                        <div className="mt-2 text-xs text-gray-600">
+                          {calculatePolygonArea(field.polygonPath).toFixed(2)} acres
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-
-                {/* Divider */}
-                <div className="border-t border-gray-200 my-2"></div>
-
-                {/* Add Field Button */}
-                <button
-                  onClick={() => {
-                    handleAddField();
-                    setShowFieldMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 font-medium transition-colors flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add New Field
-                </button>
               </div>
-            )}
-          </div>
 
+              {/* Divider */}
+              <div className="border-t border-gray-200 my-2"></div>
+
+              {/* Add Field Button */}
+              <button
+                onClick={() => {
+                  handleAddField();
+                  setShowFieldMenu(false);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 font-medium transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add New Field
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons - Show based on field state */}
+        {currentField && currentField.polygonPath && currentField.polygonPath.length > 0 ? (
+          <>
+            <button
+              onClick={handleStartDrawing}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Edit3 className="w-4 h-4" />
+              Redraw Boundary
+            </button>
+            <button
+              onClick={handleClearPolygon}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear
+            </button>
+          </>
+        ) : !drawingMode && (
           <button
             onClick={handleStartDrawing}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
           >
-            <Edit3 className="w-4 h-4" />
-            Redraw Boundary
+            Start Drawing
           </button>
-          <button
-            onClick={handleClearPolygon}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            Clear
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Cancel button when drawing */}
       {drawingMode && (
