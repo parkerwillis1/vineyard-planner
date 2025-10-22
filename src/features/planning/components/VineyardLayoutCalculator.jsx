@@ -534,18 +534,33 @@ const generateRowLines = (polygonPath, numberOfRows, rowSpacing, orientation) =>
   const latDegPerFoot = 1 / 364000;
   const lngDegPerFoot = 1 / 300000;
 
-  for (let i = 0; i < numberOfRows; i++) {
+  // Calculate how many rows will fit across the entire bounding box
+  let maxRowsNeeded;
+  if (orientation === "vertical") {
+    // For vertical orientation, rows span across the width (longitude)
+    const bboxWidthDeg = maxLng - minLng;
+    const bboxWidthFeet = bboxWidthDeg / lngDegPerFoot;
+    maxRowsNeeded = Math.ceil(bboxWidthFeet / rowSpacing) + 2; // +2 for safety margin
+  } else {
+    // For horizontal orientation, rows span across the height (latitude)
+    const bboxHeightDeg = maxLat - minLat;
+    const bboxHeightFeet = bboxHeightDeg / latDegPerFoot;
+    maxRowsNeeded = Math.ceil(bboxHeightFeet / rowSpacing) + 2; // +2 for safety margin
+  }
+
+  // Generate rows across the entire bounding box
+  for (let i = 0; i < maxRowsNeeded; i++) {
     let lineStart, lineEnd;
 
     if (orientation === "vertical") {
       // Rows run north-south
       const lngOffset = minLng + (i * rowSpacing * lngDegPerFoot);
-      lineStart = { lat: minLat - 0.001, lng: lngOffset }; // Extend beyond bounds
+      lineStart = { lat: minLat - 0.001, lng: lngOffset };
       lineEnd = { lat: maxLat + 0.001, lng: lngOffset };
     } else {
       // Rows run east-west
       const latOffset = minLat + (i * rowSpacing * latDegPerFoot);
-      lineStart = { lat: latOffset, lng: minLng - 0.001 }; // Extend beyond bounds
+      lineStart = { lat: latOffset, lng: minLng - 0.001 };
       lineEnd = { lat: latOffset, lng: maxLng + 0.001 };
     }
 
