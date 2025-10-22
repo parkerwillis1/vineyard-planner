@@ -8,7 +8,7 @@ module.exports = {
       colors: {
         'vine-green': {
           50: '#f0fdf7',
-          100: '#43cca8',
+          100: '#dcfce9',
           200: '#bbf7d6',
           300: '#86efb8',
           400: '#4ade92',
