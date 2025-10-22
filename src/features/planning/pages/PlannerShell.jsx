@@ -287,7 +287,7 @@ const TabNav = ({
               className={`px-6 py-2.5 text-sm rounded-lg font-semibold transition-all shadow-sm disabled:cursor-not-allowed whitespace-nowrap ${
                 dirty
                   ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-green-600 text-white cursor-default'
+                  : 'bg-vine-green-500 text-white cursor-default'
               }`}
             >
               {isSaving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
@@ -1444,12 +1444,12 @@ const LTV = (landValue + improvementsValue) > 0
       iconColor: "text-amber-600"
     },
     green: {
-      bg: "from-green-50 to-green-100",
-      border: "border-green-200",
-      text: "text-green-700",
-      value: "text-green-900",
-      iconBg: "bg-green-100",
-      iconColor: "text-green-600"
+      bg: "from-vine-green-50 to-vine-green-100",
+      border: "border-vine-green-200",
+      text: "text-vine-green-700",
+      value: "text-vine-green-900",
+      iconBg: "bg-vine-green-100",
+      iconColor: "text-vine-green-500"
     },
     blue: {
       bg: "from-blue-50 to-blue-100",
@@ -1614,11 +1614,11 @@ const EstablishmentProgressTracker = ({
       check: 'bg-orange-500 border-orange-500'
     },
     green: {
-      bg: 'bg-green-50',
-      text: 'text-green-700',
-      icon: 'bg-green-100 text-green-600',
-      border: 'border-green-200',
-      check: 'bg-green-500 border-green-500'
+      bg: 'bg-vine-green-50',
+      text: 'text-vine-green-700',
+      icon: 'bg-vine-green-100 text-vine-green-500',
+      border: 'border-vine-green-200',
+      check: 'bg-vine-green-500 border-vine-green-500'
     },
     blue: {
       bg: 'bg-blue-50',
@@ -1650,15 +1650,15 @@ const EstablishmentProgressTracker = ({
         {/* Progress Bar */}
         <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
           <div 
-            className="bg-green-500 h-2 rounded-full transition-all duration-500"
+            className="bg-vine-green-500 h-2 rounded-full transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
         {/* Financial Summary */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-green-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="bg-vine-green-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-vine-green-500">
               ${investedAmount.toLocaleString()}
             </div>
             <div className="text-sm text-gray-600 mt-1">Invested</div>
@@ -1929,7 +1929,7 @@ const EstablishmentProgressTracker = ({
                     {/* Show calculation source */}
                     {isCalculated ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                        <span className="text-xs bg-vine-green-100 text-vine-green-800 px-2 py-1 rounded">
                           Auto-calculated from design
                         </span>
                         <span className="text-sm text-vine-green-700">$/acre</span>
@@ -2063,23 +2063,23 @@ const EstablishmentProgressTracker = ({
         {/* Planting Costs */}
         <CollapsibleSection title="Planting Costs">
           {st.vineyardLayout?.calculatedLayout && (
-            <div className="mb-4 p-4 bg-green-50 rounded-lg">
-              <h4 className="font-medium text-green-800 mb-2">Calculated Vine Requirements</h4>
+            <div className="mb-4 p-4 bg-vine-green-50 rounded-lg">
+              <h4 className="font-medium text-vine-green-800 mb-2">Calculated Vine Requirements</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-green-700">Total Vines:</span>
+                  <span className="text-vine-green-700">Total Vines:</span>
                   <div className="font-semibold">{st.vineyardLayout.calculatedLayout.vineLayout.totalVines.toLocaleString()}</div>
                 </div>
                 <div>
-                  <span className="text-green-700">Vines/Acre:</span>
+                  <span className="text-vine-green-700">Vines/Acre:</span>
                   <div className="font-semibold">{Math.round(st.vineyardLayout.calculatedLayout.vineLayout.vinesPerAcre)}</div>
                 </div>
                 <div>
-                  <span className="text-green-700">Spacing:</span>
+                  <span className="text-vine-green-700">Spacing:</span>
                   <div className="font-semibold">{st.vineyardLayout.calculatedLayout.spacing.vine}' × {st.vineyardLayout.calculatedLayout.spacing.row}'</div>
                 </div>
                 <div>
-                  <span className="text-green-700">Rows:</span>
+                  <span className="text-vine-green-700">Rows:</span>
                   <div className="font-semibold">{st.vineyardLayout.calculatedLayout.vineLayout.numberOfRows}</div>
                 </div>
               </div>
@@ -3336,13 +3336,13 @@ const EstablishmentProgressTracker = ({
                       </h4>
                       <div className="overflow-x-auto">
                         <table className="min-w-full bg-white divide-y divide-gray-200 border rounded-lg">
-                          <thead className="bg-green-50">
+                          <thead className="bg-vine-green-50">
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase">Item</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">Unit Cost</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">Qty/Acre</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">$/Acre</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-green-700 uppercase">Total Cost</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase">Item</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase">Unit Cost</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase">Qty/Acre</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase">$/Acre</th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase">Total Cost</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-200">
@@ -3366,12 +3366,12 @@ const EstablishmentProgressTracker = ({
                                 </tr>
                               );
                             })}
-                            <tr className="bg-green-50 font-semibold">
-                              <td className="px-6 py-4 text-sm text-green-700" colSpan={3}>Subtotal</td>
-                              <td className="px-6 py-4 text-sm text-green-700 text-right">
+                            <tr className="bg-vine-green-50 font-semibold">
+                              <td className="px-6 py-4 text-sm text-vine-green-700" colSpan={3}>Subtotal</td>
+                              <td className="px-6 py-4 text-sm text-vine-green-700 text-right">
                                 ${(plantingTotal / stNum.acres).toFixed(0)}
                               </td>
-                              <td className="px-6 py-4 text-sm text-green-700 text-right">
+                              <td className="px-6 py-4 text-sm text-vine-green-700 text-right">
                                 ${plantingTotal.toLocaleString()}
                               </td>
                             </tr>
@@ -3593,12 +3593,12 @@ const EstablishmentProgressTracker = ({
 
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                 <div className="flex items-center justify-center mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-green-600" />
+                  <div className="w-12 h-12 bg-vine-green-100 rounded-full flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-vine-green-500" />
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-green-600 mb-2">
+                  <div className="text-4xl font-bold text-vine-green-500 mb-2">
                     ${projection
                       .filter(p => p.year > 0)
                       .reduce((sum, p) => sum + p.revenue, 0)
@@ -3865,14 +3865,14 @@ const EstablishmentProgressTracker = ({
                           <td className="p-2">${p.cost.toLocaleString()}</td>
                           <td
                             className={`p-2 font-medium ${
-                              p.net >= 0 ? "text-green-600" : "text-red-600"
+                              p.net >= 0 ? "text-vine-green-500" : "text-red-600"
                             }`}
                           >
                             ${p.net.toLocaleString()}
                           </td>
                           <td
                             className={`p-2 font-medium ${
-                              p.cumulative >= 0 ? "text-green-600" : "text-red-600"
+                              p.cumulative >= 0 ? "text-vine-green-500" : "text-red-600"
                             }`}
                           >
                             ${p.cumulative.toLocaleString()}
@@ -3916,16 +3916,16 @@ const EstablishmentProgressTracker = ({
                     )}
                   </div>
 
-                  <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
+                  <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-vine-green-500 hover:shadow-xl transition-shadow duration-300">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-green-700 uppercase font-bold tracking-wider">Total Investment</p>
+                      <p className="text-xs text-vine-green-700 uppercase font-bold tracking-wider">Total Investment</p>
                     </div>
-                    <p className="text-4xl font-black text-green-900 mb-3">${totalEstCost.toLocaleString()}</p>
+                    <p className="text-4xl font-black text-vine-green-900 mb-3">${totalEstCost.toLocaleString()}</p>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Initial capital required to establish vineyard
                     </p>
-                    <div className="mt-3 p-2 bg-green-50 rounded-lg">
-                      <p className="text-xs text-green-700">
+                    <div className="mt-3 p-2 bg-vine-green-50 rounded-lg">
+                      <p className="text-xs text-vine-green-700">
                         Per acre: <span className="font-semibold">${Math.round(totalEstCost / stNum.acres).toLocaleString()}</span>
                       </p>
                     </div>
@@ -3964,9 +3964,9 @@ const EstablishmentProgressTracker = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Left column - Revenue metrics */}
                     <div className="min-w-0">
-                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border-l-4 border-green-400">
-                        <span className="font-semibold text-green-900">Max Potential Revenue (full production)</span>
-                        <span className="font-black text-xl text-green-800">
+                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-vine-green-50 to-vine-green-100 rounded-lg border-l-4 border-vine-green-400">
+                        <span className="font-semibold text-vine-green-900">Max Potential Revenue (full production)</span>
+                        <span className="font-black text-xl text-vine-green-800">
                          ${maxPotentialRevenue.toLocaleString()}
                         </span>
                       </div>
@@ -4549,7 +4549,7 @@ const EstablishmentProgressTracker = ({
                 </div>
                 <div className="bg-white p-5 rounded-lg shadow-sm">
                     <h3 className="text-lg font-medium text-vine-green-700 mb-3">Investment Recovery</h3>
-                    <p className="text-3xl font-bold text-green-800 mb-2">
+                    <p className="text-3xl font-bold text-vine-green-800 mb-2">
                     {projection.length > 0 && beIdx >= 0 
                         ? `${((beIdx + 1) / projYears * 100).toFixed(0)}%` 
                         : ">100%"}
@@ -4709,7 +4709,7 @@ const EstablishmentProgressTracker = ({
                           </div>
                           <div className="h-5 bg-gray-200 rounded-full overflow-hidden">
                               <div 
-                              className="h-5 bg-green-500 rounded-full flex items-center justify-end pr-2 text-xs text-white font-medium"
+                              className="h-5 bg-vine-green-500 rounded-full flex items-center justify-end pr-2 text-xs text-white font-medium"
                               style={{ 
                                   width: `${Math.min(100, (stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%`,
                                   marginLeft: `${Math.min(100, (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)) / stNum.bottlePrice * 100)}%`
@@ -4727,7 +4727,7 @@ const EstablishmentProgressTracker = ({
                           <span className="text-sm text-gray-600">Bottle Price</span>
                           </div>
                           <div className="text-right">
-                          <span className="block text-2xl font-bold text-green-700">
+                          <span className="block text-2xl font-bold text-vine-green-700">
                               {Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%
                           </span>
                           <span className="text-sm text-gray-600">Profit Margin</span>

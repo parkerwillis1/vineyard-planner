@@ -590,6 +590,10 @@ export const VineyardLayoutVisualizer = ({
           <Autocomplete
             onLoad={onAutocompleteLoad}
             onPlaceChanged={onPlaceChanged}
+            options={{
+              componentRestrictions: { country: 'us' },
+              fields: ['geometry', 'formatted_address', 'name']
+            }}
           >
             <Input
               type="text"
@@ -598,7 +602,7 @@ export const VineyardLayoutVisualizer = ({
             />
           </Autocomplete>
           <p className="text-xs text-gray-500 mt-2">
-            Search for your vineyard location to center the map
+            Search for your vineyard location to center the map. If you see an error, check browser console (F12).
           </p>
         </CardContent>
       </Card>
@@ -700,7 +704,7 @@ export const VineyardLayoutVisualizer = ({
                   handleAddField();
                   setShowFieldMenu(false);
                 }}
-                className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 font-medium transition-colors flex items-center gap-2"
+                className="w-full text-left px-4 py-2 text-sm text-vine-green-500 hover:bg-vine-green-50 font-medium transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Add New Field
@@ -730,7 +734,7 @@ export const VineyardLayoutVisualizer = ({
         ) : !drawingMode && (
           <button
             onClick={handleStartDrawing}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
+            className="px-6 py-2 bg-vine-green-500 text-white rounded-lg hover:bg-vine-green-600 transition-colors font-semibold"
           >
             Start Drawing
           </button>
@@ -832,7 +836,7 @@ export const VineyardLayoutVisualizer = ({
       {/* Legend */}
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div className="flex items-center gap-2 bg-white p-2 rounded border">
-          <div className="w-4 h-4 bg-green-500 opacity-40 border-2 border-green-700 rounded"></div>
+          <div className="w-4 h-4 bg-vine-green-500 opacity-40 border-2 border-vine-green-700 rounded"></div>
           <span>Field Boundary</span>
         </div>
         <div className="flex items-center gap-2 bg-white p-2 rounded border">
@@ -1115,7 +1119,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm">
                   <div className="text-sm text-gray-600">Total Vines</div>
-                  <div className="text-2xl font-bold text-green-900">{aggregateLayout.vineLayout.totalVines.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-vine-green-900">{aggregateLayout.vineLayout.totalVines.toLocaleString()}</div>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm">
                   <div className="text-sm text-gray-600">Total Rows</div>
@@ -1138,9 +1142,9 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                 {fields.find(f => f.id === currentFieldId)?.name} Statistics
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-green-50 p-3 rounded-lg">
+                <div className="bg-vine-green-50 p-3 rounded-lg">
                   <div className="text-xs text-gray-600">Acreage</div>
-                  <div className="text-xl font-bold text-green-900">{currentFieldLayout.dimensions.acres.toFixed(2)}</div>
+                  <div className="text-xl font-bold text-vine-green-900">{currentFieldLayout.dimensions.acres.toFixed(2)}</div>
                 </div>
                 <div className="bg-purple-50 p-3 rounded-lg">
                   <div className="text-xs text-gray-600">Vines</div>
