@@ -1078,7 +1078,39 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
         {/* Material Costs */}
         {aggregateLayout && materialCosts && (
           <CollapsibleSection title="Material Cost Summary (All Fields)" defaultOpen={true}>
-            <MaterialCostsVisualizer materialCosts={materialCosts} layout={aggregateLayout} />
+            <div className="space-y-6">
+              {/* Aggregate Summary */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Total Materials (All Fields)</h4>
+                <MaterialCostsVisualizer materialCosts={materialCosts} layout={aggregateLayout} />
+              </div>
+
+              {/* Individual Field Breakdown */}
+              {fields.length > 1 && fields.some(f => f.polygonPath && f.polygonPath.length >= 3) && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Materials by Field</h4>
+                  <div className="space-y-3">
+                    {fields.map(field => {
+                      const layout = fieldLayouts[field.id];
+                      if (!layout) return null;
+
+                      const fieldCosts = calculateMaterialCosts(layout.materials);
+
+                      return (
+                        <details key={field.id} className="bg-gray-50 rounded-lg border border-gray-200">
+                          <summary className="cursor-pointer p-4 font-medium text-gray-800 hover:bg-gray-100 rounded-lg">
+                            {field.name} - ${Object.values(fieldCosts).reduce((sum, cost) => sum + cost, 0).toLocaleString()}
+                          </summary>
+                          <div className="p-4 pt-0">
+                            <MaterialCostsVisualizer materialCosts={fieldCosts} layout={layout} />
+                          </div>
+                        </details>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </CollapsibleSection>
         )}
 
