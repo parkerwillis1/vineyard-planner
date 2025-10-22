@@ -545,6 +545,8 @@ export default function PlannerShell({ embedded = false }) {
       spacingOption: "6x10",
       customVineSpacing: 6,
       customRowSpacing: 10,
+      rowOrientation: "horizontal",
+      trellisSystem: "VSP",
       shape: "rectangle",
       aspectRatio: 2,
       calculatedLayout: null,
@@ -1794,6 +1796,7 @@ const EstablishmentProgressTracker = ({
             onAcresChange={(value) => update("acres", value)}
             savedFields={st.vineyardFields || []}
             onFieldsChange={(fields) => update("vineyardFields", fields)}
+            onConfigChange={(config) => update("vineyardLayout", { ...st.vineyardLayout, ...config })}
           />
         </div>
       )}

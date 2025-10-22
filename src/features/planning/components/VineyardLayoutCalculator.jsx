@@ -807,12 +807,24 @@ export const VineyardLayoutVisualizer = ({
 };
 
 // Main component for vineyard layout configuration
-export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onAcresChange, savedFields, onFieldsChange }) => {
-  const [spacingOption, setSpacingOption] = useState("6x10");
-  const [customVineSpacing, setCustomVineSpacing] = useState(6);
-  const [customRowSpacing, setCustomRowSpacing] = useState(10);
-  const [rowOrientation, setRowOrientation] = useState("horizontal");
-  const [trellisSystem, setTrellisSystem] = useState("VSP");
+export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onAcresChange, savedFields, onFieldsChange, onConfigChange }) => {
+  // Initialize from currentLayout or use defaults
+  const [spacingOption, setSpacingOption] = useState(() => currentLayout?.spacingOption || "6x10");
+  const [customVineSpacing, setCustomVineSpacing] = useState(() => currentLayout?.customVineSpacing || 6);
+  const [customRowSpacing, setCustomRowSpacing] = useState(() => currentLayout?.customRowSpacing || 10);
+  const [rowOrientation, setRowOrientation] = useState(() => currentLayout?.rowOrientation || "horizontal");
+  const [trellisSystem, setTrellisSystem] = useState(() => currentLayout?.trellisSystem || "VSP");
+
+  // Sync with currentLayout when it changes (when loading a plan)
+  useEffect(() => {
+    if (currentLayout) {
+      if (currentLayout.spacingOption) setSpacingOption(currentLayout.spacingOption);
+      if (currentLayout.customVineSpacing) setCustomVineSpacing(currentLayout.customVineSpacing);
+      if (currentLayout.customRowSpacing) setCustomRowSpacing(currentLayout.customRowSpacing);
+      if (currentLayout.rowOrientation) setRowOrientation(currentLayout.rowOrientation);
+      if (currentLayout.trellisSystem) setTrellisSystem(currentLayout.trellisSystem);
+    }
+  }, [currentLayout]);
 
   // Initialize fields from saved data or create default
   const [fields, setFields] = useState(() => {
@@ -949,6 +961,25 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
       }
     }
   }, [fields]);
+
+  // Notify parent of config changes (for saving)
+  const lastConfigRef = useRef(null);
+  useEffect(() => {
+    if (onConfigChange) {
+      const config = {
+        spacingOption,
+        customVineSpacing,
+        customRowSpacing,
+        rowOrientation,
+        trellisSystem
+      };
+      const configString = JSON.stringify(config);
+      if (lastConfigRef.current !== configString) {
+        lastConfigRef.current = configString;
+        onConfigChange(config);
+      }
+    }
+  }, [spacingOption, customVineSpacing, customRowSpacing, rowOrientation, trellisSystem, onConfigChange]);
 
   const currentFieldLayout = currentFieldId ? fieldLayouts[currentFieldId] : null;
 
