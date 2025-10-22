@@ -1,13 +1,13 @@
 // VineyardLayoutCalculator.jsx - Google Maps Based Vineyard Planner with Multiple Fields
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { GoogleMap, LoadScript, Polygon, Marker, Polyline } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Polygon, Marker, Polyline, Autocomplete } from '@react-google-maps/api';
 import { MaterialCostsVisualizer } from "@/features/planning/components/MaterialCostsVisualizer";
 import { ChevronDown, MapPin, Trash2, Edit3, Plus, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAEwV8iVPfyCuZDYaX8rstuSUMK8ZOF6V8';
-const LIBRARIES = ['drawing', 'geometry'];
+const LIBRARIES = ['drawing', 'geometry', 'places'];
 
 // Texas Hill Country default center (Fredericksburg area)
 const DEFAULT_CENTER = {
@@ -370,6 +370,7 @@ export const VineyardLayoutVisualizer = ({
   const [editingFieldName, setEditingFieldName] = useState(null);
   const [newFieldName, setNewFieldName] = useState('');
   const [showFieldMenu, setShowFieldMenu] = useState(false);
+  const [autocomplete, setAutocomplete] = useState(null);
 
   const mapOptions = {
     mapTypeId: 'satellite',
@@ -545,6 +546,28 @@ export const VineyardLayoutVisualizer = ({
     onFieldSelect(field.id);
   };
 
+  const onPlaceChanged = () => {
+    if (autocomplete !== null) {
+      const place = autocomplete.getPlace();
+      if (place.geometry) {
+        const location = {
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng()
+        };
+        setMapCenter(location);
+        setMapZoom(17);
+        if (mapRef.current) {
+          mapRef.current.panTo(location);
+          mapRef.current.setZoom(17);
+        }
+      }
+    }
+  };
+
+  const onAutocompleteLoad = (autocompleteInstance) => {
+    setAutocomplete(autocompleteInstance);
+  };
+
   // Calculate center for map
   const displayCenter = useMemo(() => {
     if (currentField && currentField.polygonPath && currentField.polygonPath.length > 0) {
@@ -558,12 +581,27 @@ export const VineyardLayoutVisualizer = ({
 
   return (
     <div className="space-y-4">
-      {/* Address Search - Temporarily disabled due to API billing */}
-      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-        <p className="text-sm text-yellow-800">
-          <strong>Note:</strong> Address search temporarily unavailable. Navigate the map manually to find your location.
-        </p>
-      </div>
+      {/* Address Search */}
+      <Card>
+        <CardContent className="p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Search for Address or Location
+          </label>
+          <Autocomplete
+            onLoad={onAutocompleteLoad}
+            onPlaceChanged={onPlaceChanged}
+          >
+            <Input
+              type="text"
+              placeholder="Enter an address or location..."
+              className="w-full"
+            />
+          </Autocomplete>
+          <p className="text-xs text-gray-500 mt-2">
+            Search for your vineyard location to center the map
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Map Controls - Always visible */}
       <div className="flex gap-3 flex-wrap items-center">
