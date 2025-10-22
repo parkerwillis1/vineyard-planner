@@ -51,7 +51,7 @@ export default function SignIn() {
             required
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-200"
+            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-vine-green-200"
           />
         </div>
 
@@ -64,7 +64,7 @@ export default function SignIn() {
             required
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-200"
+            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-vine-green-200"
           />
         </div>
 

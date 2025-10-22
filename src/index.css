@@ -54,12 +54,27 @@ button {
   transition: border-color .25s, background-color .25s, color .25s;
 }
 button:hover {
-  border-color: #3b82f6;      /* blue-500 */
+  border-color: #00806f;      /* vine-green-500 */
   background: #e2e8f0;        /* slate-200 */
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
+}
+
+/* Remove blue focus rings globally */
+*:focus,
+*:focus-visible {
+  outline: none !important;
+}
+
+/* Add subtle vine-green focus for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  box-shadow: 0 0 0 2px rgba(0, 128, 111, 0.3);
 }
 
 /* Utility: remove default outlines on map geographies if any */

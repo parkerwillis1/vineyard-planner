@@ -613,7 +613,7 @@ export const VineyardLayoutVisualizer = ({
         <div className="relative" ref={fieldMenuRef}>
           <button
             onClick={() => setShowFieldMenu(!showFieldMenu)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 transition-colors"
           >
             <span className="text-gray-700">
               {currentField?.name || 'Field 1'} ({fields.length} field{fields.length !== 1 ? 's' : ''})

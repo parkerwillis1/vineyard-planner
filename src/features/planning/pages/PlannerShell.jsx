@@ -3650,7 +3650,7 @@ const EstablishmentProgressTracker = ({
                   <select
                     value={selectedChart}
                     onChange={(e) => setSelectedChart(e.target.value)}
-                    className="appearance-none px-4 py-3 pr-10 border border-gray-200 rounded-xl text-base font-medium bg-white shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer min-w-[240px]"
+                    className="appearance-none px-4 py-3 pr-10 border border-gray-200 rounded-xl text-base font-medium bg-white shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-vine-green-500 focus:border-transparent cursor-pointer min-w-[240px]"
                   >
                     <option value="revenue">Revenue Projection</option>
                     <option value="profit">Annual Profit/Loss</option>
