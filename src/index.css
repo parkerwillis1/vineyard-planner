@@ -67,6 +67,16 @@ svg [role="button"]:focus {
   outline: none;
 }
 
+/* Text selection color - use brand vine-green */
+::selection {
+  background-color: #dcfce9; /* vine-green-100 */
+  color: #14532d;            /* vine-green-900 */
+}
+::-moz-selection {
+  background-color: #dcfce9; /* vine-green-100 */
+  color: #14532d;            /* vine-green-900 */
+}
+
 /* Optional: nicer scrollbars (WebKit) */
 ::-webkit-scrollbar {
   width: 10px;
