@@ -1791,6 +1791,8 @@ const EstablishmentProgressTracker = ({
             onLayoutChange={handleLayoutChange}
             currentLayout={st.vineyardLayout}
             onAcresChange={(value) => update("acres", value)}
+            savedFields={st.vineyardFields || []}
+            onFieldsChange={(fields) => update("vineyardFields", fields)}
           />
         </div>
       )}
