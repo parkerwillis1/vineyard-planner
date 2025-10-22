@@ -302,7 +302,7 @@ const TabNav = ({
                 onClick={() => setActive(t.id)}
                 className={`px-5 py-2.5 text-base font-semibold rounded-lg transition-all whitespace-nowrap ${
                   active === t.id
-                    ? "bg-vine-green-100 text-vine-green-700"
+                    ? "bg-vine-green-500 text-white"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
