@@ -874,11 +874,16 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
   }, [aggregateLayout, materialCosts]);
 
   // Notify parent of fields changes (for saving)
+  const lastFieldsRef = useRef(null);
   useEffect(() => {
     if (onFieldsChange) {
-      onFieldsChange(fields);
+      const fieldsString = JSON.stringify(fields);
+      if (lastFieldsRef.current !== fieldsString) {
+        lastFieldsRef.current = fieldsString;
+        onFieldsChange(fields);
+      }
     }
-  }, [fields, onFieldsChange]);
+  }, [fields]);
 
   const currentFieldLayout = currentFieldId ? fieldLayouts[currentFieldId] : null;
 
