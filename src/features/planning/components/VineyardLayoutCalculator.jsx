@@ -462,7 +462,61 @@ export const VineyardLayoutVisualizer = ({ layout, acres, orientation, polygonPa
   );
 };
 
-// Generate row lines based on polygon and spacing (simplified - no post markers)
+// Check if a point is inside a polygon using ray casting algorithm
+const isPointInPolygon = (point, polygon) => {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].lng, yi = polygon[i].lat;
+    const xj = polygon[j].lng, yj = polygon[j].lat;
+
+    const intersect = ((yi > point.lat) !== (yj > point.lat))
+        && (point.lng < (xj - xi) * (point.lat - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+};
+
+// Find intersection points where a line crosses the polygon boundary
+const clipLineToPolygon = (lineStart, lineEnd, polygon) => {
+  const segments = [];
+  const numSamples = 200; // Sample points along the line
+
+  let currentSegment = null;
+
+  for (let i = 0; i <= numSamples; i++) {
+    const t = i / numSamples;
+    const point = {
+      lat: lineStart.lat + t * (lineEnd.lat - lineStart.lat),
+      lng: lineStart.lng + t * (lineEnd.lng - lineStart.lng)
+    };
+
+    const isInside = isPointInPolygon(point, polygon);
+
+    if (isInside) {
+      if (!currentSegment) {
+        currentSegment = [point];
+      } else {
+        currentSegment.push(point);
+      }
+    } else {
+      if (currentSegment && currentSegment.length > 1) {
+        segments.push(currentSegment);
+        currentSegment = null;
+      } else if (currentSegment) {
+        currentSegment = null;
+      }
+    }
+  }
+
+  // Add final segment if it exists
+  if (currentSegment && currentSegment.length > 1) {
+    segments.push(currentSegment);
+  }
+
+  return segments;
+};
+
+// Generate row lines based on polygon and spacing - clipped to polygon boundary
 const generateRowLines = (polygonPath, numberOfRows, rowSpacing, orientation) => {
   if (!polygonPath || polygonPath.length < 3 || !window.google) return [];
 
@@ -477,28 +531,34 @@ const generateRowLines = (polygonPath, numberOfRows, rowSpacing, orientation) =>
   const rows = [];
 
   // Convert row spacing from feet to approximate degrees
-  // At this latitude, approximately 1 degree lat = 364,000 feet
-  // 1 degree lng varies by latitude, approximately 300,000 feet at 30° lat
   const latDegPerFoot = 1 / 364000;
   const lngDegPerFoot = 1 / 300000;
 
   for (let i = 0; i < numberOfRows; i++) {
-    let start, end;
+    let lineStart, lineEnd;
 
     if (orientation === "vertical") {
       // Rows run north-south
       const lngOffset = minLng + (i * rowSpacing * lngDegPerFoot);
-      start = { lat: minLat, lng: lngOffset };
-      end = { lat: maxLat, lng: lngOffset };
+      lineStart = { lat: minLat - 0.001, lng: lngOffset }; // Extend beyond bounds
+      lineEnd = { lat: maxLat + 0.001, lng: lngOffset };
     } else {
       // Rows run east-west
       const latOffset = minLat + (i * rowSpacing * latDegPerFoot);
-      start = { lat: latOffset, lng: minLng };
-      end = { lat: latOffset, lng: maxLng };
+      lineStart = { lat: latOffset, lng: minLng - 0.001 }; // Extend beyond bounds
+      lineEnd = { lat: latOffset, lng: maxLng + 0.001 };
     }
 
-    rows.push({
-      path: [start, end]
+    // Clip the line to polygon boundary
+    const clippedSegments = clipLineToPolygon(lineStart, lineEnd, polygonPath);
+
+    // Add each clipped segment as a separate row
+    clippedSegments.forEach(segment => {
+      if (segment.length >= 2) {
+        rows.push({
+          path: segment
+        });
+      }
     });
   }
 
