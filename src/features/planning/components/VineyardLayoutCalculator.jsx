@@ -723,9 +723,9 @@ export const VineyardLayoutVisualizer = ({
                     key={`${field.id}-row-${index}`}
                     path={row.path}
                     options={{
-                      strokeColor: field.id === currentFieldId ? '#8b4513' : '#a0a0a0',
-                      strokeOpacity: field.id === currentFieldId ? 0.6 : 0.3,
-                      strokeWeight: 1.5,
+                      strokeColor: field.id === currentFieldId ? '#ffff00' : '#cccc00',
+                      strokeOpacity: field.id === currentFieldId ? 0.9 : 0.5,
+                      strokeWeight: 2,
                     }}
                   />
                 ))}
@@ -770,7 +770,7 @@ export const VineyardLayoutVisualizer = ({
           <span>Field Boundary</span>
         </div>
         <div className="flex items-center gap-2 bg-white p-2 rounded border">
-          <div className="w-8 h-1 bg-amber-700"></div>
+          <div className="w-8 h-1 bg-yellow-400"></div>
           <span>Trellis Rows</span>
         </div>
       </div>
