@@ -349,7 +349,20 @@ export const VineyardLayoutVisualizer = ({
   orientation
 }) => {
   const mapRef = useRef(null);
-  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
+
+  // Initialize map center from first field with polygon, or use default
+  const [mapCenter, setMapCenter] = useState(() => {
+    const firstFieldWithPolygon = fields.find(f => f.polygonPath && f.polygonPath.length > 0);
+    if (firstFieldWithPolygon) {
+      const polygon = firstFieldWithPolygon.polygonPath;
+      return {
+        lat: polygon.reduce((sum, p) => sum + p.lat, 0) / polygon.length,
+        lng: polygon.reduce((sum, p) => sum + p.lng, 0) / polygon.length
+      };
+    }
+    return DEFAULT_CENTER;
+  });
+
   const [mapZoom, setMapZoom] = useState(17);
   const [drawingMode, setDrawingMode] = useState(false);
   const [tempPath, setTempPath] = useState([]);
@@ -365,6 +378,23 @@ export const VineyardLayoutVisualizer = ({
   };
 
   const currentField = fields.find(f => f.id === currentFieldId);
+
+  // Update map center when fields change (e.g., when loading saved fields)
+  useEffect(() => {
+    const firstFieldWithPolygon = fields.find(f => f.polygonPath && f.polygonPath.length > 0);
+    if (firstFieldWithPolygon && firstFieldWithPolygon.polygonPath.length > 0) {
+      const polygon = firstFieldWithPolygon.polygonPath;
+      const center = {
+        lat: polygon.reduce((sum, p) => sum + p.lat, 0) / polygon.length,
+        lng: polygon.reduce((sum, p) => sum + p.lng, 0) / polygon.length
+      };
+      setMapCenter(center);
+      if (mapRef.current) {
+        mapRef.current.panTo(center);
+        mapRef.current.setZoom(17);
+      }
+    }
+  }, [fields]);
 
   // Calculate rows for all visible fields
   const allFieldsRows = useMemo(() => {
@@ -768,6 +798,13 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
       visible: true
     }];
   });
+
+  // Sync fields when savedFields changes (e.g., when loading a different plan)
+  useEffect(() => {
+    if (savedFields && savedFields.length > 0) {
+      setFields(savedFields);
+    }
+  }, [savedFields]);
 
   const [currentFieldId, setCurrentFieldId] = useState(() => fields[0]?.id);
 

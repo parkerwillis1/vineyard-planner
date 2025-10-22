@@ -550,6 +550,7 @@ export default function PlannerShell({ embedded = false }) {
       calculatedLayout: null,
       materialCosts: null
     },
+    vineyardFields: [],
 
     setupYear: "0",
     setup: {
