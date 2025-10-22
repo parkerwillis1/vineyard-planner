@@ -1,13 +1,13 @@
-// VineyardLayoutCalculator.jsx - Google Maps Based Vineyard Planner
+// VineyardLayoutCalculator.jsx - Google Maps Based Vineyard Planner with Multiple Fields
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { GoogleMap, LoadScript, Polygon, Marker, Polyline } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Polygon, Marker, Polyline, Autocomplete } from '@react-google-maps/api';
 import { MaterialCostsVisualizer } from "@/features/planning/components/MaterialCostsVisualizer";
-import { ChevronDown, MapPin, Trash2, Edit3 } from "lucide-react";
+import { ChevronDown, MapPin, Trash2, Edit3, Plus, Search, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAEwV8iVPfyCuZDYaX8rstuSUMK8ZOF6V8';
-const LIBRARIES = ['drawing', 'geometry'];
+const LIBRARIES = ['drawing', 'geometry', 'places'];
 
 // Texas Hill Country default center (Fredericksburg area)
 const DEFAULT_CENTER = {
@@ -220,248 +220,6 @@ export const calculateMaterialCosts = (materials, customPrices = {}) => {
   };
 };
 
-// Google Maps Vineyard Visualizer Component
-export const VineyardLayoutVisualizer = ({ layout, acres, orientation, polygonPath, vineSpacing, rowSpacing, onPolygonChange }) => {
-  const mapRef = useRef(null);
-  const [drawingMode, setDrawingMode] = useState(false);
-  const [tempPath, setTempPath] = useState([]);
-  const [rows, setRows] = useState([]);
-
-  const mapOptions = {
-    mapTypeId: 'satellite',
-    mapTypeControl: true,
-    streetViewControl: false,
-    fullscreenControl: true,
-    zoomControl: true,
-  };
-
-  // Calculate row lines when polygon or spacing changes
-  useEffect(() => {
-    if (!polygonPath || polygonPath.length < 3 || !layout) return;
-
-    const newRows = generateRowLines(polygonPath, layout.vineLayout.numberOfRows, rowSpacing, orientation);
-    setRows(newRows);
-  }, [polygonPath, layout, rowSpacing, orientation]);
-
-  const handleMapClick = (e) => {
-    if (!drawingMode) return;
-
-    const newPoint = {
-      lat: e.latLng.lat(),
-      lng: e.latLng.lng()
-    };
-
-    const newPath = [...tempPath, newPoint];
-
-    // Check if clicked near first point to close polygon
-    if (tempPath.length >= 3) {
-      const firstPoint = tempPath[0];
-      const distance = calculateDistance(newPoint, firstPoint);
-
-      if (distance < 50) { // Within 50 feet of first point
-        onPolygonChange(tempPath);
-        setTempPath([]);
-        setDrawingMode(false);
-        return;
-      }
-    }
-
-    setTempPath(newPath);
-  };
-
-  const handleStartDrawing = () => {
-    setDrawingMode(true);
-    setTempPath([]);
-  };
-
-  const handleClearPolygon = () => {
-    onPolygonChange([]);
-    setTempPath([]);
-    setDrawingMode(false);
-  };
-
-  const handleCancelDrawing = () => {
-    setTempPath([]);
-    setDrawingMode(false);
-  };
-
-  // Calculate center of polygon for map centering
-  const center = polygonPath && polygonPath.length > 0
-    ? {
-        lat: polygonPath.reduce((sum, p) => sum + p.lat, 0) / polygonPath.length,
-        lng: polygonPath.reduce((sum, p) => sum + p.lng, 0) / polygonPath.length
-      }
-    : DEFAULT_CENTER;
-
-  const hasPolygon = polygonPath && polygonPath.length > 0;
-
-  return (
-    <div className="space-y-4">
-      {/* Initial prompt when no polygon */}
-      {!hasPolygon && !drawingMode && (
-        <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border-2 border-green-200">
-          <div className="flex items-center gap-4">
-            <MapPin className="w-12 h-12 text-green-600 flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">Map Your Vineyard</h3>
-              <p className="text-gray-600 text-sm">Click "Start Drawing" below, then click points on the satellite map to outline your vineyard boundary.</p>
-            </div>
-            <button
-              onClick={handleStartDrawing}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold whitespace-nowrap"
-            >
-              Start Drawing
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Map Controls */}
-      {hasPolygon && (
-        <div className="flex gap-3">
-          <button
-            onClick={handleStartDrawing}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <Edit3 className="w-4 h-4" />
-            Redraw Boundary
-          </button>
-          <button
-            onClick={handleClearPolygon}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            Clear
-          </button>
-        </div>
-      )}
-
-      {/* Cancel button when drawing */}
-      {drawingMode && (
-        <button
-          onClick={handleCancelDrawing}
-          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-        >
-          Cancel Drawing
-        </button>
-      )}
-
-      {/* Drawing Instructions */}
-      {drawingMode && (
-        <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-          <p className="font-medium text-blue-900">
-            Click on the map to add points. Click near the first point to complete the polygon.
-          </p>
-          <p className="text-sm text-blue-700 mt-1">
-            Points placed: {tempPath.length}
-          </p>
-        </div>
-      )}
-
-      {/* Layout Stats */}
-      {layout && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-          <div className="bg-green-50 p-3 rounded-lg">
-            <div className="font-semibold text-green-700">Acreage</div>
-            <div className="text-2xl font-bold text-green-900">{layout.dimensions.acres.toFixed(2)}</div>
-          </div>
-          <div className="bg-purple-50 p-3 rounded-lg">
-            <div className="font-semibold text-purple-700">Total Vines</div>
-            <div className="text-2xl font-bold text-purple-900">{layout.vineLayout.totalVines.toLocaleString()}</div>
-          </div>
-          <div className="bg-blue-50 p-3 rounded-lg">
-            <div className="font-semibold text-blue-700">Rows</div>
-            <div className="text-2xl font-bold text-blue-900">{layout.vineLayout.numberOfRows}</div>
-          </div>
-          <div className="bg-amber-50 p-3 rounded-lg">
-            <div className="font-semibold text-amber-700">Vines/Acre</div>
-            <div className="text-2xl font-bold text-amber-900">{Math.round(layout.vineLayout.vinesPerAcre)}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Google Map */}
-      <div className="h-[600px] rounded-xl overflow-hidden shadow-lg border-2 border-gray-200">
-        <GoogleMap
-          mapContainerStyle={{ width: '100%', height: '100%' }}
-          center={center}
-          zoom={17}
-          options={mapOptions}
-          onClick={handleMapClick}
-          onLoad={(map) => { mapRef.current = map; }}
-        >
-          {/* Main Polygon */}
-          {polygonPath.length >= 3 && (
-            <Polygon
-              paths={polygonPath}
-              options={{
-                fillColor: '#10b981',
-                fillOpacity: 0.2,
-                strokeColor: '#059669',
-                strokeOpacity: 0.8,
-                strokeWeight: 3,
-              }}
-            />
-          )}
-
-          {/* Temporary drawing path */}
-          {tempPath.length > 0 && (
-            <>
-              <Polyline
-                path={tempPath}
-                options={{
-                  strokeColor: '#3b82f6',
-                  strokeOpacity: 0.8,
-                  strokeWeight: 3,
-                }}
-              />
-              {tempPath.map((point, index) => (
-                <Marker
-                  key={index}
-                  position={point}
-                  icon={{
-                    path: window.google.maps.SymbolPath.CIRCLE,
-                    scale: 6,
-                    fillColor: '#3b82f6',
-                    fillOpacity: 1,
-                    strokeColor: '#fff',
-                    strokeWeight: 2,
-                  }}
-                />
-              ))}
-            </>
-          )}
-
-          {/* Row Lines - simplified, no individual post markers */}
-          {rows.map((row, index) => (
-            <Polyline
-              key={`row-${index}`}
-              path={row.path}
-              options={{
-                strokeColor: '#8b4513',
-                strokeOpacity: 0.6,
-                strokeWeight: 1.5,
-              }}
-            />
-          ))}
-        </GoogleMap>
-      </div>
-
-      {/* Legend */}
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="flex items-center gap-2 bg-white p-2 rounded border">
-          <div className="w-4 h-4 bg-green-500 opacity-40 border-2 border-green-700 rounded"></div>
-          <span>Vineyard Boundary</span>
-        </div>
-        <div className="flex items-center gap-2 bg-white p-2 rounded border">
-          <div className="w-8 h-1 bg-amber-700"></div>
-          <span>Trellis Rows</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Check if a point is inside a polygon using ray casting algorithm
 const isPointInPolygon = (point, polygon) => {
   let inside = false;
@@ -580,14 +338,468 @@ const generateRowLines = (polygonPath, numberOfRows, rowSpacing, orientation) =>
   return rows;
 };
 
+// Google Maps Vineyard Visualizer Component with Multiple Fields Support
+export const VineyardLayoutVisualizer = ({
+  fields,
+  currentFieldId,
+  onFieldsChange,
+  onFieldSelect,
+  vineSpacing,
+  rowSpacing,
+  orientation
+}) => {
+  const mapRef = useRef(null);
+  const autocompleteRef = useRef(null);
+  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
+  const [mapZoom, setMapZoom] = useState(17);
+  const [drawingMode, setDrawingMode] = useState(false);
+  const [tempPath, setTempPath] = useState([]);
+  const [editingFieldName, setEditingFieldName] = useState(null);
+  const [newFieldName, setNewFieldName] = useState('');
+
+  const mapOptions = {
+    mapTypeId: 'satellite',
+    mapTypeControl: true,
+    streetViewControl: false,
+    fullscreenControl: true,
+    zoomControl: true,
+  };
+
+  const currentField = fields.find(f => f.id === currentFieldId);
+
+  // Calculate rows for all visible fields
+  const allFieldsRows = useMemo(() => {
+    const rowsMap = {};
+    fields.forEach(field => {
+      if (field.visible && field.polygonPath && field.polygonPath.length >= 3) {
+        const layout = calculateVineyardLayout(field.polygonPath, vineSpacing, rowSpacing, orientation);
+        if (layout) {
+          rowsMap[field.id] = generateRowLines(field.polygonPath, layout.vineLayout.numberOfRows, rowSpacing, orientation);
+        }
+      }
+    });
+    return rowsMap;
+  }, [fields, vineSpacing, rowSpacing, orientation]);
+
+  const handleMapClick = (e) => {
+    if (!drawingMode) return;
+
+    const newPoint = {
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng()
+    };
+
+    const newPath = [...tempPath, newPoint];
+
+    // Check if clicked near first point to close polygon
+    if (tempPath.length >= 3) {
+      const firstPoint = tempPath[0];
+      const distance = calculateDistance(newPoint, firstPoint);
+
+      if (distance < 50) { // Within 50 feet of first point
+        // Save the completed polygon to current field
+        handleSavePolygon(tempPath);
+        setTempPath([]);
+        setDrawingMode(false);
+        return;
+      }
+    }
+
+    setTempPath(newPath);
+  };
+
+  const handleSavePolygon = (polygonPath) => {
+    const updatedFields = fields.map(field =>
+      field.id === currentFieldId
+        ? { ...field, polygonPath }
+        : field
+    );
+    onFieldsChange(updatedFields);
+  };
+
+  const handleStartDrawing = () => {
+    // Save current map position before starting
+    if (mapRef.current) {
+      const center = mapRef.current.getCenter();
+      const zoom = mapRef.current.getZoom();
+      setMapCenter({ lat: center.lat(), lng: center.lng() });
+      setMapZoom(zoom);
+    }
+    setDrawingMode(true);
+    setTempPath([]);
+  };
+
+  const handleClearPolygon = () => {
+    // Save current map position before clearing
+    if (mapRef.current) {
+      const center = mapRef.current.getCenter();
+      const zoom = mapRef.current.getZoom();
+      setMapCenter({ lat: center.lat(), lng: center.lng() });
+      setMapZoom(zoom);
+    }
+
+    const updatedFields = fields.map(field =>
+      field.id === currentFieldId
+        ? { ...field, polygonPath: [] }
+        : field
+    );
+    onFieldsChange(updatedFields);
+    setTempPath([]);
+    setDrawingMode(false);
+  };
+
+  const handleCancelDrawing = () => {
+    setTempPath([]);
+    setDrawingMode(false);
+  };
+
+  const handleAddField = () => {
+    const newField = {
+      id: Date.now().toString(),
+      name: `Field ${fields.length + 1}`,
+      polygonPath: [],
+      visible: true
+    };
+    onFieldsChange([...fields, newField]);
+    onFieldSelect(newField.id);
+  };
+
+  const handleDeleteField = (fieldId) => {
+    const updatedFields = fields.filter(f => f.id !== fieldId);
+    if (fieldId === currentFieldId && updatedFields.length > 0) {
+      onFieldSelect(updatedFields[0].id);
+    }
+    onFieldsChange(updatedFields);
+  };
+
+  const handleToggleFieldVisibility = (fieldId) => {
+    const updatedFields = fields.map(field =>
+      field.id === fieldId ? { ...field, visible: !field.visible } : field
+    );
+    onFieldsChange(updatedFields);
+  };
+
+  const handleRenameField = (fieldId, newName) => {
+    const updatedFields = fields.map(field =>
+      field.id === fieldId ? { ...field, name: newName } : field
+    );
+    onFieldsChange(updatedFields);
+    setEditingFieldName(null);
+  };
+
+  const handlePlaceSelect = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place.geometry && place.geometry.location) {
+        const newCenter = {
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng()
+        };
+        setMapCenter(newCenter);
+        setMapZoom(17);
+        if (mapRef.current) {
+          mapRef.current.panTo(newCenter);
+          mapRef.current.setZoom(17);
+        }
+      }
+    }
+  };
+
+  const handleGoToField = (field) => {
+    if (field.polygonPath && field.polygonPath.length > 0) {
+      const center = {
+        lat: field.polygonPath.reduce((sum, p) => sum + p.lat, 0) / field.polygonPath.length,
+        lng: field.polygonPath.reduce((sum, p) => sum + p.lng, 0) / field.polygonPath.length
+      };
+      setMapCenter(center);
+      setMapZoom(17);
+      if (mapRef.current) {
+        mapRef.current.panTo(center);
+        mapRef.current.setZoom(17);
+      }
+    }
+    onFieldSelect(field.id);
+  };
+
+  // Calculate center for map
+  const displayCenter = useMemo(() => {
+    if (currentField && currentField.polygonPath && currentField.polygonPath.length > 0) {
+      return {
+        lat: currentField.polygonPath.reduce((sum, p) => sum + p.lat, 0) / currentField.polygonPath.length,
+        lng: currentField.polygonPath.reduce((sum, p) => sum + p.lng, 0) / currentField.polygonPath.length
+      };
+    }
+    return mapCenter;
+  }, [currentField, mapCenter]);
+
+  return (
+    <div className="space-y-4">
+      {/* Address Search */}
+      <div className="bg-white p-4 rounded-lg border shadow-sm">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Search Address</label>
+        <Autocomplete
+          onLoad={(autocomplete) => { autocompleteRef.current = autocomplete; }}
+          onPlaceChanged={handlePlaceSelect}
+        >
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Input
+              type="text"
+              placeholder="Enter address or location..."
+              className="pl-10"
+            />
+          </div>
+        </Autocomplete>
+      </div>
+
+      {/* Field List */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-semibold text-gray-800">Fields</h3>
+            <button
+              onClick={handleAddField}
+              className="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center gap-1 text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Add Field
+            </button>
+          </div>
+          <div className="space-y-2">
+            {fields.map((field) => (
+              <div
+                key={field.id}
+                className={`p-3 rounded border ${
+                  field.id === currentFieldId ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-1">
+                    <button
+                      onClick={() => handleToggleFieldVisibility(field.id)}
+                      className="text-gray-600 hover:text-gray-800"
+                    >
+                      {field.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    </button>
+                    {editingFieldName === field.id ? (
+                      <Input
+                        value={newFieldName}
+                        onChange={(e) => setNewFieldName(e.target.value)}
+                        onBlur={() => handleRenameField(field.id, newFieldName)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') handleRenameField(field.id, newFieldName);
+                        }}
+                        className="text-sm h-8"
+                        autoFocus
+                      />
+                    ) : (
+                      <button
+                        onClick={() => handleGoToField(field)}
+                        className="font-medium text-sm hover:text-blue-600 flex-1 text-left"
+                      >
+                        {field.name}
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setEditingFieldName(field.id);
+                        setNewFieldName(field.name);
+                      }}
+                      className="p-1 text-gray-600 hover:text-blue-600"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    {fields.length > 1 && (
+                      <button
+                        onClick={() => handleDeleteField(field.id)}
+                        className="p-1 text-gray-600 hover:text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {field.polygonPath && field.polygonPath.length >= 3 && (
+                  <div className="mt-2 text-xs text-gray-600">
+                    {calculatePolygonArea(field.polygonPath).toFixed(2)} acres
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Initial prompt when current field has no polygon */}
+      {currentField && (!currentField.polygonPath || currentField.polygonPath.length === 0) && !drawingMode && (
+        <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border-2 border-green-200">
+          <div className="flex items-center gap-4">
+            <MapPin className="w-12 h-12 text-green-600 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">Map {currentField.name}</h3>
+              <p className="text-gray-600 text-sm">Click "Start Drawing" below, then click points on the satellite map to outline this field's boundary.</p>
+            </div>
+            <button
+              onClick={handleStartDrawing}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold whitespace-nowrap"
+            >
+              Start Drawing
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Map Controls */}
+      {currentField && currentField.polygonPath && currentField.polygonPath.length > 0 && (
+        <div className="flex gap-3">
+          <button
+            onClick={handleStartDrawing}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <Edit3 className="w-4 h-4" />
+            Redraw Boundary
+          </button>
+          <button
+            onClick={handleClearPolygon}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* Cancel button when drawing */}
+      {drawingMode && (
+        <button
+          onClick={handleCancelDrawing}
+          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          Cancel Drawing
+        </button>
+      )}
+
+      {/* Drawing Instructions */}
+      {drawingMode && (
+        <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+          <p className="font-medium text-blue-900">
+            Click on the map to add points. Click near the first point to complete the polygon.
+          </p>
+          <p className="text-sm text-blue-700 mt-1">
+            Points placed: {tempPath.length}
+          </p>
+        </div>
+      )}
+
+      {/* Google Map */}
+      <div className="h-[600px] rounded-xl overflow-hidden shadow-lg border-2 border-gray-200">
+        <GoogleMap
+          mapContainerStyle={{ width: '100%', height: '100%' }}
+          center={displayCenter}
+          zoom={mapZoom}
+          options={mapOptions}
+          onClick={handleMapClick}
+          onLoad={(map) => { mapRef.current = map; }}
+        >
+          {/* Render all visible field polygons */}
+          {fields.map(field => (
+            field.visible && field.polygonPath && field.polygonPath.length >= 3 && (
+              <React.Fragment key={field.id}>
+                <Polygon
+                  paths={field.polygonPath}
+                  options={{
+                    fillColor: field.id === currentFieldId ? '#10b981' : '#6b7280',
+                    fillOpacity: field.id === currentFieldId ? 0.2 : 0.1,
+                    strokeColor: field.id === currentFieldId ? '#059669' : '#4b5563',
+                    strokeOpacity: 0.8,
+                    strokeWeight: field.id === currentFieldId ? 3 : 2,
+                  }}
+                />
+                {/* Render rows for this field */}
+                {allFieldsRows[field.id]?.map((row, index) => (
+                  <Polyline
+                    key={`${field.id}-row-${index}`}
+                    path={row.path}
+                    options={{
+                      strokeColor: field.id === currentFieldId ? '#8b4513' : '#a0a0a0',
+                      strokeOpacity: field.id === currentFieldId ? 0.6 : 0.3,
+                      strokeWeight: 1.5,
+                    }}
+                  />
+                ))}
+              </React.Fragment>
+            )
+          ))}
+
+          {/* Temporary drawing path */}
+          {tempPath.length > 0 && (
+            <>
+              <Polyline
+                path={tempPath}
+                options={{
+                  strokeColor: '#3b82f6',
+                  strokeOpacity: 0.8,
+                  strokeWeight: 3,
+                }}
+              />
+              {tempPath.map((point, index) => (
+                <Marker
+                  key={index}
+                  position={point}
+                  icon={{
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    scale: 6,
+                    fillColor: '#3b82f6',
+                    fillOpacity: 1,
+                    strokeColor: '#fff',
+                    strokeWeight: 2,
+                  }}
+                />
+              ))}
+            </>
+          )}
+        </GoogleMap>
+      </div>
+
+      {/* Legend */}
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="flex items-center gap-2 bg-white p-2 rounded border">
+          <div className="w-4 h-4 bg-green-500 opacity-40 border-2 border-green-700 rounded"></div>
+          <span>Field Boundary</span>
+        </div>
+        <div className="flex items-center gap-2 bg-white p-2 rounded border">
+          <div className="w-8 h-1 bg-amber-700"></div>
+          <span>Trellis Rows</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main component for vineyard layout configuration
-export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onAcresChange }) => {
+export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onAcresChange, savedFields, onFieldsChange }) => {
   const [spacingOption, setSpacingOption] = useState("6x10");
   const [customVineSpacing, setCustomVineSpacing] = useState(6);
   const [customRowSpacing, setCustomRowSpacing] = useState(10);
   const [rowOrientation, setRowOrientation] = useState("horizontal");
   const [trellisSystem, setTrellisSystem] = useState("VSP");
-  const [polygonPath, setPolygonPath] = useState([]);
+
+  // Initialize fields from saved data or create default
+  const [fields, setFields] = useState(() => {
+    if (savedFields && savedFields.length > 0) {
+      return savedFields;
+    }
+    return [{
+      id: Date.now().toString(),
+      name: 'Field 1',
+      polygonPath: [],
+      visible: true
+    }];
+  });
+
+  const [currentFieldId, setCurrentFieldId] = useState(() => fields[0]?.id);
 
   const selectedSpacing = VINE_SPACING_OPTIONS.find(opt => opt.key === spacingOption);
   const isCustom = spacingOption === "custom";
@@ -595,43 +807,110 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
   const vineSpacing = isCustom ? customVineSpacing : selectedSpacing.vine;
   const rowSpacing = isCustom ? customRowSpacing : selectedSpacing.row;
 
-  const layout = useMemo(() => {
-    if (polygonPath.length >= 3 && vineSpacing > 0 && rowSpacing > 0) {
-      return calculateVineyardLayout(polygonPath, vineSpacing, rowSpacing, rowOrientation);
-    }
-    return null;
-  }, [polygonPath, vineSpacing, rowSpacing, rowOrientation]);
+  // Calculate individual field layouts
+  const fieldLayouts = useMemo(() => {
+    const layouts = {};
+    fields.forEach(field => {
+      if (field.polygonPath && field.polygonPath.length >= 3 && vineSpacing > 0 && rowSpacing > 0) {
+        layouts[field.id] = calculateVineyardLayout(field.polygonPath, vineSpacing, rowSpacing, rowOrientation);
+      }
+    });
+    return layouts;
+  }, [fields, vineSpacing, rowSpacing, rowOrientation]);
+
+  // Calculate aggregate layout (all fields combined)
+  const aggregateLayout = useMemo(() => {
+    const allLayouts = Object.values(fieldLayouts);
+    if (allLayouts.length === 0) return null;
+
+    const totalAcres = allLayouts.reduce((sum, layout) => sum + layout.dimensions.acres, 0);
+    const totalVines = allLayouts.reduce((sum, layout) => sum + layout.vineLayout.totalVines, 0);
+    const totalRows = allLayouts.reduce((sum, layout) => sum + layout.vineLayout.numberOfRows, 0);
+
+    // Aggregate materials
+    const aggregateMaterials = {
+      posts: { endPosts: 0, linePosts: 0, total: 0, description: '' },
+      earthAnchors: { count: 0, description: '' },
+      wire: { totalFeet: 0, gaugeRecommended: "12.5 gauge high-tensile", description: '' },
+      irrigation: { dripTubing: 0, emitters: 0, description: '' },
+      hardware: { wireClips: 0, eyeBolts: 0, staples: 0, tensioners: 0, anchorRings: 0, description: '' }
+    };
+
+    allLayouts.forEach(layout => {
+      const m = layout.materials;
+      aggregateMaterials.posts.endPosts += m.posts.endPosts;
+      aggregateMaterials.posts.linePosts += m.posts.linePosts;
+      aggregateMaterials.posts.total += m.posts.total;
+      aggregateMaterials.earthAnchors.count += m.earthAnchors.count;
+      aggregateMaterials.wire.totalFeet += m.wire.totalFeet;
+      aggregateMaterials.irrigation.dripTubing += m.irrigation.dripTubing;
+      aggregateMaterials.irrigation.emitters += m.irrigation.emitters;
+      aggregateMaterials.hardware.wireClips += m.hardware.wireClips;
+      aggregateMaterials.hardware.eyeBolts += m.hardware.eyeBolts;
+      aggregateMaterials.hardware.staples += m.hardware.staples;
+      aggregateMaterials.hardware.tensioners += m.hardware.tensioners;
+      aggregateMaterials.hardware.anchorRings += m.hardware.anchorRings;
+    });
+
+    aggregateMaterials.posts.description = `${aggregateMaterials.posts.endPosts} end posts + ${aggregateMaterials.posts.linePosts} line posts`;
+    aggregateMaterials.earthAnchors.description = `${aggregateMaterials.earthAnchors.count} earth anchors`;
+    aggregateMaterials.wire.description = `${Math.round(aggregateMaterials.wire.totalFeet)} feet total`;
+    aggregateMaterials.irrigation.description = `${Math.round(aggregateMaterials.irrigation.dripTubing)} ft + ${aggregateMaterials.irrigation.emitters} emitters`;
+    aggregateMaterials.hardware.description = "All hardware combined";
+
+    return {
+      dimensions: { acres: totalAcres },
+      vineLayout: {
+        numberOfRows: totalRows,
+        totalVines: totalVines,
+        vinesPerAcre: totalAcres > 0 ? (totalVines / totalAcres) : 0
+      },
+      materials: aggregateMaterials,
+      spacing: { vine: vineSpacing, row: rowSpacing },
+      orientation: rowOrientation,
+      fields: fields.length
+    };
+  }, [fieldLayouts, fields, vineSpacing, rowSpacing, rowOrientation]);
 
   const materialCosts = useMemo(() => {
-    if (layout) {
-      return calculateMaterialCosts(layout.materials);
+    if (aggregateLayout) {
+      return calculateMaterialCosts(aggregateLayout.materials);
     }
     return null;
-  }, [layout]);
+  }, [aggregateLayout]);
 
-  // Update acres when polygon changes (avoid infinite loop with ref)
+  // Update acres when fields change
   const lastAcresRef = useRef(null);
   useEffect(() => {
-    if (layout && onAcresChange) {
-      const newAcres = layout.dimensions.acres.toFixed(2);
+    if (aggregateLayout && onAcresChange) {
+      const newAcres = aggregateLayout.dimensions.acres.toFixed(2);
       if (lastAcresRef.current !== newAcres) {
         lastAcresRef.current = newAcres;
         onAcresChange(newAcres);
       }
     }
-  }, [layout]);
+  }, [aggregateLayout]);
 
-  // Notify parent component of layout changes (avoid infinite loop)
+  // Notify parent component of layout changes
   const lastLayoutRef = useRef(null);
   useEffect(() => {
-    if (layout && materialCosts && onLayoutChange) {
-      const layoutString = JSON.stringify(layout);
+    if (aggregateLayout && materialCosts && onLayoutChange) {
+      const layoutString = JSON.stringify(aggregateLayout);
       if (lastLayoutRef.current !== layoutString) {
         lastLayoutRef.current = layoutString;
-        onLayoutChange(layout, materialCosts);
+        onLayoutChange(aggregateLayout, materialCosts);
       }
     }
-  }, [layout, materialCosts]);
+  }, [aggregateLayout, materialCosts]);
+
+  // Notify parent of fields changes (for saving)
+  useEffect(() => {
+    if (onFieldsChange) {
+      onFieldsChange(fields);
+    }
+  }, [fields, onFieldsChange]);
+
+  const currentFieldLayout = currentFieldId ? fieldLayouts[currentFieldId] : null;
 
   return (
     <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={LIBRARIES}>
@@ -715,29 +994,85 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
           </CardContent>
         </Card>
 
+        {/* Overall Stats */}
+        {aggregateLayout && fields.some(f => f.polygonPath && f.polygonPath.length >= 3) && (
+          <Card className="shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4">Overall Statistics ({fields.length} Field{fields.length !== 1 ? 's' : ''})</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="text-sm text-gray-600">Total Acreage</div>
+                  <div className="text-2xl font-bold text-blue-900">{aggregateLayout.dimensions.acres.toFixed(2)}</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="text-sm text-gray-600">Total Vines</div>
+                  <div className="text-2xl font-bold text-green-900">{aggregateLayout.vineLayout.totalVines.toLocaleString()}</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="text-sm text-gray-600">Total Rows</div>
+                  <div className="text-2xl font-bold text-purple-900">{aggregateLayout.vineLayout.numberOfRows}</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="text-sm text-gray-600">Avg Vines/Acre</div>
+                  <div className="text-2xl font-bold text-amber-900">{Math.round(aggregateLayout.vineLayout.vinesPerAcre)}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Current Field Stats */}
+        {currentFieldLayout && (
+          <Card className="shadow-lg">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                {fields.find(f => f.id === currentFieldId)?.name} Statistics
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="text-xs text-gray-600">Acreage</div>
+                  <div className="text-xl font-bold text-green-900">{currentFieldLayout.dimensions.acres.toFixed(2)}</div>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <div className="text-xs text-gray-600">Vines</div>
+                  <div className="text-xl font-bold text-purple-900">{currentFieldLayout.vineLayout.totalVines.toLocaleString()}</div>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="text-xs text-gray-600">Rows</div>
+                  <div className="text-xl font-bold text-blue-900">{currentFieldLayout.vineLayout.numberOfRows}</div>
+                </div>
+                <div className="bg-amber-50 p-3 rounded-lg">
+                  <div className="text-xs text-gray-600">Vines/Acre</div>
+                  <div className="text-xl font-bold text-amber-900">{Math.round(currentFieldLayout.vineLayout.vinesPerAcre)}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Map Visualization */}
-        <CollapsibleSection title="Vineyard Map & Boundary" defaultOpen={true}>
+        <CollapsibleSection title="Vineyard Map & Fields" defaultOpen={true}>
           <VineyardLayoutVisualizer
-            layout={layout}
-            acres={acres}
-            orientation={rowOrientation}
-            polygonPath={polygonPath}
+            fields={fields}
+            currentFieldId={currentFieldId}
+            onFieldsChange={setFields}
+            onFieldSelect={setCurrentFieldId}
             vineSpacing={vineSpacing}
             rowSpacing={rowSpacing}
-            onPolygonChange={setPolygonPath}
+            orientation={rowOrientation}
           />
         </CollapsibleSection>
 
         {/* Material Costs */}
-        {layout && materialCosts && (
-          <CollapsibleSection title="Material Cost Summary" defaultOpen={true}>
-            <MaterialCostsVisualizer materialCosts={materialCosts} layout={layout} />
+        {aggregateLayout && materialCosts && (
+          <CollapsibleSection title="Material Cost Summary (All Fields)" defaultOpen={true}>
+            <MaterialCostsVisualizer materialCosts={materialCosts} layout={aggregateLayout} />
           </CollapsibleSection>
         )}
 
         {/* Detailed Material Requirements */}
-        {layout && materialCosts && (
-          <CollapsibleSection title="Detailed Material Requirements" defaultOpen={false}>
+        {aggregateLayout && materialCosts && (
+          <CollapsibleSection title="Detailed Material Requirements (All Fields)" defaultOpen={false}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -751,25 +1086,25 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                 <tbody className="divide-y divide-gray-200">
                   <tr>
                     <td className="p-3 font-medium">Posts</td>
-                    <td className="p-3">{layout.materials.posts.total} total</td>
+                    <td className="p-3">{aggregateLayout.materials.posts.total} total</td>
                     <td className="p-3 text-right">${materialCosts.posts.toLocaleString()}</td>
-                    <td className="p-3">{layout.materials.posts.description}</td>
+                    <td className="p-3">{aggregateLayout.materials.posts.description}</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-medium">Earth Anchors</td>
-                    <td className="p-3">{layout.materials.earthAnchors.count}</td>
+                    <td className="p-3">{aggregateLayout.materials.earthAnchors.count}</td>
                     <td className="p-3 text-right">${materialCosts.earthAnchors.toLocaleString()}</td>
-                    <td className="p-3">{layout.materials.earthAnchors.description}</td>
+                    <td className="p-3">{aggregateLayout.materials.earthAnchors.description}</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-medium">Trellis Wire</td>
-                    <td className="p-3">{layout.materials.wire.totalFeet.toLocaleString()} ft</td>
+                    <td className="p-3">{aggregateLayout.materials.wire.totalFeet.toLocaleString()} ft</td>
                     <td className="p-3 text-right">${materialCosts.wire.toLocaleString()}</td>
-                    <td className="p-3">{layout.materials.wire.gaugeRecommended}</td>
+                    <td className="p-3">{aggregateLayout.materials.wire.gaugeRecommended}</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-medium">Drip Irrigation</td>
-                    <td className="p-3">{layout.materials.irrigation.dripTubing.toLocaleString()} ft + {layout.materials.irrigation.emitters} emitters</td>
+                    <td className="p-3">{aggregateLayout.materials.irrigation.dripTubing.toLocaleString()} ft + {aggregateLayout.materials.irrigation.emitters} emitters</td>
                     <td className="p-3 text-right">${materialCosts.irrigation.toLocaleString()}</td>
                     <td className="p-3">Tubing + emitters</td>
                   </tr>
@@ -777,7 +1112,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                     <td className="p-3 font-medium">Hardware</td>
                     <td className="p-3">Various</td>
                     <td className="p-3 text-right">${materialCosts.hardware.toLocaleString()}</td>
-                    <td className="p-3">{layout.materials.hardware.description}</td>
+                    <td className="p-3">{aggregateLayout.materials.hardware.description}</td>
                   </tr>
                   <tr className="bg-blue-50 font-semibold">
                     <td className="p-3">Total Materials</td>
@@ -785,7 +1120,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                     <td className="p-3 text-right">
                       ${Object.values(materialCosts).reduce((sum, cost) => sum + cost, 0).toLocaleString()}
                     </td>
-                    <td className="p-3">Trellis & irrigation materials</td>
+                    <td className="p-3">All fields combined</td>
                   </tr>
                 </tbody>
               </table>
