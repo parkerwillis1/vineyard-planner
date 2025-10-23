@@ -1,6 +1,6 @@
 // VineyardLayoutCalculator.jsx - Google Maps Based Vineyard Planner with Multiple Fields
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { GoogleMap, LoadScript, Polygon, Marker, Polyline, Autocomplete } from '@react-google-maps/api';
+import { GoogleMap, useLoadScript, Polygon, Marker, Polyline, Autocomplete } from '@react-google-maps/api';
 import { MaterialCostsVisualizer } from "@/features/planning/components/MaterialCostsVisualizer";
 import { ChevronDown, MapPin, Trash2, Edit3, Plus, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent } from '@/shared/components/ui/card';
@@ -1037,8 +1037,21 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
 
   const currentFieldLayout = currentFieldId ? fieldLayouts[currentFieldId] : null;
 
+  // Load Google Maps script once
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: LIBRARIES,
+  });
+
+  if (loadError) {
+    return <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">Error loading maps</div>;
+  }
+
+  if (!isLoaded) {
+    return <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">Loading maps...</div>;
+  }
+
   return (
-    <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={LIBRARIES}>
       <div className="space-y-6">
         {/* Basic Parameters */}
         <Card className="shadow-lg">
@@ -1285,6 +1298,5 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
           </CollapsibleSection>
         )}
       </div>
-    </LoadScript>
   );
 };
