@@ -1829,19 +1829,30 @@ const EstablishmentProgressTracker = ({
           )}
 
           {/* Loading state - fields exist but layout not calculated yet */}
-          {!st.vineyardLayout?.calculatedLayout && st.vineyardFields && st.vineyardFields.length > 0 && st.vineyardFields.some(f => f.polygonPath && f.polygonPath.length > 0) && (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <span className="text-blue-600">ℹ️</span>
-                <div>
-                  <h4 className="font-medium text-blue-800">Calculating Vineyard Layout...</h4>
-                  <p className="text-sm text-blue-700 mt-1">
-                    Your field data is loading. The layout will appear shortly.
-                  </p>
+          {(() => {
+            const showLoading = !st.vineyardLayout?.calculatedLayout && st.vineyardFields && st.vineyardFields.length > 0 && st.vineyardFields.some(f => f.polygonPath && f.polygonPath.length > 0);
+            if (showLoading) {
+              console.log('⏳ Showing "Calculating Vineyard Layout..." message:', {
+                hasCalculatedLayout: !!st.vineyardLayout?.calculatedLayout,
+                hasVineyardFields: !!st.vineyardFields,
+                fieldsCount: st.vineyardFields?.length,
+                fieldsWithPolygons: st.vineyardFields?.filter(f => f.polygonPath && f.polygonPath.length > 0).length
+              });
+            }
+            return showLoading && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-600">ℹ️</span>
+                  <div>
+                    <h4 className="font-medium text-blue-800">Calculating Vineyard Layout...</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Your field data is loading. The layout will appear shortly.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Core Inputs */}
           <CollapsibleSection title="Core Vineyard Parameters">
