@@ -53,13 +53,6 @@ export const VINE_SPACING_OPTIONS = [
 // Calculate acreage from GPS polygon coordinates
 const calculatePolygonArea = (path) => {
   if (!window.google || !window.google.maps || !window.google.maps.geometry || !path || path.length < 3) {
-    console.warn('⚠️ calculatePolygonArea: Google Maps API not ready or invalid path', {
-      hasGoogle: !!window.google,
-      hasMaps: !!window.google?.maps,
-      hasGeometry: !!window.google?.maps?.geometry,
-      pathLength: path?.length
-    });
-    return 0;
   }
 
   const googlePath = path.map(point => new window.google.maps.LatLng(point.lat, point.lng));
@@ -74,7 +67,6 @@ const calculatePolygonArea = (path) => {
 // Calculate distance between two GPS points in feet
 const calculateDistance = (point1, point2) => {
   if (!window.google || !window.google.maps || !window.google.maps.geometry) {
-    console.warn('⚠️ calculateDistance: Google Maps API not ready');
     return 0;
   }
 
@@ -134,7 +126,7 @@ export const calculateVineyardLayout = (polygonPath, vineSpacing, rowSpacing, or
   const materials = calculateMaterials(numberOfRows, vinesPerRow, rowLength, rowSpacing);
 
   return {
-    dimensions: { width, length, acres },
+    dimensions: { width, length, acres, perimeter },
     vineLayout: {
       numberOfRows,
       vinesPerRow,
@@ -910,44 +902,23 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
   // Calculate individual field layouts
   const fieldLayouts = useMemo(() => {
     const layouts = {};
-    console.log('🔍 Calculating fieldLayouts:', {
-      fieldsCount: fields.length,
-      vineSpacing,
-      rowSpacing,
-      rowOrientation,
-      fieldsWithPolygons: fields.filter(f => f.polygonPath && f.polygonPath.length >= 3).length
-    });
-
     fields.forEach(field => {
       if (field.polygonPath && field.polygonPath.length >= 3 && vineSpacing > 0 && rowSpacing > 0) {
         const layout = calculateVineyardLayout(field.polygonPath, vineSpacing, rowSpacing, rowOrientation);
         if (layout) {
           layouts[field.id] = layout;
-          console.log(`✅ Layout calculated for field ${field.name}:`, {
-            acres: layout.dimensions.acres.toFixed(2),
-            vines: layout.vineLayout.totalVines
-          });
         } else {
           console.warn(`⚠️ Layout calculation returned null for field ${field.name}`);
         }
-      } else {
-        console.log(`⏭️ Skipping field ${field.name}:`, {
-          hasPolygon: !!field.polygonPath,
-          polygonLength: field.polygonPath?.length || 0,
-          vineSpacing,
-          rowSpacing
-        });
       }
     });
 
-    console.log('📊 fieldLayouts result:', Object.keys(layouts).length, 'layouts');
     return layouts;
   }, [fields, vineSpacing, rowSpacing, rowOrientation]);
 
   // Calculate aggregate layout (all fields combined)
   const aggregateLayout = useMemo(() => {
     const allLayouts = Object.values(fieldLayouts);
-    console.log('🔍 Calculating aggregateLayout from', allLayouts.length, 'field layouts');
 
     if (allLayouts.length === 0) {
       console.warn('⚠️ aggregateLayout returning null - no field layouts available');
@@ -1002,12 +973,6 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
       fields: fields.length
     };
 
-    console.log('✅ aggregateLayout calculated:', {
-      acres: totalAcres.toFixed(2),
-      totalVines,
-      totalRows,
-      fieldsCount: fields.length
-    });
 
     return result;
   }, [fieldLayouts, fields, vineSpacing, rowSpacing, rowOrientation]);
@@ -1036,30 +1001,17 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
   const hasInitializedLayout = useRef(false);
 
   useEffect(() => {
-    console.log('🔄 Layout change effect triggered:', {
-      hasAggregateLayout: !!aggregateLayout,
-      hasMaterialCosts: !!materialCosts,
-      hasCallback: !!onLayoutChange,
-      hasInitialized: hasInitializedLayout.current
-    });
-
     if (aggregateLayout && materialCosts && onLayoutChange) {
       const layoutString = JSON.stringify(aggregateLayout);
       if (lastLayoutRef.current !== layoutString) {
-        console.log('📤 Calling onLayoutChange with new layout data');
         lastLayoutRef.current = layoutString;
-        onLayoutChange(aggregateLayout, materialCosts);
-        hasInitializedLayout.current = true;
-        console.log('✅ onLayoutChange called successfully');
-      } else {
-        console.log('⏭️ Layout unchanged, skipping onLayoutChange');
+        try {
+          onLayoutChange(aggregateLayout, materialCosts);
+          hasInitializedLayout.current = true;
+        } catch (error) {
+          console.error('Error calling onLayoutChange:', error);
+        }
       }
-    } else {
-      console.warn('⚠️ Cannot call onLayoutChange - missing dependencies:', {
-        aggregateLayout: !!aggregateLayout,
-        materialCosts: !!materialCosts,
-        onLayoutChange: !!onLayoutChange
-      });
     }
   }, [aggregateLayout, materialCosts, onLayoutChange]);
 
@@ -1068,7 +1020,6 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
     if (!hasInitializedLayout.current && savedFields && savedFields.length > 0 && savedFields.some(f => f.polygonPath && f.polygonPath.length > 0)) {
       // Fields are loaded but layout hasn't been calculated yet
       // The aggregateLayout useMemo should trigger and then call onLayoutChange
-      console.log('🔄 Saved fields detected on mount, waiting for layout calculation...');
     }
   }, [savedFields]);
 
@@ -1084,17 +1035,11 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
     }
   }, [fields]);
 
-  // Notify parent of config changes (for saving)
+  // Sync config changes to parent - safe now because parent preserves calculatedLayout
   const lastConfigRef = useRef(null);
   useEffect(() => {
     if (onConfigChange) {
-      const config = {
-        spacingOption,
-        customVineSpacing,
-        customRowSpacing,
-        rowOrientation,
-        trellisSystem
-      };
+      const config = { spacingOption, customVineSpacing, customRowSpacing, rowOrientation, trellisSystem };
       const configString = JSON.stringify(config);
       if (lastConfigRef.current !== configString) {
         lastConfigRef.current = configString;

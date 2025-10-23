@@ -4,10 +4,10 @@ import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { supabase } from '@/shared/lib/supabaseClient';
 import { savePlanner, loadPlanner} from '@/shared/lib/saveLoadPlanner';
 import { savePlan, loadPlan, listPlans, createPlan } from '@/shared/lib/plansApi';
-import { 
-  ChevronDown, 
-  TrendingUp, 
-  DollarSign, 
+import {
+  ChevronDown,
+  TrendingUp,
+  DollarSign,
   Grape,
   MapPin,
   Tractor,
@@ -19,7 +19,8 @@ import {
   Check,
   Clock,
   Calendar,
-  Wrench
+  Wrench,
+  Info
 } from "lucide-react";
 import { 
   VineyardLayoutConfig, 
@@ -439,8 +440,6 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
   
 
 export default function PlannerShell({ embedded = false }) {
-  console.log('🟢 PlannerShell RENDER', { embedded });
-  console.trace('RENDER STACK TRACE');
   const [activeTab, setActiveTab]       = useState("design");
   const [projYears, setProjYears]       = useState(10)
   const [dirty, setDirty] = useState(false);
@@ -559,8 +558,8 @@ export default function PlannerShell({ embedded = false }) {
       sitePrep:   { include: true, cost: "1500" },
       trellis:    { include: true, cost: "4300" },
       irrigation: { include: true, system: "drip", cost: "4500" },
-      vines:      { include: true, cost: "3500" },
-      fence:      { include: true, cost: "5000" },
+      vines:      { include: true, costPerVine: "3.50", unitType: "vine" }, // Changed to per-vine pricing
+      fence:      { include: true, costPerFoot: "15", fenceType: "8ft-deer", unitType: "foot" }, // Changed to per-foot pricing
     },
     prePlanting: [
         { include: true, label: "Vine removal", costPerAcre: "200" },
@@ -654,7 +653,7 @@ useEffect(() => {
     setLoading(true);
     setDirty(false); // ⭐ Clear dirty immediately
 
-    const { data, error } = planId ? await loadPlan(planId) : await loadPlanner();
+    const { data, error} = planId ? await loadPlan(planId) : await loadPlanner();
     if (error) {
       console.error('Load planner error', error);
       setLoading(false);
@@ -663,13 +662,37 @@ useEffect(() => {
     }
 
     if (!isCancelled && data) {
-      // Apply loaded data to state
-      set(data?.st ? { ...DEFAULT_ST, ...data.st } : DEFAULT_ST);
+      // Apply loaded data to state with migration for old setup structure
+      let loadedState = data?.st ? { ...DEFAULT_ST, ...data.st } : DEFAULT_ST;
+
+      // Migrate old vine/fence data structure to new unit-based structure
+      if (loadedState.setup) {
+        if (loadedState.setup.vines && !loadedState.setup.vines.unitType) {
+          // Old structure - migrate to new
+          loadedState.setup.vines = {
+            include: loadedState.setup.vines.include ?? true,
+            costPerVine: "3.50",
+            unitType: "vine"
+          };
+        }
+        if (loadedState.setup.fence && !loadedState.setup.fence.unitType) {
+          // Old structure - migrate to new
+          loadedState.setup.fence = {
+            include: loadedState.setup.fence.include ?? true,
+            costPerFoot: "15",
+            fenceType: "8ft-deer",
+            unitType: "foot"
+          };
+        }
+      }
+
+      set(loadedState);
       setProjYears(data?.projYears ?? 10);
       setTaskCompletion(data?.taskCompletion ?? {});
       setLastSaved(new Date(data.savedAt || data.updated_at || Date.now()));
     } else if (!isCancelled) {
       // Defaults path
+      console.log('📥 Loading defaults (no data)');
       set(DEFAULT_ST);
       setProjYears(10);
       setTaskCompletion({});
@@ -873,6 +896,7 @@ const handlePlanChange = (nextId) => {
 
       const payload = { st, projYears, taskCompletion };
 
+
       let error;
       if (planId) {
         console.log('🔵 Saving to plan:', planId);
@@ -930,9 +954,41 @@ const stNum = {
 
   // one-time setup costs per acre
   setup: Object.fromEntries(
-    Object.entries(st.setup).map(([k,v]) =>
-      [ k, { include: v.include, cost: Number(v.cost) || 0, ...(v.system && { system: v.system }) } ]
-    )
+    Object.entries(st.setup).map(([k,v]) => {
+      if (k === 'vines' && v.unitType === 'vine') {
+        // Calculate cost per acre based on vines per acre
+        const vinesPerAcre = st.vineyardLayout?.calculatedLayout?.vineLayout?.vinesPerAcre || 726; // Default
+        const costPerVine = Number(v.costPerVine) || 3.50;
+        const costPerAcre = vinesPerAcre * costPerVine;
+        return [k, {
+          include: v.include,
+          cost: costPerAcre,
+          costPerVine,
+          vinesPerAcre,
+          unitType: 'vine',
+          ...(v.system && { system: v.system })
+        }];
+      } else if (k === 'fence' && v.unitType === 'foot') {
+        // Calculate cost per acre based on perimeter
+        const acres = Number(st.acres) || 1;
+        const perimeter = st.vineyardLayout?.calculatedLayout?.dimensions?.perimeter ||
+                         (Math.sqrt(acres * 43560) * 4); // Default: assume square
+        const costPerFoot = Number(v.costPerFoot) || 15;
+        const totalCost = perimeter * costPerFoot;
+        const costPerAcre = totalCost / acres;
+        return [k, {
+          include: v.include,
+          cost: costPerAcre,
+          costPerFoot,
+          perimeter: Math.round(perimeter),
+          fenceType: v.fenceType || '8ft-deer',
+          unitType: 'foot',
+          ...(v.system && { system: v.system })
+        }];
+      } else {
+        return [k, { include: v.include, cost: Number(v.cost) || 0, ...(v.system && { system: v.system }) }];
+      }
+    })
   ),
 
   // all your per-acre arrays
@@ -1256,7 +1312,7 @@ const breakdownData = [
   { name: "Setup Capital (one-time)",    value: totalEstCost }, // or setupCapital if you alias it
 ];
 
-  const update = (k, v) => set({ ...st, [k]: v });
+  const update = (k, v) => set(prev => ({ ...prev, [k]: v }));
   const num = (k, step = 1) => (
     <Input
       type="number"
@@ -1289,10 +1345,10 @@ const breakdownData = [
   const updateSetup = (k, row) =>
     update("setup", { ...stNum.setup, [k]: row });
 
-const handleLayoutChange = useCallback((layout, materialCosts) => {
+// Store layout update to apply it properly
+const handleLayoutChange = (layout, materialCosts) => {
   if (!layout || !materialCosts) return;
-  
-  // Use functional setState - prev gives us the current state
+
   set(prev => {
     // 1. Update vine quantities in planting costs
     const updatedPlanting = prev.planting.map(row => {
@@ -1305,9 +1361,9 @@ const handleLayoutChange = useCallback((layout, materialCosts) => {
       }
       return row;
     });
-    
-    // 2. Update trellis and irrigation costs based on actual material requirements
-    const acres = Number(prev.acres) || 1; // Get acres from prev state
+
+    // 2. Update trellis and irrigation costs
+    const acres = Number(prev.acres) || 1;
     const updatedSetup = {
       ...prev.setup,
       trellis: {
@@ -1317,7 +1373,7 @@ const handleLayoutChange = useCallback((layout, materialCosts) => {
         calculated: true,
         breakdown: {
           posts: materialCosts.posts,
-          wire: materialCosts.wire, 
+          wire: materialCosts.wire,
           hardware: materialCosts.hardware,
           earthAnchors: materialCosts.earthAnchors
         }
@@ -1329,8 +1385,8 @@ const handleLayoutChange = useCallback((layout, materialCosts) => {
         system: prev.setup.irrigation?.system || "drip"
       }
     };
-    
-    // 3. Return the new state object
+
+    // 3. Return new state with calculatedLayout
     return {
       ...prev,
       planting: updatedPlanting,
@@ -1342,7 +1398,7 @@ const handleLayoutChange = useCallback((layout, materialCosts) => {
       }
     };
   });
-}, []); // Empty dependencies array - no external values needed!
+};
 
 // Component for add buttons with consistent styling
 const AddButton = ({ onClick, text }) => (
@@ -1796,7 +1852,18 @@ const EstablishmentProgressTracker = ({
             onAcresChange={(value) => update("acres", value)}
             savedFields={st.vineyardFields || []}
             onFieldsChange={(fields) => update("vineyardFields", fields)}
-            onConfigChange={(config) => update("vineyardLayout", { ...st.vineyardLayout, ...config })}
+            onConfigChange={(config) => {
+              set(prev => ({
+                ...prev,
+                vineyardLayout: {
+                  ...prev.vineyardLayout,
+                  ...config,
+                  // Preserve calculatedLayout and materialCosts
+                  calculatedLayout: prev.vineyardLayout.calculatedLayout,
+                  materialCosts: prev.vineyardLayout.materialCosts
+                }
+              }));
+            }}
           />
         </div>
       )}
@@ -1829,30 +1896,19 @@ const EstablishmentProgressTracker = ({
           )}
 
           {/* Loading state - fields exist but layout not calculated yet */}
-          {(() => {
-            const showLoading = !st.vineyardLayout?.calculatedLayout && st.vineyardFields && st.vineyardFields.length > 0 && st.vineyardFields.some(f => f.polygonPath && f.polygonPath.length > 0);
-            if (showLoading) {
-              console.log('⏳ Showing "Calculating Vineyard Layout..." message:', {
-                hasCalculatedLayout: !!st.vineyardLayout?.calculatedLayout,
-                hasVineyardFields: !!st.vineyardFields,
-                fieldsCount: st.vineyardFields?.length,
-                fieldsWithPolygons: st.vineyardFields?.filter(f => f.polygonPath && f.polygonPath.length > 0).length
-              });
-            }
-            return showLoading && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-600">ℹ️</span>
-                  <div>
-                    <h4 className="font-medium text-blue-800">Calculating Vineyard Layout...</h4>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Your field data is loading. The layout will appear shortly.
-                    </p>
-                  </div>
+          {!st.vineyardLayout?.calculatedLayout && st.vineyardFields && st.vineyardFields.length > 0 && st.vineyardFields.some(f => f.polygonPath && f.polygonPath.length > 0) && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-600">ℹ️</span>
+                <div>
+                  <h4 className="font-medium text-blue-800">Calculating Vineyard Layout...</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Your field data is loading. The layout will appear shortly.
+                  </p>
                 </div>
               </div>
-            );
-          })()}
+            </div>
+          )}
 
           {/* Core Inputs */}
           <CollapsibleSection title="Core Vineyard Parameters">
@@ -1942,68 +1998,127 @@ const EstablishmentProgressTracker = ({
               {Object.entries(stNum.setup).map(([k, obj]) => {
                 const label = k.charAt(0).toUpperCase() + k.slice(1);
                 const isCalculated = obj.calculated; // From vineyard design
-                
+
                 return (
-                  <div key={k} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg">
-                    <Checkbox 
-                      checked={obj.include} 
-                      onCheckedChange={v => updateSetup(k, { ...obj, include: v })}
-                      className="h-5 w-5"
-                    />
-                    <span className="text-sm text-vine-green-700 font-medium capitalize w-32">{label}</span>
-                    
-                    {/* Show calculation source */}
-                    {isCalculated ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs bg-vine-green-100 text-vine-green-800 px-2 py-1 rounded">
-                          Auto-calculated from design
-                        </span>
-                        <span className="text-sm text-vine-green-700">$/acre</span>
-                        <span className="w-28 p-2 bg-gray-100 text-sm rounded border">
-                          ${obj.cost.toLocaleString()}
-                        </span>
-                        <button 
-                          onClick={() => setActiveTab("design")}
-                          className="text-xs text-vine-green-500 hover:text-vine-green-700 underline"
-                        >
-                          Edit in Design →
-                        </button>
-                      </div>
-                    ) : (
-                      // Manual input for non-calculated items
-                      <>
-                        {k === "irrigation" ? (
-                          <>
-                            <select 
-                              className="border p-2 rounded-md text-sm bg-white" 
-                              value={obj.system} 
-                              onChange={e => updateSetup(k, { ...obj, system: e.target.value, cost: IRRIG_OPTIONS.find(o => o.key === e.target.value).defaultCost })}
-                            >
-                              {IRRIG_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-                            </select>
-                            <label className="text-sm text-vine-green-700">$/acre</label>
-                            <Input 
-                              className="w-28 bg-white" 
-                              type="number" 
-                              step="100" 
-                              value={obj.cost} 
-                              onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })} 
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <label className="text-sm text-vine-green-700">$/acre</label>
-                            <Input 
-                              className="w-28 bg-white" 
-                              type="number" 
-                              step="100" 
-                              value={obj.cost} 
-                              onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })} 
-                            />
-                          </>
+                  <div key={k} className="flex flex-col gap-2 p-3 hover:bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <Checkbox
+                        checked={obj.include}
+                        onCheckedChange={v => updateSetup(k, { ...obj, include: v })}
+                        className="h-5 w-5"
+                      />
+                      <div className="flex items-center gap-2 w-32">
+                        <span className="text-sm text-vine-green-700 font-medium capitalize">{label}</span>
+                        {k === "vines" && obj.unitType === 'vine' && (
+                          <div className="relative group">
+                            <Info className="h-3.5 w-3.5 text-gray-400 hover:text-vine-green-600 cursor-help transition-colors" />
+                            <div className="absolute left-0 top-5 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+                              <div className="w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl border border-gray-700">
+                                Typical vine costs: Grafted vines $3-6/vine, Own-rooted $2-4/vine
+                              </div>
+                            </div>
+                          </div>
                         )}
-                      </>
-                    )}
+                        {k === "fence" && obj.unitType === 'foot' && (
+                          <div className="relative group">
+                            <Info className="h-3.5 w-3.5 text-gray-400 hover:text-vine-green-600 cursor-help transition-colors" />
+                            <div className="absolute left-0 top-5 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+                              <div className="w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl border border-gray-700">
+                                Deer fencing is essential to protect vines! 8ft minimum recommended. Typical costs: 6ft Standard $8/ft, 8ft Deer $15/ft, 10ft High-Tensile $22/ft
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Show calculation source */}
+                      {isCalculated ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs bg-vine-green-100 text-vine-green-800 px-2 py-1 rounded">
+                            Auto-calculated from design
+                          </span>
+                          <span className="text-sm text-vine-green-700">$/acre</span>
+                          <span className="w-28 p-2 bg-gray-100 text-sm rounded border">
+                            ${obj.cost.toLocaleString()}
+                          </span>
+                          <button
+                            onClick={() => setActiveTab("design")}
+                            className="text-xs text-vine-green-500 hover:text-vine-green-700 underline"
+                          >
+                            Edit in Design →
+                          </button>
+                        </div>
+                      ) : k === "vines" && obj.unitType === 'vine' ? (
+                        // Vines - unit-based pricing
+                        <div className="flex items-center gap-2 flex-1">
+                          <label className="text-sm text-vine-green-700">$/vine</label>
+                          <Input
+                            className="w-24 bg-white"
+                            type="number"
+                            step="0.50"
+                            value={st.setup.vines.costPerVine}
+                            onChange={e => updateSetup(k, { ...st.setup.vines, costPerVine: e.target.value })}
+                          />
+                          <span className="text-xs text-gray-500">× {obj.vinesPerAcre?.toLocaleString()} vines/acre</span>
+                          <span className="text-sm font-medium text-vine-green-800">= ${obj.cost.toLocaleString()}/acre</span>
+                        </div>
+                      ) : k === "fence" && obj.unitType === 'foot' ? (
+                        // Fence - unit-based pricing with type selector
+                        <div className="flex items-center gap-2 flex-1">
+                          <select
+                            className="border p-2 rounded-md text-sm bg-white"
+                            value={st.setup.fence.fenceType || '8ft-deer'}
+                            onChange={e => {
+                              const costs = {'6ft-standard': '15', '8ft-deer': '25', '10ft-deer': '35'};
+                              updateSetup(k, { ...st.setup.fence, fenceType: e.target.value, costPerFoot: costs[e.target.value] });
+                            }}
+                          >
+                            <option value="6ft-standard">6ft Standard</option>
+                            <option value="8ft-deer">8ft Deer Fence</option>
+                            <option value="10ft-deer">10ft High-Tensile Deer</option>
+                          </select>
+                          <label className="text-sm text-vine-green-700">$/ft</label>
+                          <Input
+                            className="w-24 bg-white"
+                            type="number"
+                            step="1"
+                            value={st.setup.fence.costPerFoot}
+                            onChange={e => updateSetup(k, { ...st.setup.fence, costPerFoot: e.target.value })}
+                          />
+                          <span className="text-xs text-gray-500">× {obj.perimeter?.toLocaleString()} ft perimeter</span>
+                          <span className="text-sm font-medium text-vine-green-800">= ${obj.cost.toLocaleString()}/acre</span>
+                        </div>
+                      ) : k === "irrigation" ? (
+                        <>
+                          <select
+                            className="border p-2 rounded-md text-sm bg-white"
+                            value={obj.system}
+                            onChange={e => updateSetup(k, { ...obj, system: e.target.value, cost: IRRIG_OPTIONS.find(o => o.key === e.target.value).defaultCost })}
+                          >
+                            {IRRIG_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                          </select>
+                          <label className="text-sm text-vine-green-700">$/acre</label>
+                          <Input
+                            className="w-28 bg-white"
+                            type="number"
+                            step="100"
+                            value={obj.cost}
+                            onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <label className="text-sm text-vine-green-700">$/acre</label>
+                          <Input
+                            className="w-28 bg-white"
+                            type="number"
+                            step="100"
+                            value={obj.cost}
+                            onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })}
+                          />
+                        </>
+                      )}
+                    </div>
                   </div>
                 );
               })}
