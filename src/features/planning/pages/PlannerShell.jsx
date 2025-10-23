@@ -1808,7 +1808,7 @@ const EstablishmentProgressTracker = ({
             Financial Inputs for the Vineyard
           </h1>
 
-          {!st.vineyardLayout?.calculatedLayout && (
+          {!st.vineyardLayout?.calculatedLayout && (!st.vineyardFields || st.vineyardFields.length === 0 || !st.vineyardFields.some(f => f.polygonPath && f.polygonPath.length > 0)) && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-center gap-2">
                 <span className="text-yellow-600">⚠️</span>
@@ -1817,12 +1817,27 @@ const EstablishmentProgressTracker = ({
                   <p className="text-sm text-yellow-700 mt-1">
                     Configure your vineyard layout first for accurate material costs and vine quantities.
                   </p>
-                  <button 
+                  <button
                     onClick={() => setActiveTab("design")}
                     className="mt-2 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
                   >
                     Go to Vineyard Design →
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Loading state - fields exist but layout not calculated yet */}
+          {!st.vineyardLayout?.calculatedLayout && st.vineyardFields && st.vineyardFields.length > 0 && st.vineyardFields.some(f => f.polygonPath && f.polygonPath.length > 0) && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-600">ℹ️</span>
+                <div>
+                  <h4 className="font-medium text-blue-800">Calculating Vineyard Layout...</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Your field data is loading. The layout will appear shortly.
+                  </p>
                 </div>
               </div>
             </div>

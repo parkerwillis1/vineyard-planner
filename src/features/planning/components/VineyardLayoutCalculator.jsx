@@ -982,15 +982,27 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
 
   // Notify parent component of layout changes
   const lastLayoutRef = useRef(null);
+  const hasInitializedLayout = useRef(false);
+
   useEffect(() => {
     if (aggregateLayout && materialCosts && onLayoutChange) {
       const layoutString = JSON.stringify(aggregateLayout);
       if (lastLayoutRef.current !== layoutString) {
         lastLayoutRef.current = layoutString;
         onLayoutChange(aggregateLayout, materialCosts);
+        hasInitializedLayout.current = true;
       }
     }
-  }, [aggregateLayout, materialCosts]);
+  }, [aggregateLayout, materialCosts, onLayoutChange]);
+
+  // Force layout calculation on mount if we have saved fields
+  useEffect(() => {
+    if (!hasInitializedLayout.current && savedFields && savedFields.length > 0 && savedFields.some(f => f.polygonPath && f.polygonPath.length > 0)) {
+      // Fields are loaded but layout hasn't been calculated yet
+      // The aggregateLayout useMemo should trigger and then call onLayoutChange
+      console.log('🔄 Saved fields detected on mount, waiting for layout calculation...');
+    }
+  }, [savedFields]);
 
   // Notify parent of fields changes (for saving)
   const lastFieldsRef = useRef(null);
