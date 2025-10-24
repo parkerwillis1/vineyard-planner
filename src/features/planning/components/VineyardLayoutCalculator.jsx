@@ -9,6 +9,9 @@ import { Input } from '@/shared/components/ui/input';
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAEwV8iVPfyCuZDYaX8rstuSUMK8ZOF6V8';
 const LIBRARIES = ['drawing', 'geometry', 'places'];
 
+// Helper function to format money without decimals
+const formatMoney = (value) => Math.round(value).toLocaleString();
+
 // Texas Hill Country default center (Fredericksburg area)
 const DEFAULT_CENTER = {
   lat: 30.2672,
@@ -1238,7 +1241,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                       return (
                         <details key={field.id} className="bg-gray-50 rounded-lg border border-gray-200">
                           <summary className="cursor-pointer p-4 font-medium text-gray-800 hover:bg-gray-100 rounded-lg">
-                            {field.name} - ${Object.values(fieldCosts).reduce((sum, cost) => sum + cost, 0).toLocaleString()}
+                            {field.name} - ${formatMoney(Object.values(fieldCosts).reduce((sum, cost) => sum + cost, 0))}
                           </summary>
                           <div className="p-4 pt-0">
                             <MaterialCostsVisualizer materialCosts={fieldCosts} layout={layout} />
@@ -1270,38 +1273,38 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                   <tr>
                     <td className="p-3 font-medium">Posts</td>
                     <td className="p-3">{aggregateLayout.materials.posts.total} total</td>
-                    <td className="p-3 text-right">${materialCosts.posts.toLocaleString()}</td>
+                    <td className="p-3 text-right">${formatMoney(materialCosts.posts)}</td>
                     <td className="p-3">{aggregateLayout.materials.posts.description}</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-medium">Earth Anchors</td>
                     <td className="p-3">{aggregateLayout.materials.earthAnchors.count}</td>
-                    <td className="p-3 text-right">${materialCosts.earthAnchors.toLocaleString()}</td>
+                    <td className="p-3 text-right">${formatMoney(materialCosts.earthAnchors)}</td>
                     <td className="p-3">{aggregateLayout.materials.earthAnchors.description}</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-medium">Trellis Wire</td>
                     <td className="p-3">{aggregateLayout.materials.wire.totalFeet.toLocaleString()} ft</td>
-                    <td className="p-3 text-right">${materialCosts.wire.toLocaleString()}</td>
+                    <td className="p-3 text-right">${formatMoney(materialCosts.wire)}</td>
                     <td className="p-3">{aggregateLayout.materials.wire.gaugeRecommended}</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-medium">Drip Irrigation</td>
                     <td className="p-3">{aggregateLayout.materials.irrigation.dripTubing.toLocaleString()} ft + {aggregateLayout.materials.irrigation.emitters} emitters</td>
-                    <td className="p-3 text-right">${materialCosts.irrigation.toLocaleString()}</td>
+                    <td className="p-3 text-right">${formatMoney(materialCosts.irrigation)}</td>
                     <td className="p-3">Tubing + emitters</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-medium">Hardware</td>
                     <td className="p-3">Various</td>
-                    <td className="p-3 text-right">${materialCosts.hardware.toLocaleString()}</td>
+                    <td className="p-3 text-right">${formatMoney(materialCosts.hardware)}</td>
                     <td className="p-3">{aggregateLayout.materials.hardware.description}</td>
                   </tr>
                   <tr className="bg-blue-50 font-semibold">
                     <td className="p-3">Total Materials</td>
                     <td className="p-3">-</td>
                     <td className="p-3 text-right">
-                      ${Object.values(materialCosts).reduce((sum, cost) => sum + cost, 0).toLocaleString()}
+                      ${formatMoney(Object.values(materialCosts).reduce((sum, cost) => sum + cost, 0))}
                     </td>
                     <td className="p-3">All fields combined</td>
                   </tr>

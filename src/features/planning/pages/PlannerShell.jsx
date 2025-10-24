@@ -8,11 +8,7 @@ import {
   ChevronDown,
   TrendingUp,
   DollarSign,
-  Grape,
   MapPin,
-  Tractor,
-  Sprout,
-  HardHat,
   FileText,
   ScrollText,
   Gem,
@@ -20,8 +16,16 @@ import {
   Clock,
   Calendar,
   Wrench,
-  Info
+  Info,
+  Building2,
+  Warehouse,
+  Truck,
+  Package,
+  CreditCard,
+  PiggyBank,
+  Wallet
 } from "lucide-react";
+import { NounProjectIconById } from "@/shared/components/ui/NounProjectIconById";
 import { 
   VineyardLayoutConfig, 
   calculateVineyardLayout, 
@@ -60,6 +64,9 @@ import { useAuth } from "@/auth/AuthContext";
 /* ------------------------------------------------------------------ */
 /*  ⚙️  TOP-OF-PAGE UI HELPERS (all inline – no extra files needed)   */
 /* ------------------------------------------------------------------ */
+
+// Helper function to format money without decimals
+const formatMoney = (value) => Math.round(value).toLocaleString();
 
 // Treat these as "non-persistent" — changes here should NOT trigger the dirty badge
 const VOLATILE_KEYS = new Set([
@@ -237,7 +244,7 @@ const TabNav = ({
                       setShowPlanMenu(false);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                      !currentPlanId ? 'bg-vine-green-50 text-vine-green-700 font-medium' : 'text-gray-700'
+                      !currentPlanId ? 'bg-vine-green-50 text-black font-bold font-medium' : 'text-gray-700'
                     }`}
                   >
                     Default Plan
@@ -257,7 +264,7 @@ const TabNav = ({
                         setShowPlanMenu(false);
                       }}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                        currentPlanId === plan.id ? 'bg-vine-green-50 text-vine-green-700 font-medium' : 'text-gray-700'
+                        currentPlanId === plan.id ? 'bg-vine-green-50 text-black font-bold font-medium' : 'text-gray-700'
                       }`}
                     >
                       {plan.name}
@@ -331,7 +338,7 @@ const TabNav = ({
             <div className="flex items-center gap-2 text-sm whitespace-nowrap">
               <span className="font-medium text-gray-700">Total</span>
               <span className="px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700 font-semibold">
-                ${totalEstCost.toLocaleString()}
+                ${formatMoney(totalEstCost)}
               </span>
             </div>
           </div>
@@ -390,7 +397,7 @@ const pmt = (P, rDecimal, yrs) => {
 
 // Section header component for consistency
 const SectionHeader = ({ title }) => (
-  <h1 className="text-2xl font-bold text-vine-green-700 border-b pb-3">
+  <h1 className="text-2xl font-bold text-black font-bold border-b pb-3">
     {title}
   </h1>
 );
@@ -399,7 +406,7 @@ const SectionHeader = ({ title }) => (
 const SectionCard = ({ title, children, className = "" }) => (
     <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-16"> {/* Increase mb-8 to mb-10 */}
       <div className="bg-vine-green-50 px-6 py-4 border-b"> {/* Increase py-3 to py-4 */}
-        <h3 className="font-medium text-vine-green-700 text-lg">{title}</h3> {/* Add text-lg */}
+        <h3 className="font-medium text-black font-bold text-lg">{title}</h3> {/* Add text-lg */}
       </div>
       <CardContent className={`p-8 ${className}`}> {/* Increase p-6 to p-8 */}
         {children}
@@ -408,31 +415,113 @@ const SectionCard = ({ title, children, className = "" }) => (
   );
 
 /* --------------------------------------------------------- */
-/*  Re‑usable collapsible card                               */
+/*  Re-usable collapsible card - Matching projection style   */
 /* --------------------------------------------------------- */
-function CollapsibleSection({ title, children, defaultOpen = true }) {
-  const [open, setOpen] = React.useState(defaultOpen);
+function CollapsibleSection({ title, children, isOpen, onToggle }) {
+  const open = isOpen;
+
+  const handleToggle = () => {
+    if (onToggle) {
+      onToggle(title);
+    }
+  };
+
+  // Icon mapping - each section gets its own professional Noun Project icon
+  const getIcon = () => {
+    const iconMap = {
+      "Core Vineyard Parameters": 8056745,
+      "Vineyard Setup": 3535825,
+      "Pre-Planting / Site-Prep": 1141059,
+      "Planting Costs": 6041571,
+      "Cultural Operations": 145039,
+      "Harvest & Hauling": 6107180,
+      "Cash Overhead": 7985658,
+      "Equipment": 6044618,
+      "Loans": 8068602,
+      "Purchased Grapes": 8056747,
+      "Unsold Bottles": 8056745,
+      "Assessments & Fees": 6751554,
+      "Non-Cash Overhead": 6720771,
+      "Permits & Licenses": 8123130,
+      "Marketing & Management": 7474579,
+      "Equipment Operating Costs": 7697296
+    };
+
+    const iconId = iconMap[title];
+
+    if (iconId) {
+      return <NounProjectIconById iconId={iconId} className="w-9 h-9" size={36} color="#654321" />;
+    }
+
+    // Fallback to Lucide icons for sections without Noun Project mappings
+    const iconProps = { className: "w-6 h-6 text-blue-600", size: 24 };
+    switch(title) {
+      case "Assessments & Fees":
+        return <FileText {...iconProps} />;
+      case "Non-Cash Overhead":
+        return <PiggyBank {...iconProps} />;
+      case "Equipment Operating Costs":
+        return <Wrench {...iconProps} />;
+      case "Marketing & Management":
+        return <TrendingUp {...iconProps} />;
+      case "Permits & Licenses":
+        return <ScrollText {...iconProps} />;
+      default:
+        return <TrendingUp {...iconProps} />;
+    }
+  };
 
   return (
-    <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-16">
-      {/* clickable header */}
+    <Card className="rounded-xl shadow-lg bg-white overflow-hidden mb-8 border-2 border-gray-200 transition-all duration-300 hover:shadow-xl relative">
+      {/* Subtle gradient accent in top-left corner */}
+      <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-100 via-blue-50 to-transparent opacity-40 rounded-br-full pointer-events-none" />
+      
+      {/* Clickable header */}
       <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between bg-vine-green-50 px-6 py-4 border-b
-                   focus:outline-none"
+        onClick={handleToggle}
+        className="w-full flex items-center justify-between px-8 py-6 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset transition-all relative z-10"
       >
-        <h3 className="font-medium text-black text-lg">{title}</h3>
+        <div className="flex items-center gap-4">
+          {getIcon()}
+          <h3 className="font-bold text-gray-800 text-2xl leading-none -translate-y-2">{title}</h3>
+        </div>
 
-        {/* chevron */}
+        {/* Chevron */}
         <ChevronDown
-          className={`h-5 w-5 text-vine-green-500 transition-transform ${
+          className={`h-5 w-5 text-blue-600 transition-transform duration-300 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
-      {/* body – only rendered when open */}
-      {open && <CardContent className="p-8">{children}</CardContent>}
+      {/* Subtitle/description bar */}
+      <div className="px-8 pb-4 relative z-10">
+        <p className="text-gray-500 text-sm">
+          {title === "Core Vineyard Parameters" && "Configure your vineyard's basic financial parameters"}
+          {title === "Vineyard Setup" && "One-time infrastructure and setup costs"}
+          {title === "Pre-Planting / Site-Prep" && "Site preparation tasks before planting"}
+          {title === "Planting Costs" && "Vine stock and planting materials"}
+          {title === "Cultural Operations" && "Annual vineyard management activities"}
+          {title === "Harvest & Hauling" && "Harvest services and transportation"}
+          {title === "Assessments & Fees" && "Annual regulatory fees and assessments"}
+          {title === "Cash Overhead" && "Annual cash operating expenses"}
+          {title === "Non-Cash Overhead" && "Depreciation and non-cash expenses"}
+          {title === "Equipment Operating Costs" && "Equipment fuel, maintenance, and operating costs"}
+          {title === "Marketing & Management" && "Marketing and management services"}
+          {title === "Permits & Licenses" && "Required permits and business licenses"}
+          {title === "Equipment" && "Financed equipment purchases"}
+          {title === "Loans" && "Loan financing options"}
+          {title === "Purchased Grapes" && "Additional grape purchases for production"}
+          {title === "Unsold Bottles" && "Bottles withheld from sale for aging or other purposes"}
+        </p>
+      </div>
+
+      {/* Body - only rendered when open */}
+      {open && (
+        <CardContent className="p-8 pt-4 border-t border-gray-100">
+          {children}
+        </CardContent>
+      )}
     </Card>
   );
 }
@@ -447,9 +536,34 @@ export default function PlannerShell({ embedded = false }) {
   const [selectedChart, setSelectedChart] = useState("revenue");
   const [establishmentView, setEstablishmentView] = useState('breakdown');
   const [taskCompletion, setTaskCompletion] = useState({});
+  const [sectionsState, setSectionsState] = useState({
+    "Core Vineyard Parameters": true,
+    "Vineyard Setup": true,
+    "Pre-Planting / Site-Prep": true,
+    "Planting Costs": true,
+    "Cultural Operations": true,
+    "Harvest & Hauling": true,
+    "Assessments & Fees": true,
+    "Cash Overhead": true,
+    "Non-Cash Overhead": true,
+    "Equipment Operating Costs": true,
+    "Marketing & Management": true,
+    "Permits & Licenses": true,
+    "Equipment": true,
+    "Loans": true,
+    "Purchased Grapes": true,
+    "Unsold Bottles": true,
+  });
 
   const [plans, setPlans] = useState([]);
   const [currentPlanName, setCurrentPlanName] = useState('');
+
+  const toggleSection = (sectionTitle) => {
+    setSectionsState(prev => ({
+      ...prev,
+      [sectionTitle]: !prev[sectionTitle]
+    }));
+  };
 
   const navigate = useNavigate();
 
@@ -594,7 +708,7 @@ export default function PlannerShell({ embedded = false }) {
         // …
       ],
       equipmentOps: [
-        { include: true, label: "Fuel & lube", costPerHour: "15", annualHours: "200" },
+        { include: true, label: "Tractor fuel & maintenance", costPerAcre: "50", annualTotal: "0" },
         // …
       ],
       marketing: [
@@ -1020,8 +1134,8 @@ const stNum = {
   })),
   equipmentOps: st.equipmentOps.map(r => ({
     ...r,
-    costPerHour: Number(r.costPerHour)  || 0,
-    annualHours: Number(r.annualHours)  || 0
+    costPerAcre: Number(r.costPerAcre) || 0,
+    annualTotal: Number(r.annualTotal) || 0
   })),
   marketing: st.marketing.map(r => ({
     ...r, costPerAcre: Number(r.costPerAcre) || 0
@@ -1169,7 +1283,11 @@ const netEquityRequired = totalEstCost - totalLoanPrincipal;
     .reduce((sum, i) => sum + i.annualCost, 0);
   const equipmentOpsCost = stNum.equipmentOps
     .filter(i => i.include)
-    .reduce((sum, i) => sum + i.costPerHour * i.annualHours, 0);
+    .reduce((sum, i) => {
+      // Use annualTotal if provided, otherwise calculate from costPerAcre
+      const cost = i.annualTotal > 0 ? i.annualTotal : (i.costPerAcre * stNum.acres);
+      return sum + cost;
+    }, 0);
 
 // lumped-together annual operating cost:
 const dynamicOperatingCost =
@@ -1502,7 +1620,7 @@ const LTV = (landValue + improvementsValue) > 0
     green: {
       bg: "from-vine-green-50 to-vine-green-100",
       border: "border-vine-green-200",
-      text: "text-vine-green-700",
+      text: "text-black font-bold",
       value: "text-vine-green-900",
       iconBg: "bg-vine-green-100",
       iconColor: "text-vine-green-500"
@@ -1590,7 +1708,7 @@ const EstablishmentProgressTracker = ({
     {
       id: 'planting',
       category: 'Planting',
-      icon: <Sprout className="w-5 h-5" />,
+      icon: <NounProjectIconById iconId={6041571} className="w-6 h-6 text-blue-600" size={24} color="#654321" />,
       color: 'green',
       tasks: stNum.planting.filter(r => r.include).map((row, idx) => {
         const costPerAcre = row.costPerAcre != null ? row.costPerAcre : (row.unitCost || 0) * (row.qtyPerAcre || 0);
@@ -1609,7 +1727,7 @@ const EstablishmentProgressTracker = ({
     {
       id: 'infrastructure',
       category: 'Infrastructure',
-      icon: <HardHat className="w-5 h-5" />,
+      icon: <NounProjectIconById iconId={7202627} className="w-6 h-6 text-blue-600" size={24} color="#654321" />,
       color: 'blue',
       tasks: Object.entries(stNum.setup)
         .filter(([key, obj]) => obj.include && key !== 'vines')
@@ -1671,7 +1789,7 @@ const EstablishmentProgressTracker = ({
     },
     green: {
       bg: 'bg-vine-green-50',
-      text: 'text-vine-green-700',
+      text: 'text-black font-bold',
       icon: 'bg-vine-green-100 text-vine-green-500',
       border: 'border-vine-green-200',
       check: 'bg-vine-green-500 border-vine-green-500'
@@ -1715,13 +1833,13 @@ const EstablishmentProgressTracker = ({
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-vine-green-50 p-4 rounded-lg text-center">
             <div className="text-2xl font-bold text-vine-green-500">
-              ${investedAmount.toLocaleString()}
+              ${formatMoney(investedAmount)}
             </div>
             <div className="text-sm text-gray-600 mt-1">Invested</div>
           </div>
           <div className="bg-orange-50 p-4 rounded-lg text-center">
             <div className="text-2xl font-bold text-orange-600">
-              ${remainingAmount.toLocaleString()}
+              ${formatMoney(remainingAmount)}
             </div>
             <div className="text-sm text-gray-600 mt-1">Remaining</div>
           </div>
@@ -1796,7 +1914,7 @@ const EstablishmentProgressTracker = ({
                               {task.name}
                             </h4>
                             <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">
-                              ${task.cost.toLocaleString()}
+                              ${formatMoney(task.cost)}
                             </span>
                           </div>
                           
@@ -1811,7 +1929,7 @@ const EstablishmentProgressTracker = ({
                             <span>•</span>
                             <span>{task.duration}</span>
                             <span>•</span>
-                            <span>${task.cost.toLocaleString()}</span>
+                            <span>${formatMoney(task.cost)}</span>
                           </div>
                         </div>
                       </div>
@@ -1840,8 +1958,8 @@ const EstablishmentProgressTracker = ({
             <h1 className="text-4xl font-bold text-vine-green-500 mb-3">
               Vineyard Design & Layout
             </h1>
-            <p className="text-gray-600 max-w-3xl mx-auto">
-              Design your vineyard layout with optimal spacing, variety selection, and trellis systems for maximum productivity and quality.
+            <p className="text-gray-600 text-sm max-w-2xl mx-auto">
+              Design your vineyard layout using our interactive map or auto-layout calculator. Configure row spacing, vine spacing, and field boundaries.
             </p>
           </div>
 
@@ -1871,9 +1989,34 @@ const EstablishmentProgressTracker = ({
       {/* INPUTS TAB */}
       {activeTab === "inputs" && (
         <div className="space-y-8 pt-6">
-          <h1 className="text-2xl font-bold text-vine-green-700 border-b pb-3">
-            Financial Inputs for the Vineyard
-          </h1>
+          <div className="border-b pb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-2xl font-bold text-black">
+                Financial Inputs for the Vineyard
+              </h1>
+              <button
+              onClick={() => {
+                const allOpen = Object.values(sectionsState).every(v => v);
+                const newState = {};
+                Object.keys(sectionsState).forEach(key => {
+                  newState[key] = !allOpen;
+                });
+                setSectionsState(newState);
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-300 ${
+                  Object.values(sectionsState).every(v => v) ? "rotate-180" : ""
+                }`}
+              />
+              {Object.values(sectionsState).every(v => v) ? "Collapse All" : "Expand All"}
+              </button>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Set up your vineyard's financial blueprint, from land and equipment to annual operating costs. <br /> Every input here flows through to your break-even analysis and profitability projections.
+            </p>
+          </div>
 
           {!st.vineyardLayout?.calculatedLayout && (!st.vineyardFields || st.vineyardFields.length === 0 || !st.vineyardFields.some(f => f.polygonPath && f.polygonPath.length > 0)) && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -1911,10 +2054,10 @@ const EstablishmentProgressTracker = ({
           )}
 
           {/* Core Inputs */}
-          <CollapsibleSection title="Core Vineyard Parameters">
+          <CollapsibleSection isOpen={sectionsState["Core Vineyard Parameters"]} onToggle={toggleSection} title="Core Vineyard Parameters">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-8">
               <div>
-                <label className="text-sm text-vine-green-700 font-medium block mb-2">
+                <label className="text-sm text-black font-bold font-medium block mb-2">
                   Sales Strategy
                 </label>
                 <select
@@ -1927,12 +2070,12 @@ const EstablishmentProgressTracker = ({
                 </select>
               </div>
               <div>
-                <label className="text-sm text-vine-green-700 font-medium block mb-2">Acres</label>
+                <label className="text-sm text-black font-bold font-medium block mb-2">Acres</label>
                 {num("acres")}
               </div>
               {st.salesMode === "wine" && (
                 <div>
-                  <label className="text-sm text-vine-green-700 font-medium block mb-2">
+                  <label className="text-sm text-black font-bold font-medium block mb-2">
                     Bottle Price ($)
                   </label>
                   {num("bottlePrice", 0.5)}
@@ -1942,7 +2085,7 @@ const EstablishmentProgressTracker = ({
 
               {st.salesMode === "grapes" && (
                 <div>
-                  <label className="text-sm text-vine-green-700 font-medium block mb-2">
+                  <label className="text-sm text-black font-bold font-medium block mb-2">
                     Grape Sale Price ($ / ton)
                   </label>
                   {num("grapeSalePrice", 10)}
@@ -1957,27 +2100,27 @@ const EstablishmentProgressTracker = ({
                     />
               </div>
               <div>
-                <label className="text-sm text-vine-green-700 font-medium block mb-2">Water Cost ($/acre-yr)</label>
+                <label className="text-sm text-black font-bold font-medium block mb-2">Water Cost ($/acre-yr)</label>
                 {num("waterCost", 10)}
               </div>
               <div>
-                <label className="text-sm text-vine-green-700 font-medium block mb-2">Land Price ($/acre)</label>
+                <label className="text-sm text-black font-bold font-medium block mb-2">Land Price ($/acre)</label>
                 {num("landPrice", 1000)}
               </div>
               <div>
-                <label className="text-sm text-vine-green-700 font-medium block mb-2">Build Cost ($/acre)</label>
+                <label className="text-sm text-black font-bold font-medium block mb-2">Build Cost ($/acre)</label>
                 {num("buildPrice", 1000)}
               </div>
               <div>
-                <label className="text-sm text-vine-green-700 font-medium block mb-2">Setup Year</label>
+                <label className="text-sm text-black font-bold font-medium block mb-2">Setup Year</label>
                 {num("setupYear", 1)}
               </div>
               <div>
-                <label className="text-sm text-vine-green-700 font-medium block mb-2">License Cost ($)</label>
+                <label className="text-sm text-black font-bold font-medium block mb-2">License Cost ($)</label>
                 {num("licenseCost", 100)}
               </div>
               <div>
-                <label className="text-sm text-vine-green-700 font-medium block mb-2">
+                <label className="text-sm text-black font-bold font-medium block mb-2">
                     Available Equity ($)
                 </label>
                 <Input
@@ -1993,148 +2136,153 @@ const EstablishmentProgressTracker = ({
           </CollapsibleSection>
 
           {/* Setup Items */}
-          <CollapsibleSection title="Vineyard Setup">
-            <div className="space-y-5">
-              {Object.entries(stNum.setup).map(([k, obj]) => {
-                const label = k.charAt(0).toUpperCase() + k.slice(1);
-                const isCalculated = obj.calculated; // From vineyard design
+          <CollapsibleSection isOpen={sectionsState["Vineyard Setup"]} onToggle={toggleSection} title="Vineyard Setup">
+            <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-vine-green-50 border-b border-gray-200">
+                    <th className="text-left p-4 text-sm text-black font-bold">Include</th>
+                    <th className="text-left p-4 text-sm text-black font-bold">Item</th>
+                    <th className="text-left p-4 text-sm text-black font-bold">Configuration</th>
+                    <th className="text-right p-4 text-sm text-black font-bold">Cost/Acre</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {Object.entries(stNum.setup).map(([k, obj]) => {
+                    const label = k.charAt(0).toUpperCase() + k.slice(1);
+                    const isCalculated = obj.calculated;
 
-                return (
-                  <div key={k} className="flex flex-col gap-2 p-3 hover:bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <Checkbox
-                        checked={obj.include}
-                        onCheckedChange={v => updateSetup(k, { ...obj, include: v })}
-                        className="h-5 w-5"
-                      />
-                      <div className="flex items-center gap-2 w-32">
-                        <span className="text-sm text-vine-green-700 font-medium capitalize">{label}</span>
-                        {k === "vines" && obj.unitType === 'vine' && (
-                          <div className="relative group">
-                            <Info className="h-3.5 w-3.5 text-gray-400 hover:text-vine-green-600 cursor-help transition-colors" />
-                            <div className="absolute left-0 top-5 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
-                              <div className="w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl border border-gray-700">
-                                Typical vine costs: Grafted vines $3-6/vine, Own-rooted $2-4/vine
+                    return (
+                      <tr key={k} className="hover:bg-gray-50 transition-colors">
+                        <td className="p-4">
+                          <Checkbox
+                            checked={obj.include}
+                            onCheckedChange={v => updateSetup(k, { ...obj, include: v })}
+                            className="h-5 w-5"
+                          />
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 capitalize">{label}</span>
+                            {k === "vines" && obj.unitType === 'vine' && (
+                              <div className="relative group">
+                                <Info className="h-3.5 w-3.5 text-gray-400 hover:text-vine-green-600 cursor-help transition-colors" />
+                                <div className="absolute left-0 top-5 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+                                  <div className="w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl border border-gray-700">
+                                    Typical vine costs: Grafted vines $3-6/vine, Own-rooted $2-4/vine
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        )}
-                        {k === "fence" && obj.unitType === 'foot' && (
-                          <div className="relative group">
-                            <Info className="h-3.5 w-3.5 text-gray-400 hover:text-vine-green-600 cursor-help transition-colors" />
-                            <div className="absolute left-0 top-5 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
-                              <div className="w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl border border-gray-700">
-                                Deer fencing is essential to protect vines! 8ft minimum recommended. Typical costs: 6ft Standard $8/ft, 8ft Deer $15/ft, 10ft High-Tensile $22/ft
+                            )}
+                            {k === "fence" && obj.unitType === 'foot' && (
+                              <div className="relative group">
+                                <Info className="h-3.5 w-3.5 text-gray-400 hover:text-vine-green-600 cursor-help transition-colors" />
+                                <div className="absolute left-0 top-5 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 pointer-events-none">
+                                  <div className="w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl border border-gray-700">
+                                    Deer fencing is essential to protect vines! 8ft minimum recommended. Typical costs: 6ft Standard $8/ft, 8ft Deer $15/ft, 10ft High-Tensile $22/ft
+                                  </div>
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-
-                      {/* Show calculation source */}
-                      {isCalculated ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs bg-vine-green-100 text-vine-green-800 px-2 py-1 rounded">
-                            Auto-calculated from design
-                          </span>
-                          <span className="text-sm text-vine-green-700">$/acre</span>
-                          <span className="w-28 p-2 bg-gray-100 text-sm rounded border">
-                            ${obj.cost.toLocaleString()}
-                          </span>
-                          <button
-                            onClick={() => setActiveTab("design")}
-                            className="text-xs text-vine-green-500 hover:text-vine-green-700 underline"
-                          >
-                            Edit in Design →
-                          </button>
-                        </div>
-                      ) : k === "vines" && obj.unitType === 'vine' ? (
-                        // Vines - unit-based pricing
-                        <div className="flex items-center gap-2 flex-1">
-                          <label className="text-sm text-vine-green-700">$/vine</label>
-                          <Input
-                            className="w-24 bg-white"
-                            type="number"
-                            step="0.50"
-                            value={st.setup.vines.costPerVine}
-                            onChange={e => updateSetup(k, { ...st.setup.vines, costPerVine: e.target.value })}
-                          />
-                          <span className="text-xs text-gray-500">× {obj.vinesPerAcre?.toLocaleString()} vines/acre</span>
-                          <span className="text-sm font-medium text-vine-green-800">= ${obj.cost.toLocaleString()}/acre</span>
-                        </div>
-                      ) : k === "fence" && obj.unitType === 'foot' ? (
-                        // Fence - unit-based pricing with type selector
-                        <div className="flex items-center gap-2 flex-1">
-                          <select
-                            className="border p-2 rounded-md text-sm bg-white"
-                            value={st.setup.fence.fenceType || '8ft-deer'}
-                            onChange={e => {
-                              const costs = {'6ft-standard': '15', '8ft-deer': '25', '10ft-deer': '35'};
-                              updateSetup(k, { ...st.setup.fence, fenceType: e.target.value, costPerFoot: costs[e.target.value] });
-                            }}
-                          >
-                            <option value="6ft-standard">6ft Standard</option>
-                            <option value="8ft-deer">8ft Deer Fence</option>
-                            <option value="10ft-deer">10ft High-Tensile Deer</option>
-                          </select>
-                          <label className="text-sm text-vine-green-700">$/ft</label>
-                          <Input
-                            className="w-24 bg-white"
-                            type="number"
-                            step="1"
-                            value={st.setup.fence.costPerFoot}
-                            onChange={e => updateSetup(k, { ...st.setup.fence, costPerFoot: e.target.value })}
-                          />
-                          <span className="text-xs text-gray-500">× {obj.perimeter?.toLocaleString()} ft perimeter</span>
-                          <span className="text-sm font-medium text-vine-green-800">= ${obj.cost.toLocaleString()}/acre</span>
-                        </div>
-                      ) : k === "irrigation" ? (
-                        <>
-                          <select
-                            className="border p-2 rounded-md text-sm bg-white"
-                            value={obj.system}
-                            onChange={e => updateSetup(k, { ...obj, system: e.target.value, cost: IRRIG_OPTIONS.find(o => o.key === e.target.value).defaultCost })}
-                          >
-                            {IRRIG_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-                          </select>
-                          <label className="text-sm text-vine-green-700">$/acre</label>
-                          <Input
-                            className="w-28 bg-white"
-                            type="number"
-                            step="100"
-                            value={obj.cost}
-                            onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })}
-                          />
-                        </>
-                      ) : (
-                        <>
-                          <label className="text-sm text-vine-green-700">$/acre</label>
-                          <Input
-                            className="w-28 bg-white"
-                            type="number"
-                            step="100"
-                            value={obj.cost}
-                            onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })}
-                          />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                        </td>
+                        <td className="p-4">
+                          {isCalculated ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs bg-vine-green-100 text-vine-green-800 px-2 py-1 rounded">
+                                Auto-calculated
+                              </span>
+                              <button
+                                onClick={() => setActiveTab("design")}
+                                className="text-xs text-vine-green-600 hover:text-black font-bold underline"
+                              >
+                                Edit in Design →
+                              </button>
+                            </div>
+                          ) : k === "vines" && obj.unitType === 'vine' ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                className="w-20 bg-white text-sm"
+                                type="number"
+                                step="0.50"
+                                value={st.setup.vines.costPerVine}
+                                onChange={e => updateSetup(k, { ...st.setup.vines, costPerVine: e.target.value })}
+                              />
+                              <span className="text-sm text-gray-600">$/vine × {obj.vinesPerAcre?.toLocaleString()}/acre</span>
+                            </div>
+                          ) : k === "fence" && obj.unitType === 'foot' ? (
+                            <div className="flex items-center gap-2">
+                              <select
+                                className="border p-1.5 rounded text-sm bg-white"
+                                value={st.setup.fence.fenceType || '8ft-deer'}
+                                onChange={e => {
+                                  const costs = {'6ft-standard': '15', '8ft-deer': '25', '10ft-deer': '35'};
+                                  updateSetup(k, { ...st.setup.fence, fenceType: e.target.value, costPerFoot: costs[e.target.value] });
+                                }}
+                              >
+                                <option value="6ft-standard">6ft Standard</option>
+                                <option value="8ft-deer">8ft Deer</option>
+                                <option value="10ft-deer">10ft Deer</option>
+                              </select>
+                              <Input
+                                className="w-16 bg-white text-sm"
+                                type="number"
+                                step="1"
+                                value={st.setup.fence.costPerFoot}
+                                onChange={e => updateSetup(k, { ...st.setup.fence, costPerFoot: e.target.value })}
+                              />
+                              <span className="text-sm text-gray-600">$/ft × {obj.perimeter?.toLocaleString()} ft</span>
+                            </div>
+                          ) : k === "irrigation" ? (
+                            <div className="flex items-center gap-2">
+                              <select
+                                className="border p-1.5 rounded text-sm bg-white"
+                                value={obj.system}
+                                onChange={e => updateSetup(k, { ...obj, system: e.target.value, cost: IRRIG_OPTIONS.find(o => o.key === e.target.value).defaultCost })}
+                              >
+                                {IRRIG_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                              </select>
+                              <Input
+                                className="w-24 bg-white text-sm"
+                                type="number"
+                                step="100"
+                                value={obj.cost}
+                                onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })}
+                              />
+                              <span className="text-sm text-gray-600">$/acre</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                className="w-24 bg-white text-sm"
+                                type="number"
+                                step="100"
+                                value={obj.cost}
+                                onChange={e => updateSetup(k, { ...obj, cost: (e.target.value) })}
+                              />
+                              <span className="text-sm text-gray-600">$/acre</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-4 text-right">
+                          <span className="font-semibold text-gray-900 text-lg">${formatMoney(obj.cost)}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+            </table>
           </CollapsibleSection>
 
           {/* Pre-Planting / Site-Prep */}
-        <CollapsibleSection title="Pre-Planting / Site-Prep">
+        <CollapsibleSection isOpen={sectionsState["Pre-Planting / Site-Prep"]} onToggle={toggleSection} title="Pre-Planting / Site-Prep">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
                 <tr className="bg-vine-green-50">
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Task</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Task</th>
+                <th className="text-left p-3 text-xs text-black font-bold">$/acre</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -2202,25 +2350,25 @@ const EstablishmentProgressTracker = ({
         </CollapsibleSection>
 
         {/* Planting Costs */}
-        <CollapsibleSection title="Planting Costs">
+        <CollapsibleSection isOpen={sectionsState["Planting Costs"]} onToggle={toggleSection} title="Planting Costs">
           {st.vineyardLayout?.calculatedLayout && (
             <div className="mb-4 p-4 bg-vine-green-50 rounded-lg">
               <h4 className="font-medium text-vine-green-800 mb-2">Calculated Vine Requirements</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-vine-green-700">Total Vines:</span>
+                  <span className="text-black font-bold">Total Vines:</span>
                   <div className="font-semibold">{st.vineyardLayout.calculatedLayout.vineLayout.totalVines.toLocaleString()}</div>
                 </div>
                 <div>
-                  <span className="text-vine-green-700">Vines/Acre:</span>
+                  <span className="text-black font-bold">Vines/Acre:</span>
                   <div className="font-semibold">{Math.round(st.vineyardLayout.calculatedLayout.vineLayout.vinesPerAcre)}</div>
                 </div>
                 <div>
-                  <span className="text-vine-green-700">Spacing:</span>
+                  <span className="text-black font-bold">Spacing:</span>
                   <div className="font-semibold">{st.vineyardLayout.calculatedLayout.spacing.vine}' × {st.vineyardLayout.calculatedLayout.spacing.row}'</div>
                 </div>
                 <div>
-                  <span className="text-vine-green-700">Rows:</span>
+                  <span className="text-black font-bold">Rows:</span>
                   <div className="font-semibold">{st.vineyardLayout.calculatedLayout.vineLayout.numberOfRows}</div>
                 </div>
               </div>
@@ -2231,12 +2379,12 @@ const EstablishmentProgressTracker = ({
             <table className="w-full min-w-max">
               <thead>
                 <tr className="bg-vine-green-50">
-                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Item</th>
-                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Unit Cost</th>
-                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Qty/acre</th>
-                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Cost/acre</th>
-                  <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                  <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                  <th className="text-left p-3 text-xs text-black font-bold">Item</th>
+                  <th className="text-left p-3 text-xs text-black font-bold">Unit Cost</th>
+                  <th className="text-left p-3 text-xs text-black font-bold">Qty/acre</th>
+                  <th className="text-left p-3 text-xs text-black font-bold">Cost/acre</th>
+                  <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -2330,15 +2478,15 @@ const EstablishmentProgressTracker = ({
         </CollapsibleSection>
 
         {/* Cultural Operations */}
-        <CollapsibleSection title="Cultural Operations">
+        <CollapsibleSection isOpen={sectionsState["Cultural Operations"]} onToggle={toggleSection} title="Cultural Operations">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
                 <tr className="bg-vine-green-50">
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Operation</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Operation</th>
+                <th className="text-left p-3 text-xs text-black font-bold">$/acre</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -2406,7 +2554,7 @@ const EstablishmentProgressTracker = ({
         </CollapsibleSection>
 
         {/* Harvest & Hauling */}
-        <CollapsibleSection title="Harvest & Hauling">
+        <CollapsibleSection isOpen={sectionsState["Harvest & Hauling"]} onToggle={toggleSection} title="Harvest & Hauling">
         <div className="mb-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded text-sm">
           <p className="font-medium text-blue-900">Important: Use either $/acre OR $/ton for each service, not both.</p>
           <p className="text-blue-700 mt-1">Per-acre costs are fixed annually. Per-ton costs vary with actual harvest yield.</p>
@@ -2415,11 +2563,11 @@ const EstablishmentProgressTracker = ({
             <table className="w-full min-w-max">
             <thead>
                 <tr className="bg-vine-green-50">
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Service</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/ton</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Service</th>
+                <th className="text-left p-3 text-xs text-black font-bold">$/acre</th>
+                <th className="text-left p-3 text-xs text-black font-bold">$/ton</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -2500,15 +2648,15 @@ const EstablishmentProgressTracker = ({
         </CollapsibleSection>
 
             {/* Assessments & Fees */}
-        <CollapsibleSection title="Assessments & Fees">
+        <CollapsibleSection isOpen={sectionsState["Assessments & Fees"]} onToggle={toggleSection} title="Assessments & Fees">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
                 <tr className="bg-vine-green-50">
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Fee</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Fee</th>
+                <th className="text-left p-3 text-xs text-black font-bold">$/acre</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -2562,15 +2710,15 @@ const EstablishmentProgressTracker = ({
         </CollapsibleSection>
 
         {/* Cash Overhead */}
-        <CollapsibleSection title="Cash Overhead">
+        <CollapsibleSection isOpen={sectionsState["Cash Overhead"]} onToggle={toggleSection} title="Cash Overhead">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
                 <tr className="bg-vine-green-50">
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Expense</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Annual $</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Expense</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Annual $</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -2624,15 +2772,15 @@ const EstablishmentProgressTracker = ({
         </CollapsibleSection>
 
         {/* Non-Cash Overhead */}
-        <CollapsibleSection title="Non-Cash Overhead">
+        <CollapsibleSection isOpen={sectionsState["Non-Cash Overhead"]} onToggle={toggleSection} title="Non-Cash Overhead">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
                 <tr className="bg-vine-green-50">
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Category</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Annual $</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Category</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Annual $</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -2686,20 +2834,32 @@ const EstablishmentProgressTracker = ({
         </CollapsibleSection>
 
         {/* Equipment Operating Costs */}
-        <CollapsibleSection title="Equipment Operating Costs">
+        <CollapsibleSection isOpen={sectionsState["Equipment Operating Costs"]} onToggle={toggleSection} title="Equipment Operating Costs">
+        <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400 rounded text-sm">
+          <p className="font-medium text-blue-900">Farm equipment operating costs: fuel, lubrication, repairs, and maintenance.</p>
+          <p className="text-blue-700 mt-1">Enter either $/Acre OR Annual Total. Entering one auto-calculates the other based on your acreage.</p>
+        </div>
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
                 <tr className="bg-vine-green-50">
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Item</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/hour</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Hours/yr</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Equipment</th>
+                <th className="text-left p-3 text-xs text-black font-bold">$/Acre</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Annual Total ($)</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {stNum.equipmentOps.map((row,i)=>( 
+                {stNum.equipmentOps.map((row,i)=>{
+                const costPerAcre = Number(row.costPerAcre) || 0;
+                const annualTotal = Number(row.annualTotal) || 0;
+
+                // Calculate the display values based on which field was edited
+                const displayAnnual = annualTotal > 0 ? annualTotal : (costPerAcre * stNum.acres);
+                const displayPerAcre = costPerAcre > 0 ? costPerAcre : (stNum.acres > 0 ? annualTotal / stNum.acres : 0);
+
+                return (
                 <tr key={i} className="border-b hover:bg-gray-50">
                     <td className="p-3">
                     <Checkbox
@@ -2712,62 +2872,69 @@ const EstablishmentProgressTracker = ({
                     </td>
                     <td className="p-3">
                     <Input
-                        className="w-32 bg-white text-sm"
+                        className="w-40 bg-white text-sm"
                         value={row.label}
                         onChange={e=>{
                         const next=[...stNum.equipmentOps]; next[i].label=e.target.value; update("equipmentOps",next);
                         }}
+                        placeholder="Tractor fuel/maintenance"
                     />
                     </td>
                     <td className="p-3">
                     <Input
-                        type="number" step="0.1"
+                        type="number" step="0.01"
                         className="w-24 bg-white text-sm"
-                        value={row.costPerHour}
+                        value={displayPerAcre || ''}
                         onChange={e=>{
-                        const next=[...stNum.equipmentOps]; next[i].costPerHour=(e.target.value); update("equipmentOps",next);
+                        const next=[...stNum.equipmentOps];
+                        next[i].costPerAcre = e.target.value;
+                        next[i].annualTotal = 0; // Clear annual when per-acre is edited
+                        update("equipmentOps",next);
                         }}
                     />
                     </td>
                     <td className="p-3">
                     <Input
-                        type="number" step="1"
+                        type="number" step="0.01"
                         className="w-24 bg-white text-sm"
-                        value={row.annualHours}
+                        value={displayAnnual || ''}
                         onChange={e=>{
-                        const next=[...stNum.equipmentOps]; next[i].annualHours=(e.target.value); update("equipmentOps",next);
+                        const next=[...stNum.equipmentOps];
+                        next[i].annualTotal = e.target.value;
+                        next[i].costPerAcre = 0; // Clear per-acre when annual is edited
+                        update("equipmentOps",next);
                         }}
                     />
                     </td>
                     <td className="p-3">
                     <button
-                        className="text-red-600 hover:text-red-800 p-1"
+                        className="text-red-600 hover:text-red-800 p-1 text-sm"
                         onClick={()=>update("equipmentOps",stNum.equipmentOps.filter((_,j)=>j!==i))}
                     >
                         Remove
                     </button>
                     </td>
                 </tr>
-                ))}
+                )})}
             </tbody>
             </table>
             <AddButton
-            text="Add Equipment Op"
-            onClick={()=>update("equipmentOps",[...stNum.equipmentOps,{ include:false,label:"",costPerHour:0,annualHours:0 }])}
+            text="Add Equipment Operating Cost"
+            onClick={()=>update("equipmentOps",[...stNum.equipmentOps,{ include:false,label:"",costPerAcre:0,annualTotal:0 }])}
             />
         </div>
         </CollapsibleSection>
 
         {/* Marketing & Management */}
-        <CollapsibleSection title="Marketing & Management">
+        <CollapsibleSection isOpen={sectionsState["Marketing & Management"]} onToggle={toggleSection} title="Marketing & Management">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
                 <tr className="bg-vine-green-50">
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Service</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/acre</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Service</th>
+                <th className="text-left p-3 text-xs text-black font-bold">$/acre</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -2820,7 +2987,7 @@ const EstablishmentProgressTracker = ({
         </div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Permits & Licenses">
+        <CollapsibleSection isOpen={sectionsState["Permits & Licenses"]} onToggle={toggleSection} title="Permits & Licenses">
             <div className="space-y-4">
                 {stNum.permits.map((p, i) => (
                 <div key={p.key} className="flex items-center gap-4">
@@ -2832,7 +2999,7 @@ const EstablishmentProgressTracker = ({
                         update("permits", next);
                     }}
                     />
-                    <span className="flex-1 text-sm text-vine-green-700">{p.label}</span>
+                    <span className="flex-1 text-sm text-black font-bold">{p.label}</span>
                     <Input
                     type="number"
                     step={100}
@@ -2851,18 +3018,18 @@ const EstablishmentProgressTracker = ({
 
 
           {/* Equipment (financed) */}
-          <CollapsibleSection title="Equipment">
+          <CollapsibleSection isOpen={sectionsState["Equipment"]} onToggle={toggleSection} title="Equipment">
             <div className="overflow-x-auto">
               <table className="w-full min-w-max">
                 <thead>
                   <tr className="bg-vine-green-50">
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Equipment</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Price ($)</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Rate (%)</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Term (yrs)</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/mo</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Equipment</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Price ($)</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Rate (%)</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Term (yrs)</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">$/mo</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2966,18 +3133,18 @@ const EstablishmentProgressTracker = ({
           </CollapsibleSection>
 
         {/* ── Loans ── */}
-        <CollapsibleSection title="Loans">
+        <CollapsibleSection isOpen={sectionsState["Loans"]} onToggle={toggleSection} title="Loans">
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
                 <tr className="bg-vine-green-50">
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Label</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Principal ($)</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Rate (%)</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Term (yrs)</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">$/mo</th>
-                <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Label</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Principal ($)</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Rate (%)</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Term (yrs)</th>
+                <th className="text-left p-3 text-xs text-black font-bold">$/mo</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -3083,17 +3250,17 @@ const EstablishmentProgressTracker = ({
         </CollapsibleSection>
 
           {/* Purchased Grapes */}
-          <CollapsibleSection title="Purchased Grapes">
+          <CollapsibleSection isOpen={sectionsState["Purchased Grapes"]} onToggle={toggleSection} title="Purchased Grapes">
             <div className="overflow-x-auto">
               <table className="w-full min-w-max">
                 <thead>
                   <tr className="bg-vine-green-50">
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Variety</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Pounds</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Price/lb ($)</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Total ($)</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Variety</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Pounds</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Price/lb ($)</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Total ($)</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3179,16 +3346,16 @@ const EstablishmentProgressTracker = ({
           </CollapsibleSection>
 
           {/* Unsold Bottles */}
-          <CollapsibleSection title="Unsold Bottles">
+          <CollapsibleSection isOpen={sectionsState["Unsold Bottles"]} onToggle={toggleSection} title="Unsold Bottles">
             <div className="overflow-x-auto">
               <table className="w-full min-w-max">
                 <thead>
                   <tr className="bg-vine-green-50">
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Include</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Category</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Year</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Bottles</th>
-                    <th className="text-left p-3 text-xs font-medium text-vine-green-700">Actions</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Include</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Category</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Year</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Bottles</th>
+                    <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3256,15 +3423,20 @@ const EstablishmentProgressTracker = ({
         {activeTab === "establishment" && (
           <div className="space-y-8 pt-6">
             <div className="flex items-center justify-between border-b pb-4">
-              <SectionHeader title="Year 0 Establishment Costs" />
-              
+              <div>
+                <SectionHeader title="Year 0 Establishment Costs" />
+                <p className="text-gray-600 text-sm mt-2">
+                  One-time upfront costs to establish your vineyard including land, infrastructure, planting, and initial setup expenses.
+                </p>
+              </div>
+
               {/* View Toggle */}
-              <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+              <div className="flex gap-2 bg-gray-100 p-1 rounded-lg flex-shrink-0">
                 <button
                   onClick={() => setEstablishmentView('breakdown')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     establishmentView === 'breakdown'
-                      ? 'bg-white text-vine-green-700 shadow-sm'
+                      ? 'bg-white text-black font-bold shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -3274,7 +3446,7 @@ const EstablishmentProgressTracker = ({
                   onClick={() => setEstablishmentView('progress')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     establishmentView === 'progress'
-                      ? 'bg-white text-vine-green-700 shadow-sm'
+                      ? 'bg-white text-black font-bold shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -3286,61 +3458,132 @@ const EstablishmentProgressTracker = ({
             {/* BREAKDOWN VIEW */}
             {establishmentView === 'breakdown' && (
               <>
-                {/* Enhanced Summary Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
-                  <StatsCard 
-                    label="Land" 
-                    value={`$${(stNum.landPrice * stNum.acres).toLocaleString()}`}
-                    color="emerald"
-                    icon={<MapPin className="w-6 h-6" />}
-                    description="Property acquisition"
-                  />
-                  <StatsCard 
-                    label="Pre-Planting" 
-                    value={`$${prePlantTotal.toLocaleString()}`}
-                    color="amber"
-                    icon={<Tractor className="w-6 h-6" />}
-                    description="Site preparation"
-                  />
-                  <StatsCard 
-                    label="Planting" 
-                    value={`$${plantingTotal.toLocaleString()}`}
-                    color="green"
-                    icon={<Sprout className="w-6 h-6" />}
-                    description="Vines & materials"
-                  />
-                  <StatsCard 
-                    label="Setup" 
-                    value={`$${estData
-                      .filter(d => !['Land Purchase','License','One-time Permits','Pre-Planting','Planting'].includes(d.name))
-                      .reduce((s,d) => s + d.value, 0)
-                      .toLocaleString()}`}
-                    color="blue"
-                    icon={<HardHat className="w-6 h-6" />}
-                    description="Infrastructure"
-                  />
-                  <StatsCard 
-                    label="License" 
-                    value={`$${stNum.licenseCost.toLocaleString()}`}
-                    color="purple"
-                    icon={<FileText className="w-6 h-6" />}
-                    description="Permits & fees"
-                  />
-                  <StatsCard 
-                    label="Permits" 
-                    value={`$${permitOneTime.toLocaleString()}`}
-                    color="indigo"
-                    icon={<ScrollText className="w-6 h-6" />}
-                    description="Legal requirements"
-                  />
-                  <div className="sm:col-span-2 md:col-span-3 lg:col-span-4 xl:col-span-6">
-                    <StatsCard 
-                      label="Total Investment" 
-                      value={`$${estData.reduce((s,d) => s + d.value, 0).toLocaleString()}`}
-                      color="red"
-                      icon={<Gem className="w-6 h-6" />}
-                      description={`$${Math.round(estData.reduce((s,d) => s + d.value, 0) / stNum.acres).toLocaleString()} per acre`}
-                    />
+                {/* Enhanced Summary Cards - Matching 10-Year Projection Style */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                  {/* Land Card */}
+                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="w-12 h-12 bg-vine-green-100 rounded-full flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-vine-green-500" />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-vine-green-500 mb-2">
+                        ${formatMoney(stNum.landPrice * stNum.acres)}
+                      </div>
+                      <div className="text-sm text-gray-500">Land</div>
+                    </div>
+                    <div className="mt-4 text-center text-xs text-gray-400">
+                      Property acquisition
+                    </div>
+                  </div>
+
+                  {/* Pre-Planting Card */}
+                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                        <NounProjectIconById iconId={1141059} className="w-7 h-7 text-blue-600" size={28} color="#654321" />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-amber-600 mb-2">
+                        ${formatMoney(prePlantTotal)}
+                      </div>
+                      <div className="text-sm text-gray-500">Pre-Planting</div>
+                    </div>
+                    <div className="mt-4 text-center text-xs text-gray-400">
+                      Site preparation
+                    </div>
+                  </div>
+
+                  {/* Planting Card */}
+                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="w-12 h-12 bg-vine-green-100 rounded-full flex items-center justify-center">
+                        <NounProjectIconById iconId={6041571} className="w-7 h-7 text-blue-600" size={28} color="#654321" />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-vine-green-500 mb-2">
+                        ${formatMoney(plantingTotal)}
+                      </div>
+                      <div className="text-sm text-gray-500">Planting</div>
+                    </div>
+                    <div className="mt-4 text-center text-xs text-gray-400">
+                      Vines & materials
+                    </div>
+                  </div>
+
+                  {/* Setup/Infrastructure Card */}
+                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-center justify-center mb-4">
+                      <NounProjectIconById iconId={7202627} className="w-7 h-7 text-blue-600" size={28} color="#654321" />
+                    </div>
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-blue-600 mb-2">
+                        ${formatMoney(estData
+                          .filter(d => !['Land Purchase','License','One-time Permits','Pre-Planting','Planting'].includes(d.name))
+                          .reduce((s,d) => s + d.value, 0))}
+                      </div>
+                      <div className="text-sm text-gray-500">Setup</div>
+                    </div>
+                    <div className="mt-4 text-center text-xs text-gray-400">
+                      Infrastructure
+                    </div>
+                  </div>
+
+                  {/* License Card */}
+                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-purple-600" />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-purple-600 mb-2">
+                        ${formatMoney(stNum.licenseCost)}
+                      </div>
+                      <div className="text-sm text-gray-500">License</div>
+                    </div>
+                    <div className="mt-4 text-center text-xs text-gray-400">
+                      Permits & fees
+                    </div>
+                  </div>
+
+                  {/* Permits Card */}
+                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-center justify-center mb-4">
+                      <ScrollText className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-blue-600 mb-2">
+                        ${formatMoney(permitOneTime)}
+                      </div>
+                      <div className="text-sm text-gray-500">Permits</div>
+                    </div>
+                    <div className="mt-4 text-center text-xs text-gray-400">
+                      Legal requirements
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Investment - Full Width Card */}
+                <div className="mb-8">
+                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="w-12 h-12 bg-vine-green-100 rounded-full flex items-center justify-center">
+                        <DollarSign className="w-6 h-6 text-vine-green-500" />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-vine-green-500 mb-2">
+                        ${formatMoney(estData.reduce((s,d) => s + d.value, 0))}
+                      </div>
+                      <div className="text-sm text-gray-500">Total Investment</div>
+                    </div>
+                    <div className="mt-4 text-center text-xs text-gray-400">
+                      ${formatMoney(estData.reduce((s,d) => s + d.value, 0) / stNum.acres)} per acre
+                    </div>
                   </div>
                 </div>
 
@@ -3363,9 +3606,9 @@ const EstablishmentProgressTracker = ({
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                           <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#475569' }} stroke="#94a3b8" />
-                          <YAxis tickFormatter={n => `$${n.toLocaleString()}`} tick={{ fontSize: 12, fill: '#475569' }} stroke="#94a3b8" />
+                          <YAxis tickFormatter={n => `$${formatMoney(n)}`} tick={{ fontSize: 12, fill: '#475569' }} stroke="#94a3b8" />
                           <Tooltip 
-                            formatter={(val) => [`$${val.toLocaleString()}`, 'Cost']} 
+                            formatter={(val) => [`$${formatMoney(val)}`, 'Cost']} 
                             contentStyle={{ 
                               backgroundColor: 'white', 
                               border: '2px solid #e2e8f0', 
@@ -3410,7 +3653,7 @@ const EstablishmentProgressTracker = ({
                               />
                             ))}
                           </Pie>
-                          <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, 'Cost']} />
+                          <Tooltip formatter={(val) => [`$${formatMoney(val)}`, 'Cost']} />
                           <Legend
                             layout="vertical"
                             align="right"
@@ -3432,8 +3675,8 @@ const EstablishmentProgressTracker = ({
                   <div className="space-y-8">
                     {/* Pre-Planting Costs */}
                     <div>
-                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
-                        <Tractor className="w-5 h-5" />
+                      <h4 className="text-lg font-semibold text-black font-bold mb-4 flex items-center gap-2">
+                        <NounProjectIconById iconId={1141059} className="w-6 h-6 text-blue-600" size={24} color="#654321" />
                         Pre-Planting Costs
                       </h4>
                       <div className="overflow-x-auto">
@@ -3449,9 +3692,9 @@ const EstablishmentProgressTracker = ({
                             {stNum.prePlanting.filter(r => r.include).map((row, i) => (
                               <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                                 <td className="px-6 py-4 text-sm text-gray-900">{row.label}</td>
-                                <td className="px-6 py-4 text-sm text-gray-900 text-right">${row.costPerAcre.toLocaleString()}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900 text-right">${formatMoney(row.costPerAcre)}</td>
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                  ${(row.costPerAcre * stNum.acres).toLocaleString()}
+                                  ${formatMoney(row.costPerAcre * stNum.acres)}
                                 </td>
                               </tr>
                             ))}
@@ -3461,7 +3704,7 @@ const EstablishmentProgressTracker = ({
                                 ${(prePlantTotal / stNum.acres).toFixed(0)}
                               </td>
                               <td className="px-6 py-4 text-sm text-amber-700 text-right">
-                                ${prePlantTotal.toLocaleString()}
+                                ${formatMoney(prePlantTotal)}
                               </td>
                             </tr>
                           </tbody>
@@ -3471,19 +3714,19 @@ const EstablishmentProgressTracker = ({
 
                     {/* Planting Costs */}
                     <div>
-                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
-                        <Sprout className="w-5 h-5" />
+                      <h4 className="text-lg font-semibold text-black font-bold mb-4 flex items-center gap-2">
+                        <NounProjectIconById iconId={6041571} className="w-6 h-6 text-blue-600" size={24} color="#654321" />
                         Planting Costs
                       </h4>
                       <div className="overflow-x-auto">
                         <table className="min-w-full bg-white divide-y divide-gray-200 border rounded-lg">
                           <thead className="bg-vine-green-50">
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase">Item</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase">Unit Cost</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase">Qty/Acre</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase">$/Acre</th>
-                              <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase">Total Cost</th>
+                              <th className="px-6 py-3 text-left text-xs text-black font-bold uppercase">Item</th>
+                              <th className="px-6 py-3 text-right text-xs text-black font-bold uppercase">Unit Cost</th>
+                              <th className="px-6 py-3 text-right text-xs text-black font-bold uppercase">Qty/Acre</th>
+                              <th className="px-6 py-3 text-right text-xs text-black font-bold uppercase">$/Acre</th>
+                              <th className="px-6 py-3 text-right text-xs text-black font-bold uppercase">Total Cost</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-200">
@@ -3499,21 +3742,21 @@ const EstablishmentProgressTracker = ({
                                     {row.qtyPerAcre || '—'}
                                   </td>
                                   <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                                    ${costPerAcre.toLocaleString()}
+                                    ${formatMoney(costPerAcre)}
                                   </td>
                                   <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                    ${(costPerAcre * stNum.acres).toLocaleString()}
+                                    ${formatMoney(costPerAcre * stNum.acres)}
                                   </td>
                                 </tr>
                               );
                             })}
                             <tr className="bg-vine-green-50 font-semibold">
-                              <td className="px-6 py-4 text-sm text-vine-green-700" colSpan={3}>Subtotal</td>
-                              <td className="px-6 py-4 text-sm text-vine-green-700 text-right">
+                              <td className="px-6 py-4 text-sm text-black font-bold" colSpan={3}>Subtotal</td>
+                              <td className="px-6 py-4 text-sm text-black font-bold text-right">
                                 ${(plantingTotal / stNum.acres).toFixed(0)}
                               </td>
-                              <td className="px-6 py-4 text-sm text-vine-green-700 text-right">
-                                ${plantingTotal.toLocaleString()}
+                              <td className="px-6 py-4 text-sm text-black font-bold text-right">
+                                ${formatMoney(plantingTotal)}
                               </td>
                             </tr>
                           </tbody>
@@ -3523,8 +3766,8 @@ const EstablishmentProgressTracker = ({
 
                     {/* Setup/Infrastructure Costs */}
                     <div>
-                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
-                        <HardHat className="w-5 h-5" />
+                      <h4 className="text-lg font-semibold text-black font-bold mb-4 flex items-center gap-2">
+                        <NounProjectIconById iconId={7202627} className="w-6 h-6 text-blue-600" size={24} color="#654321" />
                         Infrastructure Setup
                       </h4>
                       <div className="overflow-x-auto">
@@ -3546,20 +3789,20 @@ const EstablishmentProgressTracker = ({
                                     {obj.system && <span className="ml-2 text-xs text-gray-500">({obj.system})</span>}
                                   </td>
                                   <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                                    ${obj.cost.toLocaleString()}
+                                    ${formatMoney(obj.cost)}
                                   </td>
                                   <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                    ${(obj.cost * stNum.acres).toLocaleString()}
+                                    ${formatMoney(obj.cost * stNum.acres)}
                                   </td>
                                 </tr>
                               ))}
                             <tr className={stNum.buildPrice > 0 ? 'bg-white' : 'hidden'}>
                               <td className="px-6 py-4 text-sm text-gray-900">Building</td>
                               <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                                ${stNum.buildPrice.toLocaleString()}
+                                ${formatMoney(stNum.buildPrice)}
                               </td>
                               <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                ${(stNum.buildPrice * stNum.acres).toLocaleString()}
+                                ${formatMoney(stNum.buildPrice * stNum.acres)}
                               </td>
                             </tr>
                             <tr className="bg-blue-50 font-semibold">
@@ -3568,7 +3811,7 @@ const EstablishmentProgressTracker = ({
                                 ${(perAcreSetup).toFixed(0)}
                               </td>
                               <td className="px-6 py-4 text-sm text-blue-700 text-right">
-                                ${(perAcreSetup * stNum.acres).toLocaleString()}
+                                ${formatMoney(perAcreSetup * stNum.acres)}
                               </td>
                             </tr>
                           </tbody>
@@ -3578,7 +3821,7 @@ const EstablishmentProgressTracker = ({
 
                     {/* Licenses & Permits */}
                     <div>
-                      <h4 className="text-lg font-semibold text-vine-green-700 mb-4 flex items-center gap-2">
+                      <h4 className="text-lg font-semibold text-black font-bold mb-4 flex items-center gap-2">
                         <FileText className="w-5 h-5" />
                         Licenses & Permits
                       </h4>
@@ -3596,7 +3839,7 @@ const EstablishmentProgressTracker = ({
                               <td className="px-6 py-4 text-sm text-gray-900">Business License</td>
                               <td className="px-6 py-4 text-sm text-gray-600 text-center">One-time</td>
                               <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                ${stNum.licenseCost.toLocaleString()}
+                                ${formatMoney(stNum.licenseCost)}
                               </td>
                             </tr>
                             {stNum.permits.filter(p => p.include).map((permit, i) => (
@@ -3606,14 +3849,14 @@ const EstablishmentProgressTracker = ({
                                   {['federal', 'state', 'winegrower', 'farm'].includes(permit.key) ? 'One-time' : 'Annual'}
                                 </td>
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                  ${permit.cost.toLocaleString()}
+                                  ${formatMoney(permit.cost)}
                                 </td>
                               </tr>
                             ))}
                             <tr className="bg-purple-50 font-semibold">
                               <td className="px-6 py-4 text-sm text-purple-700" colSpan={2}>Subtotal</td>
                               <td className="px-6 py-4 text-sm text-purple-700 text-right">
-                                ${(stNum.licenseCost + permitOneTime).toLocaleString()}
+                                ${formatMoney(stNum.licenseCost + permitOneTime)}
                               </td>
                             </tr>
                           </tbody>
@@ -3630,16 +3873,16 @@ const EstablishmentProgressTracker = ({
                       <table className="min-w-full bg-white divide-y divide-gray-200">
                         <thead className="bg-vine-green-50">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs text-black font-bold uppercase tracking-wider">
                               Lender
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-right text-xs text-black font-bold uppercase tracking-wider">
                               Principal
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-right text-xs text-black font-bold uppercase tracking-wider">
                               Rate
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-vine-green-700 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-right text-xs text-black font-bold uppercase tracking-wider">
                               Term (yrs)
                             </th>
                           </tr>
@@ -3651,7 +3894,7 @@ const EstablishmentProgressTracker = ({
                                 {loan.label || `Loan ${i + 1}`}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                                ${loan.principal.toLocaleString()}
+                                ${formatMoney(loan.principal)}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                                 {loan.rate.toFixed(2)}%
@@ -3662,11 +3905,11 @@ const EstablishmentProgressTracker = ({
                             </tr>
                           ))}
                           <tr className="bg-vine-green-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-black font-bold">
                               Total Loans
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-vine-green-700 text-right">
-                              ${totalLoanPrincipal.toLocaleString()}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-black font-bold text-right">
+                              ${formatMoney(totalLoanPrincipal)}
                             </td>
                             <td colSpan={2}></td>
                           </tr>
@@ -3677,11 +3920,11 @@ const EstablishmentProgressTracker = ({
                     <div className="text-right">
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Total Establishment Cost:</span>{" "}
-                        ${totalEstCost.toLocaleString()}
+                        ${formatMoney(totalEstCost)}
                       </p>
                       <p className="text-lg font-semibold text-purple-800">
                         <span className="font-medium">Net Capital Required:</span>{" "}
-                        ${netEquityRequired.toLocaleString()}
+                        ${formatMoney(netEquityRequired)}
                       </p>
                       <p className="text-xs text-gray-500">
                         (Total cost minus all available loan financing)
@@ -3711,15 +3954,18 @@ const EstablishmentProgressTracker = ({
         {/* ── 10-Year Projection Tab ── */}
         {activeTab === "proj" && (
         <div className="space-y-8 pt-6">
-            <SectionHeader title={`${projYears}-Year Financial Projection`} />
+            <div className="border-b pb-4">
+              <SectionHeader title={`${projYears}-Year Financial Projection`} />
+              <p className="text-gray-600 text-sm mt-2">
+                Multi-year financial forecast showing revenue, expenses, cash flow, and profitability over time based on your vineyard inputs.
+              </p>
+            </div>
 
             {/* Enhanced Top-line summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                 <div className="flex items-center justify-center mb-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-blue-600" />
-                  </div>
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="text-center">
                   <div className="text-4xl font-bold text-blue-600 mb-2">Year {breakEven}</div>
@@ -3740,22 +3986,21 @@ const EstablishmentProgressTracker = ({
                 </div>
                 <div className="text-center">
                   <div className="text-4xl font-bold text-vine-green-500 mb-2">
-                    ${projection
+                    ${formatMoney(projection
                       .filter(p => p.year > 0)
-                      .reduce((sum, p) => sum + p.revenue, 0)
-                      .toLocaleString()}
+                      .reduce((sum, p) => sum + p.revenue, 0))}
                   </div>
                   <div className="text-sm text-gray-500">Total Revenue</div>
                 </div>
                 <div className="mt-4 text-center text-xs text-gray-400">
-                  Avg Annual: ${Math.round(projection.filter(p => p.year > 0).reduce((sum, p) => sum + p.revenue, 0) / projYears).toLocaleString()}
+                  Avg Annual: ${formatMoney(projection.filter(p => p.year > 0).reduce((sum, p) => sum + p.revenue, 0) / projYears)}
                 </div>
               </div>
 
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                 <div className="flex items-center justify-center mb-4">
                   <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Grape className="w-6 h-6 text-purple-600" />
+                    <NounProjectIconById iconId={7975811} className="w-7 h-7 text-blue-600" size={28} color="#654321" />
                   </div>
                 </div>
                 <div className="text-center">
@@ -3767,7 +4012,7 @@ const EstablishmentProgressTracker = ({
                   <div className="text-sm text-gray-500">Annual ROI</div>
                 </div>
                 <div className="mt-4 text-center text-xs text-gray-400">
-                  Final Profit: ${projection[projection.length - 1].cumulative.toLocaleString()}
+                  Final Profit: ${formatMoney(projection[projection.length - 1].cumulative)}
                 </div>
               </div>
             </div>
@@ -3824,7 +4069,7 @@ const EstablishmentProgressTracker = ({
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis dataKey="year" tick={{ fontSize: 12 }} />
                         <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `$${(val/1000).toFixed(0)}K`} />
-                        <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, "Revenue"]} />
+                        <Tooltip formatter={(val) => [`$${formatMoney(val)}`, "Revenue"]} />
                         <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fill="url(#revenueGradient)" />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -3839,7 +4084,7 @@ const EstablishmentProgressTracker = ({
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis dataKey="year" tick={{ fontSize: 12 }} />
                         <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `$${(val/1000).toFixed(0)}K`} />
-                        <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, "Net Profit/Loss"]} />
+                        <Tooltip formatter={(val) => [`$${formatMoney(val)}`, "Net Profit/Loss"]} />
                         <ReferenceLine y={0} stroke="#000" strokeWidth={1} />
                         <Bar dataKey="net" radius={[4, 4, 0, 0]}>
                           {projection.map((entry, index) => (
@@ -3859,7 +4104,7 @@ const EstablishmentProgressTracker = ({
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis dataKey="year" tick={{ fontSize: 12 }} />
                         <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `$${(val/1000).toFixed(0)}K`} />
-                        <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, undefined]} />
+                        <Tooltip formatter={(val) => [`$${formatMoney(val)}`, undefined]} />
                         <Legend />
                         <Bar dataKey="revenue" name="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="cost" name="Operating Costs" fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -3876,7 +4121,7 @@ const EstablishmentProgressTracker = ({
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis dataKey="year" tick={{ fontSize: 12 }} />
                         <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `$${(val/1000).toFixed(0)}K`} />
-                        <Tooltip formatter={(val) => [`$${val.toLocaleString()}`, "Cumulative Profit"]} />
+                        <Tooltip formatter={(val) => [`$${formatMoney(val)}`, "Cumulative Profit"]} />
                         <ReferenceLine y={0} stroke="#000" strokeWidth={1} strokeDasharray="3 3" />
                         <Line 
                           type="monotone" 
@@ -3913,7 +4158,7 @@ const EstablishmentProgressTracker = ({
                     tick={{ fontSize: 12 }}
                     />
                     <Tooltip
-                    formatter={(val) => [`$${val.toLocaleString()}`, undefined]}
+                    formatter={(val) => [`$${formatMoney(val)}`, undefined]}
                     />
                     <Legend verticalAlign="top" height={36} />
                     <Bar dataKey="revenue" name="Revenue" fill="#4ade80" />
@@ -3956,7 +4201,7 @@ const EstablishmentProgressTracker = ({
                       ).map((h) => (
                         <th
                           key={h}
-                          className="text-left p-2 text-xs font-medium text-vine-green-700 uppercase"
+                          className="text-left p-2 text-xs text-black font-bold uppercase"
                         >
                           {h}
                         </th>
@@ -4002,21 +4247,21 @@ const EstablishmentProgressTracker = ({
                           )}
 
                           {/* $ columns – identical for both modes */}
-                          <td className="p-2">${p.revenue.toLocaleString()}</td>
-                          <td className="p-2">${p.cost.toLocaleString()}</td>
+                          <td className="p-2">${formatMoney(p.revenue)}</td>
+                          <td className="p-2">${formatMoney(p.cost)}</td>
                           <td
                             className={`p-2 font-medium ${
                               p.net >= 0 ? "text-vine-green-500" : "text-red-600"
                             }`}
                           >
-                            ${p.net.toLocaleString()}
+                            ${formatMoney(p.net)}
                           </td>
                           <td
                             className={`p-2 font-medium ${
                               p.cumulative >= 0 ? "text-vine-green-500" : "text-red-600"
                             }`}
                           >
-                            ${p.cumulative.toLocaleString()}
+                            ${formatMoney(p.cumulative)}
                           </td>
                         </tr>
                       );
@@ -4051,7 +4296,7 @@ const EstablishmentProgressTracker = ({
                     {projection.length > 0 && beIdx >= 0 && (
                       <div className="mt-3 p-2 bg-vine-green-50 rounded-lg">
                         <p className="text-xs text-vine-green-600">
-                          Cumulative profit: <span className="font-semibold">${projection[beIdx].cumulative.toLocaleString()}</span>
+                          Cumulative profit: <span className="font-semibold">${formatMoney(projection[beIdx].cumulative)}</span>
                         </p>
                       </div>
                     )}
@@ -4059,15 +4304,15 @@ const EstablishmentProgressTracker = ({
 
                   <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-vine-green-500 hover:shadow-xl transition-shadow duration-300">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs text-vine-green-700 uppercase font-bold tracking-wider">Total Investment</p>
+                      <p className="text-xs text-black font-bold uppercase font-bold tracking-wider">Total Investment</p>
                     </div>
-                    <p className="text-4xl font-black text-vine-green-900 mb-3">${totalEstCost.toLocaleString()}</p>
+                    <p className="text-4xl font-black text-vine-green-900 mb-3">${formatMoney(totalEstCost)}</p>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Initial capital required to establish vineyard
                     </p>
                     <div className="mt-3 p-2 bg-vine-green-50 rounded-lg">
-                      <p className="text-xs text-vine-green-700">
-                        Per acre: <span className="font-semibold">${Math.round(totalEstCost / stNum.acres).toLocaleString()}</span>
+                      <p className="text-xs text-black font-bold">
+                        Per acre: <span className="font-semibold">${formatMoney(totalEstCost / stNum.acres)}</span>
                       </p>
                     </div>
                   </div>
@@ -4108,17 +4353,17 @@ const EstablishmentProgressTracker = ({
                       <div className="flex justify-between items-center p-4 bg-gradient-to-r from-vine-green-50 to-vine-green-100 rounded-lg border-l-4 border-vine-green-400">
                         <span className="font-semibold text-vine-green-900">Max Potential Revenue (full production)</span>
                         <span className="font-black text-xl text-vine-green-800">
-                         ${maxPotentialRevenue.toLocaleString()}
+                         ${formatMoney(maxPotentialRevenue)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border-l-4 border-red-400">
                         <span className="font-semibold text-red-900">Annual Operating Costs</span>
-                        <span className="font-black text-xl text-red-800">${annualFixed.toLocaleString()}</span>
+                        <span className="font-black text-xl text-red-800">${formatMoney(annualFixed)}</span>
                       </div>
                       <div className="flex justify-between items-center p-4 bg-gradient-to-r from-vine-green-50 to-vine-green-100 rounded-lg border-l-4 border-vine-green-500">
                         <span className="font-semibold text-vine-green-800">Max Potential Net (full production)</span>
-                        <span className="font-black text-xl text-vine-green-700">
-                          ${maxPotentialNet.toLocaleString()}
+                        <span className="font-black text-xl text-black font-bold">
+                          ${formatMoney(maxPotentialNet)}
                         </span>
                       </div>
                     </div>
@@ -4170,14 +4415,14 @@ const EstablishmentProgressTracker = ({
                           <div className="p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg border-l-4 border-emerald-400">
                             <div className="flex justify-between items-center">
                               <span className="font-semibold text-emerald-900">Price per Ton</span>
-                              <span className="font-black text-xl text-emerald-800">${grapePrice.toLocaleString()}</span>
+                              <span className="font-black text-xl text-emerald-800">${formatMoney(grapePrice)}</span>
                             </div>
                           </div>
                           <div className="p-4 bg-gradient-to-r from-violet-50 to-violet-100 rounded-lg border-l-4 border-violet-400">
                             <div className="flex justify-between items-center">
                               <span className="font-semibold text-violet-900">Gross Margin per Ton</span>
                               <span className="font-black text-xl text-violet-800">
-                                ${grossMarginTon.toLocaleString()} ({grapePrice ? ((grossMarginTon / grapePrice) * 100).toFixed(1) : 0}%)
+                                ${formatMoney(grossMarginTon)} ({grapePrice ? ((grossMarginTon / grapePrice) * 100).toFixed(1) : 0}%)
                               </span>
                             </div>
                           </div>
@@ -4193,7 +4438,7 @@ const EstablishmentProgressTracker = ({
             <SectionCard title="Comprehensive Cost Analysis">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
-                <h3 className="text-lg font-medium text-vine-green-700 mb-4">Cost Distribution</h3>
+                <h3 className="text-lg font-medium text-black font-bold mb-4">Cost Distribution</h3>
                 <div className="h-80">
                     <ResponsiveContainer
                       key={`rc-${location.pathname}-${activeTab}`}
@@ -4225,7 +4470,7 @@ const EstablishmentProgressTracker = ({
                         tick={{ fontSize: 12 }}
                         />
                         <Tooltip 
-                        formatter={(value) => [`$${value.toLocaleString()}`, undefined]}
+                        formatter={(value) => [`$${formatMoney(value)}`, undefined]}
                         contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}
                         />
                         <Bar dataKey="value" name="Amount">
@@ -4251,14 +4496,14 @@ const EstablishmentProgressTracker = ({
                 </div>
                 
                 <div>
-                <h3 className="text-lg font-medium text-vine-green-700 mb-4">Cost Breakdown</h3>
+                <h3 className="text-lg font-medium text-black font-bold mb-4">Cost Breakdown</h3>
                 <div className="overflow-auto rounded-lg shadow">
                     <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-vine-green-50">
                         <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">Category</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">Amount ($)</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">% of Total</th>
+                        <th className="px-6 py-3 text-left text-xs text-black font-bold uppercase tracking-wider">Category</th>
+                        <th className="px-6 py-3 text-left text-xs text-black font-bold uppercase tracking-wider">Amount ($)</th>
+                        <th className="px-6 py-3 text-left text-xs text-black font-bold uppercase tracking-wider">% of Total</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -4268,7 +4513,7 @@ const EstablishmentProgressTracker = ({
                         return (
                             <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.value.toLocaleString()}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatMoney(item.value)}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <div className="flex items-center">
                                 <span className="mr-2">{percentage.toFixed(1)}%</span>
@@ -4295,13 +4540,13 @@ const EstablishmentProgressTracker = ({
                 <table className="w-full table-auto">
                 <thead className="bg-vine-green-50">
                     <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-vine-green-700">
+                    <th className="px-4 py-2 text-left text-xs text-black font-bold">
                         Category
                     </th>
                     {years.map(y => (
                         <th
                         key={y}
-                        className="px-4 py-2 text-right text-xs font-medium text-vine-green-700"
+                        className="px-4 py-2 text-right text-xs text-black font-bold"
                         >
                         {y === 0 ? 'Year 0' : `Year ${y}`}
                         </th>
@@ -4322,7 +4567,7 @@ const EstablishmentProgressTracker = ({
                             key={j}
                             className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right"
                         >
-                            ${val.toLocaleString()}
+                            ${formatMoney(val)}
                         </td>
                         ))}
                     </tr>
@@ -4330,15 +4575,15 @@ const EstablishmentProgressTracker = ({
 
                     {/* ── Totals Row ── */}
                     <tr className="bg-vine-green-50">
-                    <td className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-vine-green-700">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-black font-bold">
                         Total
                     </td>
                     {yearTotals.map((tot, j) => (
                         <td
                         key={j}
-                        className="px-4 py-2 whitespace-nowrap text-sm font-semibold text-vine-green-700 text-right"
+                        className="px-4 py-2 whitespace-nowrap text-sm text-black font-bold text-right"
                         >
-                        ${tot.toLocaleString()}
+                        ${formatMoney(tot)}
                         </td>
                     ))}
                     </tr>
@@ -4350,25 +4595,25 @@ const EstablishmentProgressTracker = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
             <StatsCard label="LTC" value={`${(LTC*100).toFixed(1)}%`} />
             <StatsCard label="LTV" value={`${(LTV*100).toFixed(1)}%`} />
-            <StatsCard label="Total Loans" value={`$${totalLoanPrincipal.toLocaleString()}`} />
-            <StatsCard label="Project Cost" value={`$${totalProjectCost.toLocaleString()}`} />
-            <StatsCard label="Land + Impr." value={`$${(landValue + improvementsValue).toLocaleString()}`} />
+            <StatsCard label="Total Loans" value={`$${formatMoney(totalLoanPrincipal)}`} />
+            <StatsCard label="Project Cost" value={`$${formatMoney(totalProjectCost)}`} />
+            <StatsCard label="Land + Impr." value={`$${formatMoney(landValue + improvementsValue)}`} />
             </div>
             {/* ── Terminology quick-reference ── */}
             <div className="mt-4 space-y-2 text-sm text-gray-700 leading-relaxed">
               <p>
-                <span className="font-semibold text-vine-green-700">LTC (Loan-to-Cost):</span>
+                <span className="font-semibold text-black font-bold">LTC (Loan-to-Cost):</span>
                 &nbsp;Total loan principal divided by total project cost. A higher LTC means
                 you’re financing a larger share of the build-out expenses.
               </p>
               <p>
-                <span className="font-semibold text-vine-green-700">LTV (Loan-to-Value):</span>
+                <span className="font-semibold text-black font-bold">LTV (Loan-to-Value):</span>
                 &nbsp;Total loan principal divided by the collateral’s appraised value
                 (land + improvements). Lenders watch this ratio to be sure the asset is
                 worth more than the debt secured against it.
               </p>
               <p>
-                <span className="font-semibold text-vine-green-700">Land + Impr.</span>
+                <span className="font-semibold text-black font-bold">Land + Impr.</span>
                 &nbsp;is the combined market value of the raw land purchase <em>plus</em>
                 all permanent site improvements (buildings, trellis, irrigation, etc.).
               </p>
@@ -4379,7 +4624,7 @@ const EstablishmentProgressTracker = ({
             <SectionCard title="Production & Revenue Analysis">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                <h3 className="text-lg font-semibold text-vine-green-700 mb-4">Vineyard Production Timeline</h3>
+                <h3 className="text-lg font-semibold text-black font-bold mb-4">Vineyard Production Timeline</h3>
                 <div className="h-64 mb-4 min-w-0">
                     <ResponsiveContainer
                       key={`rc-${location.pathname}-${activeTab}`}
@@ -4455,7 +4700,7 @@ const EstablishmentProgressTracker = ({
                     </ResponsiveContainer>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="text-md font-semibold text-vine-green-700 mb-3">Vineyard Maturation Model</h4>
+                    <h4 className="text-md font-semibold text-black font-bold mb-3">Vineyard Maturation Model</h4>
                     <ul className="list-disc ml-5 text-sm text-gray-700 space-y-2">
                     <li>Years 1-3: <span className="font-medium">0 tons/acre</span> (vineyard establishment)</li>
                     <li>Year 4: <span className="font-medium">1 ton/acre</span> (first crop)</li>
@@ -4474,7 +4719,7 @@ const EstablishmentProgressTracker = ({
                 
                 {/* Revenue Analysis */}
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                <h3 className="text-lg font-semibold text-vine-green-700 mb-4">Revenue & Profit Analysis</h3>
+                <h3 className="text-lg font-semibold text-black font-bold mb-4">Revenue & Profit Analysis</h3>
                 <div className="h-64 mb-4 min-w-0">
                     <ResponsiveContainer
                       key={`rc-${location.pathname}-${activeTab}`}
@@ -4510,7 +4755,7 @@ const EstablishmentProgressTracker = ({
                         />
                         <Tooltip 
                         formatter={(value, name) => [
-                            name === 'margin' ? `${value.toFixed(1)}%` : `$${value.toLocaleString()}`, 
+                            name === 'margin' ? `${value.toFixed(1)}%` : `$${formatMoney(value)}`, 
                             name === 'margin' ? 'Profit Margin' : name === 'revenue' ? 'Revenue' : 'Profit'
                         ]}
                         contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}
@@ -4523,15 +4768,15 @@ const EstablishmentProgressTracker = ({
                     </ResponsiveContainer>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="text-md font-semibold text-vine-green-700 mb-3">Revenue Insights</h4>
+                    <h4 className="text-md font-semibold text-black font-bold mb-3">Revenue Insights</h4>
                     <ul className="list-disc ml-5 text-sm text-gray-700 space-y-2">
                     <li>First revenue in <span className="font-medium">Year {projection.findIndex(p => p.revenue > 0) + 1}</span></li>
                     <li>First profitable year: <span className="font-medium">Year {projection.findIndex(p => p.net > 0) + 1}</span></li>
-                    <li>Maximum annual revenue: <span className="font-medium">${Math.max(...projection.map(p => p.revenue)).toLocaleString()}</span></li>
+                    <li>Maximum annual revenue: <span className="font-medium">${formatMoney(Math.max(...projection.map(p => p.revenue)))}</span></li>
                     <li>
                       Max potential revenue (full production):&nbsp;
                       <span className="font-medium">
-                        ${maxPotentialRevenue.toLocaleString()}
+                        ${formatMoney(maxPotentialRevenue)}
                       </span>
                     </li>
                     </ul>
@@ -4545,7 +4790,7 @@ const EstablishmentProgressTracker = ({
             <SectionCard title="Initial Investment Analysis">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
-                <h3 className="text-lg font-medium text-vine-green-700 mb-4">Setup Cost Breakdown</h3>
+                <h3 className="text-lg font-medium text-black font-bold mb-4">Setup Cost Breakdown</h3>
                 <div className="h-64">
                   <ResponsiveContainer
                     key={`rc-${location.pathname}-${activeTab}`}
@@ -4578,7 +4823,7 @@ const EstablishmentProgressTracker = ({
                         tick={{ fontSize: 12 }}
                         />
                         <Tooltip 
-                        formatter={(value) => [`$${value.toLocaleString()}`, 'Cost']}
+                        formatter={(value) => [`$${formatMoney(value)}`, 'Cost']}
                         contentStyle={{
                             background: 'white',
                             border: '1px solid #e2e8f0',
@@ -4598,15 +4843,15 @@ const EstablishmentProgressTracker = ({
                 </div>
 
                 <div>
-                <h3 className="text-lg font-medium text-vine-green-700 mb-4">Investment Details</h3>
+                <h3 className="text-lg font-medium text-black font-bold mb-4">Investment Details</h3>
                 <div className="overflow-hidden rounded-lg shadow">
                     <table className="min-w-full bg-white divide-y divide-gray-200">
                     <thead className="bg-vine-green-50">
                         <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">Item</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">Cost/Acre</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">Total Cost</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-vine-green-700 uppercase tracking-wider">% of Setup</th>
+                        <th className="px-6 py-3 text-left text-xs text-black font-bold uppercase tracking-wider">Item</th>
+                        <th className="px-6 py-3 text-left text-xs text-black font-bold uppercase tracking-wider">Cost/Acre</th>
+                        <th className="px-6 py-3 text-left text-xs text-black font-bold uppercase tracking-wider">Total Cost</th>
+                        <th className="px-6 py-3 text-left text-xs text-black font-bold uppercase tracking-wider">% of Setup</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -4618,8 +4863,8 @@ const EstablishmentProgressTracker = ({
                         return (
                             <tr key={k} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                             <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{label}</td>
-                            <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${costPerAcre.toLocaleString()}</td>
-                            <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${totalCost.toLocaleString()}</td>
+                            <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${formatMoney(costPerAcre)}</td>
+                            <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${formatMoney(totalCost)}</td>
                             <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">{percentage.toFixed(1)}%</td>
                             </tr>
                         );
@@ -4628,8 +4873,8 @@ const EstablishmentProgressTracker = ({
                         {/* Building row */}
                         <tr className="bg-gray-50">
                         <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Building</td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${stNum.buildPrice.toLocaleString()}</td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${(stNum.buildPrice * stNum.acres).toLocaleString()}</td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${formatMoney(stNum.buildPrice)}</td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${formatMoney(stNum.buildPrice * stNum.acres)}</td>
                         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
                             {((stNum.buildPrice * stNum.acres) / totalEstCost * 100).toFixed(1)}%
                         </td>
@@ -4638,8 +4883,8 @@ const EstablishmentProgressTracker = ({
                         {/* Land row */}
                         <tr className="bg-white">
                         <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Land</td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${stNum.landPrice.toLocaleString()}</td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${(stNum.landPrice * stNum.acres).toLocaleString()}</td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${formatMoney(stNum.landPrice)}</td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${formatMoney(stNum.landPrice * stNum.acres)}</td>
                         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
                             {((stNum.landPrice * stNum.acres) / totalEstCost * 100).toFixed(1)}%
                         </td>
@@ -4649,7 +4894,7 @@ const EstablishmentProgressTracker = ({
                         <tr className="bg-gray-50">
                         <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">License</td>
                         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">–</td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${(stNum.licenseCost ?? 0).toLocaleString()}</td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">${formatMoney(stNum.licenseCost ?? 0)}</td>
                         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
                             {(((stNum.licenseCost ?? 0) / totalEstCost) * 100).toFixed(1)}%
                         </td>
@@ -4657,14 +4902,14 @@ const EstablishmentProgressTracker = ({
 
                         {/* Total Investment row */}
                         <tr className="bg-vine-green-50">
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-vine-green-700">Total Investment</td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-vine-green-700">
-                            ${((totalEstCost - stNum.licenseCost) / stNum.acres).toLocaleString()}
+                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-black font-bold">Total Investment</td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-black font-bold">
+                            ${formatMoney((totalEstCost - stNum.licenseCost) / stNum.acres)}
                         </td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-vine-green-700">
-                            ${totalEstCost.toLocaleString()}
+                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-black font-bold">
+                            ${formatMoney(totalEstCost)}
                         </td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-vine-green-700">100.0%</td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-black font-bold">100.0%</td>
                         </tr>
                     </tbody>
                     </table>
@@ -4679,17 +4924,17 @@ const EstablishmentProgressTracker = ({
             <div className="bg-vine-green-50 p-6 rounded-xl mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div className="bg-white p-5 rounded-lg shadow-sm">
-                    <h3 className="text-lg font-medium text-vine-green-700 mb-3">Break-Even Timeline</h3>
-                    <p className="text-3xl font-bold text-vine-green-700 mb-2">Year {breakEven}</p>
+                    <h3 className="text-lg font-medium text-black font-bold mb-3">Break-Even Timeline</h3>
+                    <p className="text-3xl font-bold text-black font-bold mb-2">Year {breakEven}</p>
                     <p className="text-sm text-gray-600">
                     This vineyard will reach break-even (cumulative positive cash flow) in Year {breakEven}.
                     {projection.length > 0 && beIdx >= 0 && (
-                        <span> At this point, your cumulative profit will be ${projection[beIdx].cumulative.toLocaleString()}.</span>
+                        <span> At this point, your cumulative profit will be ${formatMoney(projection[beIdx].cumulative)}.</span>
                     )}
                     </p>
                 </div>
                 <div className="bg-white p-5 rounded-lg shadow-sm">
-                    <h3 className="text-lg font-medium text-vine-green-700 mb-3">Investment Recovery</h3>
+                    <h3 className="text-lg font-medium text-black font-bold mb-3">Investment Recovery</h3>
                     <p className="text-3xl font-bold text-vine-green-800 mb-2">
                     {projection.length > 0 && beIdx >= 0 
                         ? `${((beIdx + 1) / projYears * 100).toFixed(0)}%` 
@@ -4702,7 +4947,7 @@ const EstablishmentProgressTracker = ({
                     </p>
                 </div>
                 <div className="bg-white p-5 rounded-lg shadow-sm">
-                    <h3 className="text-lg font-medium text-vine-green-700 mb-3">10-Year ROI</h3>
+                    <h3 className="text-lg font-medium text-black font-bold mb-3">10-Year ROI</h3>
                     <p className="text-3xl font-bold text-purple-800 mb-2">
                     {projection.length > 0 
                         ? `${Math.round((projection[projection.length - 1].cumulative / totalEstCost) * 100)}%` 
@@ -4718,7 +4963,7 @@ const EstablishmentProgressTracker = ({
                 </div>
                 
                 <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-semibold text-vine-green-700 mb-4">Break-Even Analysis</h3>
+                <h3 className="text-lg font-semibold text-black font-bold mb-4">Break-Even Analysis</h3>
                 <div className="h-80">
                     {/* This is the section with the error - Fixed version */}
                     <ResponsiveContainer
@@ -4748,7 +4993,7 @@ const EstablishmentProgressTracker = ({
                         tick={{ fontSize: 12 }}
                         />
                         <Tooltip 
-                        formatter={(value) => [`$${value.toLocaleString()}`, "Cumulative Profit/Loss"]}
+                        formatter={(value) => [`$${formatMoney(value)}`, "Cumulative Profit/Loss"]}
                         labelFormatter={(value) => `Year ${value}`}
                         contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}
                         />
@@ -4765,7 +5010,7 @@ const EstablishmentProgressTracker = ({
                 </div>
                 
                 <div className="mt-6">
-                    <h4 className="text-md font-semibold text-vine-green-700 mb-3">Sensitivity Analysis</h4>
+                    <h4 className="text-md font-semibold text-black font-bold mb-3">Sensitivity Analysis</h4>
                     <p className="text-sm text-gray-700 mb-4">
                     How changes in key factors affect your break-even point:
                     </p>
@@ -4820,10 +5065,10 @@ const EstablishmentProgressTracker = ({
               <SectionCard title="Bottle Economics & Price Point Analysis">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div>
-                  <h3 className="text-lg font-medium text-vine-green-700 mb-4">Profit Margin Analysis</h3>
+                  <h3 className="text-lg font-medium text-black font-bold mb-4">Profit Margin Analysis</h3>
                   <div className="mb-6">
                       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                      <h4 className="text-md font-semibold text-vine-green-700 mb-3">Cost & Pricing Breakdown per Bottle</h4>
+                      <h4 className="text-md font-semibold text-black font-bold mb-3">Cost & Pricing Breakdown per Bottle</h4>
                       
                       <div className="space-y-4">
                           <div>
@@ -4864,11 +5109,11 @@ const EstablishmentProgressTracker = ({
                       
                       <div className="mt-6 flex justify-between items-end">
                           <div>
-                          <span className="block text-2xl font-bold text-vine-green-700">${stNum.bottlePrice.toFixed(2)}</span>
+                          <span className="block text-2xl font-bold text-black font-bold">${stNum.bottlePrice.toFixed(2)}</span>
                           <span className="text-sm text-gray-600">Bottle Price</span>
                           </div>
                           <div className="text-right">
-                          <span className="block text-2xl font-bold text-vine-green-700">
+                          <span className="block text-2xl font-bold text-black font-bold">
                               {Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}%
                           </span>
                           <span className="text-sm text-gray-600">Profit Margin</span>
@@ -4878,7 +5123,7 @@ const EstablishmentProgressTracker = ({
                   </div>
                   
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                      <h4 className="text-md font-semibold text-vine-green-700 mb-3">Price Point Scenario Analysis</h4>
+                      <h4 className="text-md font-semibold text-black font-bold mb-3">Price Point Scenario Analysis</h4>
                       <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                           <tr>
@@ -4929,10 +5174,10 @@ const EstablishmentProgressTracker = ({
                   
                   {/* Right Column */}
                   <div>
-                  <h3 className="text-lg font-medium text-vine-green-700 mb-4">Market Strategy Recommendations</h3>
+                  <h3 className="text-lg font-medium text-black font-bold mb-4">Market Strategy Recommendations</h3>
                   
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 mb-6">
-                      <h4 className="text-md font-semibold text-vine-green-700 mb-3">Optimal Price Point Analysis</h4>
+                      <h4 className="text-md font-semibold text-black font-bold mb-3">Optimal Price Point Analysis</h4>
                       <div className="h-64 mb-4 min-w-0">
                       <ResponsiveContainer
                         key={`rc-${location.pathname}-${activeTab}`}
@@ -4976,7 +5221,7 @@ const EstablishmentProgressTracker = ({
                           />
                           <Tooltip 
                               formatter={(value, name, props) => [
-                              name === 'profit' ? `$${value.toLocaleString()}` : `${value.toFixed(1)}%`,
+                              name === 'profit' ? `$${formatMoney(value)}` : `${value.toFixed(1)}%`,
                               name === 'profit' ? 'Annual Profit' : 'Profit Margin'
                               ]}
                               labelFormatter={value => `Bottle Price: $${value}`}
@@ -5003,7 +5248,7 @@ const EstablishmentProgressTracker = ({
                       {stNum.bottlePrice > 15 ? (
                           <p>
                           At your current price point (${stNum.bottlePrice.toFixed(2)}), you'll achieve a {Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) / stNum.bottlePrice * 100)}% profit margin
-                          and approximately ${Math.round((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) * stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON).toLocaleString()} in annual profit at full production.
+                          and approximately ${formatMoney((stNum.bottlePrice - (annualFixed / (stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON))) * stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON)} in annual profit at full production.
                           </p>
                       ) : (
                           <p className="text-red-600 font-medium">
@@ -5015,7 +5260,7 @@ const EstablishmentProgressTracker = ({
                   </div>
                   
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                      <h4 className="text-md font-semibold text-vine-green-700 mb-3">Strategic Recommendations</h4>
+                      <h4 className="text-md font-semibold text-black font-bold mb-3">Strategic Recommendations</h4>
                       <ul className="list-disc ml-5 text-sm text-gray-700 space-y-3">
                       <li>
                           <span className="font-medium">Optimal Price Point:</span> Based on your costs and industry averages, 
