@@ -137,7 +137,7 @@ export default function HomePage() {
 
               <FeatureCard
                 icon={TrendingUp}
-                iconColor="vine-green"
+                iconColor="teal"
                 title="Model Your Finances"
                 description="Build detailed 10-30 year financial projections with year-by-year revenue, costs, and cash flow analysis."
                 details={[
@@ -163,7 +163,7 @@ export default function HomePage() {
 
               <FeatureCard
                 icon={BarChart3}
-                iconColor="vine-green"
+                iconColor="teal"
                 title="Analyze Different Scenarios"
                 description="Test various strategies by adjusting key variables and instantly seeing how they impact profitability."
                 details={[
@@ -294,7 +294,7 @@ export default function HomePage() {
             />
             <FutureFeature
               icon={Thermometer}
-              iconColor="vine-green"
+              iconColor="teal"
               title="Environmental Monitoring"
               description="Track real-time data from IoT sensors measuring soil pH, nitrogen content, moisture levels, and temperature across your blocks. Receive alerts when conditions fall outside optimal ranges."
             />
@@ -323,7 +323,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="mt-1 rounded-lg bg-vine-green-100 p-2">
+                  <div className="mt-1 rounded-lg bg-teal-100 p-2">
                     <CheckCircle2 className="w-5 h-5 text-vine-green-600" />
                   </div>
                   <div>
@@ -341,7 +341,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="mt-1 rounded-lg bg-vine-green-100 p-2">
+                  <div className="mt-1 rounded-lg bg-teal-100 p-2">
                     <CheckCircle2 className="w-5 h-5 text-vine-green-600" />
                   </div>
                   <div>

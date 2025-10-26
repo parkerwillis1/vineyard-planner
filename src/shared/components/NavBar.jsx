@@ -72,13 +72,19 @@ export default function NavBar() {
     window.location.href = "/";
   };
 
-  // Resources dropdown items
+  // Tools dropdown items (for authenticated users)
+  const toolsItems = [
+    { to: "/planner", label: "Planner", icon: null },
+    { to: "/plans", label: "My Plans", icon: null },
+  ];
+
+  // Resources dropdown items (for both guests and auth users)
   const resourcesItems = [
     { to: "/docs", label: "Documentation", icon: null },
     { to: "/pricing", label: "Pricing", icon: null },
   ];
 
-  // About dropdown items (for authenticated users)
+  // About dropdown items (for authenticated users only)
   const aboutItems = [
     { to: "/products", label: "Products", icon: null },
     { to: "/about", label: "Our Story", icon: null },
@@ -104,29 +110,30 @@ export default function NavBar() {
         <nav className="ml-6 hidden md:flex items-center gap-1">
           {!user ? (
             <>
-              {/* Guest Navigation */}
+              {/* Guest Navigation: Home, Products, Pricing, Resources, About */}
+              <NavLink to="/" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
+                Home
+              </NavLink>
               <NavLink to="/products" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
                 Products
               </NavLink>
               <NavLink to="/pricing" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
                 Pricing
               </NavLink>
+              <Dropdown trigger="Resources" items={resourcesItems} />
               <NavLink to="/about" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
                 About
               </NavLink>
-              <Dropdown trigger="Resources" items={resourcesItems} />
             </>
           ) : (
             <>
-              {/* Authenticated Navigation */}
-              <NavLink to="/planner" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
-                Planner
+              {/* Authenticated Navigation: Tools, Documentation, Resources, About */}
+              <Dropdown trigger="Tools" items={toolsItems} />
+              <NavLink to="/docs" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
+                Documentation
               </NavLink>
-              <NavLink to="/plans" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
-                My Plans
-              </NavLink>
-              <Dropdown trigger="About" items={aboutItems} />
               <Dropdown trigger="Resources" items={resourcesItems} />
+              <Dropdown trigger="About" items={aboutItems} />
             </>
           )}
         </nav>
@@ -170,14 +177,14 @@ export default function NavBar() {
         <nav className="flex flex-wrap gap-2">
           {!user ? (
             <>
+              <NavLink to="/" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
+                Home
+              </NavLink>
               <NavLink to="/products" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
                 Products
               </NavLink>
               <NavLink to="/pricing" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
                 Pricing
-              </NavLink>
-              <NavLink to="/docs" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
-                Docs
               </NavLink>
               <NavLink to="/about" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
                 About
@@ -190,6 +197,12 @@ export default function NavBar() {
               </NavLink>
               <NavLink to="/plans" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
                 Plans
+              </NavLink>
+              <NavLink to="/products" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
+                Products
+              </NavLink>
+              <NavLink to="/about" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
+                About
               </NavLink>
               <NavLink to="/docs" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
                 Docs

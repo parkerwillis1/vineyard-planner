@@ -11,6 +11,7 @@ import PlansPage          from "./shared/components/PlansPage.jsx";
 import AboutPage from "./pages/about/AboutPage.jsx";
 import AccountSettingsPage from "./pages/account/AccountSettingsPage.jsx";
 import PricingPage from "./pages/pricing/PricingPage.jsx";
+import SelectPlanPage from "./pages/onboarding/SelectPlanPage.jsx";
 
 
 import PlannerShell       from "./features/planning/pages/PlannerShell.jsx";
@@ -60,6 +61,7 @@ export default function App() {
 
           {/* Protected routes - require authentication */}
           <Route element={<ProtectedRoute />}>
+            <Route path="select-plan" element={<SelectPlanPage />} />
             <Route path="planner" element={<PlannerShell embedded />} />
             <Route path="planner/:id" element={<PlannerShell embedded />} />
             <Route path="vineyards" element={<VineyardsPage />} />
