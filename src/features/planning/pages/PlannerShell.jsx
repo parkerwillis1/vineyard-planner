@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { supabase } from '@/shared/lib/supabaseClient';
 import { savePlanner, loadPlanner} from '@/shared/lib/saveLoadPlanner';
 import { savePlan, loadPlan, listPlans, createPlan } from '@/shared/lib/plansApi';
+import { useSubscription } from "@/shared/hooks/useSubscription";
 import {
   ChevronDown,
   TrendingUp,
@@ -12,6 +13,9 @@ import {
   FileText,
   ScrollText,
   Gem,
+  Tractor,
+  Sprout,
+  HardHat,
   Check,
   Clock,
   Calendar,
@@ -59,6 +63,7 @@ import {
 } from "recharts";
 
 import { useAuth } from "@/auth/AuthContext";
+import { useUsageLimits } from "@/shared/hooks/useUsageLimits";
 
 
 /* ------------------------------------------------------------------ */
@@ -192,6 +197,8 @@ const TabNav = ({
   currentPlanName,      
   onPlanChange,         
   onNewPlan,
+  currentTier, 
+  limits = {},
   plans,
   stickyTopClass = "top-0",
 }) => {
@@ -205,6 +212,9 @@ const TabNav = ({
     { id: "proj",          label: `${projYears}-Year Plan` },
     { id: "details",       label: "Details" },
   ];
+
+  // Check if user can create more plans
+  const canCreateMorePlans = limits.plans === -1 || (plans?.length || 0) < limits.plans;
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -274,13 +284,21 @@ const TabNav = ({
                   {/* Divider */}
                   <div className="border-t border-gray-200 my-2"></div>
 
+                  {/* Plan Usage Indicator (for free tier) */}
+                  {currentTier === 'free' && limits?.plans > 0 && (
+                    <div className="px-4 py-2 text-xs text-gray-500">
+                      Plans: {plans.length}/{limits.plans} {plans.length >= limits.plans && '(limit reached)'}
+                    </div>
+                  )}
+
                   {/* Create New Plan */}
                   <button
                     onClick={() => {
                       setShowPlanMenu(false);
                       onNewPlan();
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-vine-green-600 hover:bg-vine-green-50 font-medium transition-colors"
+                    className="w-full text-left px-4 py-2 text-sm text-vine-green-600 hover:bg-vine-green-50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!canCreateMorePlans}
                   >
                     + Create New Plan
                   </button>
@@ -589,6 +607,7 @@ export default function PlannerShell({ embedded = false }) {
     [navigate]
   );
 
+
   // Force scroll to top whenever tab changes + handle chart resizing
   useEffect(() => {
     console.log('🟡 Tab changed to:', activeTab);
@@ -754,6 +773,7 @@ useEffect(() => { taskCompletionRef.current = taskCompletion; }, [taskCompletion
 // --- Auth context (SAFE destructure) ---
 const auth = useAuth();
 const user = auth?.user || null;
+const { canCreatePlan, tier, limits } = useUsageLimits();
 
 
 
@@ -935,6 +955,19 @@ const handlePlanChange = (nextId) => {
   const handleNewPlan = async () => {
     if (!user) {
       alert('Sign in to create a plan.');
+      return;
+    }
+
+    // Check if user can create more plans
+    const planCheck = canCreatePlan();
+    if (!planCheck.allowed) {
+      const upgradeMessage = tier === 'free'
+        ? `You've reached your plan limit (${limits.plans} plan). Upgrade to Vineyard ($29/mo) for unlimited plans!`
+        : `You've reached your plan limit (${planCheck.limit} plans). Upgrade to get more plans!`;
+
+      if (confirm(upgradeMessage + '\n\nGo to pricing page?')) {
+        window.location.href = '/pricing';
+      }
       return;
     }
 
@@ -3458,111 +3491,92 @@ const EstablishmentProgressTracker = ({
             {/* BREAKDOWN VIEW */}
             {establishmentView === 'breakdown' && (
               <>
-                {/* Enhanced Summary Cards - Matching 10-Year Projection Style */}
+                {/* Enhanced Summary Cards - Clean Icon Style */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
                   {/* Land Card */}
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                     <div className="flex items-center justify-center mb-4">
-                      <div className="w-12 h-12 bg-vine-green-100 rounded-full flex items-center justify-center">
-                        <MapPin className="w-6 h-6 text-vine-green-500" />
-                      </div>
+                      <MapPin className="w-8 h-8 text-vine-green-500" />
                     </div>
                     <div className="text-center">
                       <div className="text-4xl font-bold text-vine-green-500 mb-2">
-                        ${formatMoney(stNum.landPrice * stNum.acres)}
+                        ${(stNum.landPrice * stNum.acres).toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-500">Land</div>
-                    </div>
-                    <div className="mt-4 text-center text-xs text-gray-400">
-                      Property acquisition
+                      <div className="text-base font-medium text-gray-700 mb-1">Land</div>
+                      <div className="text-sm text-gray-400">Property acquisition</div>
                     </div>
                   </div>
 
                   {/* Pre-Planting Card */}
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                     <div className="flex items-center justify-center mb-4">
-                      <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                        <NounProjectIconById iconId={1141059} className="w-7 h-7 text-blue-600" size={28} color="#654321" />
-                      </div>
+                      <Tractor className="w-8 h-8 text-amber-500" />
                     </div>
                     <div className="text-center">
                       <div className="text-4xl font-bold text-amber-600 mb-2">
-                        ${formatMoney(prePlantTotal)}
+                        ${prePlantTotal.toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-500">Pre-Planting</div>
-                    </div>
-                    <div className="mt-4 text-center text-xs text-gray-400">
-                      Site preparation
+                      <div className="text-base font-medium text-gray-700 mb-1">Pre-Planting</div>
+                      <div className="text-sm text-gray-400">Site preparation</div>
                     </div>
                   </div>
 
                   {/* Planting Card */}
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                     <div className="flex items-center justify-center mb-4">
-                      <div className="w-12 h-12 bg-vine-green-100 rounded-full flex items-center justify-center">
-                        <NounProjectIconById iconId={6041571} className="w-7 h-7 text-blue-600" size={28} color="#654321" />
-                      </div>
+                      <Sprout className="w-8 h-8 text-vine-green-500" />
                     </div>
                     <div className="text-center">
                       <div className="text-4xl font-bold text-vine-green-500 mb-2">
-                        ${formatMoney(plantingTotal)}
+                        ${plantingTotal.toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-500">Planting</div>
-                    </div>
-                    <div className="mt-4 text-center text-xs text-gray-400">
-                      Vines & materials
+                      <div className="text-base font-medium text-gray-700 mb-1">Planting</div>
+                      <div className="text-sm text-gray-400">Vines & materials</div>
                     </div>
                   </div>
 
                   {/* Setup/Infrastructure Card */}
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                     <div className="flex items-center justify-center mb-4">
-                      <NounProjectIconById iconId={7202627} className="w-7 h-7 text-blue-600" size={28} color="#654321" />
+                      <HardHat className="w-8 h-8 text-blue-500" />
                     </div>
                     <div className="text-center">
                       <div className="text-4xl font-bold text-blue-600 mb-2">
-                        ${formatMoney(estData
+                        ${estData
                           .filter(d => !['Land Purchase','License','One-time Permits','Pre-Planting','Planting'].includes(d.name))
-                          .reduce((s,d) => s + d.value, 0))}
+                          .reduce((s,d) => s + d.value, 0)
+                          .toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-500">Setup</div>
-                    </div>
-                    <div className="mt-4 text-center text-xs text-gray-400">
-                      Infrastructure
+                      <div className="text-base font-medium text-gray-700 mb-1">Setup</div>
+                      <div className="text-sm text-gray-400">Infrastructure</div>
                     </div>
                   </div>
 
                   {/* License Card */}
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                     <div className="flex items-center justify-center mb-4">
-                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-purple-600" />
-                      </div>
+                      <FileText className="w-8 h-8 text-purple-500" />
                     </div>
                     <div className="text-center">
                       <div className="text-4xl font-bold text-purple-600 mb-2">
-                        ${formatMoney(stNum.licenseCost)}
+                        ${stNum.licenseCost.toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-500">License</div>
-                    </div>
-                    <div className="mt-4 text-center text-xs text-gray-400">
-                      Permits & fees
+                      <div className="text-base font-medium text-gray-700 mb-1">License</div>
+                      <div className="text-sm text-gray-400">Permits & fees</div>
                     </div>
                   </div>
 
                   {/* Permits Card */}
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                     <div className="flex items-center justify-center mb-4">
-                      <ScrollText className="w-6 h-6 text-blue-600" />
+                      <ScrollText className="w-8 h-8 text-blue-500" />
                     </div>
                     <div className="text-center">
                       <div className="text-4xl font-bold text-blue-600 mb-2">
-                        ${formatMoney(permitOneTime)}
+                        ${permitOneTime.toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-500">Permits</div>
-                    </div>
-                    <div className="mt-4 text-center text-xs text-gray-400">
-                      Legal requirements
+                      <div className="text-base font-medium text-gray-700 mb-1">Permits</div>
+                      <div className="text-sm text-gray-400">Legal requirements</div>
                     </div>
                   </div>
                 </div>
@@ -3571,18 +3585,16 @@ const EstablishmentProgressTracker = ({
                 <div className="mb-8">
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                     <div className="flex items-center justify-center mb-4">
-                      <div className="w-12 h-12 bg-vine-green-100 rounded-full flex items-center justify-center">
-                        <DollarSign className="w-6 h-6 text-vine-green-500" />
-                      </div>
+                      <DollarSign className="w-8 h-8 text-vine-green-500" />
                     </div>
                     <div className="text-center">
                       <div className="text-4xl font-bold text-vine-green-500 mb-2">
-                        ${formatMoney(estData.reduce((s,d) => s + d.value, 0))}
+                        ${estData.reduce((s,d) => s + d.value, 0).toLocaleString()}
                       </div>
-                      <div className="text-sm text-gray-500">Total Investment</div>
-                    </div>
-                    <div className="mt-4 text-center text-xs text-gray-400">
-                      ${formatMoney(estData.reduce((s,d) => s + d.value, 0) / stNum.acres)} per acre
+                      <div className="text-base font-medium text-gray-700 mb-1">Total Investment</div>
+                      <div className="text-sm text-gray-400">
+                        ${Math.round(estData.reduce((s,d) => s + d.value, 0) / stNum.acres).toLocaleString()} per acre
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -4277,7 +4289,7 @@ const EstablishmentProgressTracker = ({
  
         {/* ------- render Details tab only when active ------- */}
         {activeTab === "details" && (
-        <div className="space-y-8 pt-6 max-w-full overflow-hidden">
+        <div className="space-y-8 pt-6">
             <SectionHeader title="Vineyard Financial Analysis & Breakdown" />
             
             {/* Executive Summary Card */}
@@ -5310,6 +5322,8 @@ return (
         onPlanChange={handlePlanChange}
         onNewPlan={handleNewPlan}
         plans={plans}
+        currentTier={tier}
+        limits={limits}
       />
  
        {/* centered content container */}

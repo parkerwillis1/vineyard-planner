@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import SiteLayout from "./app/layout/SiteLayout.jsx";
 
 import HomePage           from "./pages/home/HomePage.jsx";
+import ProductsPage       from "./pages/products/ProductsPage.jsx";
 import VineyardsPage      from "./pages/vineyards/VineyardsPage.jsx";
 import DocumentationPage  from "./shared/components/DocumentationPage.jsx";
 import PlansPage          from "./shared/components/PlansPage.jsx";
@@ -29,6 +30,8 @@ function ProtectedRoute({ children }) {
   return children ?? <Outlet />;
 }
 
+// Removed SmartHomePage - keeping normal homepage accessible
+
 export default function App() {
   // ⭐ NEW: Global upgrade modal state
   const [upgradeModalModule, setUpgradeModalModule] = useState(null);
@@ -48,17 +51,24 @@ export default function App() {
     <SubscriptionProvider>
       <Routes>
         <Route element={<SiteLayout />}>
+          {/* Public routes */}
           <Route index element={<HomePage />} />
-          <Route path="planner" element={<PlannerShell embedded />} />
-          <Route path="planner/:id" element={<PlannerShell embedded />} />
-          <Route path="vineyards" element={<VineyardsPage />} />
+          <Route path="products" element={<ProductsPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="docs" element={<DocumentationPage />} />
           <Route path="pricing" element={<PricingPage />} />
-          <Route path="plans" element={<PlansPage />} />
-          <Route path="account/settings" element={<AccountSettingsPage />} />
+
+          {/* Protected routes - require authentication */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="planner" element={<PlannerShell embedded />} />
+            <Route path="planner/:id" element={<PlannerShell embedded />} />
+            <Route path="vineyards" element={<VineyardsPage />} />
+            <Route path="plans" element={<PlansPage />} />
+            <Route path="account/settings" element={<AccountSettingsPage />} />
+          </Route>
         </Route>
 
+        {/* Auth pages (outside SiteLayout) */}
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -66,7 +76,7 @@ export default function App() {
 
       {/* ⭐ NEW: Global upgrade modal (rendered once, triggered from anywhere) */}
       {upgradeModalModule && (
-        <UpgradeModal 
+        <UpgradeModal
           moduleId={upgradeModalModule}
           onClose={() => setUpgradeModalModule(null)}
         />

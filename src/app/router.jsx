@@ -7,6 +7,7 @@ import { useAuth }        from "@/auth/AuthContext.jsx";
 import PlannerShell       from "@/features/planning/pages/PlannerShell.jsx";
 import DocumentationPage  from "@/shared/components/DocumentationPage.jsx";
 import PlansPage          from "@/shared/components/PlansPage.jsx";
+import HomePage           from "@/pages/home/HomePage.jsx";
 import SignIn             from "@/auth/SignIn.jsx";
 import SignUp             from "@/auth/SignUp.jsx";
 
@@ -27,18 +28,19 @@ function ProtectedRoute({ children }) {
 export default function AppRouter() {
   return (
     <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<HomePage />} />
+      <Route path="/signin" element={<SignIn />} />
+      <Route path="/signup" element={<SignUp />} />
+
       {/* Auth-protected area */}
       <Route element={<ProtectedRoute />}>
         {/* Main editor/dashboard shell */}
-        <Route path="/" element={<PlannerShell />} />
-        <Route path="/app/:id/*" element={<PlannerShell />} />
+        <Route path="/planner" element={<PlannerShell />} />
+        <Route path="/planner/:id" element={<PlannerShell />} />
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/docs"  element={<DocumentationPage />} />
       </Route>
-
-      {/* Public auth pages */}
-      <Route path="/signin" element={<SignIn />} />
-      <Route path="/signup" element={<SignUp />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

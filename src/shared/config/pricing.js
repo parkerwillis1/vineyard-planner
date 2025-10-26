@@ -10,12 +10,13 @@ export const PRICING_TIERS = {
       '1 vineyard plan',
       'Up to 10 acres',
       'Basic financial projections',
-      'Export to PDF'
+      '3 PDF exports per month'
     ],
     limits: {
       plans: 1,
       acres: 10,
-      users: 1
+      users: 1,
+      pdfExportsPerMonth: 3
     }
   },
   starter: {
@@ -27,6 +28,7 @@ export const PRICING_TIERS = {
     features: [
       'Unlimited plans',
       'Up to 50 acres',
+      'Unlimited PDF exports',
       'Block mapping',
       'Task management',
       'Mobile app access',
@@ -36,7 +38,8 @@ export const PRICING_TIERS = {
       plans: -1, // unlimited
       acres: 50,
       blocks: 20,
-      users: 2
+      users: 2,
+      pdfExportsPerMonth: -1 // unlimited
     },
     popular: false
   },
@@ -47,7 +50,9 @@ export const PRICING_TIERS = {
     billingPeriod: 'month',
     modules: ['planner', 'vineyard', 'production', 'inventory'],
     features: [
+      'Unlimited plans',
       'Up to 200 acres',
+      'Unlimited PDF exports',
       'Production tracking',
       'Inventory management',
       'TTB compliance',
@@ -59,7 +64,8 @@ export const PRICING_TIERS = {
       acres: 200,
       blocks: 100,
       users: 10,
-      cases: 5000
+      cases: 5000,
+      pdfExportsPerMonth: -1
     },
     popular: true
   },
@@ -70,7 +76,9 @@ export const PRICING_TIERS = {
     billingPeriod: 'month',
     modules: ['planner', 'vineyard', 'production', 'inventory', 'sales'],
     features: [
+      'Unlimited plans',
       'Unlimited acres',
+      'Unlimited PDF exports',
       'All modules',
       'CRM & sales',
       'API access',
@@ -83,7 +91,8 @@ export const PRICING_TIERS = {
       acres: -1,
       blocks: -1,
       users: -1,
-      cases: -1
+      cases: -1,
+      pdfExportsPerMonth: -1
     },
     popular: false
   }

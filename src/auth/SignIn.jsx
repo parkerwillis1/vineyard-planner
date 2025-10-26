@@ -19,7 +19,7 @@ export default function SignIn() {
       setLoading(false);
       return;
     }
-    // success: navigate to planner
+    // success: navigate to homepage
     navigate('/');
   }
 
