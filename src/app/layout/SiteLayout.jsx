@@ -530,9 +530,32 @@ export default function SiteLayout() {
 
                           <hr className="my-1 border-gray-200" />
                           <button
-                            onClick={() => {
-                              supabase.auth.signOut();
+                            onClick={async () => {
+                              console.log('Sign out clicked');
                               setShowAccountMenu(false);
+
+                              try {
+                                console.log('Attempting sign out...');
+                                const { error } = await supabase.auth.signOut();
+
+                                if (error) {
+                                  console.error('Sign out error:', error);
+                                }
+
+                                console.log('Clearing storage and redirecting...');
+                                // Clear all local storage
+                                localStorage.clear();
+                                sessionStorage.clear();
+
+                                // Force redirect
+                                window.location.replace('/');
+                              } catch (error) {
+                                console.error('Exception during sign out:', error);
+                                // Force sign out anyway
+                                localStorage.clear();
+                                sessionStorage.clear();
+                                window.location.replace('/');
+                              }
                             }}
                             className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
                           >
