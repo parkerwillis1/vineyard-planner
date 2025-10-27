@@ -453,16 +453,13 @@ function VineyardLayoutDemo() {
           <LayoutGrid className="w-5 h-5 text-vine-green-600" />
         </div>
 
-        {/* Visual grid representation */}
-        <div className="bg-white rounded-lg p-4 border border-vine-green-200">
-          <div className="grid grid-cols-8 gap-1">
-            {Array.from({ length: 64 }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-6 rounded ${i % 8 === 0 || i % 8 === 7 ? 'bg-gray-300' : 'bg-vine-green-400'}`}
-              />
-            ))}
-          </div>
+        {/* Satellite view with actual field mapping */}
+        <div className="relative bg-white rounded-lg overflow-hidden border-2 border-vine-green-200 shadow-lg">
+          <img
+            src="/Field_Map_1.png"
+            alt="Vineyard field mapping with satellite imagery"
+            className="w-full h-auto"
+          />
         </div>
 
         <div className="space-y-3 pt-2">
