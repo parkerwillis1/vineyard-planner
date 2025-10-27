@@ -7,68 +7,102 @@ const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+// Don't throw errors - just log warnings
 if (!stripeSecret || !webhookSecret) {
   console.error('[Stripe] Missing STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET');
-  throw new Error('Stripe environment variables are not configured');
 }
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   console.error('[Stripe] Missing Supabase service role configuration');
-  throw new Error('Supabase service role environment variables are not configured');
 }
 
-const stripe = new Stripe(stripeSecret, {
+const stripe = stripeSecret ? new Stripe(stripeSecret, {
   apiVersion: '2023-10-16',
   httpClient: Stripe.createFetchHttpClient(),
-});
+}) : null;
 
-const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+const supabase = (supabaseUrl && supabaseServiceRoleKey) ? createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: {
     persistSession: false,
   },
-});
+}) : null;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'stripe-signature, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { ...corsHeaders, 'Access-Control-Allow-Headers': 'content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' } });
+    return new Response('ok', { headers: corsHeaders });
   }
 
-  const signature = req.headers.get('stripe-signature');
+  // Only accept POST
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+  }
 
+  console.log('[Webhook] Received request');
+
+  // Check for signature header (Stripe uses this instead of Authorization)
+  const signature = req.headers.get('stripe-signature');
   if (!signature) {
-    return new Response('Missing stripe-signature header', { status: 400 });
+    console.error('[Webhook] Missing stripe-signature header');
+    return new Response(
+      JSON.stringify({ error: 'Missing stripe-signature header' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!stripe || !webhookSecret || !supabase) {
+    console.error('[Webhook] Missing configuration');
+    return new Response(
+      JSON.stringify({ error: 'Webhook not configured' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   const payload = await req.text();
-
   let event: Stripe.Event;
 
+  // Verify webhook signature
   try {
-    event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    event = await stripe.webhooks.constructEventAsync(payload, signature, webhookSecret);
+    console.log('[Webhook] Signature verified, event type:', event.type);
   } catch (err) {
-    console.error('[Stripe] Failed to verify webhook signature', err);
-    return new Response('Signature verification failed', { status: 400 });
+    console.error('[Webhook] Signature verification failed:', err.message);
+    return new Response(
+      JSON.stringify({ error: 'Signature verification failed' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
+  // Process the event
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
+        console.log('[Webhook] Processing checkout.session.completed');
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId;
         const tierId = session.metadata?.tierId;
 
-        if (!userId || !tierId) break;
+        console.log('[Webhook] Session metadata:', { userId, tierId });
+
+        if (!userId || !tierId) {
+          console.error('[Webhook] Missing userId or tierId in session metadata');
+          break;
+        }
 
         const modules = ['planner'];
         if (tierId === 'starter') modules.push('vineyard');
         if (tierId === 'professional') modules.push('vineyard', 'production', 'inventory');
         if (tierId === 'enterprise') modules.push('vineyard', 'production', 'inventory', 'sales');
 
-        await supabase
+        console.log('[Webhook] Updating subscription:', { userId, tierId, modules });
+
+        const { data, error } = await supabase
           .from('subscriptions')
           .update({
             tier: tierId,
@@ -76,56 +110,88 @@ serve(async (req) => {
             modules,
             stripe_customer_id: session.customer?.toString() ?? null,
             stripe_subscription_id: session.subscription?.toString() ?? null,
+            updated_at: new Date().toISOString(),
           })
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .select();
+
+        if (error) {
+          console.error('[Webhook] Database update error:', error);
+        } else {
+          console.log('[Webhook] Subscription updated successfully:', data);
+        }
         break;
       }
 
       case 'customer.subscription.updated':
       case 'customer.subscription.created': {
+        console.log('[Webhook] Processing', event.type);
         const subscription = event.data.object as Stripe.Subscription;
-        await supabase
+        const { error } = await supabase
           .from('subscriptions')
           .update({
             status: subscription.status,
+            updated_at: new Date().toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id);
+
+        if (error) {
+          console.error('[Webhook] Database update error:', error);
+        }
         break;
       }
 
       case 'customer.subscription.deleted': {
+        console.log('[Webhook] Processing customer.subscription.deleted');
         const subscription = event.data.object as Stripe.Subscription;
-        await supabase
+        const { error } = await supabase
           .from('subscriptions')
           .update({
             status: 'canceled',
+            updated_at: new Date().toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id);
+
+        if (error) {
+          console.error('[Webhook] Database update error:', error);
+        }
         break;
       }
 
       case 'invoice.payment_failed': {
+        console.log('[Webhook] Processing invoice.payment_failed');
         const invoice = event.data.object as Stripe.Invoice;
         if (!invoice.subscription) break;
-        await supabase
+        const { error } = await supabase
           .from('subscriptions')
           .update({
             status: 'past_due',
+            updated_at: new Date().toISOString(),
           })
           .eq('stripe_subscription_id', invoice.subscription.toString());
+
+        if (error) {
+          console.error('[Webhook] Database update error:', error);
+        }
         break;
       }
 
       default:
-        console.log(`[Stripe] Unhandled event type: ${event.type}`);
+        console.log(`[Webhook] Unhandled event type: ${event.type}`);
     }
 
-    return new Response(JSON.stringify({ received: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
+    return new Response(
+      JSON.stringify({ received: true, type: event.type }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   } catch (err) {
-    console.error('[Stripe] Error processing webhook event', err);
-    return new Response('Webhook handler failed', { status: 500 });
+    console.error('[Webhook] Error processing event:', err);
+    return new Response(
+      JSON.stringify({ error: 'Webhook handler failed' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });

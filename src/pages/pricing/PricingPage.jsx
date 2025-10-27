@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, Sparkles, Zap, Building2, Crown, Shield, Download, Users, Calendar } from "lucide-react";
 import { PRICING_TIERS } from "@/shared/config/pricing";
 import { useAuth } from "@/auth/AuthContext";
 import { useSubscription } from "@/shared/hooks/useSubscription";
+import { getPriceIdForTier } from "@/shared/config/stripePrices";
+import { redirectToStripeCheckout } from "@/shared/lib/stripeCheckout";
 
 const currency = new Intl.NumberFormat(undefined, {
   style: "currency",
@@ -22,12 +25,36 @@ export default function PricingPage() {
   const { user } = useAuth();
   const subscription = useSubscription();
   const currentTier = subscription?.tier;
+  const [processing, setProcessing] = useState(false);
 
-  const handleSelect = (tierId) => {
-    // Fire your global upgrade modal event (already handled in App.jsx)
-    window.dispatchEvent(
-      new CustomEvent("show-upgrade-modal", { detail: { moduleId: tierId } })
-    );
+  const handleSelect = async (tierId) => {
+    // Skip free tier
+    if (tierId === 'free') return;
+
+    if (!user) {
+      alert('You must be signed in to upgrade.');
+      return;
+    }
+
+    const priceId = getPriceIdForTier(tierId);
+
+    if (!priceId) {
+      alert('Stripe price ID is not configured for this plan.');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      await redirectToStripeCheckout({
+        priceId,
+        tierId,
+        user // Pass user directly from context
+      });
+    } catch (error) {
+      console.error('[Stripe] Upgrade checkout failed', error);
+      alert('We could not start the checkout process. Please try again.');
+      setProcessing(false);
+    }
   };
 
   return (
@@ -178,14 +205,16 @@ export default function PricingPage() {
                   ) : (
                     <button
                       onClick={() => handleSelect(tier.id)}
+                      disabled={processing}
                       className={[
                         "block w-full rounded-xl px-4 py-3 text-center text-sm font-bold shadow-sm transition-all",
                         tier.popular
                           ? "bg-gradient-to-r from-teal-600 to-vine-green-600 text-white hover:from-teal-500 hover:to-vine-green-500 shadow-md hover:shadow-lg"
                           : "bg-gray-100 text-gray-900 hover:bg-gray-200",
+                        processing && "opacity-50 cursor-not-allowed"
                       ].join(" ")}
                     >
-                      {isUpgrade ? "Upgrade Now" : "Switch Plan"}
+                      {processing ? "Redirecting..." : (isUpgrade ? "Upgrade Now" : "Switch Plan")}
                     </button>
                   )}
                 </div>
