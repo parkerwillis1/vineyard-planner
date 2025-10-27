@@ -2,7 +2,7 @@
 export const MODULES = {
   planner: {
     id: 'planner',
-    name: 'Financial Planner',
+    name: 'Vineyard Planner',
     description: 'Design your vineyard and project costs',
     icon: 'Calculator',
     requiredTier: 'free',

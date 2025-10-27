@@ -242,7 +242,7 @@ export default function SiteLayout() {
 
                     {showToolsMenu && (
                       <div className="absolute left-0 top-full mt-2 w-[550px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
-                        <h3 className="text-base font-semibold text-gray-900 mb-3">Your planning tools</h3>
+                        <h3 className="text-base font-semibold text-gray-900 mb-3">Your Vine Pioneer tools</h3>
 
                         <div className="grid grid-cols-2 gap-3">
                           {Object.values(MODULES).map(module => {
