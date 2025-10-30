@@ -8,7 +8,7 @@ export async function listPlans() {
 
   return supabase
     .from('vineyard_plans')
-    .select('id, name, updated_at')
+    .select('id, name, updated_at, data')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false });
 }

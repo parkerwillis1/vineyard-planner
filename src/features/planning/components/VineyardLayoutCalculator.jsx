@@ -1,5 +1,5 @@
 // VineyardLayoutCalculator.jsx - Google Maps Based Vineyard Planner with Multiple Fields
-import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { GoogleMap, useLoadScript, Polygon, Marker, Polyline, Autocomplete } from '@react-google-maps/api';
 import { MaterialCostsVisualizer } from "@/features/planning/components/MaterialCostsVisualizer";
 import { ChevronDown, MapPin, Trash2, Edit3, Plus, Eye, EyeOff } from "lucide-react";
@@ -352,7 +352,7 @@ export const VineyardLayoutVisualizer = ({
   onFieldSelect,
   vineSpacing,
   rowSpacing,
-  orientation
+  defaultOrientation = "horizontal"
 }) => {
   const mapRef = useRef(null);
   const fieldMenuRef = useRef(null);
@@ -421,6 +421,7 @@ export const VineyardLayoutVisualizer = ({
     const rowsMap = {};
     fields.forEach(field => {
       if (field.visible && field.polygonPath && field.polygonPath.length >= 3) {
+        const orientation = field.orientation || defaultOrientation;
         const layout = calculateVineyardLayout(field.polygonPath, vineSpacing, rowSpacing, orientation);
         if (layout) {
           rowsMap[field.id] = generateRowLines(field.polygonPath, layout.vineLayout.numberOfRows, rowSpacing, orientation);
@@ -428,7 +429,7 @@ export const VineyardLayoutVisualizer = ({
       }
     });
     return rowsMap;
-  }, [fields, vineSpacing, rowSpacing, orientation]);
+  }, [fields, vineSpacing, rowSpacing, defaultOrientation]);
 
   const handleMapClick = (e) => {
     if (!drawingMode) return;
@@ -507,7 +508,8 @@ export const VineyardLayoutVisualizer = ({
       id: Date.now().toString(),
       name: `Field ${fields.length + 1}`,
       polygonPath: [],
-      visible: true
+      visible: true,
+      orientation: defaultOrientation,
     };
     onFieldsChange([...fields, newField]);
     onFieldSelect(newField.id);
@@ -860,7 +862,8 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
   const [spacingOption, setSpacingOption] = useState(() => currentLayout?.spacingOption || "6x10");
   const [customVineSpacing, setCustomVineSpacing] = useState(() => currentLayout?.customVineSpacing || 6);
   const [customRowSpacing, setCustomRowSpacing] = useState(() => currentLayout?.customRowSpacing || 10);
-  const [rowOrientation, setRowOrientation] = useState(() => currentLayout?.rowOrientation || "horizontal");
+  const initialOrientation = currentLayout?.rowOrientation === "vertical" ? "vertical" : "horizontal";
+  const [defaultOrientation, setDefaultOrientation] = useState(initialOrientation);
   const [trellisSystem, setTrellisSystem] = useState(() => currentLayout?.trellisSystem || "VSP");
 
   // Sync with currentLayout when it changes (when loading a plan)
@@ -869,7 +872,9 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
       if (currentLayout.spacingOption) setSpacingOption(currentLayout.spacingOption);
       if (currentLayout.customVineSpacing) setCustomVineSpacing(currentLayout.customVineSpacing);
       if (currentLayout.customRowSpacing) setCustomRowSpacing(currentLayout.customRowSpacing);
-      if (currentLayout.rowOrientation) setRowOrientation(currentLayout.rowOrientation);
+      if (currentLayout.rowOrientation === "vertical" || currentLayout.rowOrientation === "horizontal") {
+        setDefaultOrientation(currentLayout.rowOrientation);
+      }
       if (currentLayout.trellisSystem) setTrellisSystem(currentLayout.trellisSystem);
     }
   }, [currentLayout]);
@@ -877,24 +882,47 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
   // Initialize fields from saved data or create default
   const [fields, setFields] = useState(() => {
     if (savedFields && savedFields.length > 0) {
-      return savedFields;
+      return savedFields.map(field => ({
+        ...field,
+        orientation: field.orientation || (currentLayout?.rowOrientation || defaultOrientation),
+      }));
     }
     return [{
       id: Date.now().toString(),
       name: 'Field 1',
       polygonPath: [],
-      visible: true
+      visible: true,
+      orientation: currentLayout?.rowOrientation || defaultOrientation,
     }];
   });
 
-  // Sync fields when savedFields changes (e.g., when loading a different plan)
-  useEffect(() => {
-    if (savedFields && savedFields.length > 0) {
-      setFields(savedFields);
-    }
-  }, [savedFields]);
-
   const [currentFieldId, setCurrentFieldId] = useState(() => fields[0]?.id);
+  const currentField = fields.find(f => f.id === currentFieldId);
+  const lastFieldsRef = useRef(JSON.stringify(fields));
+
+  // Sync fields when savedFields changes (e.g., when loading a different plan)
+  const lastSavedSignatureRef = useRef(JSON.stringify(savedFields ?? []));
+
+  useEffect(() => {
+    if (!savedFields || savedFields.length === 0) return;
+
+    const incomingSignature = JSON.stringify(savedFields);
+    if (incomingSignature === lastSavedSignatureRef.current) return;
+    lastSavedSignatureRef.current = incomingSignature;
+
+    const normalized = savedFields.map(field =>
+      field.orientation ? field : { ...field, orientation: defaultOrientation }
+    );
+
+    const normalizedSignature = JSON.stringify(normalized);
+    lastFieldsRef.current = normalizedSignature;
+
+    setFields(normalized);
+
+    if (normalized.length > 0 && !normalized.some(f => f.id === currentFieldId)) {
+      setCurrentFieldId(normalized[0].id);
+    }
+  }, [savedFields, defaultOrientation, currentFieldId]);
 
   const selectedSpacing = VINE_SPACING_OPTIONS.find(opt => opt.key === spacingOption);
   const isCustom = spacingOption === "custom";
@@ -907,9 +935,13 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
     const layouts = {};
     fields.forEach(field => {
       if (field.polygonPath && field.polygonPath.length >= 3 && vineSpacing > 0 && rowSpacing > 0) {
-        const layout = calculateVineyardLayout(field.polygonPath, vineSpacing, rowSpacing, rowOrientation);
+        const orientation = field.orientation || defaultOrientation;
+        const layout = calculateVineyardLayout(field.polygonPath, vineSpacing, rowSpacing, orientation);
         if (layout) {
-          layouts[field.id] = layout;
+          layouts[field.id] = {
+            ...layout,
+            orientation,
+          };
         } else {
           console.warn(`⚠️ Layout calculation returned null for field ${field.name}`);
         }
@@ -917,7 +949,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
     });
 
     return layouts;
-  }, [fields, vineSpacing, rowSpacing, rowOrientation]);
+  }, [fields, vineSpacing, rowSpacing, defaultOrientation]);
 
   // Calculate aggregate layout (all fields combined)
   const aggregateLayout = useMemo(() => {
@@ -927,6 +959,14 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
       console.warn('⚠️ aggregateLayout returning null - no field layouts available');
       return null;
     }
+
+    const orientations = fields
+      .filter(f => f.polygonPath && f.polygonPath.length >= 3)
+      .map(f => f.orientation || defaultOrientation);
+    const uniqueOrientations = new Set(orientations);
+    const aggregateOrientation = uniqueOrientations.size === 1
+      ? (uniqueOrientations.values().next().value || defaultOrientation)
+      : 'mixed';
 
     const totalAcres = allLayouts.reduce((sum, layout) => sum + layout.dimensions.acres, 0);
     const totalVines = allLayouts.reduce((sum, layout) => sum + layout.vineLayout.totalVines, 0);
@@ -972,13 +1012,13 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
       },
       materials: aggregateMaterials,
       spacing: { vine: vineSpacing, row: rowSpacing },
-      orientation: rowOrientation,
+      orientation: aggregateOrientation,
       fields: fields.length
     };
 
 
     return result;
-  }, [fieldLayouts, fields, vineSpacing, rowSpacing, rowOrientation]);
+  }, [fieldLayouts, fields, vineSpacing, rowSpacing, defaultOrientation]);
 
   const materialCosts = useMemo(() => {
     if (aggregateLayout) {
@@ -1027,7 +1067,6 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
   }, [savedFields]);
 
   // Notify parent of fields changes (for saving)
-  const lastFieldsRef = useRef(null);
   useEffect(() => {
     if (onFieldsChange) {
       const fieldsString = JSON.stringify(fields);
@@ -1042,14 +1081,14 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
   const lastConfigRef = useRef(null);
   useEffect(() => {
     if (onConfigChange) {
-      const config = { spacingOption, customVineSpacing, customRowSpacing, rowOrientation, trellisSystem };
+      const config = { spacingOption, customVineSpacing, customRowSpacing, rowOrientation: defaultOrientation, trellisSystem };
       const configString = JSON.stringify(config);
       if (lastConfigRef.current !== configString) {
         lastConfigRef.current = configString;
         onConfigChange(config);
       }
     }
-  }, [spacingOption, customVineSpacing, customRowSpacing, rowOrientation, trellisSystem, onConfigChange]);
+  }, [spacingOption, customVineSpacing, customRowSpacing, defaultOrientation, trellisSystem, onConfigChange]);
 
   const currentFieldLayout = currentFieldId ? fieldLayouts[currentFieldId] : null;
 
@@ -1133,11 +1172,19 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
               {/* Row Orientation */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Row Orientation
+                  Row Orientation (Selected Field)
                 </label>
                 <select
-                  value={rowOrientation}
-                  onChange={(e) => setRowOrientation(e.target.value)}
+                  value={currentField?.orientation || defaultOrientation}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!currentFieldId) return;
+                    setFields(prev => prev.map(field =>
+                      field.id === currentFieldId
+                        ? { ...field, orientation: value }
+                        : field
+                    ));
+                  }}
                   className="w-full p-2 border border-gray-300 rounded-md text-lg"
                 >
                   <option value="horizontal">Horizontal (East-West)</option>
@@ -1213,7 +1260,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
             onFieldSelect={setCurrentFieldId}
             vineSpacing={vineSpacing}
             rowSpacing={rowSpacing}
-            orientation={rowOrientation}
+            defaultOrientation={defaultOrientation}
           />
         </CollapsibleSection>
 

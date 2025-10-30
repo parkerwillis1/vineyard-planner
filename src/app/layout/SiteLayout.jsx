@@ -44,13 +44,25 @@ export default function SiteLayout() {
   }, [showToolsMenu, showResourcesMenu, showAboutMenu]);
 
   const handleModuleClick = (module) => {
-    const hasAccess = subscription.modules.includes(module.id);
-    
+    console.log('🔍 handleModuleClick called for:', module.id, module);
+
+    // TEMPORARILY DISABLED FOR TESTING: Allow vineyard access
+    const hasAccess = subscription.modules.includes(module.id) || module.id === 'vineyard';
+    console.log('🔑 hasAccess:', hasAccess, 'subscription.modules:', subscription.modules);
+
     setShowToolsMenu(false); // Close dropdown
-    
+
+    // Skip navigation for coming soon modules (except vineyard)
+    if (module.comingSoon && module.id !== 'vineyard') {
+      console.log('⏭️ Skipping - coming soon module');
+      return;
+    }
+
     if (hasAccess) {
+      console.log('✅ Navigating to:', module.route);
       navigate(module.route);
     } else {
+      console.log('🔒 No access - showing upgrade modal');
       // Trigger upgrade modal
       window.dispatchEvent(
         new CustomEvent('show-upgrade-modal', { detail: { moduleId: module.id } })

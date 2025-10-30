@@ -5,6 +5,8 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 // Use @ if your alias is working. If not, see the relative-path version below.
 import { useAuth }        from "@/auth/AuthContext.jsx";
 import PlannerShell       from "@/features/planning/pages/PlannerShell.jsx";
+import { OperationsShell } from "@/features/vineyard/pages/OperationsShell.jsx";
+import { FieldDetailPage } from "@/features/vineyard/pages/FieldDetailPage.jsx";
 import DocumentationPage  from "@/shared/components/DocumentationPage.jsx";
 import PlansPage          from "@/shared/components/PlansPage.jsx";
 import HomePage           from "@/pages/home/HomePage.jsx";
@@ -38,6 +40,8 @@ export default function AppRouter() {
         {/* Main editor/dashboard shell */}
         <Route path="/planner" element={<PlannerShell />} />
         <Route path="/planner/:id" element={<PlannerShell />} />
+        <Route path="/vineyard" element={<OperationsShell />} />
+        <Route path="/vineyard/field/:id" element={<FieldDetailPage />} />
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/docs"  element={<DocumentationPage />} />
       </Route>

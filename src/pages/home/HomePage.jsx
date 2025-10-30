@@ -37,21 +37,29 @@ export default function HomePage() {
     <div className="relative">
       {/* Hero Section with Slideshow */}
       <section className="relative overflow-hidden bg-gradient-to-b from-vine-green-50 to-white">
-        {/* Background Slideshow */}
+        {/* Background Slideshow - Optimized: Only render current and next image */}
         <div className="absolute inset-0 z-0" style={{ minHeight: '70vh' }}>
-          {images.map((image, index) => (
-            <div
-              key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentImage ? 'opacity-90' : 'opacity-0'
-              }`}
-              style={{
-                backgroundImage: `url(${image})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            />
-          ))}
+          {images.map((image, index) => {
+            const isCurrent = index === currentImage;
+            const isNext = index === (currentImage + 1) % images.length;
+            const isPrev = index === (currentImage - 1 + images.length) % images.length;
+
+            // Only render current, next, and previous images to reduce memory
+            if (!isCurrent && !isNext && !isPrev) return null;
+
+            return (
+              <img
+                key={index}
+                src={image}
+                alt={`Vineyard scene ${index + 1}`}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                  isCurrent ? 'opacity-90' : 'opacity-0'
+                }`}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchpriority={index === 0 ? 'high' : 'low'}
+              />
+            );
+          })}
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/20" />
         </div>

@@ -21,8 +21,6 @@ export const MODULES = {
     description: 'Manage blocks, tasks, and harvest tracking',
     icon: 'MapPin',
     requiredTier: 'starter',
-    comingSoon: true,
-    expectedLaunch: 'Q2 2025',
     route: '/vineyard',
     tabs: [
       { id: 'blocks', label: 'Blocks & Mapping' },

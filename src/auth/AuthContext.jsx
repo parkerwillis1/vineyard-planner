@@ -10,11 +10,21 @@ export function AuthProvider({ children }) {
     let mounted = true;
 
     async function init() {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) console.error('[Auth] getSession error', error);
-      if (mounted) {
-        setUser(session?.user ?? null);
-        setLoading(false);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) console.error('[Auth] getSession error', error);
+        if (mounted) {
+          setUser(session?.user ?? null);
+        }
+      } catch (err) {
+        console.error('[Auth] getSession threw', err);
+        if (mounted) {
+          setUser(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
     init();

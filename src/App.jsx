@@ -15,6 +15,7 @@ import SelectPlanPage from "./pages/onboarding/SelectPlanPage.jsx";
 
 
 import PlannerShell       from "./features/planning/pages/PlannerShell.jsx";
+import { OperationsShell } from "./features/vineyard/pages/OperationsShell.jsx";
 
 import SignIn             from "./auth/SignIn.jsx";
 import SignUp             from "./auth/SignUp.jsx";
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="select-plan" element={<SelectPlanPage />} />
             <Route path="planner" element={<PlannerShell embedded />} />
             <Route path="planner/:id" element={<PlannerShell embedded />} />
+            <Route path="vineyard/*" element={<OperationsShell />} />
             <Route path="vineyards" element={<VineyardsPage />} />
             <Route path="plans" element={<PlansPage />} />
             <Route path="account/settings" element={<AccountSettingsPage />} />

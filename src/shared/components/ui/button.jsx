@@ -1,5 +1,5 @@
 // src/components/ui/button.jsx
-export default function Button({ children, className = '', ...rest }) {
+export function Button({ children, className = '', ...rest }) {
   return (
     <button
       className={
@@ -13,3 +13,6 @@ export default function Button({ children, className = '', ...rest }) {
     </button>
   );
 }
+
+// Also export as default for backward compatibility
+export default Button;
