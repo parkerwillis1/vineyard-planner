@@ -1154,6 +1154,22 @@ export function BlockManagement() {
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Row Direction
+                    </label>
+                    <select
+                      value={formData.row_orientation_deg === null ? '' : formData.row_orientation_deg}
+                      onChange={(e) => setFormData({ ...formData, row_orientation_deg: e.target.value === '' ? null : parseInt(e.target.value) })}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Auto (East-West)</option>
+                      <option value="0">North-South (Vertical)</option>
+                      <option value="90">East-West (Horizontal)</option>
+                    </select>
+                    <p className="text-xs text-gray-600 mt-1">Direction rows run on the map</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Vine Count (Actual)
                     </label>
                     <input
@@ -1202,21 +1218,6 @@ export function BlockManagement() {
                           value={formData.clone}
                           onChange={(e) => setFormData({ ...formData, clone: e.target.value })}
                           placeholder="e.g., Clone 4"
-                          className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Row Orientation (degrees)
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="180"
-                          value={formData.row_orientation_deg || ''}
-                          onChange={(e) => setFormData({ ...formData, row_orientation_deg: e.target.value })}
-                          placeholder="e.g., 45"
                           className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                         />
                       </div>

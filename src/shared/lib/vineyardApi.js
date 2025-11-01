@@ -1460,6 +1460,41 @@ export async function deleteOrganizationMember(memberId) {
     .eq('id', memberId);
 }
 
+export async function sendMemberInvitation(memberId) {
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      return { error: new Error('Not authenticated') };
+    }
+
+    const response = await supabase.functions.invoke('send-invitation', {
+      body: { memberId },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (response.error) {
+      // Check if it's a connection error (Edge Function not deployed)
+      if (response.error.message?.includes('Failed to send a request') ||
+          response.error.message?.includes('fetch failed')) {
+        return {
+          error: new Error('Email service not configured. Deploy the Supabase Edge Function to enable automatic emails.')
+        };
+      }
+      return { error: response.error };
+    }
+
+    return { data: response.data, error: null };
+  } catch (error) {
+    console.error('Error sending invitation:', error);
+    return {
+      error: new Error('Failed to send invitation email. The email service may not be configured yet.')
+    };
+  }
+}
+
 export async function getCurrentUserRole() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: null };
@@ -1529,7 +1564,7 @@ export async function getHarvestTracking(harvestId) {
     .from('harvest_tracking')
     .select(`
       *,
-      vineyard_blocks(name, variety, acres, location)
+      vineyard_blocks(name, variety, acres)
     `)
     .eq('id', harvestId)
     .single();

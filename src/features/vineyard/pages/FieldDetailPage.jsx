@@ -53,6 +53,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
     year_planted: '',
     row_spacing_ft: '',
     vine_spacing_ft: '',
+    row_orientation_deg: null,
     notes: ''
   });
 
@@ -95,6 +96,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
       year_planted: data.year_planted || '',
       row_spacing_ft: data.row_spacing_ft || '',
       vine_spacing_ft: data.vine_spacing_ft || '',
+      row_orientation_deg: data.row_orientation_deg,
       notes: data.notes || ''
     });
 
@@ -122,6 +124,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
       year_planted: editForm.year_planted ? parseInt(editForm.year_planted) : null,
       row_spacing_ft: editForm.row_spacing_ft ? parseFloat(editForm.row_spacing_ft) : null,
       vine_spacing_ft: editForm.vine_spacing_ft ? parseFloat(editForm.vine_spacing_ft) : null,
+      row_orientation_deg: editForm.row_orientation_deg,
       notes: editForm.notes || null
     };
 
@@ -249,6 +252,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
                       year_planted: field.year_planted || '',
                       row_spacing_ft: field.row_spacing_ft || '',
                       vine_spacing_ft: field.vine_spacing_ft || '',
+                      row_orientation_deg: field.row_orientation_deg,
                       notes: field.notes || ''
                     });
                   }}
@@ -481,6 +485,27 @@ export function FieldDetailPage({ id: propId, onBack }) {
                       )}
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-2">
+                        Row Direction
+                      </label>
+                      {isEditing ? (
+                        <select
+                          value={editForm.row_orientation_deg === null ? '' : editForm.row_orientation_deg}
+                          onChange={(e) => setEditForm({ ...editForm, row_orientation_deg: e.target.value === '' ? null : parseInt(e.target.value) })}
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                        >
+                          <option value="">Auto (East-West)</option>
+                          <option value="0">North-South (Vertical)</option>
+                          <option value="90">East-West (Horizontal)</option>
+                        </select>
+                      ) : (
+                        <p className="text-base text-gray-900">
+                          {field.row_orientation_deg === 0 ? 'North-South' : field.row_orientation_deg === 90 ? 'East-West' : 'Auto (East-West)'}
+                        </p>
+                      )}
+                    </div>
+
                     {vinesPerAcre && (
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-600 mb-2">
@@ -586,6 +611,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
                 <BlockMap
                   blocks={[field]}
                   selectedBlockId={field.id}
+                  onBlockSelect={() => {}} // Keep field selected
                   onBlockUpdate={async (blockId, updates) => {
                     await updateVineyardBlock(blockId, updates);
                     await loadFieldData();

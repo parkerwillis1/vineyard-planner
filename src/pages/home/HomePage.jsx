@@ -17,13 +17,27 @@ import {
 
 export default function HomePage() {
   const [currentImage, setCurrentImage] = useState(0);
-  
+
   const images = [
     "/images/Vineyard1.jpg",
     "/images/Vineyard2.jpg",
     "/images/Vineyard3.jpg",
     "/images/Vineyard4.jpg",
   ];
+
+  // Preload first hero image for faster LCP
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = images[0];
+    link.fetchPriority = 'high';
+    document.head.appendChild(link);
+
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {

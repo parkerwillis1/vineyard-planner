@@ -1,7 +1,13 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { GoogleMap, useLoadScript, Polygon, Marker, Polyline } from '@react-google-maps/api';
-import { Map as MapIcon, Satellite, Pencil, Trash2, MapPin, Eye, EyeOff, RotateCw, ChevronUp, ChevronDown } from 'lucide-react';
+import { Map as MapIcon, Satellite, Pencil, Trash2, MapPin, Eye, EyeOff, RotateCw, ChevronUp, ChevronDown, Settings, Layers, Grid, MoreVertical, Save } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+  DropdownMenuSeparator
+} from '@/shared/components/ui/dropdown-menu';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAEwV8iVPfyCuZDYaX8rstuSUMK8ZOF6V8';
 const LIBRARIES = ['drawing', 'geometry', 'places'];
@@ -214,6 +220,8 @@ export function BlockMap({
   const [hasZoomedToBlocks, setHasZoomedToBlocks] = useState(false);
   const [showRows, setShowRows] = useState(true); // Toggle row visibility
   const [showBlocksList, setShowBlocksList] = useState(false); // Toggle blocks list visibility
+  const [draggingVertexIndex, setDraggingVertexIndex] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null); // {x, y, edgeIndex, clickPosition}
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -372,7 +380,16 @@ export function BlockMap({
     const block = blocks.find(b => b.id === selectedBlockId);
     if (block && block.geom) {
       const path = geojsonToPath(block.geom);
-      setTempPath(path);
+
+      // Remove the closing point if it's a duplicate of the first point
+      // (GeoJSON polygons have first point repeated at end, but we don't want that during editing)
+      const editPath = path.length > 1 &&
+        path[0].lat === path[path.length - 1].lat &&
+        path[0].lng === path[path.length - 1].lng
+        ? path.slice(0, -1)
+        : path;
+
+      setTempPath(editPath);
       setDrawingMode(true);
 
       // When editing, save will update instead of create
@@ -391,6 +408,65 @@ export function BlockMap({
       }
     }
   };
+
+  const handleVertexDrag = (index, newPosition) => {
+    const newPath = [...tempPath];
+    newPath[index] = {
+      lat: newPosition.lat(),
+      lng: newPosition.lng()
+    };
+    setTempPath(newPath);
+  };
+
+  const handlePolygonRightClick = (e) => {
+    if (!drawingMode || tempPath.length < 2) return;
+
+    e.stop(); // Prevent default map context menu
+
+    const clickPosition = {
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng()
+    };
+
+    // Find which edge was clicked (closest edge to click point)
+    let closestEdge = 0;
+    let minDistance = Infinity;
+
+    for (let i = 0; i < tempPath.length; i++) {
+      const nextI = (i + 1) % tempPath.length;
+      const dist = calculateDistance(clickPosition, tempPath[i]) + calculateDistance(clickPosition, tempPath[nextI]);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestEdge = i;
+      }
+    }
+
+    setContextMenu({
+      x: e.domEvent.clientX,
+      y: e.domEvent.clientY,
+      edgeIndex: closestEdge,
+      clickPosition
+    });
+  };
+
+  const handleAddPointOnEdge = () => {
+    if (!contextMenu) return;
+
+    const newPath = [...tempPath];
+    // Insert the new point after the edge index
+    newPath.splice(contextMenu.edgeIndex + 1, 0, contextMenu.clickPosition);
+    setTempPath(newPath);
+    setContextMenu(null);
+  };
+
+  // Close context menu when clicking anywhere
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenu(null);
+    if (contextMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu]);
 
   const handleGoToBlock = (blockId) => {
     const block = blocks.find(b => b.id === blockId);
@@ -467,126 +543,156 @@ export function BlockMap({
 
   return (
     <div className="h-full w-full flex flex-col">
-      {/* Controls Bar */}
-      <div className="bg-white border-b border-gray-200 p-3 flex items-center gap-3 flex-wrap">
-        {/* Basemap Toggle */}
-        <div className="flex gap-1 border border-gray-300 rounded-lg p-1">
+      {/* Simplified Toolbar */}
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-300 px-4 py-3 flex items-center gap-3">
+        {/* Primary Action - Drawing (only show if no field selected or in drawing mode) */}
+        {!drawingMode && !selectedBlockId && (
           <button
-            onClick={() => setBasemap('satellite')}
-            className={`px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium transition-colors ${
-              basemap === 'satellite'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
+            onClick={handleStartDrawing}
+            className="px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all hover:shadow-md"
           >
-            <Satellite className="w-4 h-4" />
-            Satellite
+            <Pencil className="w-4 h-4" />
+            Draw Field
           </button>
-          <button
-            onClick={() => setBasemap('roadmap')}
-            className={`px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium transition-colors ${
-              basemap === 'roadmap'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <MapIcon className="w-4 h-4" />
-            Streets
-          </button>
-        </div>
-
-        {/* Drawing Tools */}
-        <div className="flex gap-1 border border-gray-300 rounded-lg p-1">
-          {!drawingMode ? (
-            <>
-              <button
-                onClick={handleStartDrawing}
-                className="px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                <Pencil className="w-4 h-4" />
-                Draw Block
-              </button>
-
-              {selectedBlockId && (
-                <>
-                  <button
-                    onClick={handleEditSelected}
-                    className="px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={handleDeleteSelected}
-                    className="px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium bg-white text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
-                </>
-              )}
-            </>
-          ) : (
+        )}
+        {drawingMode && (
+          <>
+            <button
+              onClick={() => handleSavePolygon(tempPath)}
+              disabled={tempPath.length < 3}
+              className="px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Save className="w-4 h-4" />
+              Save Changes
+            </button>
             <button
               onClick={handleCancelDrawing}
-              className="px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 transition-colors"
+              className="px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold bg-gray-600 text-white hover:bg-gray-700 shadow-sm transition-all"
             >
-              Cancel Drawing
+              Cancel
             </button>
-          )}
-        </div>
+          </>
+        )}
 
-        {/* Row Controls */}
-        <div className="flex gap-1 border border-gray-300 rounded-lg p-1">
-          <button
-            onClick={() => setShowRows(!showRows)}
-            className={`px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium transition-colors ${
-              showRows
-                ? 'bg-yellow-100 text-yellow-900'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            {showRows ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            {showRows ? 'Rows On' : 'Rows Off'}
-          </button>
-
-          {selectedBlockId && blocks.find(b => b.id === selectedBlockId && b.geom) && (
-            <button
-              onClick={handleRotateRows}
-              className="px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <RotateCw className="w-4 h-4" />
-              Rotate
-            </button>
-          )}
-        </div>
-
-        {/* Stats & Toggle */}
-        <div className="ml-auto flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="w-4 h-4" />
-            <span className="font-medium">{blocks.filter(b => b.geom).length} Mapped</span>
-            <span>•</span>
-            <span>{totalAcres.toFixed(1)} acres</span>
-          </div>
-
-          {/* Toggle Blocks List */}
-          {!drawingMode && blocks.filter(b => b.geom && b.geom.coordinates).length > 0 && (
-            <button
-              onClick={() => setShowBlocksList(!showBlocksList)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg flex items-center gap-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              {showBlocksList ? (
+        {/* Map View Dropdown */}
+        <DropdownMenu
+          trigger={
+            <DropdownMenuTrigger className="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 shadow-sm">
+              {basemap === 'satellite' ? (
                 <>
-                  <ChevronUp className="w-4 h-4" />
-                  Hide List
+                  <Satellite className="w-4 h-4" />
+                  Satellite
                 </>
               ) : (
                 <>
-                  <ChevronDown className="w-4 h-4" />
-                  Show List
+                  <MapIcon className="w-4 h-4" />
+                  Streets
                 </>
               )}
+            </DropdownMenuTrigger>
+          }
+        >
+          <DropdownMenuItem
+            icon={Satellite}
+            onClick={() => setBasemap('satellite')}
+            variant={basemap === 'satellite' ? 'primary' : 'default'}
+          >
+            Satellite View
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            icon={MapIcon}
+            onClick={() => setBasemap('roadmap')}
+            variant={basemap === 'roadmap' ? 'primary' : 'default'}
+          >
+            Street Map
+          </DropdownMenuItem>
+        </DropdownMenu>
+
+        {/* Field Actions - Only when field selected */}
+        {selectedBlockId && !drawingMode && (
+          <DropdownMenu
+            trigger={
+              <DropdownMenuTrigger className="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 shadow-sm">
+                <MoreVertical className="w-4 h-4" />
+                Actions
+              </DropdownMenuTrigger>
+            }
+          >
+            <DropdownMenuItem
+              icon={Pencil}
+              onClick={handleEditSelected}
+            >
+              Edit Boundary
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              icon={Trash2}
+              onClick={handleDeleteSelected}
+              variant="danger"
+            >
+              Delete Field
+            </DropdownMenuItem>
+          </DropdownMenu>
+        )}
+
+        {/* Row Controls Dropdown - Smart visibility */}
+        {blocks.some(b => b.geom && b.row_spacing_ft) && (
+          <DropdownMenu
+            trigger={
+              <DropdownMenuTrigger className={`px-4 py-2 rounded-lg border shadow-sm ${
+                showRows
+                  ? 'bg-yellow-100 border-yellow-300 text-yellow-900 hover:bg-yellow-200'
+                  : 'bg-white border-gray-300 hover:bg-gray-50'
+              }`}>
+                <Grid className="w-4 h-4" />
+                {showRows ? 'Rows On' : 'Rows Off'}
+              </DropdownMenuTrigger>
+            }
+          >
+            <DropdownMenuItem
+              icon={showRows ? EyeOff : Eye}
+              onClick={() => setShowRows(!showRows)}
+              variant={showRows ? 'warning' : 'default'}
+            >
+              {showRows ? 'Hide Rows' : 'Show Rows'}
+            </DropdownMenuItem>
+
+            {selectedBlockId && (() => {
+              const selectedBlock = blocks.find(b => b.id === selectedBlockId);
+              if (!selectedBlock?.geom) return null;
+              const currentOrientation = selectedBlock?.row_orientation_deg || 90;
+              return (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    icon={RotateCw}
+                    onClick={handleRotateRows}
+                  >
+                    Rotate to {currentOrientation === 0 ? 'East-West' : 'North-South'}
+                  </DropdownMenuItem>
+                </>
+              );
+            })()}
+          </DropdownMenu>
+        )}
+
+        {/* Stats - Right aligned */}
+        <div className="ml-auto flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <MapPin className="w-4 h-4 text-emerald-600" />
+            <span>{blocks.filter(b => b.geom).length} Fields</span>
+            <span className="text-gray-400">•</span>
+            <span>{totalAcres.toFixed(1)} acres</span>
+          </div>
+
+          {/* Field List Toggle */}
+          {!drawingMode && blocks.filter(b => b.geom && b.geom.coordinates).length > 0 && (
+            <button
+              onClick={() => setShowBlocksList(!showBlocksList)}
+              className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 flex items-center gap-2 text-sm font-medium text-gray-700 shadow-sm transition-all"
+            >
+              {showBlocksList ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showBlocksList ? 'Hide' : 'Show'} List
             </button>
           )}
         </div>
@@ -656,25 +762,52 @@ export function BlockMap({
                 strokeColor: '#10b981',
                 strokeOpacity: 0.8,
                 strokeWeight: 3,
+                clickable: true,
               }}
+              onRightClick={handlePolygonRightClick}
             />
             {tempPath.map((point, index) => (
               <Marker
                 key={index}
                 position={point}
+                draggable={true}
+                onDrag={(e) => handleVertexDrag(index, e.latLng)}
                 icon={{
                   path: window.google.maps.SymbolPath.CIRCLE,
-                  scale: 6,
+                  scale: 7,
                   fillColor: '#10b981',
                   fillOpacity: 1,
                   strokeColor: '#fff',
                   strokeWeight: 2,
+                }}
+                options={{
+                  cursor: 'move'
                 }}
               />
             ))}
           </>
         )}
         </GoogleMap>
+
+        {/* Context Menu for Adding Points */}
+        {contextMenu && (
+          <div
+            className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-300 py-1 min-w-[160px]"
+            style={{
+              top: `${contextMenu.y}px`,
+              left: `${contextMenu.x}px`
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleAddPointOnEdge}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 flex items-center gap-2 transition-colors"
+            >
+              <MapPin className="w-4 h-4" />
+              Add Point Here
+            </button>
+          </div>
+        )}
 
         {/* Drawing Instructions Overlay */}
         {drawingMode && (
@@ -696,8 +829,18 @@ export function BlockMap({
                   <p className="text-sm text-blue-700">
                     {tempPath.length < 3
                       ? `Need ${3 - tempPath.length} more point${3 - tempPath.length !== 1 ? 's' : ''} to complete`
-                      : 'Click near the first point to complete the polygon'}
+                      : 'Drag points to adjust or click Save Changes'}
                   </p>
+                  {tempPath.length > 0 && (
+                    <>
+                      <p className="text-xs text-blue-600 mt-2">
+                        💡 Drag the green circles to adjust the boundary
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        💡 Right-click on the line to add a new point
+                      </p>
+                    </>
+                  )}
                   <p className="text-xs text-blue-600 mt-2">
                     Points: {tempPath.length}
                   </p>

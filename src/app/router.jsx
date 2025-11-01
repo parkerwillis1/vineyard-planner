@@ -12,6 +12,7 @@ import PlansPage          from "@/shared/components/PlansPage.jsx";
 import HomePage           from "@/pages/home/HomePage.jsx";
 import SignIn             from "@/auth/SignIn.jsx";
 import SignUp             from "@/auth/SignUp.jsx";
+import { AcceptInvitationPage } from "@/pages/AcceptInvitationPage.jsx";
 
 /* Guard for routes that require auth */
 function ProtectedRoute({ children }) {
@@ -34,6 +35,7 @@ export default function AppRouter() {
       <Route path="/" element={<HomePage />} />
       <Route path="/signin" element={<SignIn />} />
       <Route path="/signup" element={<SignUp />} />
+      <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
 
       {/* Auth-protected area */}
       <Route element={<ProtectedRoute />}>

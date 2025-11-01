@@ -10,22 +10,38 @@ import {
   Filter,
   ChevronDown,
   Grape,
-  X
+  X,
+  Pause,
+  Edit2,
+  Save,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+import { useToast } from '@/shared/components/Toast';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+  DropdownMenuSeparator
+} from '@/shared/components/ui/dropdown-menu';
 import {
   listHarvestTracking,
   listVineyardBlocks,
   getHarvestStatistics,
   createHarvestTracking,
   startHarvest,
-  getHarvestTracking
+  getHarvestTracking,
+  createHarvestLoad,
+  listHarvestLoads,
+  updateHarvestTracking
 } from '@/shared/lib/vineyardApi';
 
 export function HarvestTracking() {
   const { user } = useAuth();
+  const toast = useToast();
   const currentYear = new Date().getFullYear();
   const [selectedSeason, setSelectedSeason] = useState(currentYear);
   const [harvests, setHarvests] = useState([]);
@@ -35,9 +51,23 @@ export function HarvestTracking() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterVariety, setFilterVariety] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showAddLoadModal, setShowAddLoadModal] = useState(false);
   const [selectedHarvest, setSelectedHarvest] = useState(null);
+  const [selectedHarvestForLoad, setSelectedHarvestForLoad] = useState(null);
+  const [editingHarvest, setEditingHarvest] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [loadFormData, setLoadFormData] = useState({
+    tons: '',
+    bin_count: '',
+    brix: '',
+    ph: '',
+    ta: '',
+    picked_at: new Date().toISOString().slice(0, 16),
+    notes: ''
+  });
   const [formData, setFormData] = useState({
     block_id: '',
     target_pick_date: '',
@@ -186,25 +216,169 @@ export function HarvestTracking() {
     }
   };
 
-  const handleStartHarvest = async (harvestId) => {
-    if (!confirm('Start this harvest? This will mark it as in progress.')) return;
+  const handleStartHarvest = (harvest) => {
+    setConfirmAction({
+      type: 'start',
+      harvest,
+      title: 'Start Harvest',
+      message: `Start harvesting ${harvest.vineyard_blocks?.name}? This will mark the harvest as in progress.`,
+      confirmText: 'Start Harvest',
+      variant: 'info'
+    });
+  };
 
-    const { error } = await startHarvest(harvestId);
+  const handlePauseHarvest = (harvest) => {
+    setConfirmAction({
+      type: 'pause',
+      harvest,
+      title: 'Pause Harvest',
+      message: `Pause harvesting ${harvest.vineyard_blocks?.name}? You can resume later.`,
+      confirmText: 'Pause',
+      variant: 'warning'
+    });
+  };
+
+  const handleCompleteHarvest = (harvest) => {
+    setConfirmAction({
+      type: 'complete',
+      harvest,
+      title: 'Complete Harvest',
+      message: `Mark ${harvest.vineyard_blocks?.name} harvest as completed?`,
+      confirmText: 'Complete',
+      variant: 'info'
+    });
+  };
+
+  const executeAction = async () => {
+    if (!confirmAction) return;
+
+    const { type, harvest } = confirmAction;
+
+    try {
+      let error;
+
+      if (type === 'start') {
+        ({ error } = await startHarvest(harvest.id));
+      } else if (type === 'pause') {
+        ({ error } = await updateHarvestTracking(harvest.id, { status: 'planned' }));
+      } else if (type === 'complete') {
+        ({ error } = await updateHarvestTracking(harvest.id, {
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          actual_pick_date: new Date().toISOString().split('T')[0]
+        }));
+      }
+
+      if (error) {
+        toast.error(`Error: ${error.message}`);
+      } else {
+        toast.success(`Harvest ${type}ed successfully`);
+        await loadHarvestData();
+      }
+    } catch (err) {
+      toast.error(`Failed to ${type} harvest`);
+    }
+
+    setConfirmAction(null);
+  };
+
+  const handleEditHarvest = async (harvest) => {
+    setEditingHarvest({
+      id: harvest.id,
+      block_id: harvest.block_id,
+      target_pick_date: harvest.target_pick_date || '',
+      estimated_tons: harvest.estimated_tons || '',
+      estimated_tons_per_acre: harvest.estimated_tons_per_acre || '',
+      target_brix: harvest.target_brix || '',
+      target_ta: harvest.target_ta || '',
+      target_ph: harvest.target_ph || '',
+      notes: harvest.notes || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    const { error } = await updateHarvestTracking(editingHarvest.id, {
+      target_pick_date: editingHarvest.target_pick_date || null,
+      estimated_tons: parseFloat(editingHarvest.estimated_tons) || null,
+      estimated_tons_per_acre: parseFloat(editingHarvest.estimated_tons_per_acre) || null,
+      target_brix: parseFloat(editingHarvest.target_brix) || null,
+      target_ta: parseFloat(editingHarvest.target_ta) || null,
+      target_ph: parseFloat(editingHarvest.target_ph) || null,
+      notes: editingHarvest.notes
+    });
+
     if (error) {
-      alert(`Error starting harvest: ${error.message}`);
+      toast.error(`Error updating harvest: ${error.message}`);
     } else {
+      toast.success('Harvest plan updated successfully');
+      setShowEditModal(false);
+      setEditingHarvest(null);
       await loadHarvestData();
     }
+
+    setSaving(false);
   };
 
   const handleViewHarvest = async (harvestId) => {
     const { data, error } = await getHarvestTracking(harvestId);
     if (error) {
-      alert(`Error loading harvest details: ${error.message}`);
+      toast.error(`Error loading harvest details: ${error.message}`);
     } else if (data) {
       setSelectedHarvest(data);
       setShowViewModal(true);
     }
+  };
+
+  const handleOpenAddLoad = (harvest) => {
+    setSelectedHarvestForLoad(harvest);
+    setLoadFormData({
+      tons: '',
+      bin_count: '',
+      brix: '',
+      ph: '',
+      ta: '',
+      picked_at: new Date().toISOString().slice(0, 16),
+      notes: ''
+    });
+    setShowAddLoadModal(true);
+  };
+
+  const handleAddLoad = async (e) => {
+    e.preventDefault();
+
+    if (!selectedHarvestForLoad) return;
+
+    setSaving(true);
+
+    // Convert tons to pounds (tons * 2000 = gross_weight_lbs)
+    const tonsValue = parseFloat(loadFormData.tons) || 0;
+    const grossWeightLbs = tonsValue * 2000;
+
+    const { error } = await createHarvestLoad({
+      harvest_id: selectedHarvestForLoad.id,
+      gross_weight_lbs: grossWeightLbs,
+      tare_weight_lbs: 0, // Default to 0, tons will be auto-calculated
+      bin_count: parseInt(loadFormData.bin_count) || 0,
+      brix: parseFloat(loadFormData.brix) || null,
+      ph: parseFloat(loadFormData.ph) || null,
+      ta: parseFloat(loadFormData.ta) || null,
+      picked_at: loadFormData.picked_at,
+      notes: loadFormData.notes
+    });
+
+    if (error) {
+      toast.error(`Error adding load: ${error.message}`);
+    } else {
+      toast.success('Harvest load added successfully');
+      setShowAddLoadModal(false);
+      await loadHarvestData();
+    }
+
+    setSaving(false);
   };
 
   const filteredHarvests = harvests.filter(harvest => {
@@ -400,33 +574,70 @@ export function HarvestTracking() {
                               : '-'}
                           </span>
                         </td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center justify-end gap-1">
-                            {harvest.status === 'planned' && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleStartHarvest(harvest.id)}
-                                className="text-xs bg-blue-600 hover:bg-blue-700"
-                              >
-                                Start
-                              </Button>
-                            )}
-                            {harvest.status === 'in_progress' && (
-                              <Button
-                                size="sm"
-                                className="text-xs bg-amber-600 hover:bg-amber-700"
-                              >
-                                Add Load
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewHarvest(harvest.id)}
-                              className="text-xs"
+                        <td className="py-4 px-4 relative">
+                          <div className="flex items-center justify-end">
+                            <DropdownMenu
+                              trigger={
+                                <DropdownMenuTrigger className="hover:bg-gray-100">
+                                  <ChevronDown className="w-5 h-5 text-gray-600" />
+                                </DropdownMenuTrigger>
+                              }
                             >
-                              View
-                            </Button>
+                              {/* View Details - always available */}
+                              <DropdownMenuItem
+                                icon={Eye}
+                                onClick={() => handleViewHarvest(harvest.id)}
+                              >
+                                View Details
+                              </DropdownMenuItem>
+
+                              {/* Edit - always available */}
+                              <DropdownMenuItem
+                                icon={Edit2}
+                                onClick={() => handleEditHarvest(harvest)}
+                              >
+                                Edit Plan
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator />
+
+                              {/* Status-specific actions */}
+                              {harvest.status === 'planned' && (
+                                <DropdownMenuItem
+                                  icon={Play}
+                                  onClick={() => handleStartHarvest(harvest)}
+                                  variant="primary"
+                                >
+                                  Start Harvest
+                                </DropdownMenuItem>
+                              )}
+
+                              {harvest.status === 'in_progress' && (
+                                <>
+                                  <DropdownMenuItem
+                                    icon={Plus}
+                                    onClick={() => handleOpenAddLoad(harvest)}
+                                    variant="warning"
+                                  >
+                                    Add Load
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    icon={CheckCircle2}
+                                    onClick={() => handleCompleteHarvest(harvest)}
+                                    variant="info"
+                                  >
+                                    Complete Harvest
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    icon={Pause}
+                                    onClick={() => handlePauseHarvest(harvest)}
+                                    variant="warning"
+                                  >
+                                    Pause Harvest
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenu>
                           </div>
                         </td>
                       </tr>
@@ -756,6 +967,323 @@ export function HarvestTracking() {
           </div>
         </div>
       )}
+
+      {/* Add Load Modal */}
+      {showAddLoadModal && selectedHarvestForLoad && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-slate-800 px-6 py-4 flex items-center justify-between border-b border-slate-700">
+              <div>
+                <h2 className="text-xl font-bold text-white">Add Harvest Load</h2>
+                <p className="text-sm text-slate-400">
+                  {selectedHarvestForLoad.vineyard_blocks?.name || 'Unknown Block'} • {selectedHarvestForLoad.vineyard_blocks?.variety}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAddLoadModal(false);
+                  setSelectedHarvestForLoad(null);
+                }}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddLoad} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tons Harvested *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={loadFormData.tons}
+                    onChange={(e) => setLoadFormData({ ...loadFormData, tons: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bin Count
+                  </label>
+                  <input
+                    type="number"
+                    value={loadFormData.bin_count}
+                    onChange={(e) => setLoadFormData({ ...loadFormData, bin_count: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Brix
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={loadFormData.brix}
+                    onChange={(e) => setLoadFormData({ ...loadFormData, brix: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    pH
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={loadFormData.ph}
+                    onChange={(e) => setLoadFormData({ ...loadFormData, ph: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    TA (g/L)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={loadFormData.ta}
+                    onChange={(e) => setLoadFormData({ ...loadFormData, ta: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Pick Time
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={loadFormData.picked_at}
+                  onChange={(e) => setLoadFormData({ ...loadFormData, picked_at: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={loadFormData.notes}
+                  onChange={(e) => setLoadFormData({ ...loadFormData, notes: e.target.value })}
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                  placeholder="Any notes about this load..."
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t border-gray-200">
+                <Button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-amber-600 hover:bg-amber-700 flex items-center justify-center"
+                >
+                  {saving ? 'Adding...' : 'Add Load'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddLoadModal(false);
+                    setSelectedHarvestForLoad(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Harvest Modal */}
+      {showEditModal && editingHarvest && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-slate-800 px-6 py-4 flex items-center justify-between border-b border-slate-700 rounded-t-2xl">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Edit2 className="w-5 h-5" />
+                  Edit Harvest Plan
+                </h2>
+                <p className="text-sm text-slate-400">
+                  Update harvest targets and quality metrics
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingHarvest(null);
+                }}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Target Pick Date
+                </label>
+                <input
+                  type="date"
+                  value={editingHarvest.target_pick_date}
+                  onChange={(e) => setEditingHarvest({ ...editingHarvest, target_pick_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Estimated Tons
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editingHarvest.estimated_tons}
+                    onChange={(e) => setEditingHarvest({ ...editingHarvest, estimated_tons: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tons per Acre
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editingHarvest.estimated_tons_per_acre}
+                    onChange={(e) => setEditingHarvest({ ...editingHarvest, estimated_tons_per_acre: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Target Brix
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={editingHarvest.target_brix}
+                    onChange={(e) => setEditingHarvest({ ...editingHarvest, target_brix: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Target pH
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editingHarvest.target_ph}
+                    onChange={(e) => setEditingHarvest({ ...editingHarvest, target_ph: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Target TA (g/L)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={editingHarvest.target_ta}
+                    onChange={(e) => setEditingHarvest({ ...editingHarvest, target_ta: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={editingHarvest.notes}
+                  onChange={(e) => setEditingHarvest({ ...editingHarvest, notes: e.target.value })}
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                  placeholder="Any notes about this harvest plan..."
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t border-gray-200">
+                <Button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-vine-green-500 hover:bg-vine-green-600 flex items-center justify-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingHarvest(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Action Dialog */}
+      <ConfirmDialog
+        isOpen={confirmAction !== null}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={executeAction}
+        title={confirmAction?.title || ''}
+        message={confirmAction?.message || ''}
+        confirmText={confirmAction?.confirmText || 'Confirm'}
+        variant={confirmAction?.variant || 'info'}
+      />
     </div>
   );
 }

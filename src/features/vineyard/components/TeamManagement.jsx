@@ -25,7 +25,8 @@ import {
   updateOrganizationMember,
   deleteOrganizationMember,
   getOrCreateOrganization,
-  updateOrganization
+  updateOrganization,
+  sendMemberInvitation
 } from '@/shared/lib/vineyardApi';
 
 const ROLES = [
@@ -533,14 +534,50 @@ function MemberModal({ member, isOrg, onClose, onSaved }) {
       hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null
     };
 
-    const { error } = member
-      ? await updateOrganizationMember(member.id, dataToSave)
-      : await createOrganizationMember(dataToSave);
-
-    if (error) {
-      alert(`Error ${member ? 'updating' : 'inviting'} member: ${error.message}`);
-      setSaving(false);
+    if (member) {
+      // Update existing member
+      const { error } = await updateOrganizationMember(member.id, dataToSave);
+      if (error) {
+        alert(`Error updating member: ${error.message}`);
+        setSaving(false);
+      } else {
+        onSaved();
+        onClose();
+      }
     } else {
+      // Create new member
+      const { data: newMember, error: createError } = await createOrganizationMember(dataToSave);
+
+      if (createError) {
+        alert(`Error creating member: ${createError.message}`);
+        setSaving(false);
+        return;
+      }
+
+      // Send invitation email
+      const { error: emailError } = await sendMemberInvitation(newMember.id);
+
+      if (emailError) {
+        console.error('Error sending invitation email:', emailError);
+
+        // Development fallback: Show invitation link directly
+        const appUrl = window.location.origin;
+        const invitationUrl = `${appUrl}/accept-invitation?token=${newMember.invitation_token}`;
+
+        // Copy to clipboard
+        navigator.clipboard.writeText(invitationUrl).catch(() => {});
+
+        alert(
+          `Member created! Email service not configured yet.\n\n` +
+          `Share this invitation link with ${newMember.email}:\n\n` +
+          `${invitationUrl}\n\n` +
+          `(Link copied to clipboard)\n\n` +
+          `To enable automatic emails, see EMAIL_INVITATION_SETUP.md`
+        );
+      } else {
+        alert(`Invitation sent to ${newMember.email}!`);
+      }
+
       onSaved();
       onClose();
     }
