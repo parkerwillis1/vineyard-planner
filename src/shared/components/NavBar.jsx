@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { ChevronDown, Settings, LogOut } from "lucide-react";
+import { ChevronDown, Settings, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 import { supabase } from "@/shared/lib/supabaseClient";
 
@@ -66,11 +66,24 @@ function Dropdown({ trigger, items }) {
 
 export default function NavBar() {
   const { user } = useAuth() || {};
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";
   };
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [mobileMenuOpen]);
 
   // Tools dropdown items (for authenticated users)
   const toolsItems = [
@@ -106,7 +119,7 @@ export default function NavBar() {
           <span className="font-bold text-gray-900 group-hover:text-teal-700 transition-colors">Vine Pioneer</span>
         </Link>
 
-        {/* Main Navigation */}
+        {/* Main Navigation - Desktop */}
         <nav className="ml-6 hidden md:flex items-center gap-1">
           {!user ? (
             <>
@@ -169,48 +182,164 @@ export default function NavBar() {
               </Link>
             </>
           )}
+
+          {/* Hamburger Menu Button - Mobile Only */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-teal-50 transition-colors"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6 text-gray-900" />
+            ) : (
+              <Menu className="w-6 h-6 text-gray-900" />
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Mobile Navigation (simplified) */}
-      <div className="md:hidden border-t border-gray-200 px-4 py-2 bg-white">
-        <nav className="flex flex-wrap gap-2">
-          {!user ? (
-            <>
-              <NavLink to="/" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
-                Home
-              </NavLink>
-              <NavLink to="/products" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
-                Products
-              </NavLink>
-              <NavLink to="/pricing" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
-                Pricing
-              </NavLink>
-              <NavLink to="/about" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
-                About
-              </NavLink>
-            </>
-          ) : (
-            <>
-              <NavLink to="/planner" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
-                Planner
-              </NavLink>
-              <NavLink to="/plans" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
-                Plans
-              </NavLink>
-              <NavLink to="/products" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
-                Products
-              </NavLink>
-              <NavLink to="/about" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
-                About
-              </NavLink>
-              <NavLink to="/docs" className={({isActive})=>`${linkBase} text-xs ${isActive?active:idle}`}>
-                Docs
-              </NavLink>
-            </>
-          )}
-        </nav>
-      </div>
+      {/* Mobile Slide-out Menu */}
+      {mobileMenuOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Slide-out Panel */}
+          <div className="fixed top-16 right-0 bottom-0 w-64 bg-white shadow-2xl z-50 md:hidden overflow-y-auto">
+            <nav className="p-4 space-y-1">
+              {!user ? (
+                <>
+                  {/* Guest Navigation */}
+                  <NavLink
+                    to="/"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Home
+                  </NavLink>
+                  <NavLink
+                    to="/products"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Products
+                  </NavLink>
+                  <NavLink
+                    to="/pricing"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Pricing
+                  </NavLink>
+                  <NavLink
+                    to="/docs"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Documentation
+                  </NavLink>
+                  <NavLink
+                    to="/about"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    About
+                  </NavLink>
+
+                  {/* Mobile Sign In Button */}
+                  <div className="pt-4 mt-4 border-t border-gray-200">
+                    <Link
+                      to="/signin"
+                      className="block w-full text-center px-4 py-2 text-sm font-medium text-teal-700 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Sign In
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Authenticated Navigation */}
+                  <NavLink
+                    to="/planner"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Planner
+                  </NavLink>
+                  <NavLink
+                    to="/plans"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    My Plans
+                  </NavLink>
+                  <NavLink
+                    to="/docs"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Documentation
+                  </NavLink>
+                  <NavLink
+                    to="/products"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Products
+                  </NavLink>
+                  <NavLink
+                    to="/pricing"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Pricing
+                  </NavLink>
+                  <NavLink
+                    to="/about"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    About
+                  </NavLink>
+
+                  {/* Account Section */}
+                  <div className="pt-4 mt-4 border-t border-gray-200 space-y-1">
+                    <div className="px-3 py-2 text-xs text-gray-500 truncate">
+                      {user.email}
+                    </div>
+                    <Link
+                      to="/account/settings"
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-md transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Settings className="w-4 h-4" />
+                        Account Settings
+                      </div>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleSignOut();
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-md transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <LogOut className="w-4 h-4" />
+                        Sign Out
+                      </div>
+                    </button>
+                  </div>
+                </>
+              )}
+            </nav>
+          </div>
+        </>
+      )}
     </header>
   );
 }

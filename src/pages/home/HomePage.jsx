@@ -78,24 +78,24 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/20" />
         </div>
 
-        <div className="relative z-10 mx-auto max-w-7xl px-6 py-32 sm:py-40 lg:py-48">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-32 md:py-40 lg:py-48">
           <div className="mx-auto max-w-2xl text-center">
-            <h1 className="text-5xl font-bold tracking-tight text-white sm:text-7xl" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
               Plan.Grow.Prosper.
             </h1>
-            <p className="mt-6 text-lg leading-8 text-white font-bold" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
+            <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-6 sm:leading-8 text-white font-bold px-4 sm:px-0" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
               Build detailed financial projections, design your vineyard layout, and model different scenarios—all in one place. No spreadsheets required.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
+            <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-x-6 px-4 sm:px-0">
               <Link
                 to="/signup"
-                className="rounded-md bg-vine-green-500 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-white hover:text-vine-green-500 transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vine-green-500"
+                className="w-full sm:w-auto text-center rounded-md bg-vine-green-500 px-6 sm:px-8 py-3 text-sm sm:text-base font-semibold text-white shadow-sm hover:bg-white hover:text-vine-green-500 transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vine-green-500"
               >
                 Get Started Free
               </Link>
               <Link
                 to="/docs"
-                className="text-base font-semibold leading-7 text-white hover:text-vine-green-500"
+                className="text-sm sm:text-base font-semibold leading-7 text-white hover:text-vine-green-500"
               >
                 View Documentation <span aria-hidden="true">→</span>
               </Link>
@@ -127,23 +127,23 @@ export default function HomePage() {
         <div className="absolute top-0 right-0 w-96 h-96 bg-teal-200/20 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-vine-green-200/20 rounded-full blur-3xl"></div>
 
-        <div className="relative mx-auto max-w-7xl px-6 py-24 sm:py-32">
-          <div className="mx-auto max-w-2xl lg:text-center mb-16">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-32">
+          <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-100 to-vine-green-100 px-4 py-1.5 mb-4">
               <Sparkles className="w-4 h-4 text-teal-600" />
               <span className="text-sm font-semibold text-teal-700">Financial Planning</span>
             </div>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 px-4 sm:px-0">
               Build your vineyard business plan
             </p>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
+            <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 px-4 sm:px-0">
               Create professional financial models that lenders and investors will respect.
               Our tools handle the complex calculations so you can focus on your vision.
             </p>
           </div>
 
-          <div className="mx-auto mt-16 max-w-7xl">
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="mx-auto mt-12 sm:mt-16 max-w-7xl">
+            <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-2">
               <FeatureCard
                 icon={LayoutGrid}
                 iconColor="teal"
@@ -201,20 +201,20 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="bg-gradient-to-b from-gray-50 to-white py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto max-w-2xl lg:text-center mb-16">
+      <section className="bg-gradient-to-b from-gray-50 to-white py-16 sm:py-24 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-4 py-1.5 mb-4">
               <CheckCircle2 className="w-4 h-4 text-vine-green-600" />
               <span className="text-sm font-semibold text-gray-700">Simple Process</span>
             </div>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 px-4 sm:px-0">
               From idea to business plan in minutes
             </p>
           </div>
 
           <div className="mx-auto max-w-5xl">
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <ProcessStep
                 number="1"
                 title="Design Your Vineyard"
@@ -249,21 +249,21 @@ export default function HomePage() {
           }}></div>
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-6 py-24 sm:py-32">
-          <div className="mx-auto max-w-2xl lg:text-center mb-16">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-32">
+          <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 mb-4">
               <FileText className="w-4 h-4 text-white" />
               <span className="text-sm font-semibold text-white">Professional Output</span>
             </div>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white px-4 sm:px-0">
               Generate lender-ready reports
             </p>
-            <p className="mt-4 text-lg text-teal-50">
+            <p className="mt-4 text-base sm:text-lg text-teal-50 px-4 sm:px-0">
               Export polished PDF reports that impress investors and financial institutions
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
             <OutputCard
               icon={DollarSign}
               title="Year 0 Investment"
@@ -287,9 +287,9 @@ export default function HomePage() {
       </section>
 
       {/* Coming Soon - Operations Section */}
-      <section className="relative bg-gradient-to-b from-white to-gray-50 py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto max-w-2xl lg:text-center mb-16">
+      <section className="relative bg-gradient-to-b from-white to-gray-50 py-16 sm:py-24 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center rounded-full bg-gradient-to-r from-yellow-100 to-amber-100 px-4 py-2 text-sm font-bold text-yellow-800 mb-4 shadow-sm">
               <Sparkles className="w-4 h-4 mr-2" />
               Coming 2026
@@ -298,16 +298,16 @@ export default function HomePage() {
               <Sprout className="w-4 h-4 text-vine-green-600" />
               <span className="text-sm font-semibold text-vine-green-700">Vineyard Operations</span>
             </div>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 px-4 sm:px-0">
               Manage your vineyard in real-time
             </p>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
+            <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 px-4 sm:px-0">
               Once your vineyard is planted, seamlessly transition from planning to operations with tools designed for day-to-day management.
               Track activities, monitor conditions, and make data-driven decisions across every block.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 mb-16">
+          <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 mb-12 sm:mb-16">
             <FutureFeature
               icon={MapPin}
               iconColor="teal"
@@ -329,19 +329,19 @@ export default function HomePage() {
           </div>
 
           {/* Additional operations features */}
-          <div className="mx-auto max-w-4xl mt-16">
-            <div className="rounded-2xl bg-gradient-to-br from-teal-50 to-vine-green-50 p-8 shadow-sm border border-teal-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">
+          <div className="mx-auto max-w-4xl mt-12 sm:mt-16 px-4 sm:px-0">
+            <div className="rounded-2xl bg-gradient-to-br from-teal-50 to-vine-green-50 p-6 sm:p-8 shadow-sm border border-teal-100">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">
                 Complete Operational Visibility
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="flex items-start gap-3">
                   <div className="mt-1 rounded-lg bg-teal-100 p-2">
                     <CheckCircle2 className="w-5 h-5 text-teal-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900">Task Management</h4>
-                    <p className="text-sm text-gray-600 mt-1">Assign tasks to crew members, track completion, and log labor hours by block</p>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Task Management</h4>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Assign tasks to crew members, track completion, and log labor hours by block</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -349,8 +349,8 @@ export default function HomePage() {
                     <CheckCircle2 className="w-5 h-5 text-vine-green-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900">Weather Integration</h4>
-                    <p className="text-sm text-gray-600 mt-1">7-day forecasts with frost warnings, heat advisories, and optimal spray windows</p>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Weather Integration</h4>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">7-day forecasts with frost warnings, heat advisories, and optimal spray windows</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -358,8 +358,8 @@ export default function HomePage() {
                     <CheckCircle2 className="w-5 h-5 text-teal-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900">Harvest Tracking</h4>
-                    <p className="text-sm text-gray-600 mt-1">Log brix levels, tonnage by block, and real-time harvest progress with mobile app</p>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Harvest Tracking</h4>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Log brix levels, tonnage by block, and real-time harvest progress with mobile app</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -367,8 +367,8 @@ export default function HomePage() {
                     <CheckCircle2 className="w-5 h-5 text-vine-green-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900">Compliance Reports</h4>
-                    <p className="text-sm text-gray-600 mt-1">Automatically generate pesticide use reports, organic certification docs, and audit trails</p>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Compliance Reports</h4>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Automatically generate pesticide use reports, organic certification docs, and audit trails</p>
                   </div>
                 </div>
               </div>
@@ -383,34 +383,34 @@ export default function HomePage() {
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl"></div>
 
-        <div className="relative mx-auto max-w-7xl px-6 py-24 sm:py-32">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-32">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white px-4 sm:px-0">
               Ready to start planning?
             </h2>
-            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-teal-50">
+            <p className="mx-auto mt-4 sm:mt-6 max-w-xl text-base sm:text-lg leading-7 sm:leading-8 text-teal-50 px-4 sm:px-0">
               Our free planner gives you everything you need to create a professional vineyard business plan.
               No credit card required. Start in minutes.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
+            <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-x-6 px-4 sm:px-0">
               <Link
                 to="/signup"
-                className="group inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-base font-bold text-teal-700 shadow-xl hover:bg-teal-50 transition-all hover:scale-105"
+                className="w-full sm:w-auto group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 sm:px-8 py-3 sm:py-3.5 text-sm sm:text-base font-bold text-teal-700 shadow-xl hover:bg-teal-50 transition-all hover:scale-105"
               >
                 Sign Up Free
                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 to="/signin"
-                className="inline-flex items-center gap-2 text-base font-semibold leading-7 text-white hover:text-teal-100 transition-colors"
+                className="inline-flex items-center gap-2 text-sm sm:text-base font-semibold leading-7 text-white hover:text-teal-100 transition-colors"
               >
-                Already have an account? Sign In
+                <span className="hidden sm:inline">Already have an account?</span> Sign In
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
 
             {/* Social proof */}
-            <div className="mt-12 flex items-center justify-center gap-8 text-teal-100">
+            <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-teal-100 px-4">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5" />
                 <span className="text-sm">Free forever</span>
@@ -438,15 +438,15 @@ function FeatureCard({ icon: Icon, iconColor, title, description, details }) {
   };
 
   return (
-    <div className="group relative bg-white rounded-2xl border-2 border-gray-200 p-8 hover:border-teal-300 hover:shadow-xl transition-all">
-      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-5 ${iconColorClasses[iconColor]}`}>
+    <div className="group relative bg-white rounded-2xl border-2 border-gray-200 p-6 sm:p-8 hover:border-teal-300 hover:shadow-xl transition-all">
+      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 sm:mb-5 ${iconColorClasses[iconColor]}`}>
         <Icon className="w-6 h-6" />
       </div>
-      <h3 className="text-xl font-bold text-gray-900 mb-3">{title}</h3>
-      <p className="text-gray-600 mb-6">{description}</p>
-      <ul className="space-y-3">
+      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">{title}</h3>
+      <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">{description}</p>
+      <ul className="space-y-2 sm:space-y-3">
         {details.map((detail, idx) => (
-          <li key={idx} className="flex items-start gap-3 text-sm text-gray-600">
+          <li key={idx} className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
             <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
             <span>{detail}</span>
           </li>
@@ -458,15 +458,15 @@ function FeatureCard({ icon: Icon, iconColor, title, description, details }) {
 
 function ProcessStep({ number, title, description }) {
   return (
-    <div className="group flex gap-6 bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all">
+    <div className="group flex gap-4 sm:gap-6 bg-white rounded-xl p-4 sm:p-6 border-2 border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all">
       <div className="flex-shrink-0">
-        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-vine-green-500 text-xl font-bold text-white shadow-md group-hover:scale-110 transition-transform">
+        <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-vine-green-500 text-lg sm:text-xl font-bold text-white shadow-md group-hover:scale-110 transition-transform">
           {number}
         </div>
       </div>
       <div className="flex-1">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-600 leading-relaxed">{description}</p>
+        <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2">{title}</h3>
+        <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{description}</p>
       </div>
     </div>
   );
@@ -474,16 +474,16 @@ function ProcessStep({ number, title, description }) {
 
 function OutputCard({ icon: Icon, title, description, stats }) {
   return (
-    <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
-      <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-vine-green-500 mb-5 group-hover:scale-110 transition-transform">
+    <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-6 sm:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
+      <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-vine-green-500 mb-4 sm:mb-5 group-hover:scale-110 transition-transform">
         <Icon className="w-6 h-6 text-white" />
       </div>
-      <h3 className="text-xl font-bold text-gray-900 mb-3">{title}</h3>
-      <p className="text-sm text-gray-700 mb-6">{description}</p>
-      <div className="space-y-3">
+      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">{title}</h3>
+      <p className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6">{description}</p>
+      <div className="space-y-2 sm:space-y-3">
         {stats.map((stat, idx) => (
-          <div key={idx} className="flex items-center gap-3 text-sm">
-            <CheckCircle2 className="w-4 h-4 text-teal-500" />
+          <div key={idx} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+            <CheckCircle2 className="w-4 h-4 text-teal-500 flex-shrink-0" />
             <span className="text-gray-700 font-medium">{stat}</span>
           </div>
         ))}
@@ -499,12 +499,12 @@ function FutureFeature({ icon: Icon, iconColor, title, description }) {
   };
 
   return (
-    <div className="group bg-white rounded-2xl border-2 border-gray-200 p-8 hover:border-teal-300 hover:shadow-xl transition-all">
-      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-5 ${iconColorClasses[iconColor]} group-hover:scale-110 transition-transform`}>
+    <div className="group bg-white rounded-2xl border-2 border-gray-200 p-6 sm:p-8 hover:border-teal-300 hover:shadow-xl transition-all">
+      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 sm:mb-5 ${iconColorClasses[iconColor]} group-hover:scale-110 transition-transform`}>
         <Icon className="w-6 h-6" />
       </div>
-      <h3 className="text-xl font-bold text-gray-900 mb-3">{title}</h3>
-      <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
+      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">{title}</h3>
+      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">{description}</p>
     </div>
   );
 }
