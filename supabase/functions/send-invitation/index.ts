@@ -152,7 +152,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`
       },
       body: JSON.stringify({
-        from: 'Vine Pioneer <noreply@send.vine-sight.com>',
+        from: 'Vine Pioneer <noreply@vine-sight.com>',
         to: [member.email],
         subject: `You've been invited to join ${orgName}`,
         html: emailHtml
