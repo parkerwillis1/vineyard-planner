@@ -90,7 +90,7 @@ export function ImportPlanModal({ isOpen, onClose, onImport }) {
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
+            className="text-white bg-white/10 hover:bg-white/20 rounded-lg p-2 transition-colors border border-white/20"
           >
             <X className="w-5 h-5" />
           </button>

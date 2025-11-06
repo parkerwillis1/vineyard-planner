@@ -1,15 +1,20 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
-import { GoogleMap, useLoadScript, Polygon, Marker, Polyline } from '@react-google-maps/api';
-import { Map as MapIcon, Satellite, Pencil, Trash2, MapPin, Eye, EyeOff, RotateCw, ChevronUp, ChevronDown, Settings, Layers, Grid, MoreVertical, Save } from 'lucide-react';
+import { GoogleMap, useLoadScript, Polygon, Marker, Polyline, DrawingManager, Autocomplete, InfoWindow } from '@react-google-maps/api';
+import { Map as MapIcon, Satellite, Pencil, Trash2, MapPin, Eye, EyeOff, RotateCw, ChevronUp, ChevronDown, Settings, Layers, Grid, MoreVertical, Save, X, Search, CloudRain, Droplet } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuItem,
   DropdownMenuSeparator
 } from '@/shared/components/ui/dropdown-menu';
+import {
+  fetchFieldRainfall,
+  fetchFieldForecast
+} from '@/shared/lib/fieldWeatherService';
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyAEwV8iVPfyCuZDYaX8rstuSUMK8ZOF6V8';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const LIBRARIES = ['drawing', 'geometry', 'places'];
 
 // Texas Hill Country default center (Fredericksburg area)
@@ -61,40 +66,81 @@ const isPointInPolygon = (point, polygon) => {
   return inside;
 };
 
-// Clip a line to polygon boundary
-const clipLineToPolygon = (lineStart, lineEnd, polygon) => {
-  const segments = [];
-  const numSamples = 200;
+// Calculate intersection point between two line segments
+const lineIntersection = (p1, p2, p3, p4) => {
+  const x1 = p1.lng, y1 = p1.lat;
+  const x2 = p2.lng, y2 = p2.lat;
+  const x3 = p3.lng, y3 = p3.lat;
+  const x4 = p4.lng, y4 = p4.lat;
 
-  let currentSegment = null;
+  const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
 
-  for (let i = 0; i <= numSamples; i++) {
-    const t = i / numSamples;
-    const point = {
-      lat: lineStart.lat + t * (lineEnd.lat - lineStart.lat),
-      lng: lineStart.lng + t * (lineEnd.lng - lineStart.lng)
+  if (Math.abs(denom) < 1e-10) return null; // Lines are parallel
+
+  const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+  const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+
+  if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+    return {
+      lat: y1 + t * (y2 - y1),
+      lng: x1 + t * (x2 - x1)
     };
+  }
 
-    const isInside = isPointInPolygon(point, polygon);
+  return null;
+};
 
-    if (isInside) {
-      if (!currentSegment) {
-        currentSegment = [point];
-      } else {
-        currentSegment.push(point);
-      }
-    } else {
-      if (currentSegment && currentSegment.length > 1) {
-        segments.push(currentSegment);
-        currentSegment = null;
-      } else if (currentSegment) {
-        currentSegment = null;
-      }
+// Clip a line to polygon boundary using exact intersection points
+const clipLineToPolygon = (lineStart, lineEnd, polygon) => {
+  // Find all intersection points with polygon edges
+  const intersections = [];
+
+  for (let i = 0; i < polygon.length; i++) {
+    const edgeStart = polygon[i];
+    const edgeEnd = polygon[(i + 1) % polygon.length];
+    const intersection = lineIntersection(lineStart, lineEnd, edgeStart, edgeEnd);
+
+    if (intersection) {
+      // Calculate distance from line start for sorting
+      const dx = intersection.lng - lineStart.lng;
+      const dy = intersection.lat - lineStart.lat;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      intersections.push({ point: intersection, distance });
     }
   }
 
-  if (currentSegment && currentSegment.length > 1) {
-    segments.push(currentSegment);
+  // Sort intersections by distance from line start
+  intersections.sort((a, b) => a.distance - b.distance);
+
+  // Check if line endpoints are inside polygon
+  const startInside = isPointInPolygon(lineStart, polygon);
+  const endInside = isPointInPolygon(lineEnd, polygon);
+
+  const segments = [];
+
+  if (intersections.length === 0) {
+    // No intersections - line is either completely inside or completely outside
+    if (startInside) {
+      segments.push([lineStart, lineEnd]);
+    }
+  } else {
+    // Build segments from intersection points
+    const points = [lineStart, ...intersections.map(i => i.point), lineEnd];
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const segmentStart = points[i];
+      const segmentEnd = points[i + 1];
+
+      // Check if segment midpoint is inside polygon
+      const midpoint = {
+        lat: (segmentStart.lat + segmentEnd.lat) / 2,
+        lng: (segmentStart.lng + segmentEnd.lng) / 2
+      };
+
+      if (isPointInPolygon(midpoint, polygon)) {
+        segments.push([segmentStart, segmentEnd]);
+      }
+    }
   }
 
   return segments;
@@ -118,36 +164,56 @@ const generateRowLines = (polygonPath, rowSpacing, orientation) => {
   const latDegPerFoot = 1 / 364000;
   const lngDegPerFoot = 1 / 300000;
 
-  // Determine orientation: 0 deg = north-south (vertical), 90 deg = east-west (horizontal)
-  const isVertical = orientation === 0 || orientation === 180;
+  // Convert orientation to radians (0° = North, 90° = East)
+  const angleRad = (orientation * Math.PI) / 180;
 
-  // Calculate max rows needed
-  let maxRowsNeeded;
-  if (isVertical) {
-    const bboxWidthDeg = maxLng - minLng;
-    const bboxWidthFeet = bboxWidthDeg / lngDegPerFoot;
-    maxRowsNeeded = Math.ceil(bboxWidthFeet / rowSpacing) + 2;
-  } else {
-    const bboxHeightDeg = maxLat - minLat;
-    const bboxHeightFeet = bboxHeightDeg / latDegPerFoot;
-    maxRowsNeeded = Math.ceil(bboxHeightFeet / rowSpacing) + 2;
-  }
+  // Calculate bounding box dimensions
+  const bboxWidthDeg = maxLng - minLng;
+  const bboxHeightDeg = maxLat - minLat;
+  const bboxWidthFeet = bboxWidthDeg / lngDegPerFoot;
+  const bboxHeightFeet = bboxHeightDeg / latDegPerFoot;
 
-  // Generate rows across bounding box
-  for (let i = 0; i < maxRowsNeeded; i++) {
-    let lineStart, lineEnd;
+  // Calculate the diagonal size to ensure we cover the entire area when rotated
+  const diagonalFeet = Math.sqrt(bboxWidthFeet * bboxWidthFeet + bboxHeightFeet * bboxHeightFeet);
+  const maxRowsNeeded = Math.ceil(diagonalFeet / rowSpacing) + 2;
 
-    if (isVertical) {
-      // Rows run north-south
-      const lngOffset = minLng + (i * rowSpacing * lngDegPerFoot);
-      lineStart = { lat: minLat - 0.001, lng: lngOffset };
-      lineEnd = { lat: maxLat + 0.001, lng: lngOffset };
-    } else {
-      // Rows run east-west
-      const latOffset = minLat + (i * rowSpacing * latDegPerFoot);
-      lineStart = { lat: latOffset, lng: minLng - 0.001 };
-      lineEnd = { lat: latOffset, lng: maxLng + 0.001 };
-    }
+  // Center point of bounding box
+  const centerLat = (minLat + maxLat) / 2;
+  const centerLng = (minLng + maxLng) / 2;
+
+  // Direction perpendicular to rows (this is the direction between rows)
+  const perpAngleRad = angleRad + Math.PI / 2;
+  const perpDirLat = Math.cos(perpAngleRad);
+  const perpDirLng = Math.sin(perpAngleRad);
+
+  // Direction along rows
+  const rowDirLat = Math.cos(angleRad);
+  const rowDirLng = Math.sin(angleRad);
+
+  // Generate rows
+  for (let i = -maxRowsNeeded / 2; i < maxRowsNeeded / 2; i++) {
+    // Calculate offset from center for this row
+    const offsetFeet = i * rowSpacing;
+    const offsetLat = (perpDirLat * offsetFeet) * latDegPerFoot;
+    const offsetLng = (perpDirLng * offsetFeet) * lngDegPerFoot;
+
+    // Calculate row center point
+    const rowCenterLat = centerLat + offsetLat;
+    const rowCenterLng = centerLng + offsetLng;
+
+    // Calculate row endpoints (extend far beyond bounding box)
+    const extensionFeet = diagonalFeet;
+    const extensionLat = (rowDirLat * extensionFeet) * latDegPerFoot;
+    const extensionLng = (rowDirLng * extensionFeet) * lngDegPerFoot;
+
+    const lineStart = {
+      lat: rowCenterLat - extensionLat,
+      lng: rowCenterLng - extensionLng
+    };
+    const lineEnd = {
+      lat: rowCenterLat + extensionLat,
+      lng: rowCenterLng + extensionLng
+    };
 
     // Clip line to polygon boundary
     const clippedSegments = clipLineToPolygon(lineStart, lineEnd, polygonPath);
@@ -220,10 +286,16 @@ export function BlockMap({
   const [hasZoomedToBlocks, setHasZoomedToBlocks] = useState(false);
   const [showRows, setShowRows] = useState(true); // Toggle row visibility
   const [showBlocksList, setShowBlocksList] = useState(false); // Toggle blocks list visibility
+  const [showRotationControls, setShowRotationControls] = useState(false); // Toggle rotation controls
   const [draggingVertexIndex, setDraggingVertexIndex] = useState(null);
   const [contextMenu, setContextMenu] = useState(null); // {x, y, edgeIndex, clickPosition}
+  const [autocomplete, setAutocomplete] = useState(null); // For address search
+  const [drawingManagerRef, setDrawingManagerRef] = useState(null);
+  const [rainfallData, setRainfallData] = useState({}); // {blockId: {totalMm, totalInches, predictedMm, lastRainEvent, etc}}
+  const [showRainfallOverlay, setShowRainfallOverlay] = useState(true); // Toggle rainfall badges
+  const [loadingRainfall, setLoadingRainfall] = useState(false);
 
-  const { isLoaded, loadError } = useLoadScript({
+  const { isLoaded, loadError} = useLoadScript({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES,
   });
@@ -291,6 +363,68 @@ export function BlockMap({
     }
   }, [drawingMode, onDrawingModeChange]);
 
+  // Load rainfall data for all blocks with coordinates
+  useEffect(() => {
+    async function loadAllRainfallData() {
+      if (!isLoaded) return;
+
+      const blocksWithCoords = blocks.filter(b => b.lat && b.lng);
+      if (blocksWithCoords.length === 0) return;
+
+      setLoadingRainfall(true);
+
+      try {
+        // Load rainfall data for all blocks in parallel
+        const rainfallPromises = blocksWithCoords.map(async (block) => {
+          try {
+            const [rainfall, forecast] = await Promise.all([
+              fetchFieldRainfall(block.lat, block.lng, 7), // Last 7 days
+              fetchFieldForecast(block.lat, block.lng)
+            ]);
+
+            return {
+              blockId: block.id,
+              data: {
+                totalMm: rainfall.totalMm || 0,
+                totalInches: rainfall.totalInches || 0,
+                dailyRainfall: rainfall.dailyRainfall || {},
+                lastRainEvent: rainfall.lastRainEvent,
+                predictedMm: forecast.predictedRainfallMm || 0,
+                predictedInches: forecast.predictedRainfallInches || 0,
+                stationName: rainfall.stationName,
+                dataSource: rainfall.error ? 'error' : 'nws_api',
+                error: rainfall.error || forecast.error
+              }
+            };
+          } catch (error) {
+            console.error(`Error loading rainfall for block ${block.id}:`, error);
+            return {
+              blockId: block.id,
+              data: { totalMm: 0, dataSource: 'error', error: error.message }
+            };
+          }
+        });
+
+        const results = await Promise.all(rainfallPromises);
+
+        // Convert array to object keyed by blockId
+        const rainfallMap = {};
+        results.forEach(({ blockId, data }) => {
+          rainfallMap[blockId] = data;
+        });
+
+        setRainfallData(rainfallMap);
+        console.log('✅ Loaded rainfall data for', blocksWithCoords.length, 'fields');
+      } catch (error) {
+        console.error('Error loading rainfall data:', error);
+      } finally {
+        setLoadingRainfall(false);
+      }
+    }
+
+    loadAllRainfallData();
+  }, [blocks, isLoaded]);
+
   const handleMapClick = (e) => {
     if (!drawingMode) return;
 
@@ -322,10 +456,10 @@ export function BlockMap({
     const geom = pathToGeojson(polygonPath);
     const acres = calculatePolygonArea(polygonPath);
 
-    // If a block is selected and it has no geometry, update it
+    // If a block is selected, update it (whether it has geometry or not)
     if (selectedBlockId) {
       const block = blocks.find(b => b.id === selectedBlockId);
-      if (block && !block.geom) {
+      if (block) {
         if (onBlockUpdate) {
           onBlockUpdate(selectedBlockId, {
             geom,
@@ -354,6 +488,40 @@ export function BlockMap({
   const handleStartDrawing = () => {
     setDrawingMode(true);
     setTempPath([]);
+  };
+
+  // Autocomplete handlers
+  const onAutocompleteLoad = (autocompleteInstance) => {
+    setAutocomplete(autocompleteInstance);
+  };
+
+  const onPlaceChanged = () => {
+    if (autocomplete !== null) {
+      const place = autocomplete.getPlace();
+      if (place.geometry) {
+        const location = {
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng()
+        };
+        setMapCenter(location);
+        setMapZoom(18);
+        if (mapRef.current) {
+          mapRef.current.panTo(location);
+          mapRef.current.setZoom(18);
+        }
+      }
+    }
+  };
+
+  // Drawing Manager complete handler
+  const onPolygonComplete = (polygon) => {
+    const path = polygon.getPath().getArray().map(point => ({
+      lat: point.lat(),
+      lng: point.lng()
+    }));
+
+    setTempPath(path);
+    polygon.setMap(null); // Remove the drawn polygon since we'll show tempPath
   };
 
   const handleCancelDrawing = () => {
@@ -406,6 +574,12 @@ export function BlockMap({
         const newOrientation = currentOrientation === 0 ? 90 : 0;
         onBlockUpdate(selectedBlockId, { row_orientation_deg: newOrientation });
       }
+    }
+  };
+
+  const handleSetOrientation = (angle) => {
+    if (selectedBlockId && onBlockUpdate) {
+      onBlockUpdate(selectedBlockId, { row_orientation_deg: angle });
     }
   };
 
@@ -545,14 +719,18 @@ export function BlockMap({
     <div className="h-full w-full flex flex-col">
       {/* Simplified Toolbar */}
       <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-300 px-4 py-3 flex items-center gap-3">
-        {/* Primary Action - Drawing (only show if no field selected or in drawing mode) */}
-        {!drawingMode && !selectedBlockId && (
+        {/* Primary Action - Drawing */}
+        {!drawingMode && (() => {
+          // Show "Draw Field" if no field selected, OR if selected field has no geometry
+          const selectedBlock = selectedBlockId ? blocks.find(b => b.id === selectedBlockId) : null;
+          return !selectedBlockId || (selectedBlock && !selectedBlock.geom);
+        })() && (
           <button
             onClick={handleStartDrawing}
             className="px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all hover:shadow-md"
           >
             <Pencil className="w-4 h-4" />
-            Draw Field
+            {selectedBlockId ? 'Draw Boundary' : 'Draw Field'}
           </button>
         )}
         {drawingMode && (
@@ -572,6 +750,29 @@ export function BlockMap({
               Cancel
             </button>
           </>
+        )}
+
+        {/* Address Search */}
+        {!drawingMode && (
+          <div className="relative flex-1 max-w-md">
+            <Autocomplete
+              onLoad={onAutocompleteLoad}
+              onPlaceChanged={onPlaceChanged}
+              options={{
+                componentRestrictions: { country: 'us' },
+                fields: ['geometry', 'formatted_address', 'name']
+              }}
+            >
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search address or location..."
+                  className="pl-10 pr-4 py-2 w-full border-gray-300 rounded-lg shadow-sm"
+                />
+              </div>
+            </Autocomplete>
+          </div>
         )}
 
         {/* Map View Dropdown */}
@@ -609,31 +810,61 @@ export function BlockMap({
         </DropdownMenu>
 
         {/* Field Actions - Only when field selected */}
-        {selectedBlockId && !drawingMode && (
-          <DropdownMenu
-            trigger={
-              <DropdownMenuTrigger className="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 shadow-sm">
-                <MoreVertical className="w-4 h-4" />
-                Actions
-              </DropdownMenuTrigger>
-            }
-          >
-            <DropdownMenuItem
-              icon={Pencil}
-              onClick={handleEditSelected}
+        {selectedBlockId && !drawingMode && (() => {
+          const selectedBlock = blocks.find(b => b.id === selectedBlockId);
+          const hasGeometry = selectedBlock?.geom;
+
+          return (
+            <DropdownMenu
+              trigger={
+                <DropdownMenuTrigger className="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 shadow-sm">
+                  <MoreVertical className="w-4 h-4" />
+                  Actions
+                </DropdownMenuTrigger>
+              }
             >
-              Edit Boundary
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              icon={Trash2}
-              onClick={handleDeleteSelected}
-              variant="danger"
-            >
-              Delete Field
-            </DropdownMenuItem>
-          </DropdownMenu>
-        )}
+              {hasGeometry ? (
+                <>
+                  <DropdownMenuItem
+                    icon={Pencil}
+                    onClick={handleEditSelected}
+                  >
+                    Edit Boundary
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    icon={RotateCw}
+                    onClick={handleRotateRows}
+                  >
+                    Rotate Rows to {(selectedBlock?.row_orientation_deg || 90) === 0 ? 'East-West' : 'North-South'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    icon={Settings}
+                    onClick={() => setShowRotationControls(!showRotationControls)}
+                    variant={showRotationControls ? 'primary' : 'default'}
+                  >
+                    Custom Rotation ({selectedBlock?.row_orientation_deg || 90}°)
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <DropdownMenuItem
+                  icon={Pencil}
+                  onClick={handleStartDrawing}
+                >
+                  Draw Boundary
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                icon={Trash2}
+                onClick={handleDeleteSelected}
+                variant="danger"
+              >
+                Delete Field
+              </DropdownMenuItem>
+            </DropdownMenu>
+          );
+        })()}
 
         {/* Row Controls Dropdown - Smart visibility */}
         {blocks.some(b => b.geom && b.row_spacing_ft) && (
@@ -670,10 +901,37 @@ export function BlockMap({
                   >
                     Rotate to {currentOrientation === 0 ? 'East-West' : 'North-South'}
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    icon={Settings}
+                    onClick={() => setShowRotationControls(!showRotationControls)}
+                    variant={showRotationControls ? 'primary' : 'default'}
+                  >
+                    Custom Rotation ({currentOrientation}°)
+                  </DropdownMenuItem>
                 </>
               );
             })()}
           </DropdownMenu>
+        )}
+
+        {/* Rainfall Overlay Toggle - Show when blocks have coordinates */}
+        {blocks.some(b => b.lat && b.lng) && (
+          <button
+            onClick={() => setShowRainfallOverlay(!showRainfallOverlay)}
+            className={`px-4 py-2 rounded-lg border shadow-sm transition-colors ${
+              showRainfallOverlay
+                ? 'bg-blue-100 border-blue-300 text-blue-900 hover:bg-blue-200'
+                : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-700'
+            }`}
+            title={showRainfallOverlay ? 'Hide rainfall data' : 'Show rainfall data'}
+          >
+            <div className="flex items-center gap-2">
+              <CloudRain className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                {showRainfallOverlay ? 'Rainfall On' : 'Rainfall Off'}
+              </span>
+            </div>
+          </button>
         )}
 
         {/* Stats - Right aligned */}
@@ -708,6 +966,28 @@ export function BlockMap({
           onClick={handleMapClick}
           onLoad={(map) => { mapRef.current = map; }}
         >
+          {/* Drawing Manager for creating new polygons */}
+          {drawingMode && (
+            <DrawingManager
+              onLoad={(drawingManager) => setDrawingManagerRef(drawingManager)}
+              onPolygonComplete={onPolygonComplete}
+              options={{
+                drawingMode: window.google?.maps?.drawing?.OverlayType?.POLYGON,
+                drawingControl: false,
+                polygonOptions: {
+                  fillColor: '#3b82f6',
+                  fillOpacity: 0.4,
+                  strokeColor: '#2563eb',
+                  strokeOpacity: 0.9,
+                  strokeWeight: 2,
+                  clickable: true,
+                  editable: false,
+                  zIndex: 1
+                }
+              }}
+            />
+          )}
+
         {/* Render all block polygons */}
         {blocks.map(block => {
           if (!block.geom) return null;
@@ -715,21 +995,112 @@ export function BlockMap({
           if (path.length < 3) return null;
 
           const isSelected = block.id === selectedBlockId;
+          const rainfall = rainfallData[block.id];
+
+          // Color-code by rainfall amount when rainfall overlay is enabled
+          let fillColor = isSelected ? '#3b82f6' : '#8b5cf6';
+          let strokeColor = isSelected ? '#2563eb' : '#7c3aed';
+
+          if (showRainfallOverlay && rainfall && rainfall.dataSource === 'nws_api') {
+            const totalInches = rainfall.totalInches || 0;
+            // Color gradient from light blue (low) to dark blue (high)
+            if (totalInches >= 2.0) {
+              fillColor = '#1e3a8a'; // Deep blue (heavy rain)
+              strokeColor = '#1e40af';
+            } else if (totalInches >= 1.0) {
+              fillColor = '#2563eb'; // Medium blue
+              strokeColor = '#3b82f6';
+            } else if (totalInches >= 0.5) {
+              fillColor = '#60a5fa'; // Light blue
+              strokeColor = '#93c5fd';
+            } else if (totalInches > 0) {
+              fillColor = '#dbeafe'; // Very light blue (light rain)
+              strokeColor = '#bfdbfe';
+            } else {
+              fillColor = '#fef3c7'; // Light yellow (no rain)
+              strokeColor = '#fde68a';
+            }
+
+            // Selected block gets brighter stroke
+            if (isSelected) {
+              strokeColor = '#f59e0b';
+            }
+          }
 
           return (
             <Polygon
               key={block.id}
               paths={path}
               options={{
-                fillColor: isSelected ? '#3b82f6' : '#8b5cf6',
-                fillOpacity: isSelected ? 0.4 : 0.3,
-                strokeColor: isSelected ? '#2563eb' : '#7c3aed',
+                fillColor,
+                fillOpacity: showRainfallOverlay && rainfall ? 0.5 : (isSelected ? 0.4 : 0.3),
+                strokeColor,
                 strokeOpacity: 0.9,
                 strokeWeight: isSelected ? 3 : 2,
                 clickable: true
               }}
               onClick={() => handleBlockClick(block.id)}
             />
+          );
+        })}
+
+        {/* Render rainfall badges on fields */}
+        {showRainfallOverlay && blocks.map(block => {
+          if (!block.geom || !block.lat || !block.lng) return null;
+
+          const rainfall = rainfallData[block.id];
+          if (!rainfall || rainfall.dataSource !== 'nws_api') return null;
+
+          const path = geojsonToPath(block.geom);
+          if (path.length === 0) return null;
+
+          // Calculate center of polygon for badge placement
+          const center = {
+            lat: path.reduce((sum, p) => sum + p.lat, 0) / path.length,
+            lng: path.reduce((sum, p) => sum + p.lng, 0) / path.length
+          };
+
+          const totalInches = rainfall.totalInches || 0;
+          const predictedInches = rainfall.predictedInches || 0;
+
+          return (
+            <InfoWindow
+              key={`rainfall-${block.id}`}
+              position={center}
+              options={{
+                disableAutoPan: true,
+                closeBoxURL: '',
+                enableEventPropagation: true
+              }}
+            >
+              <div className="bg-white rounded-lg shadow-lg border-2 border-blue-400 px-3 py-2 min-w-[140px]">
+                <div className="text-xs font-semibold text-gray-700 mb-1 truncate">
+                  {block.name}
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CloudRain className="w-4 h-4 text-blue-600" />
+                  <div>
+                    <div className="text-sm font-bold text-blue-900">
+                      {totalInches.toFixed(2)}"
+                    </div>
+                    <div className="text-xs text-gray-600">Last 7 days</div>
+                  </div>
+                </div>
+                {predictedInches > 0 && (
+                  <div className="flex items-center gap-2 pt-1 border-t border-gray-200">
+                    <Droplet className="w-3.5 h-3.5 text-blue-400" />
+                    <div className="text-xs text-gray-700">
+                      +{predictedInches.toFixed(2)}" forecast
+                    </div>
+                  </div>
+                )}
+                {rainfall.lastRainEvent?.date && (
+                  <div className="text-xs text-gray-500 mt-1 pt-1 border-t border-gray-200">
+                    Last: {new Date(rainfall.lastRainEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                )}
+              </div>
+            </InfoWindow>
           );
         })}
 
@@ -756,16 +1127,37 @@ export function BlockMap({
         {/* Temporary drawing path */}
         {tempPath.length > 0 && (
           <>
-            <Polyline
-              path={tempPath}
-              options={{
-                strokeColor: '#10b981',
-                strokeOpacity: 0.8,
-                strokeWeight: 3,
-                clickable: true,
-              }}
-              onRightClick={handlePolygonRightClick}
-            />
+            {/* Show filled polygon when we have enough points */}
+            {tempPath.length >= 3 && (
+              <Polygon
+                paths={tempPath}
+                options={{
+                  fillColor: '#10b981',
+                  fillOpacity: 0.2,
+                  strokeColor: '#10b981',
+                  strokeOpacity: 0.8,
+                  strokeWeight: 3,
+                  clickable: true,
+                }}
+                onRightClick={handlePolygonRightClick}
+              />
+            )}
+
+            {/* Show polyline for incomplete polygons or during editing */}
+            {tempPath.length < 3 && (
+              <Polyline
+                path={tempPath}
+                options={{
+                  strokeColor: '#10b981',
+                  strokeOpacity: 0.8,
+                  strokeWeight: 3,
+                  clickable: true,
+                }}
+                onRightClick={handlePolygonRightClick}
+              />
+            )}
+
+            {/* Draggable vertex markers */}
             {tempPath.map((point, index) => (
               <Marker
                 key={index}
@@ -850,6 +1242,154 @@ export function BlockMap({
           </div>
         )}
 
+        {/* Rainfall Legend */}
+        {!drawingMode && showRainfallOverlay && blocks.some(b => b.lat && b.lng) && (
+          <div className="absolute bottom-4 left-4 z-20 bg-white rounded-xl shadow-2xl border border-gray-300 p-4 w-[280px]">
+            <div className="flex items-center gap-2 mb-3">
+              <CloudRain className="w-5 h-5 text-blue-600" />
+              <h3 className="text-sm font-bold text-gray-900">Rainfall Map (7 days)</h3>
+            </div>
+            <div className="space-y-2">
+              {[
+                { min: 2.0, color: '#1e3a8a', label: '≥ 2.0"', desc: 'Heavy rain' },
+                { min: 1.0, color: '#2563eb', label: '1.0" - 2.0"', desc: 'Moderate rain' },
+                { min: 0.5, color: '#60a5fa', label: '0.5" - 1.0"', desc: 'Light rain' },
+                { min: 0.01, color: '#dbeafe', label: '< 0.5"', desc: 'Trace' },
+                { min: 0, color: '#fef3c7', label: 'No rain', desc: 'Dry period' }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div
+                    className="w-6 h-6 rounded border-2 border-gray-400 flex-shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold text-gray-900">{item.label}</div>
+                    <div className="text-xs text-gray-500">{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {loadingRainfall && (
+              <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-2 text-xs text-blue-600">
+                <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span>Loading weather data...</span>
+              </div>
+            )}
+            <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
+              Data from National Weather Service
+            </div>
+          </div>
+        )}
+
+        {/* Rotation Controls Panel */}
+        {!drawingMode && showRotationControls && selectedBlockId && (() => {
+          const selectedBlock = blocks.find(b => b.id === selectedBlockId);
+          if (!selectedBlock?.geom) return null;
+          const currentOrientation = selectedBlock.row_orientation_deg || 90;
+
+          return (
+            <div className="absolute bottom-4 right-4 z-20 bg-white rounded-xl shadow-2xl border border-gray-300 p-4 w-[340px]">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Row Rotation</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{selectedBlock.name}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRotationControls(false)}
+                  className="p-1.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Current Angle Display */}
+              <div className="mb-5 p-4 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">Current Angle:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl font-bold text-yellow-700">{currentOrientation.toFixed(1)}°</span>
+                    <div className="text-xs text-gray-600">
+                      {currentOrientation === 0 && '(North)'}
+                      {currentOrientation === 45 && '(NE)'}
+                      {currentOrientation === 90 && '(East)'}
+                      {currentOrientation === 135 && '(SE)'}
+                      {currentOrientation === 180 && '(South)'}
+                      {currentOrientation === 225 && '(SW)'}
+                      {currentOrientation === 270 && '(West)'}
+                      {currentOrientation === 315 && '(NW)'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Angle Slider */}
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Drag to rotate (0° = North, 90° = East, 0.25° increments)
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="359.75"
+                  step="0.25"
+                  value={currentOrientation}
+                  onChange={(e) => handleSetOrientation(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(to right, #fbbf24 0%, #f59e0b ${(currentOrientation / 359.75) * 100}%, #e5e7eb ${(currentOrientation / 359.75) * 100}%, #e5e7eb 100%)`
+                  }}
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1 px-1">
+                  <span>0° N</span>
+                  <span>90° E</span>
+                  <span>180° S</span>
+                  <span>270° W</span>
+                  <span>359.75°</span>
+                </div>
+              </div>
+
+              {/* Preset Buttons */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Quick Presets:
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { angle: 0, label: 'N', desc: 'North' },
+                    { angle: 45, label: 'NE', desc: 'Northeast' },
+                    { angle: 90, label: 'E', desc: 'East' },
+                    { angle: 135, label: 'SE', desc: 'Southeast' },
+                    { angle: 180, label: 'S', desc: 'South' },
+                    { angle: 225, label: 'SW', desc: 'Southwest' },
+                    { angle: 270, label: 'W', desc: 'West' },
+                    { angle: 315, label: 'NW', desc: 'Northwest' },
+                  ].map(({ angle, label, desc }) => (
+                    <button
+                      key={angle}
+                      type="button"
+                      onClick={() => {
+                        handleSetOrientation(angle);
+                        // Auto-close panel after preset selection with brief delay to show change
+                        setTimeout(() => setShowRotationControls(false), 300);
+                      }}
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        currentOrientation === angle
+                          ? 'bg-yellow-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-yellow-100 hover:text-yellow-700'
+                      }`}
+                      title={`${desc} (${angle}°)`}
+                    >
+                      {label}
+                      <div className="text-xs font-normal opacity-80">{angle}°</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Blocks List Dropdown Overlay */}
         {!drawingMode && showBlocksList && (() => {
           const blocksWithGeom = blocks.filter(b => b.geom && b.geom.coordinates);
@@ -876,11 +1416,12 @@ export function BlockMap({
                   {blocksWithGeom.map(block => {
                     const isSelected = block.id === selectedBlockId;
                     const orientation = block.row_orientation_deg === 0 ? 'N-S' : 'E-W';
+                    const rainfall = rainfallData[block.id];
 
                     return (
                       <div
                         key={block.id}
-                        className={`flex-shrink-0 border rounded-lg p-2 min-w-[180px] transition-colors ${
+                        className={`flex-shrink-0 border rounded-lg p-2 min-w-[200px] transition-colors ${
                           isSelected
                             ? 'bg-blue-100 border-blue-500'
                             : 'bg-gray-50 border-gray-300 hover:border-blue-400 hover:bg-gray-100'
@@ -912,6 +1453,22 @@ export function BlockMap({
                                   </>
                                 )}
                               </div>
+                              {/* Rainfall data */}
+                              {rainfall && rainfall.dataSource === 'nws_api' && (
+                                <div className="flex items-center gap-1 mt-1 pt-1 border-t border-gray-300">
+                                  <CloudRain className="w-3 h-3 text-blue-500" />
+                                  <span className="font-semibold text-blue-700">
+                                    {rainfall.totalInches?.toFixed(2)}"
+                                  </span>
+                                  <span className="text-gray-500">rainfall (7d)</span>
+                                </div>
+                              )}
+                              {block.lat && block.lng && (!rainfall || loadingRainfall) && (
+                                <div className="flex items-center gap-1 mt-1 pt-1 border-t border-gray-300">
+                                  <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                  <span className="text-gray-500 text-xs">Loading weather...</span>
+                                </div>
+                              )}
                             </div>
                           </button>
 

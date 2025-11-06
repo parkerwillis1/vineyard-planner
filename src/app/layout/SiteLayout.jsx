@@ -12,16 +12,41 @@ export default function SiteLayout() {
   const subscription = useSubscription();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [showResourcesMenu, setShowResourcesMenu] = useState(false);
   const [showAboutMenu, setShowAboutMenu] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const toolsMenuRef = useRef(null);
   const resourcesMenuRef = useRef(null);
   const aboutMenuRef = useRef(null);
 
   const needsPadding = ['/signin', '/signup', '/account/settings'].includes(location.pathname);
+
+  // Auto-hide navbar on scroll down, show on scroll up
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Show navbar when at top of page
+      if (currentScrollY < 10) {
+        setIsVisible(true);
+      }
+      // Hide when scrolling down, show when scrolling up
+      else if (currentScrollY > lastScrollY && currentScrollY > 64) {
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        setIsVisible(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -73,7 +98,11 @@ export default function SiteLayout() {
   return (
     <div className="min-h-screen bg-white">
       {/* Main Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 transition-transform duration-300 ${
+          isVisible ? 'translate-y-0' : '-translate-y-full'
+        }`}
+      >
         <div className="max-w-[1920px] mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Brand */}
@@ -589,7 +618,7 @@ export default function SiteLayout() {
       </header>
 
       {/* Main Content */}
-      <main className={needsPadding ? "max-w-screen-2xl mx-auto px-6 py-10" : ""}>
+      <main className={needsPadding ? "max-w-screen-2xl mx-auto px-6 py-10 mt-16" : "mt-16"}>
         <Outlet key={location.pathname} />
       </main>
     </div>

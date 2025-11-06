@@ -89,8 +89,14 @@ export function TaskManagement() {
     type: '',
     priority: '',
     blockId: '',
-    search: ''
+    search: '',
+    showCompleted: false, // Hide completed tasks by default
+    currentSeasonOnly: true // Only show current season by default
   });
+
+  // Pagination for list view
+  const [currentPage, setCurrentPage] = useState(1);
+  const tasksPerPage = 20;
 
   useEffect(() => {
     if (user) {
@@ -122,9 +128,22 @@ export function TaskManagement() {
     setLoading(false);
   };
 
+  // Get current season
+  const currentSeason = useMemo(() => {
+    return seasons.find(s => s.is_active) || seasons[0];
+  }, [seasons]);
+
   // Filter tasks
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
+      // Hide completed/archived tasks by default unless showCompleted is true
+      if (!filters.showCompleted && (task.status === 'done' || task.status === 'archived')) return false;
+
+      // Filter by current season only (default behavior)
+      if (filters.currentSeasonOnly && currentSeason) {
+        if (task.season_id !== currentSeason.id) return false;
+      }
+
       if (filters.status && task.status !== filters.status) return false;
       if (filters.type && task.type !== filters.type) return false;
       if (filters.priority && task.priority !== filters.priority) return false;
@@ -140,7 +159,21 @@ export function TaskManagement() {
       }
       return true;
     });
-  }, [tasks, filters]);
+  }, [tasks, filters, currentSeason]);
+
+  // Paginated tasks for list view
+  const paginatedTasks = useMemo(() => {
+    const startIndex = (currentPage - 1) * tasksPerPage;
+    const endIndex = startIndex + tasksPerPage;
+    return filteredTasks.slice(startIndex, endIndex);
+  }, [filteredTasks, currentPage, tasksPerPage]);
+
+  const totalPages = Math.ceil(filteredTasks.length / tasksPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
 
   const handleTaskClick = (task) => {
     setSelectedTask(task);
@@ -149,6 +182,16 @@ export function TaskManagement() {
 
   const handleTaskUpdate = async () => {
     await loadData();
+  };
+
+  const handleQuickComplete = async (e, taskId) => {
+    e.stopPropagation();
+    const { error } = await updateTaskStatus(taskId, 'done');
+    if (error) {
+      alert(`Error completing task: ${error.message}`);
+    } else {
+      await loadData();
+    }
   };
 
   const getStatusConfig = (status) => {
@@ -235,6 +278,11 @@ export function TaskManagement() {
           <h2 className="text-2xl font-bold text-gray-900">Tasks</h2>
           <p className="text-sm text-gray-600 mt-1">
             Plan, assign, and track all vineyard work
+            {filters.currentSeasonOnly && currentSeason && (
+              <span className="ml-2 text-blue-600 font-medium">
+                • Showing {currentSeason.name} only
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-3">
@@ -404,6 +452,39 @@ export function TaskManagement() {
               />
             </div>
           </div>
+
+          {/* Show Completed & Season Toggles */}
+          <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.currentSeasonOnly}
+                onChange={(e) => setFilters({ ...filters, currentSeasonOnly: e.target.checked })}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Current season only
+              </span>
+              <span className="text-xs text-gray-500">
+                ({currentSeason?.name || 'No active season'})
+              </span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.showCompleted}
+                onChange={(e) => setFilters({ ...filters, showCompleted: e.target.checked })}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Show completed & archived tasks
+              </span>
+              <span className="text-xs text-gray-500">
+                ({tasks.filter(t => t.status === 'done' || t.status === 'archived').length} hidden)
+              </span>
+            </label>
+          </div>
         </CardContent>
       </Card>
 
@@ -428,8 +509,9 @@ export function TaskManagement() {
           </CardContent>
         </Card>
       ) : viewMode === 'list' ? (
-        <div className="space-y-3">
-          {filteredTasks.map((task) => {
+        <>
+          <div className="space-y-3">
+            {paginatedTasks.map((task) => {
             const statusConfig = getStatusConfig(task.status);
             const StatusIcon = statusConfig.icon;
             const priorityColor = getPriorityColor(task.priority);
@@ -438,16 +520,20 @@ export function TaskManagement() {
             return (
               <Card
                 key={task.id}
-                className="hover:shadow-lg transition-shadow"
+                className={`hover:shadow-lg transition-shadow ${
+                  overdue ? 'border-l-4 border-l-red-500 bg-red-50/30' : ''
+                }`}
               >
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <StatusIcon className={`w-5 h-5 text-${statusConfig.color}-600`} />
-                        <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
+                        <h3 className={`text-lg font-semibold ${overdue ? 'text-red-900' : 'text-gray-900'}`}>
+                          {task.title}
+                        </h3>
                         {overdue && (
-                          <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                          <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded animate-pulse">
                             OVERDUE
                           </span>
                         )}
@@ -480,6 +566,15 @@ export function TaskManagement() {
 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2 ml-4">
+                      {task.status !== 'done' && task.status !== 'archived' && (
+                        <button
+                          onClick={(e) => handleQuickComplete(e, task.id)}
+                          className="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors"
+                          title="Mark complete"
+                        >
+                          <CheckCircle2 className="w-5 h-5" />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -518,21 +613,84 @@ export function TaskManagement() {
               </Card>
             );
           })}
-        </div>
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <Card className="mt-4">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Showing {((currentPage - 1) * tasksPerPage) + 1} to {Math.min(currentPage * tasksPerPage, filteredTasks.length)} of {filteredTasks.length} tasks
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 7) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 4) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 3) {
+                          pageNum = totalPages - 6 + i;
+                        } else {
+                          pageNum = currentPage - 3 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`px-3 py-1 text-sm font-medium rounded-md ${
+                              currentPage === pageNum
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
       ) : (
         /* Kanban View with Drag & Drop */
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {TASK_STATUSES.filter(s => s.value !== 'archived').map(statusConfig => {
-            const StatusIcon = statusConfig.icon;
-            const statusTasks = filteredTasks.filter(t => t.status === statusConfig.value);
-            const isDropTarget = dragOverColumn === statusConfig.value;
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <div className="inline-flex gap-3 p-6 min-w-full">
+                {TASK_STATUSES.filter(s => s.value !== 'archived').map(statusConfig => {
+                  const StatusIcon = statusConfig.icon;
+                  const statusTasks = filteredTasks.filter(t => t.status === statusConfig.value);
+                  const isDropTarget = dragOverColumn === statusConfig.value;
 
-            return (
-              <div
-                key={statusConfig.value}
-                className={`flex-shrink-0 w-[320px] bg-gray-50 rounded-lg transition-all ${
-                  isDropTarget ? 'ring-2 ring-blue-500 bg-blue-50' : ''
-                }`}
+                  return (
+                    <div
+                      key={statusConfig.value}
+                      className={`flex-shrink-0 w-[260px] bg-gray-50 rounded-lg transition-all ${
+                        isDropTarget ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                      }`}
                 onDragOver={handleDragOver}
                 onDragEnter={() => handleDragEnter(statusConfig.value)}
                 onDragLeave={handleDragLeave}
@@ -578,7 +736,9 @@ export function TaskManagement() {
                           className={`group cursor-move ${isDragging ? 'opacity-50' : ''}`}
                         >
                           <Card
-                            className="hover:shadow-lg transition-all border-2 border-transparent hover:border-blue-200"
+                            className={`hover:shadow-lg transition-all border-2 hover:border-blue-200 ${
+                              overdue ? 'border-red-400 bg-red-50/40' : 'border-transparent'
+                            }`}
                             onClick={() => handleTaskClick(task)}
                           >
                             <CardContent className="pt-4 pb-3 px-3">
@@ -634,6 +794,17 @@ export function TaskManagement() {
                                     {TASK_TYPES.find(t => t.value === task.type)?.label || task.type}
                                   </span>
                                 </div>
+
+                                {/* Quick Complete Button */}
+                                {task.status !== 'done' && task.status !== 'archived' && (
+                                  <button
+                                    onClick={(e) => handleQuickComplete(e, task.id)}
+                                    className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition-colors text-xs font-medium"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    Mark Complete
+                                  </button>
+                                )}
                               </div>
                             </CardContent>
                           </Card>
@@ -645,7 +816,10 @@ export function TaskManagement() {
               </div>
             );
           })}
-        </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       )}
 
       {/* Task Drawer */}

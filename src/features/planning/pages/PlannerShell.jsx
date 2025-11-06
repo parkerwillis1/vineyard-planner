@@ -27,7 +27,10 @@ import {
   Package,
   CreditCard,
   PiggyBank,
-  Wallet
+  Wallet,
+  Grape,
+  Menu,
+  X
 } from "lucide-react";
 import { NounProjectIconById } from "@/shared/components/ui/NounProjectIconById";
 import {
@@ -178,41 +181,57 @@ const ProjectBanner = ({ years, setYears }) => (
   </section>
 );
 
-/* --------------------------------------------------------- */
-/*  Sticky tab bar – lives directly under ProjectBanner       */
-/* --------------------------------------------------------- */
-
-const TAB_H = 50; // bar height in px (keep in sync with Tailwind padding)
-
-
-const TabNav = ({
+/* ====== SIDEBAR ====== */
+const Sidebar = ({
   active,
   setActive,
   projYears,
   setYears,
-  totalEstCost,
+  sidebarOpen,
+  setSidebarOpen,
   onSave,
   isSaving,
   dirty,
-  lastSaved,
-  currentPlanId,        
-  currentPlanName,      
-  onPlanChange,         
+  currentPlanId,
+  currentPlanName,
+  onPlanChange,
   onNewPlan,
-  currentTier, 
+  currentTier,
   limits = {},
   plans,
-  stickyTopClass = "top-0",
+  totalEstCost
 }) => {
   const [showPlanMenu, setShowPlanMenu] = React.useState(false);
+  const [isNavbarVisible, setIsNavbarVisible] = React.useState(true);
+  const [lastScrollY, setLastScrollY] = React.useState(0);
   const planMenuRef = React.useRef(null);
 
-  const tabs = [
-    { id: "design",        label: "Design" },
-    { id: "inputs",        label: "Financial Inputs" },
-    { id: "establishment", label: "Vineyard Setup" },
-    { id: "proj",          label: `${projYears}-Year Plan` },
-    { id: "details",       label: "Details" },
+  // Track navbar visibility
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY < 10) {
+        setIsNavbarVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 64) {
+        setIsNavbarVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        setIsNavbarVisible(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
+  const navigationItems = [
+    { id: 'design', label: 'Vineyard Design', icon: Grape },
+    { id: 'inputs', label: 'Financial Inputs', icon: DollarSign },
+    { id: 'establishment', label: 'Vineyard Setup', icon: Sprout },
+    { id: 'proj', label: `${projYears}-Year Plan`, icon: TrendingUp },
+    { id: 'details', label: 'Business Plan', icon: FileText },
   ];
 
   // Check if user can create more plans
@@ -230,141 +249,193 @@ const TabNav = ({
   }, []);
 
   return (
-    <div className="sticky top-[65px] z-40 bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-[1920px] mx-auto px-6">
-        <div className="grid grid-cols-3 items-center h-16 gap-6">
-          {/* LEFT: Plans Dropdown + Save Button */}
-          <div className="flex items-center gap-3">
-            <div className="relative" ref={planMenuRef}>
-              <button
-                onClick={() => setShowPlanMenu(!showPlanMenu)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 transition-colors min-w-[200px]"
-              >
-                <span className="text-gray-700 truncate">
-                  {currentPlanName || 'Default Plan'}
-                </span>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${showPlanMenu ? 'rotate-180' : ''}`} />
-              </button>
+    <aside
+      className={`
+        fixed left-0 top-0 h-screen bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100
+        transition-all duration-300 ease-in-out z-40 border-r border-gray-200
+        ${sidebarOpen ? 'w-64' : 'w-20'}
+      `}
+    >
+      {/* Fixed spacer for navbar */}
+      <div className="h-16 flex-shrink-0"></div>
 
-              {/* Dropdown Menu */}
-              {showPlanMenu && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
-                  {/* Default Plan */}
+      {/* Sidebar Header - slides up with navbar */}
+      <div
+        className={`flex items-center justify-between px-4 py-3 border-b border-gray-300 flex-shrink-0 transition-transform duration-300 ${
+          isNavbarVisible ? 'translate-y-0' : '-translate-y-16'
+        }`}
+      >
+        {sidebarOpen && (
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-vine-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
+              <Grape className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-gray-800 font-bold text-lg">Planner</span>
+          </div>
+        )}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 hover:bg-gray-200 rounded-lg transition-colors ml-auto"
+        >
+          {sidebarOpen ? (
+            <X className="w-5 h-5 text-gray-600" />
+          ) : (
+            <Menu className="w-5 h-5 text-gray-600" />
+          )}
+        </button>
+      </div>
+
+      {/* Plans & Save Section - Only when expanded - positioned at fixed location */}
+      {sidebarOpen && (
+        <div className="absolute top-[144px] left-0 right-0 px-3 py-3 border-b border-gray-300 space-y-2 bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100">
+          {/* Plans Dropdown */}
+          <div className="relative" ref={planMenuRef}>
+            <button
+              onClick={() => setShowPlanMenu(!showPlanMenu)}
+              className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-vine-green-500 transition-colors"
+            >
+              <span className="text-gray-700 truncate">
+                {currentPlanName || 'Default Plan'}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${showPlanMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showPlanMenu && (
+              <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
+                {/* Default Plan */}
+                <button
+                  onClick={() => {
+                    onPlanChange('');
+                    setShowPlanMenu(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                    !currentPlanId ? 'bg-vine-green-50 text-black font-bold font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  Default Plan
+                </button>
+
+                {/* Divider */}
+                {plans && plans.length > 0 && (
+                  <div className="border-t border-gray-200 my-2"></div>
+                )}
+
+                {/* User's Plans */}
+                {plans && plans.map(plan => (
                   <button
+                    key={plan.id}
                     onClick={() => {
-                      onPlanChange('');
+                      onPlanChange(plan.id);
                       setShowPlanMenu(false);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                      !currentPlanId ? 'bg-vine-green-50 text-black font-bold font-medium' : 'text-gray-700'
+                      currentPlanId === plan.id ? 'bg-vine-green-50 text-black font-bold font-medium' : 'text-gray-700'
                     }`}
                   >
-                    Default Plan
+                    {plan.name}
                   </button>
+                ))}
 
-                  {/* Divider */}
-                  {plans && plans.length > 0 && (
-                    <div className="border-t border-gray-200 my-2"></div>
-                  )}
+                {/* Divider */}
+                <div className="border-t border-gray-200 my-2"></div>
 
-                  {/* User's Plans */}
-                  {plans && plans.map(plan => (
-                    <button
-                      key={plan.id}
-                      onClick={() => {
-                        onPlanChange(plan.id);
-                        setShowPlanMenu(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                        currentPlanId === plan.id ? 'bg-vine-green-50 text-black font-bold font-medium' : 'text-gray-700'
-                      }`}
-                    >
-                      {plan.name}
-                    </button>
-                  ))}
+                {/* Plan Usage Indicator (for free tier) */}
+                {currentTier === 'free' && limits?.plans > 0 && (
+                  <div className="px-4 py-2 text-xs text-gray-500">
+                    Plans: {plans.length}/{limits.plans} {plans.length >= limits.plans && '(limit reached)'}
+                  </div>
+                )}
 
-                  {/* Divider */}
-                  <div className="border-t border-gray-200 my-2"></div>
-
-                  {/* Plan Usage Indicator (for free tier) */}
-                  {currentTier === 'free' && limits?.plans > 0 && (
-                    <div className="px-4 py-2 text-xs text-gray-500">
-                      Plans: {plans.length}/{limits.plans} {plans.length >= limits.plans && '(limit reached)'}
-                    </div>
-                  )}
-
-                  {/* Create New Plan */}
-                  <button
-                    onClick={() => {
-                      setShowPlanMenu(false);
-                      onNewPlan();
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-vine-green-600 hover:bg-vine-green-50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!canCreateMorePlans}
-                  >
-                    + Create New Plan
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Smart Save Button */}
-            <button
-              onClick={onSave}
-              disabled={isSaving || !dirty}
-              className={`px-6 py-2.5 text-sm rounded-lg font-semibold transition-all shadow-sm disabled:cursor-not-allowed whitespace-nowrap ${
-                dirty
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-vine-green-500 text-white cursor-default'
-              }`}
-            >
-              {isSaving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
-            </button>
+                {/* Create New Plan */}
+                <button
+                  onClick={() => {
+                    setShowPlanMenu(false);
+                    onNewPlan();
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-vine-green-600 hover:bg-vine-green-50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!canCreateMorePlans}
+                >
+                  + Create New Plan
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* CENTER: Tabs (always centered) */}
-          <div className="flex items-center justify-center gap-2">
-            {tabs.map(t => (
+          {/* Smart Save Button */}
+          <button
+            onClick={onSave}
+            disabled={isSaving || !dirty}
+            className={`w-full px-4 py-2 text-sm rounded-lg font-semibold transition-all shadow-sm disabled:cursor-not-allowed ${
+              dirty
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-vine-green-500 text-white cursor-default'
+            }`}
+          >
+            {isSaving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
+          </button>
+        </div>
+      )}
+
+      {/* Navigation Items - positioned at fixed location */}
+      <nav className="absolute top-[270px] left-0 right-0 bottom-[180px] flex items-center justify-center px-2 hide-scrollbar">
+        <div className="space-y-3 w-full">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = active === item.id;
+            return (
               <button
-                key={t.id}
-                onClick={() => setActive(t.id)}
-                className={`px-5 py-2.5 text-base font-semibold rounded-lg transition-all whitespace-nowrap ${
-                  active === t.id
-                    ? "bg-vine-green-500 text-white"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
+                key={item.id}
+                onClick={() => setActive(item.id)}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
+                  transition-all duration-200 group
+                  ${isActive
+                    ? 'bg-white text-gray-800 shadow-md'
+                    : 'text-gray-700 hover:bg-white hover:text-gray-800 hover:shadow-sm'
+                  }
+                  ${!sidebarOpen && 'justify-center'}
+                `}
+                title={!sidebarOpen ? item.label : ''}
               >
-                {t.label}
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-gray-800' : 'group-hover:text-gray-800'}`} />
+                {sidebarOpen && (
+                  <span className="font-medium text-sm">{item.label}</span>
+                )}
               </button>
-            ))}
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Sidebar Footer - Years + Total - positioned at fixed location */}
+      {sidebarOpen && (
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-300 space-y-3 bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100">
+          {/* Years Selector */}
+          <div>
+            <label className="flex items-center justify-between text-xs text-gray-600 mb-1">
+              <span className="font-medium">Project Years</span>
+            </label>
+            <Input
+              type="number"
+              min={1}
+              max={30}
+              value={projYears}
+              onChange={(e) =>
+                setYears(Math.max(1, Math.min(30, Number(e.target.value) || 1)))
+              }
+              className="w-full text-center"
+            />
           </div>
 
-          {/* RIGHT: Years + Total */}
-          <div className="flex items-center justify-end gap-4">
-            <label className="flex items-center gap-2 text-sm text-gray-700 whitespace-nowrap">
-              <span className="font-medium">Years</span>
-              <Input
-                type="number"
-                min={1}
-                max={30}
-                value={projYears}
-                onChange={(e) =>
-                  setYears(Math.max(1, Math.min(30, Number(e.target.value) || 1)))
-                }
-                className="w-16 text-center"
-              />
-            </label>
-
-            <div className="flex items-center gap-2 text-sm whitespace-nowrap">
-              <span className="font-medium text-gray-700">Total</span>
-              <span className="px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700 font-semibold">
-                ${formatMoney(totalEstCost)}
-              </span>
-            </div>
+          {/* Total Cost */}
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
+            <p className="text-xs text-gray-600 mb-1">Total Est. Cost</p>
+            <p className="text-lg font-bold text-purple-700">${formatMoney(totalEstCost)}</p>
           </div>
         </div>
-      </div>
-    </div>
+      )}
+    </aside>
   );
 };
 
@@ -556,6 +627,7 @@ export default function PlannerShell({ embedded = false }) {
   const [selectedChart, setSelectedChart] = useState("revenue");
   const [establishmentView, setEstablishmentView] = useState('breakdown');
   const [taskCompletion, setTaskCompletion] = useState({});
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sectionsState, setSectionsState] = useState({
     "Core Vineyard Parameters": true,
     "Vineyard Setup": true,
@@ -1987,13 +2059,11 @@ const EstablishmentProgressTracker = ({
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
-        <div className="space-y-8 pt-6">
-          {/* Hero Header */}
-          <div className="text-center p-8 mb-8">
-            <h1 className="text-4xl font-bold text-vine-green-500 mb-3">
-              Vineyard Design & Layout
-            </h1>
-            <p className="text-gray-600 text-sm max-w-2xl mx-auto">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="border-b pb-3 mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Vineyard Design</h1>
+            <p className="text-sm text-gray-600 mt-1">
               Design your vineyard layout using our interactive map or auto-layout calculator. Configure row spacing, vine spacing, and field boundaries.
             </p>
           </div>
@@ -2023,34 +2093,34 @@ const EstablishmentProgressTracker = ({
       
       {/* INPUTS TAB */}
       {activeTab === "inputs" && (
-        <div className="space-y-8 pt-6">
-          <div className="border-b pb-4">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-2xl font-bold text-black">
-                Financial Inputs for the Vineyard
-              </h1>
+        <div className="space-y-8">
+          <div className="border-b pb-3 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Financial Inputs</h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  Set up your vineyard's financial blueprint, from land and equipment to annual operating costs.
+                </p>
+              </div>
               <button
-              onClick={() => {
-                const allOpen = Object.values(sectionsState).every(v => v);
-                const newState = {};
-                Object.keys(sectionsState).forEach(key => {
-                  newState[key] = !allOpen;
-                });
-                setSectionsState(newState);
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-            >
-              <ChevronDown
-                className={`h-4 w-4 transition-transform duration-300 ${
-                  Object.values(sectionsState).every(v => v) ? "rotate-180" : ""
-                }`}
-              />
-              {Object.values(sectionsState).every(v => v) ? "Collapse All" : "Expand All"}
+                onClick={() => {
+                  const allOpen = Object.values(sectionsState).every(v => v);
+                  const newState = {};
+                  Object.keys(sectionsState).forEach(key => {
+                    newState[key] = !allOpen;
+                  });
+                  setSectionsState(newState);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
+              >
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-300 ${
+                    Object.values(sectionsState).every(v => v) ? "rotate-180" : ""
+                  }`}
+                />
+                {Object.values(sectionsState).every(v => v) ? "Collapse All" : "Expand All"}
               </button>
             </div>
-            <p className="text-gray-600 text-sm">
-              Set up your vineyard's financial blueprint, from land and equipment to annual operating costs. <br /> Every input here flows through to your break-even analysis and profitability projections.
-            </p>
           </div>
 
           {!st.vineyardLayout?.calculatedLayout && (!st.vineyardFields || st.vineyardFields.length === 0 || !st.vineyardFields.some(f => f.polygonPath && f.polygonPath.length > 0)) && (
@@ -3456,11 +3526,11 @@ const EstablishmentProgressTracker = ({
 
         {/* ── Vineyard Establishment Tab ── */}
         {activeTab === "establishment" && (
-          <div className="space-y-8 pt-6">
-            <div className="flex items-center justify-between border-b pb-4">
+          <div className="space-y-8">
+            <div className="flex items-center justify-between border-b pb-3 mb-6">
               <div>
-                <SectionHeader title="Year 0 Establishment Costs" />
-                <p className="text-gray-600 text-sm mt-2">
+                <h1 className="text-2xl font-bold text-gray-900">Vineyard Setup</h1>
+                <p className="text-sm text-gray-600 mt-1">
                   One-time upfront costs to establish your vineyard including land, infrastructure, planting, and initial setup expenses.
                 </p>
               </div>
@@ -3967,10 +4037,10 @@ const EstablishmentProgressTracker = ({
 
         {/* ── 10-Year Projection Tab ── */}
         {activeTab === "proj" && (
-        <div className="space-y-8 pt-6">
-            <div className="border-b pb-4">
-              <SectionHeader title={`${projYears}-Year Financial Projection`} />
-              <p className="text-gray-600 text-sm mt-2">
+        <div className="space-y-8">
+            <div className="border-b pb-3 mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">{projYears}-Year Plan</h1>
+              <p className="text-sm text-gray-600 mt-1">
                 Multi-year financial forecast showing revenue, expenses, cash flow, and profitability over time based on your vineyard inputs.
               </p>
             </div>
@@ -4314,28 +4384,36 @@ const EstablishmentProgressTracker = ({
   );
 
   return (
-    <div className="min-h-screen bg-white">
-      <main className="w-full">
-        <TabNav
-          active={activeTab}
-          setActive={setActiveTab}
-          projYears={projYears}
-          setYears={setProjYears}
-          totalEstCost={totalEstCost}
-          onSave={handleManualSave}
-          isSaving={saving}
-          dirty={dirty}
-          lastSaved={lastSaved}
-          currentPlanId={planId}
-          currentPlanName={currentPlanName}
-          onPlanChange={handlePlanChange}
-          onNewPlan={handleNewPlan}
-          plans={plans}
-          currentTier={tier}
-          limits={limits}
-        />
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar with all controls */}
+      <Sidebar
+        active={activeTab}
+        setActive={setActiveTab}
+        projYears={projYears}
+        setYears={setProjYears}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        onSave={handleManualSave}
+        isSaving={saving}
+        dirty={dirty}
+        currentPlanId={planId}
+        currentPlanName={currentPlanName}
+        onPlanChange={handlePlanChange}
+        onNewPlan={handleNewPlan}
+        plans={plans}
+        currentTier={tier}
+        limits={limits}
+        totalEstCost={totalEstCost}
+      />
 
-        {/* centered content container */}
+      {/* Main Content Area */}
+      <main
+        className={`
+          flex-1 transition-all duration-300 mt-8
+          ${sidebarOpen ? 'ml-64' : 'ml-20'}
+        `}
+      >
+        {/* Content Container */}
         <div className="w-full">
           {MainUI}
         </div>

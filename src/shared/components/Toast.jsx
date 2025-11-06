@@ -88,7 +88,7 @@ function Toast({ toast, onClose }) {
       <p className="flex-1 text-sm font-medium">{toast.message}</p>
       <button
         onClick={onClose}
-        className="text-gray-400 hover:text-gray-600 transition-colors"
+        className="text-gray-700 hover:text-gray-900 transition-colors"
       >
         <X className="w-4 h-4" />
       </button>

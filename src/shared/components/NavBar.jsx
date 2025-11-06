@@ -67,11 +67,36 @@ function Dropdown({ trigger, items }) {
 export default function NavBar() {
   const { user } = useAuth() || {};
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";
   };
+
+  // Auto-hide navbar on scroll down, show on scroll up
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Show navbar when at top of page
+      if (currentScrollY < 10) {
+        setIsVisible(true);
+      }
+      // Hide when scrolling down, show when scrolling up
+      else if (currentScrollY > lastScrollY && currentScrollY > 64) {
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        setIsVisible(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -87,6 +112,7 @@ export default function NavBar() {
 
   // Tools dropdown items (for authenticated users)
   const toolsItems = [
+    { to: "/vineyard?view=dashboard", label: "Dashboard", icon: null },
     { to: "/planner", label: "Planner", icon: null },
     { to: "/plans", label: "My Plans", icon: null },
   ];
@@ -111,7 +137,11 @@ export default function NavBar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm transition-transform duration-300 ${
+        isVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
@@ -152,37 +182,7 @@ export default function NavBar() {
         </nav>
 
         {/* Right side actions */}
-        <div className="ml-auto flex items-center gap-3">
-          {user ? (
-            <>
-              <span className="hidden lg:block text-sm text-gray-600 max-w-[200px] truncate">
-                {user.email}
-              </span>
-              <Dropdown
-                trigger={
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:border-teal-500 transition-colors">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-500 to-vine-green-500 flex items-center justify-center text-white text-sm font-bold">
-                      {user.email?.[0]?.toUpperCase() || 'U'}
-                    </div>
-                  </div>
-                }
-                items={accountItems}
-              />
-            </>
-          ) : (
-            <>
-              <Link to="/signin" className={`${linkBase} ${idle} hidden sm:block`}>
-                Sign in
-              </Link>
-              <Link
-                to="/signup"
-                className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-teal-600 to-vine-green-600 text-white rounded-lg hover:from-teal-500 hover:to-vine-green-500 shadow-sm hover:shadow-md transition-all"
-              >
-                Get Started Free
-              </Link>
-            </>
-          )}
-
+        <div className="ml-auto flex items-center gap-2">
           {/* Hamburger Menu Button - Mobile Only */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -195,6 +195,39 @@ export default function NavBar() {
               <Menu className="w-6 h-6 text-gray-900" />
             )}
           </button>
+
+          {/* Desktop actions */}
+          {user ? (
+            <>
+              <span className="hidden lg:block text-sm text-gray-600 max-w-[200px] truncate">
+                {user.email}
+              </span>
+              <div className="hidden md:block">
+                <Dropdown
+                  trigger={
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:border-teal-500 transition-colors">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-500 to-vine-green-500 flex items-center justify-center text-white text-sm font-bold">
+                        {user.email?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                    </div>
+                  }
+                  items={accountItems}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <Link to="/signin" className={`${linkBase} ${idle} hidden md:block`}>
+                Sign in
+              </Link>
+              <Link
+                to="/signup"
+                className="hidden md:flex px-4 py-2 text-sm font-semibold bg-gradient-to-r from-teal-600 to-vine-green-600 text-white rounded-lg hover:from-teal-500 hover:to-vine-green-500 shadow-sm hover:shadow-md transition-all"
+              >
+                Get Started Free
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
@@ -263,6 +296,13 @@ export default function NavBar() {
               ) : (
                 <>
                   {/* Authenticated Navigation */}
+                  <NavLink
+                    to="/vineyard?view=dashboard"
+                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </NavLink>
                   <NavLink
                     to="/planner"
                     className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}

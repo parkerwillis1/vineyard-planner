@@ -276,7 +276,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
       </div>
 
       {/* Key Metrics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border-l-4 border-purple-500 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
@@ -294,6 +294,20 @@ export function FieldDetailPage({ id: propId, onBack }) {
             </div>
             <div className="text-2xl font-bold text-gray-900">
               {field.acres} <span className="text-lg font-normal text-gray-600">acres</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-cyan-500 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-gray-600">Spacing</div>
+              <Info className="w-5 h-5 text-cyan-500" />
+            </div>
+            <div className="text-xl font-bold text-gray-900">
+              {field.row_spacing_ft || '-'} × {field.vine_spacing_ft || '-'}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {field.row_spacing_ft && field.vine_spacing_ft ? `${vinesPerAcre.toLocaleString()}/acre` : 'Row × Vine (ft)'}
             </div>
           </CardContent>
         </Card>
@@ -453,36 +467,58 @@ export function FieldDetailPage({ id: propId, onBack }) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-2">
-                        Row Spacing (ft)
+                        Row Spacing (ft) *
                       </label>
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={editForm.row_spacing_ft}
-                          onChange={(e) => setEditForm({ ...editForm, row_spacing_ft: e.target.value })}
-                          className="w-full"
-                        />
-                      ) : (
-                        <p className="text-base text-gray-900">{field.row_spacing_ft || '-'}</p>
-                      )}
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={editForm.row_spacing_ft}
+                        onChange={async (e) => {
+                          const newValue = e.target.value;
+                          setEditForm({ ...editForm, row_spacing_ft: newValue });
+                          // Auto-save on blur
+                        }}
+                        onBlur={async () => {
+                          if (editForm.row_spacing_ft !== field.row_spacing_ft) {
+                            const { data, error } = await updateVineyardBlock(id, {
+                              row_spacing_ft: editForm.row_spacing_ft ? parseFloat(editForm.row_spacing_ft) : null
+                            });
+                            if (!error && data) {
+                              setField(data);
+                            }
+                          }
+                        }}
+                        className="w-full"
+                        placeholder="e.g., 10"
+                      />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-2">
-                        Vine Spacing (ft)
+                        Vine Spacing (ft) *
                       </label>
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={editForm.vine_spacing_ft}
-                          onChange={(e) => setEditForm({ ...editForm, vine_spacing_ft: e.target.value })}
-                          className="w-full"
-                        />
-                      ) : (
-                        <p className="text-base text-gray-900">{field.vine_spacing_ft || '-'}</p>
-                      )}
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={editForm.vine_spacing_ft}
+                        onChange={async (e) => {
+                          const newValue = e.target.value;
+                          setEditForm({ ...editForm, vine_spacing_ft: newValue });
+                          // Auto-save on blur
+                        }}
+                        onBlur={async () => {
+                          if (editForm.vine_spacing_ft !== field.vine_spacing_ft) {
+                            const { data, error } = await updateVineyardBlock(id, {
+                              vine_spacing_ft: editForm.vine_spacing_ft ? parseFloat(editForm.vine_spacing_ft) : null
+                            });
+                            if (!error && data) {
+                              setField(data);
+                            }
+                          }
+                        }}
+                        className="w-full"
+                        placeholder="e.g., 6"
+                      />
                     </div>
 
                     <div>
@@ -613,8 +649,17 @@ export function FieldDetailPage({ id: propId, onBack }) {
                   selectedBlockId={field.id}
                   onBlockSelect={() => {}} // Keep field selected
                   onBlockUpdate={async (blockId, updates) => {
-                    await updateVineyardBlock(blockId, updates);
-                    await loadFieldData();
+                    // Optimistically update local state immediately
+                    setField(prevField => ({ ...prevField, ...updates }));
+
+                    // Then update database in background
+                    const { error } = await updateVineyardBlock(blockId, updates);
+                    if (error) {
+                      // If database update fails, reload to get correct state
+                      alert(`Error updating field: ${error.message}`);
+                      await loadFieldData();
+                    }
+                    // Don't reload on success - we already updated local state
                   }}
                 />
               </div>

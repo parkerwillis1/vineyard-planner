@@ -6,6 +6,10 @@
 /* -------------------------------------------------
    Global Light Theme (no auto dark inversion)
 -------------------------------------------------- */
+html {
+  background-color: #ffffff; /* Solid white background for html */
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -23,6 +27,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #ffffff; /* Solid white background */
   /* Let your app / Tailwind containers handle layout */
 }
 

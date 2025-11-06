@@ -176,7 +176,7 @@ export function FieldYieldHistory({ fieldId, fieldName, fieldAcres, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition-all hover:scale-110"
+            className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all hover:scale-110 border border-white/20"
           >
             <X className="w-6 h-6 text-white" />
           </button>

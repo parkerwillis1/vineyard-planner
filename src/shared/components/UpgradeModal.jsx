@@ -41,9 +41,9 @@ export const UpgradeModal = ({ moduleId, onClose }) => {
           <h2 className="text-2xl font-bold text-gray-900">
             Unlock {module.name}
           </h2>
-          <button 
+          <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-700 hover:text-gray-900"
           >
             <X className="w-6 h-6" />
           </button>

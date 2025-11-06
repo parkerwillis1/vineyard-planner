@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { GoogleMap, useLoadScript, Polygon, Marker, Polyline, Autocomplete } from '@react-google-maps/api';
 import { MaterialCostsVisualizer } from "@/features/planning/components/MaterialCostsVisualizer";
-import { ChevronDown, MapPin, Trash2, Edit3, Plus, Eye, EyeOff } from "lucide-react";
+import { ChevronDown, MapPin, Trash2, Edit3, Plus, Eye, EyeOff, RotateCw, Settings, X, Grid, Check } from "lucide-react";
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 
@@ -45,11 +45,11 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
 
 // Standard spacing options used in commercial viticulture
 export const VINE_SPACING_OPTIONS = [
-  { key: "6x8", vine: 6, row: 8, label: "6' × 8' (High Density)", vinesPerAcre: 908 },
-  { key: "6x10", vine: 6, row: 10, label: "6' × 10' (Standard)", vinesPerAcre: 726 },
-  { key: "8x8", vine: 8, row: 8, label: "8' × 8' (Square)", vinesPerAcre: 681 },
-  { key: "8x10", vine: 8, row: 10, label: "8' × 10' (Wide Row)", vinesPerAcre: 545 },
-  { key: "8x12", vine: 8, row: 12, label: "8' × 12' (Mechanical)", vinesPerAcre: 454 },
+  { key: "6x8", vine: 6, row: 8, label: "6' × 8' (High Density)", vinesPerAcre: Math.round(43560 / (6 * 8)) },  // = 908
+  { key: "6x10", vine: 6, row: 10, label: "6' × 10' (Standard)", vinesPerAcre: Math.round(43560 / (6 * 10)) },  // = 726
+  { key: "8x8", vine: 8, row: 8, label: "8' × 8' (Square)", vinesPerAcre: Math.round(43560 / (8 * 8)) },  // = 681
+  { key: "8x10", vine: 8, row: 10, label: "8' × 10' (Wide Row)", vinesPerAcre: Math.round(43560 / (8 * 10)) },  // = 545
+  { key: "8x12", vine: 8, row: 12, label: "8' × 12' (Mechanical)", vinesPerAcre: Math.round(43560 / (8 * 12)) },  // = 454
   { key: "custom", vine: 0, row: 0, label: "Custom Spacing", vinesPerAcre: 0 }
 ];
 
@@ -134,7 +134,7 @@ export const calculateVineyardLayout = (polygonPath, vineSpacing, rowSpacing, or
       numberOfRows,
       vinesPerRow,
       totalVines,
-      vinesPerAcre: acres > 0 ? (totalVines / acres) : 0
+      vinesPerAcre: vineSpacing && rowSpacing ? Math.round(43560 / (vineSpacing * rowSpacing)) : 0
     },
     materials,
     spacing: { vine: vineSpacing, row: rowSpacing },
@@ -240,48 +240,88 @@ const isPointInPolygon = (point, polygon) => {
   return inside;
 };
 
-// Find intersection points where a line crosses the polygon boundary
-const clipLineToPolygon = (lineStart, lineEnd, polygon) => {
-  const segments = [];
-  const numSamples = 200; // Sample points along the line
+// Calculate intersection point between two line segments
+const lineIntersection = (p1, p2, p3, p4) => {
+  const x1 = p1.lng, y1 = p1.lat;
+  const x2 = p2.lng, y2 = p2.lat;
+  const x3 = p3.lng, y3 = p3.lat;
+  const x4 = p4.lng, y4 = p4.lat;
 
-  let currentSegment = null;
+  const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
 
-  for (let i = 0; i <= numSamples; i++) {
-    const t = i / numSamples;
-    const point = {
-      lat: lineStart.lat + t * (lineEnd.lat - lineStart.lat),
-      lng: lineStart.lng + t * (lineEnd.lng - lineStart.lng)
+  if (Math.abs(denom) < 1e-10) return null; // Lines are parallel
+
+  const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+  const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+
+  if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+    return {
+      lat: y1 + t * (y2 - y1),
+      lng: x1 + t * (x2 - x1)
     };
+  }
 
-    const isInside = isPointInPolygon(point, polygon);
+  return null;
+};
 
-    if (isInside) {
-      if (!currentSegment) {
-        currentSegment = [point];
-      } else {
-        currentSegment.push(point);
-      }
-    } else {
-      if (currentSegment && currentSegment.length > 1) {
-        segments.push(currentSegment);
-        currentSegment = null;
-      } else if (currentSegment) {
-        currentSegment = null;
-      }
+// Clip a line to polygon boundary using exact intersection points
+const clipLineToPolygon = (lineStart, lineEnd, polygon) => {
+  // Find all intersection points with polygon edges
+  const intersections = [];
+
+  for (let i = 0; i < polygon.length; i++) {
+    const edgeStart = polygon[i];
+    const edgeEnd = polygon[(i + 1) % polygon.length];
+    const intersection = lineIntersection(lineStart, lineEnd, edgeStart, edgeEnd);
+
+    if (intersection) {
+      // Calculate distance from line start for sorting
+      const dx = intersection.lng - lineStart.lng;
+      const dy = intersection.lat - lineStart.lat;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      intersections.push({ point: intersection, distance });
     }
   }
 
-  // Add final segment if it exists
-  if (currentSegment && currentSegment.length > 1) {
-    segments.push(currentSegment);
+  // Sort intersections by distance from line start
+  intersections.sort((a, b) => a.distance - b.distance);
+
+  // Check if line endpoints are inside polygon
+  const startInside = isPointInPolygon(lineStart, polygon);
+  const endInside = isPointInPolygon(lineEnd, polygon);
+
+  const segments = [];
+
+  if (intersections.length === 0) {
+    // No intersections - line is either completely inside or completely outside
+    if (startInside) {
+      segments.push([lineStart, lineEnd]);
+    }
+  } else {
+    // Build segments from intersection points
+    const points = [lineStart, ...intersections.map(i => i.point), lineEnd];
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const segmentStart = points[i];
+      const segmentEnd = points[i + 1];
+
+      // Check if segment midpoint is inside polygon
+      const midpoint = {
+        lat: (segmentStart.lat + segmentEnd.lat) / 2,
+        lng: (segmentStart.lng + segmentEnd.lng) / 2
+      };
+
+      if (isPointInPolygon(midpoint, polygon)) {
+        segments.push([segmentStart, segmentEnd]);
+      }
+    }
   }
 
   return segments;
 };
 
-// Generate row lines based on polygon and spacing - clipped to polygon boundary
-const generateRowLines = (polygonPath, numberOfRows, rowSpacing, orientation) => {
+// Generate row lines for a field based on spacing and orientation (degree-based)
+const generateRowLines = (polygonPath, rowSpacing, orientation) => {
   if (!polygonPath || polygonPath.length < 3 || !window.google) return [];
 
   // Find bounding box
@@ -298,45 +338,63 @@ const generateRowLines = (polygonPath, numberOfRows, rowSpacing, orientation) =>
   const latDegPerFoot = 1 / 364000;
   const lngDegPerFoot = 1 / 300000;
 
-  // Calculate how many rows will fit across the entire bounding box
-  let maxRowsNeeded;
-  if (orientation === "vertical") {
-    // For vertical orientation, rows span across the width (longitude)
-    const bboxWidthDeg = maxLng - minLng;
-    const bboxWidthFeet = bboxWidthDeg / lngDegPerFoot;
-    maxRowsNeeded = Math.ceil(bboxWidthFeet / rowSpacing) + 2; // +2 for safety margin
-  } else {
-    // For horizontal orientation, rows span across the height (latitude)
-    const bboxHeightDeg = maxLat - minLat;
-    const bboxHeightFeet = bboxHeightDeg / latDegPerFoot;
-    maxRowsNeeded = Math.ceil(bboxHeightFeet / rowSpacing) + 2; // +2 for safety margin
-  }
+  // Convert orientation to radians (0° = North, 90° = East)
+  const angleRad = (orientation * Math.PI) / 180;
 
-  // Generate rows across the entire bounding box
-  for (let i = 0; i < maxRowsNeeded; i++) {
-    let lineStart, lineEnd;
+  // Calculate bounding box dimensions
+  const bboxWidthDeg = maxLng - minLng;
+  const bboxHeightDeg = maxLat - minLat;
+  const bboxWidthFeet = bboxWidthDeg / lngDegPerFoot;
+  const bboxHeightFeet = bboxHeightDeg / latDegPerFoot;
 
-    if (orientation === "vertical") {
-      // Rows run north-south
-      const lngOffset = minLng + (i * rowSpacing * lngDegPerFoot);
-      lineStart = { lat: minLat - 0.001, lng: lngOffset };
-      lineEnd = { lat: maxLat + 0.001, lng: lngOffset };
-    } else {
-      // Rows run east-west
-      const latOffset = minLat + (i * rowSpacing * latDegPerFoot);
-      lineStart = { lat: latOffset, lng: minLng - 0.001 };
-      lineEnd = { lat: latOffset, lng: maxLng + 0.001 };
-    }
+  // Calculate the diagonal size to ensure we cover the entire area when rotated
+  const diagonalFeet = Math.sqrt(bboxWidthFeet * bboxWidthFeet + bboxHeightFeet * bboxHeightFeet);
+  const maxRowsNeeded = Math.ceil(diagonalFeet / rowSpacing) + 2;
 
-    // Clip the line to polygon boundary
+  // Center point of bounding box
+  const centerLat = (minLat + maxLat) / 2;
+  const centerLng = (minLng + maxLng) / 2;
+
+  // Direction perpendicular to rows (this is the direction between rows)
+  const perpAngleRad = angleRad + Math.PI / 2;
+  const perpDirLat = Math.cos(perpAngleRad);
+  const perpDirLng = Math.sin(perpAngleRad);
+
+  // Direction along rows
+  const rowDirLat = Math.cos(angleRad);
+  const rowDirLng = Math.sin(angleRad);
+
+  // Generate rows
+  for (let i = -maxRowsNeeded / 2; i < maxRowsNeeded / 2; i++) {
+    // Calculate offset from center for this row
+    const offsetFeet = i * rowSpacing;
+    const offsetLat = (perpDirLat * offsetFeet) * latDegPerFoot;
+    const offsetLng = (perpDirLng * offsetFeet) * lngDegPerFoot;
+
+    // Calculate row center point
+    const rowCenterLat = centerLat + offsetLat;
+    const rowCenterLng = centerLng + offsetLng;
+
+    // Calculate row endpoints (extend far beyond bounding box)
+    const extensionFeet = diagonalFeet;
+    const extensionLat = (rowDirLat * extensionFeet) * latDegPerFoot;
+    const extensionLng = (rowDirLng * extensionFeet) * lngDegPerFoot;
+
+    const lineStart = {
+      lat: rowCenterLat - extensionLat,
+      lng: rowCenterLng - extensionLng
+    };
+    const lineEnd = {
+      lat: rowCenterLat + extensionLat,
+      lng: rowCenterLng + extensionLng
+    };
+
+    // Clip line to polygon boundary
     const clippedSegments = clipLineToPolygon(lineStart, lineEnd, polygonPath);
 
-    // Add each clipped segment as a separate row
     clippedSegments.forEach(segment => {
       if (segment.length >= 2) {
-        rows.push({
-          path: segment
-        });
+        rows.push({ path: segment });
       }
     });
   }
@@ -372,11 +430,17 @@ export const VineyardLayoutVisualizer = ({
 
   const [mapZoom, setMapZoom] = useState(17);
   const [drawingMode, setDrawingMode] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [tempPath, setTempPath] = useState([]);
   const [editingFieldName, setEditingFieldName] = useState(null);
   const [newFieldName, setNewFieldName] = useState('');
   const [showFieldMenu, setShowFieldMenu] = useState(false);
   const [autocomplete, setAutocomplete] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null); // {x, y, edgeIndex, clickPosition}
+  const [showRotationControls, setShowRotationControls] = useState(false);
+  const [showRows, setShowRows] = useState(false);
+
+  // No caching - match BlockMap.jsx exactly
 
   const mapOptions = {
     mapTypeId: 'satellite',
@@ -400,36 +464,54 @@ export const VineyardLayoutVisualizer = ({
   }, []);
 
   // Update map center when fields change (e.g., when loading saved fields)
+  // Use a ref to track last centered field to prevent infinite loops
+  const lastCenteredFieldRef = useRef(null);
+
   useEffect(() => {
     const firstFieldWithPolygon = fields.find(f => f.polygonPath && f.polygonPath.length > 0);
     if (firstFieldWithPolygon && firstFieldWithPolygon.polygonPath.length > 0) {
-      const polygon = firstFieldWithPolygon.polygonPath;
-      const center = {
-        lat: polygon.reduce((sum, p) => sum + p.lat, 0) / polygon.length,
-        lng: polygon.reduce((sum, p) => sum + p.lng, 0) / polygon.length
-      };
-      setMapCenter(center);
-      if (mapRef.current) {
-        mapRef.current.panTo(center);
-        mapRef.current.setZoom(17);
+      const fieldSignature = `${firstFieldWithPolygon.id}-${firstFieldWithPolygon.polygonPath.length}`;
+
+      // Only update if this is a different field than last time
+      if (lastCenteredFieldRef.current !== fieldSignature) {
+        lastCenteredFieldRef.current = fieldSignature;
+
+        const polygon = firstFieldWithPolygon.polygonPath;
+        const center = {
+          lat: polygon.reduce((sum, p) => sum + p.lat, 0) / polygon.length,
+          lng: polygon.reduce((sum, p) => sum + p.lng, 0) / polygon.length
+        };
+        setMapCenter(center);
+        if (mapRef.current) {
+          mapRef.current.panTo(center);
+          mapRef.current.setZoom(17);
+        }
       }
     }
   }, [fields]);
 
-  // Calculate rows for all visible fields
+  // Calculate rows for all fields - EXACTLY matching BlockMap.jsx
+  // Also include tempPath for real-time editing
   const allFieldsRows = useMemo(() => {
     const rowsMap = {};
     fields.forEach(field => {
-      if (field.visible && field.polygonPath && field.polygonPath.length >= 3) {
-        const orientation = field.orientation || defaultOrientation;
-        const layout = calculateVineyardLayout(field.polygonPath, vineSpacing, rowSpacing, orientation);
-        if (layout) {
-          rowsMap[field.id] = generateRowLines(field.polygonPath, layout.vineLayout.numberOfRows, rowSpacing, orientation);
+      // Use tempPath if we're editing this field, otherwise use saved polygonPath
+      const isEditingThisField = editMode && field.id === currentFieldId;
+      const pathToUse = isEditingThisField && tempPath.length >= 3 ? tempPath : field.polygonPath;
+
+      if (pathToUse && pathToUse.length >= 3) {
+        // Convert orientation to degrees
+        let orientationDeg;
+        if (typeof field.orientation === 'number') {
+          orientationDeg = field.orientation;
+        } else {
+          orientationDeg = field.orientation === "vertical" ? 0 : 90;
         }
+        rowsMap[field.id] = generateRowLines(pathToUse, rowSpacing, orientationDeg);
       }
     });
     return rowsMap;
-  }, [fields, vineSpacing, rowSpacing, defaultOrientation]);
+  }, [fields, rowSpacing, editMode, currentFieldId, tempPath]);
 
   const handleMapClick = (e) => {
     if (!drawingMode) return;
@@ -501,7 +583,136 @@ export const VineyardLayoutVisualizer = ({
   const handleCancelDrawing = () => {
     setTempPath([]);
     setDrawingMode(false);
+    setEditMode(false);
   };
+
+  const handleCompletePolygon = () => {
+    if (!currentFieldId || tempPath.length < 3) return;
+
+    // Update the field's polygonPath with the edited boundary
+    const updatedFields = fields.map(field =>
+      field.id === currentFieldId
+        ? { ...field, polygonPath: [...tempPath] }
+        : field
+    );
+
+    onFieldsChange(updatedFields);
+    setTempPath([]);
+    setDrawingMode(false);
+    setEditMode(false);
+  };
+
+  const handleStartEditing = () => {
+    if (currentFieldId && currentField && currentField.polygonPath) {
+      setTempPath([...currentField.polygonPath]);
+      setEditMode(true);
+      setDrawingMode(true);
+    }
+  };
+
+  const handleVertexDrag = (index, newPosition) => {
+    const newPath = [...tempPath];
+    newPath[index] = {
+      lat: newPosition.lat(),
+      lng: newPosition.lng()
+    };
+    setTempPath(newPath);
+  };
+
+  const handlePolygonRightClick = (e) => {
+    if (!drawingMode || tempPath.length < 2) return;
+
+    e.stop(); // Prevent default map context menu
+
+    const clickPosition = {
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng()
+    };
+
+    // Find which edge was clicked
+    let closestEdgeIndex = 0;
+    let closestDistance = Infinity;
+
+    for (let i = 0; i < tempPath.length; i++) {
+      const nextIndex = (i + 1) % tempPath.length;
+      const edgeStart = tempPath[i];
+      const edgeEnd = tempPath[nextIndex];
+
+      // Calculate distance from click to edge
+      const distance = calculateDistanceToEdge(clickPosition, edgeStart, edgeEnd);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestEdgeIndex = i;
+      }
+    }
+
+    // Get screen position for context menu
+    const projection = mapRef.current.getProjection();
+    if (projection) {
+      const scale = Math.pow(2, mapRef.current.getZoom());
+      const worldCoordinate = projection.fromLatLngToPoint(e.latLng);
+      const pixelCoordinate = new window.google.maps.Point(
+        worldCoordinate.x * scale,
+        worldCoordinate.y * scale
+      );
+
+      setContextMenu({
+        x: e.domEvent.clientX,
+        y: e.domEvent.clientY,
+        edgeIndex: closestEdgeIndex,
+        clickPosition
+      });
+    }
+  };
+
+  const handleAddPointOnEdge = () => {
+    if (!contextMenu) return;
+
+    const newPath = [...tempPath];
+    newPath.splice(contextMenu.edgeIndex + 1, 0, contextMenu.clickPosition);
+    setTempPath(newPath);
+    setContextMenu(null);
+  };
+
+  // Helper function to calculate distance from point to line segment
+  const calculateDistanceToEdge = (point, edgeStart, edgeEnd) => {
+    const A = point.lat - edgeStart.lat;
+    const B = point.lng - edgeStart.lng;
+    const C = edgeEnd.lat - edgeStart.lat;
+    const D = edgeEnd.lng - edgeStart.lng;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+
+    if (lenSq !== 0) param = dot / lenSq;
+
+    let xx, yy;
+
+    if (param < 0) {
+      xx = edgeStart.lat;
+      yy = edgeStart.lng;
+    } else if (param > 1) {
+      xx = edgeEnd.lat;
+      yy = edgeEnd.lng;
+    } else {
+      xx = edgeStart.lat + param * C;
+      yy = edgeStart.lng + param * D;
+    }
+
+    const dx = point.lat - xx;
+    const dy = point.lng - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Close context menu when clicking anywhere
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenu(null);
+    if (contextMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu]);
 
   const handleAddField = () => {
     const newField = {
@@ -536,6 +747,29 @@ export const VineyardLayoutVisualizer = ({
     );
     onFieldsChange(updatedFields);
     setEditingFieldName(null);
+  };
+
+  const handleSetOrientation = (angle) => {
+    if (currentFieldId) {
+      const updatedFields = fields.map(field =>
+        field.id === currentFieldId ? { ...field, orientation: angle } : field
+      );
+      onFieldsChange(updatedFields);
+    }
+  };
+
+  const handleRotateRows = () => {
+    if (currentFieldId && currentField) {
+      let currentOrientation;
+      if (typeof currentField.orientation === 'number') {
+        currentOrientation = currentField.orientation;
+      } else {
+        currentOrientation = currentField.orientation === "vertical" ? 0 : 90;
+      }
+      // Toggle between 0 (north-south) and 90 (east-west)
+      const newOrientation = currentOrientation === 0 ? 90 : 0;
+      handleSetOrientation(newOrientation);
+    }
   };
 
   const handleGoToField = (field) => {
@@ -725,8 +959,15 @@ export const VineyardLayoutVisualizer = ({
         {currentField && currentField.polygonPath && currentField.polygonPath.length > 0 ? (
           <>
             <button
-              onClick={handleStartDrawing}
+              onClick={handleStartEditing}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Edit3 className="w-4 h-4" />
+              Edit Field
+            </button>
+            <button
+              onClick={handleStartDrawing}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
             >
               <Edit3 className="w-4 h-4" />
               Redraw Boundary
@@ -738,6 +979,30 @@ export const VineyardLayoutVisualizer = ({
               <Trash2 className="w-4 h-4" />
               Clear
             </button>
+            <button
+              onClick={() => setShowRows(!showRows)}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                showRows
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+              }`}
+            >
+              <Grid className="w-4 h-4" />
+              {showRows ? 'Hide Rows' : 'Show Rows'}
+            </button>
+            {showRows && (
+              <button
+                onClick={() => setShowRotationControls(!showRotationControls)}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                  showRotationControls
+                    ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                }`}
+              >
+                <RotateCw className="w-4 h-4" />
+                Rotate Rows
+              </button>
+            )}
           </>
         ) : !drawingMode && (
           <button
@@ -749,30 +1014,71 @@ export const VineyardLayoutVisualizer = ({
         )}
       </div>
 
-      {/* Cancel button when drawing */}
+      {/* Action buttons when drawing/editing */}
       {drawingMode && (
-        <button
-          onClick={handleCancelDrawing}
-          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-        >
-          Cancel Drawing
-        </button>
+        <div className="flex gap-3">
+          {editMode ? (
+            <>
+              <button
+                onClick={handleCompletePolygon}
+                className="px-6 py-2 bg-vine-green-500 text-white rounded-lg hover:bg-vine-green-600 transition-colors font-semibold flex items-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                Save Changes
+              </button>
+              <button
+                onClick={handleCancelDrawing}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={handleCancelDrawing}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Cancel Drawing
+            </button>
+          )}
+        </div>
       )}
 
-      {/* Drawing Instructions */}
+      {/* Drawing/Editing Instructions */}
       {drawingMode && (
         <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-          <p className="font-medium text-blue-900">
-            Click on the map to add points. Click near the first point to complete the polygon.
-          </p>
-          <p className="text-sm text-blue-700 mt-1">
-            Points placed: {tempPath.length}
-          </p>
+          {editMode ? (
+            <>
+              <p className="font-medium text-blue-900">
+                Editing Field Boundary
+              </p>
+              <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+                <li><strong>Drag vertices</strong> to adjust the boundary</li>
+                <li><strong>Right-click</strong> on edges to add new points</li>
+                <li>Click "Save Changes" when done</li>
+              </ul>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-blue-900">
+                Drawing New Field
+              </p>
+              <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+                <li><strong>Click</strong> on the map to add points</li>
+                <li><strong>Drag vertices</strong> to adjust positions</li>
+                <li><strong>Right-click</strong> on edges to add points</li>
+                <li><strong>Click near</strong> the first point to complete</li>
+              </ul>
+              <p className="text-sm text-blue-700 mt-2">
+                Points placed: {tempPath.length}
+              </p>
+            </>
+          )}
         </div>
       )}
 
       {/* Google Map */}
-      <div className="h-[600px] rounded-xl overflow-hidden shadow-lg border-2 border-gray-200">
+      <div className="relative h-[600px] rounded-xl overflow-hidden shadow-lg border-2 border-gray-200">
         <GoogleMap
           mapContainerStyle={{ width: '100%', height: '100%' }}
           center={displayCenter}
@@ -781,64 +1087,237 @@ export const VineyardLayoutVisualizer = ({
           onClick={handleMapClick}
           onLoad={(map) => { mapRef.current = map; }}
         >
-          {/* Render all visible field polygons */}
-          {fields.map(field => (
-            field.visible && field.polygonPath && field.polygonPath.length >= 3 && (
-              <React.Fragment key={field.id}>
-                <Polygon
-                  paths={field.polygonPath}
-                  options={{
-                    fillColor: field.id === currentFieldId ? '#10b981' : '#6b7280',
-                    fillOpacity: field.id === currentFieldId ? 0.2 : 0.1,
-                    strokeColor: field.id === currentFieldId ? '#059669' : '#4b5563',
-                    strokeOpacity: 0.8,
-                    strokeWeight: field.id === currentFieldId ? 3 : 2,
-                  }}
-                />
-                {/* Render rows for this field */}
-                {allFieldsRows[field.id]?.map((row, index) => (
-                  <Polyline
-                    key={`${field.id}-row-${index}`}
-                    path={row.path}
-                    options={{
-                      strokeColor: field.id === currentFieldId ? '#ffff00' : '#cccc00',
-                      strokeOpacity: field.id === currentFieldId ? 0.9 : 0.5,
-                      strokeWeight: 2,
-                    }}
-                  />
-                ))}
-              </React.Fragment>
-            )
-          ))}
+          {/* Render all visible field polygons (except when editing current field) */}
+          {fields.map(field => {
+            // Skip rendering saved polygon if we're editing this field
+            const isEditingThisField = editMode && field.id === currentFieldId;
+            if (isEditingThisField) return null;
 
-          {/* Temporary drawing path */}
-          {tempPath.length > 0 && (
-            <>
-              <Polyline
-                path={tempPath}
+            return field.visible && field.polygonPath && field.polygonPath.length >= 3 && (
+              <Polygon
+                key={field.id}
+                paths={field.polygonPath}
                 options={{
-                  strokeColor: '#3b82f6',
+                  fillColor: field.id === currentFieldId ? '#10b981' : '#6b7280',
+                  fillOpacity: field.id === currentFieldId ? 0.2 : 0.1,
+                  strokeColor: field.id === currentFieldId ? '#059669' : '#4b5563',
                   strokeOpacity: 0.8,
-                  strokeWeight: 3,
+                  strokeWeight: field.id === currentFieldId ? 3 : 2,
                 }}
               />
+            );
+          })}
+
+          {/* Render rows for all fields - EXACTLY matching BlockMap.jsx pattern */}
+          {showRows && fields.map(field => {
+            const rows = allFieldsRows[field.id];
+            if (!rows) return null;
+
+            const isCurrentField = field.id === currentFieldId;
+
+            return rows.map((row, index) => (
+              <Polyline
+                key={`${field.id}-row-${index}`}
+                path={row.path}
+                options={{
+                  strokeColor: isCurrentField ? '#ffff00' : '#cccc00',
+                  strokeOpacity: isCurrentField ? 0.9 : 0.5,
+                  strokeWeight: 2,
+                }}
+              />
+            ));
+          })}
+
+          {/* Temporary drawing/editing path */}
+          {tempPath.length > 0 && (
+            <>
+              {/* Show filled polygon when we have enough points */}
+              {tempPath.length >= 3 && (
+                <Polygon
+                  paths={tempPath}
+                  options={{
+                    fillColor: '#10b981',
+                    fillOpacity: 0.2,
+                    strokeColor: '#10b981',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 3,
+                    clickable: true,
+                  }}
+                  onRightClick={handlePolygonRightClick}
+                />
+              )}
+
+              {/* Show polyline for incomplete polygons */}
+              {tempPath.length < 3 && (
+                <Polyline
+                  path={tempPath}
+                  options={{
+                    strokeColor: '#10b981',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 3,
+                    clickable: true,
+                  }}
+                  onRightClick={handlePolygonRightClick}
+                />
+              )}
+
+              {/* Draggable vertex markers */}
               {tempPath.map((point, index) => (
                 <Marker
                   key={index}
                   position={point}
+                  draggable={true}
+                  onDrag={(e) => handleVertexDrag(index, e.latLng)}
                   icon={{
                     path: window.google.maps.SymbolPath.CIRCLE,
-                    scale: 6,
-                    fillColor: '#3b82f6',
+                    scale: 7,
+                    fillColor: '#10b981',
                     fillOpacity: 1,
                     strokeColor: '#fff',
                     strokeWeight: 2,
+                  }}
+                  options={{
+                    cursor: 'move'
                   }}
                 />
               ))}
             </>
           )}
         </GoogleMap>
+
+        {/* Context Menu for Adding Points */}
+        {contextMenu && (
+          <div
+            className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-300 py-1 min-w-[160px]"
+            style={{
+              top: `${contextMenu.y}px`,
+              left: `${contextMenu.x}px`
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleAddPointOnEdge}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Point Here
+            </button>
+          </div>
+        )}
+
+        {/* Rotation Controls Panel */}
+        {showRotationControls && currentFieldId && currentField && currentField.polygonPath && currentField.polygonPath.length >= 3 && (() => {
+          let currentOrientation;
+          if (typeof currentField.orientation === 'number') {
+            currentOrientation = currentField.orientation;
+          } else {
+            currentOrientation = currentField.orientation === "vertical" ? 0 : 90;
+          }
+
+          return (
+            <div className="absolute bottom-4 right-4 z-20 bg-white rounded-xl shadow-2xl border border-gray-300 p-4 w-[340px]">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Row Rotation</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{currentField.name}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRotationControls(false)}
+                  className="p-1.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Current Angle Display */}
+              <div className="mb-5 p-4 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">Current Angle:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl font-bold text-yellow-700">{currentOrientation.toFixed(1)}°</span>
+                    <div className="text-xs text-gray-600">
+                      {currentOrientation === 0 && '(North)'}
+                      {currentOrientation === 45 && '(NE)'}
+                      {currentOrientation === 90 && '(East)'}
+                      {currentOrientation === 135 && '(SE)'}
+                      {currentOrientation === 180 && '(South)'}
+                      {currentOrientation === 225 && '(SW)'}
+                      {currentOrientation === 270 && '(West)'}
+                      {currentOrientation === 315 && '(NW)'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Angle Slider */}
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Drag to rotate (0° = North, 90° = East, 0.25° increments)
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="359.75"
+                  step="0.25"
+                  value={currentOrientation}
+                  onChange={(e) => handleSetOrientation(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(to right, #fbbf24 0%, #f59e0b ${(currentOrientation / 359.75) * 100}%, #e5e7eb ${(currentOrientation / 359.75) * 100}%, #e5e7eb 100%)`
+                  }}
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1 px-1">
+                  <span>0° N</span>
+                  <span>90° E</span>
+                  <span>180° S</span>
+                  <span>270° W</span>
+                  <span>359.75°</span>
+                </div>
+              </div>
+
+              {/* Preset Buttons */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Quick Presets:
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { angle: 0, label: 'N', desc: 'North' },
+                    { angle: 45, label: 'NE', desc: 'Northeast' },
+                    { angle: 90, label: 'E', desc: 'East' },
+                    { angle: 135, label: 'SE', desc: 'Southeast' },
+                    { angle: 180, label: 'S', desc: 'South' },
+                    { angle: 225, label: 'SW', desc: 'Southwest' },
+                    { angle: 270, label: 'W', desc: 'West' },
+                    { angle: 315, label: 'NW', desc: 'Northwest' },
+                  ].map(({ angle, label, desc }) => (
+                    <button
+                      key={angle}
+                      type="button"
+                      onClick={() => {
+                        handleSetOrientation(angle);
+                        // Auto-close panel after preset selection with brief delay to show change
+                        setTimeout(() => setShowRotationControls(false), 300);
+                      }}
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        currentOrientation === angle
+                          ? 'bg-yellow-500 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-yellow-100 hover:text-yellow-700'
+                      }`}
+                      title={`${desc} (${angle}°)`}
+                    >
+                      {label}
+                      <div className="text-xs font-normal opacity-80">{angle}°</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Legend */}
@@ -867,16 +1346,28 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
   const [trellisSystem, setTrellisSystem] = useState(() => currentLayout?.trellisSystem || "VSP");
 
   // Sync with currentLayout when it changes (when loading a plan)
+  // Only update if values actually change to prevent infinite loops
+  // IMPORTANT: Only depend on currentLayout to prevent circular updates when user changes spacing
   useEffect(() => {
     if (currentLayout) {
-      if (currentLayout.spacingOption) setSpacingOption(currentLayout.spacingOption);
-      if (currentLayout.customVineSpacing) setCustomVineSpacing(currentLayout.customVineSpacing);
-      if (currentLayout.customRowSpacing) setCustomRowSpacing(currentLayout.customRowSpacing);
-      if (currentLayout.rowOrientation === "vertical" || currentLayout.rowOrientation === "horizontal") {
+      if (currentLayout.spacingOption && currentLayout.spacingOption !== spacingOption) {
+        setSpacingOption(currentLayout.spacingOption);
+      }
+      if (currentLayout.customVineSpacing && currentLayout.customVineSpacing !== customVineSpacing) {
+        setCustomVineSpacing(currentLayout.customVineSpacing);
+      }
+      if (currentLayout.customRowSpacing && currentLayout.customRowSpacing !== customRowSpacing) {
+        setCustomRowSpacing(currentLayout.customRowSpacing);
+      }
+      if ((currentLayout.rowOrientation === "vertical" || currentLayout.rowOrientation === "horizontal") &&
+          currentLayout.rowOrientation !== defaultOrientation) {
         setDefaultOrientation(currentLayout.rowOrientation);
       }
-      if (currentLayout.trellisSystem) setTrellisSystem(currentLayout.trellisSystem);
+      if (currentLayout.trellisSystem && currentLayout.trellisSystem !== trellisSystem) {
+        setTrellisSystem(currentLayout.trellisSystem);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLayout]);
 
   // Initialize fields from saved data or create default
@@ -900,6 +1391,9 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
   const currentField = fields.find(f => f.id === currentFieldId);
   const lastFieldsRef = useRef(JSON.stringify(fields));
 
+  // Track if we're syncing FROM parent to prevent circular updates
+  const isSyncingFromParentRef = useRef(false);
+
   // Sync fields when savedFields changes (e.g., when loading a different plan)
   const lastSavedSignatureRef = useRef(JSON.stringify(savedFields ?? []));
 
@@ -917,6 +1411,8 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
     const normalizedSignature = JSON.stringify(normalized);
     lastFieldsRef.current = normalizedSignature;
 
+    // Mark that we're syncing FROM parent to prevent calling onFieldsChange
+    isSyncingFromParentRef.current = true;
     setFields(normalized);
 
     if (normalized.length > 0 && !normalized.some(f => f.id === currentFieldId)) {
@@ -1008,7 +1504,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
       vineLayout: {
         numberOfRows: totalRows,
         totalVines: totalVines,
-        vinesPerAcre: totalAcres > 0 ? (totalVines / totalAcres) : 0
+        vinesPerAcre: vineSpacing && rowSpacing ? Math.round(43560 / (vineSpacing * rowSpacing)) : 0
       },
       materials: aggregateMaterials,
       spacing: { vine: vineSpacing, row: rowSpacing },
@@ -1037,7 +1533,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
         onAcresChange(newAcres);
       }
     }
-  }, [aggregateLayout]);
+  }, [aggregateLayout, onAcresChange]);
 
   // Notify parent component of layout changes
   const lastLayoutRef = useRef(null);
@@ -1056,7 +1552,8 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
         }
       }
     }
-  }, [aggregateLayout, materialCosts, onLayoutChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aggregateLayout, materialCosts]);
 
   // Force layout calculation on mount if we have saved fields
   useEffect(() => {
@@ -1068,6 +1565,12 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
 
   // Notify parent of fields changes (for saving)
   useEffect(() => {
+    // Skip if we're syncing FROM parent to prevent circular updates
+    if (isSyncingFromParentRef.current) {
+      isSyncingFromParentRef.current = false;
+      return;
+    }
+
     if (onFieldsChange) {
       const fieldsString = JSON.stringify(fields);
       if (lastFieldsRef.current !== fieldsString) {
@@ -1075,6 +1578,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
         onFieldsChange(fields);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fields]);
 
   // Sync config changes to parent - safe now because parent preserves calculatedLayout
@@ -1088,7 +1592,8 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
         onConfigChange(config);
       }
     }
-  }, [spacingOption, customVineSpacing, customRowSpacing, defaultOrientation, trellisSystem, onConfigChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spacingOption, customVineSpacing, customRowSpacing, defaultOrientation, trellisSystem]);
 
   const currentFieldLayout = currentFieldId ? fieldLayouts[currentFieldId] : null;
 

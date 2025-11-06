@@ -793,12 +793,18 @@ export function BlockManagement() {
     if (vineyardLayout.savedFields && Array.isArray(vineyardLayout.savedFields)) {
       console.log('✅ Found fields at vineyardLayout.savedFields');
       fields = vineyardLayout.savedFields;
+    } else if (st.vineyardFields && Array.isArray(st.vineyardFields)) {
+      console.log('✅ Found fields at st.vineyardFields');
+      fields = st.vineyardFields;
     } else if (st.savedFields && Array.isArray(st.savedFields)) {
       console.log('✅ Found fields at st.savedFields');
       fields = st.savedFields;
     } else if (planData.savedFields && Array.isArray(planData.savedFields)) {
       console.log('✅ Found fields at planData.savedFields');
       fields = planData.savedFields;
+    } else if (planData.vineyardFields && Array.isArray(planData.vineyardFields)) {
+      console.log('✅ Found fields at planData.vineyardFields');
+      fields = planData.vineyardFields;
     } else if (vineyardLayout.fields && Array.isArray(vineyardLayout.fields)) {
       console.log('✅ Found fields at vineyardLayout.fields');
       fields = vineyardLayout.fields;
@@ -1591,13 +1597,22 @@ export function BlockManagement() {
               }
             }}
             onBlockUpdate={async (blockId, blockData) => {
+              // Optimistically update local state first for immediate UI feedback
+              setBlocks(prevBlocks =>
+                prevBlocks.map(block =>
+                  block.id === blockId ? { ...block, ...blockData } : block
+                )
+              );
+
+              // Then update database in background
               const { error } = await updateVineyardBlock(blockId, blockData);
-              if (!error) {
-                await loadBlocks();
-                setAutoStartDrawing(false);
-              } else {
+              if (error) {
+                // If database update fails, reload to get correct state
                 alert(`Error updating block: ${error.message}`);
+                await loadBlocks();
               }
+              // Don't reload on success - we already updated local state
+              setAutoStartDrawing(false);
             }}
             selectedBlockId={selectedBlockId}
             onBlockSelect={setSelectedBlockId}

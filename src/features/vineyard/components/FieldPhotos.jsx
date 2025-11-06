@@ -231,7 +231,7 @@ export function FieldPhotos({ fieldId, fieldName, onClose }) {
             </Button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-all hover:scale-110"
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all hover:scale-110 border border-white/20"
             >
               <X className="w-6 h-6 text-white" />
             </button>
@@ -422,7 +422,7 @@ export function FieldPhotos({ fieldId, fieldName, onClose }) {
         >
           <button
             onClick={() => setSelectedImage(null)}
-            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors border border-white/20"
           >
             <X className="w-6 h-6 text-white" />
           </button>

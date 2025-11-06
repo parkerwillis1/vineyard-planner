@@ -104,7 +104,7 @@ export function TaskDrawer({ task, blocks, onClose, onUpdate }) {
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors border border-white/20"
           >
             <X className="w-6 h-6 text-white" />
           </button>
