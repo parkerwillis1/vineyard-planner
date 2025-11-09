@@ -122,7 +122,7 @@ svg [role="button"]:focus {
   scrollbar-width: none;  /* Firefox */
 }
 
-/* Toast animations */
+/* Toast and menu animations */
 @keyframes slide-in-right {
   from {
     transform: translateX(100%);
@@ -136,4 +136,30 @@ svg [role="button"]:focus {
 
 .animate-slide-in-right {
   animation: slide-in-right 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.3s ease-out;
 }

@@ -647,12 +647,12 @@ export default function SiteLayout() {
           <>
             {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-fade-in"
               onClick={() => setMobileMenuOpen(false)}
             />
 
             {/* Slide-out Panel */}
-            <div className="fixed top-16 right-0 bottom-0 w-72 bg-white shadow-2xl z-50 lg:hidden overflow-y-auto">
+            <div className="fixed top-16 right-0 bottom-0 w-72 bg-white shadow-2xl z-50 lg:hidden overflow-y-auto animate-slideInRight">
               <nav className="p-4 space-y-1">
                 {!user ? (
                   <>
