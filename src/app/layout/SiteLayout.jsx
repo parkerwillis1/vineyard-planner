@@ -5,7 +5,7 @@ import { supabase } from "@/shared/lib/supabaseClient";
 import { useSubscription } from "@/shared/hooks/useSubscription";
 import { MODULES } from "@/shared/config/modules";
 import * as Icons from "lucide-react";
-import { ChevronDown, BookOpen, DollarSign, HelpCircle, Mail, FileText, Lightbulb, Briefcase, BookMarked } from "lucide-react";
+import { ChevronDown, BookOpen, DollarSign, HelpCircle, Mail, FileText, Lightbulb, Briefcase, BookMarked, Menu, X } from "lucide-react";
 
 export default function SiteLayout() {
   const { user } = useAuth() || {};
@@ -19,6 +19,7 @@ export default function SiteLayout() {
   const [showAboutMenu, setShowAboutMenu] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const toolsMenuRef = useRef(null);
   const resourcesMenuRef = useRef(null);
   const aboutMenuRef = useRef(null);
@@ -68,6 +69,18 @@ export default function SiteLayout() {
     }
   }, [showToolsMenu, showResourcesMenu, showAboutMenu]);
 
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [mobileMenuOpen]);
+
   const handleModuleClick = (module) => {
     console.log('🔍 handleModuleClick called for:', module.id, module);
 
@@ -110,8 +123,8 @@ export default function SiteLayout() {
               <img src="/VinePioneerLongV1.png" alt="Vine Pioneer" className="h-10" />
             </Link>
 
-            {/* Left nav */}
-            <nav className="flex items-center gap-8 ml-12">
+            {/* Left nav - Desktop Only */}
+            <nav className="hidden lg:flex items-center gap-8 ml-12">
               {!user ? (
                 <>
                   {/* GUEST NAVIGATION: Home, Products, Pricing, Resources, About */}
@@ -507,21 +520,34 @@ export default function SiteLayout() {
 
             {/* Right side */}
             <div className="ml-auto flex items-center gap-4">
+              {/* Hamburger Menu Button - Mobile & Tablet */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 rounded-lg hover:bg-teal-50 transition-colors"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? (
+                  <X className="w-6 h-6 text-gray-900" />
+                ) : (
+                  <Menu className="w-6 h-6 text-gray-900" />
+                )}
+              </button>
 
+              {/* Desktop Right Side Items */}
               {user ? (
                 <>
                   {/* Upgrade button if not on highest tier */}
                   {subscription.tier !== 'enterprise' && (
-                    <Link 
+                    <Link
                       to="/pricing"
-                      className="px-4 py-2 bg-gradient-to-r from-vine-green-500 to-vine-green-600 text-white rounded-lg font-semibold text-sm hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+                      className="hidden lg:flex px-4 py-2 bg-gradient-to-r from-vine-green-500 to-vine-green-600 text-white rounded-lg font-semibold text-sm hover:shadow-lg transition-all duration-200 items-center gap-2"
                     >
                       <span>Upgrade</span>
                     </Link>
                   )}
 
                   {/* Account Menu */}
-                  <div className="relative">
+                  <div className="relative hidden lg:block">
                     <button
                       onClick={() => setShowAccountMenu(!showAccountMenu)}
                       className="text-gray-700 hover:text-vine-green-500 font-medium text-base"
@@ -608,13 +634,177 @@ export default function SiteLayout() {
                   </div>
                 </>
               ) : (
-                <Link to="/signin" className="text-vine-green-500 hover:underline font-medium text-base">
+                <Link to="/signin" className="hidden lg:block text-vine-green-500 hover:underline font-medium text-base">
                   Sign In
                 </Link>
               )}
             </div>
           </div>
         </div>
+
+        {/* Mobile Slide-out Menu */}
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+
+            {/* Slide-out Panel */}
+            <div className="fixed top-16 right-0 bottom-0 w-72 bg-white shadow-2xl z-50 lg:hidden overflow-y-auto">
+              <nav className="p-4 space-y-1">
+                {!user ? (
+                  <>
+                    {/* Guest Navigation */}
+                    <NavLink
+                      to="/"
+                      end
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Home
+                    </NavLink>
+                    <NavLink
+                      to="/products"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Products
+                    </NavLink>
+                    <NavLink
+                      to="/pricing"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Pricing
+                    </NavLink>
+                    <NavLink
+                      to="/docs"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Documentation
+                    </NavLink>
+                    <NavLink
+                      to="/about"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      About
+                    </NavLink>
+
+                    {/* Mobile Sign In Button */}
+                    <div className="pt-4 mt-4 border-t border-gray-200">
+                      <Link
+                        to="/signin"
+                        className="block w-full text-center px-4 py-2 text-sm font-medium text-teal-700 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Sign In
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Authenticated Navigation */}
+                    <NavLink
+                      to="/planner"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Planner
+                    </NavLink>
+                    <NavLink
+                      to="/vineyard"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Vineyard
+                    </NavLink>
+                    <NavLink
+                      to="/plans"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      My Plans
+                    </NavLink>
+                    <NavLink
+                      to="/docs"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Documentation
+                    </NavLink>
+                    <NavLink
+                      to="/products"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Products
+                    </NavLink>
+                    <NavLink
+                      to="/pricing"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Pricing
+                    </NavLink>
+                    <NavLink
+                      to="/about"
+                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      About
+                    </NavLink>
+
+                    {/* Account Section */}
+                    <div className="pt-4 mt-4 border-t border-gray-200 space-y-1">
+                      <div className="px-3 py-2 text-xs text-gray-500">
+                        Current Plan: <span className="font-semibold text-vine-green-700 capitalize">{subscription.tier}</span>
+                      </div>
+                      {subscription.tier !== 'enterprise' && (
+                        <Link
+                          to="/pricing"
+                          className="block px-3 py-2 text-sm text-vine-green-600 hover:bg-teal-50 rounded-md transition-colors font-medium"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Upgrade Plan
+                        </Link>
+                      )}
+                      <Link
+                        to="/account/settings"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-md transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Account Settings
+                      </Link>
+                      <button
+                        onClick={async () => {
+                          setMobileMenuOpen(false);
+                          try {
+                            await supabase.auth.signOut();
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            window.location.replace('/');
+                          } catch (error) {
+                            console.error('Sign out error:', error);
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            window.location.replace('/');
+                          }
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  </>
+                )}
+              </nav>
+            </div>
+          </>
+        )}
       </header>
 
       {/* Main Content */}
