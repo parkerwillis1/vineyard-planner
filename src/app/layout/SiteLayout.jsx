@@ -642,17 +642,17 @@ export default function SiteLayout() {
           </div>
         </div>
 
-        {/* Mobile Slide-out Menu */}
-        {mobileMenuOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-fade-in"
-              onClick={() => setMobileMenuOpen(false)}
-            />
+      {/* Mobile Slide-out Menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] lg:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileMenuOpen(false)}
+          />
 
-            {/* Slide-out Panel */}
-            <div className="fixed top-16 right-0 bottom-0 w-72 bg-white shadow-2xl z-50 lg:hidden overflow-y-auto animate-slideInRight">
+          {/* Slide-out Panel */}
+          <div className="absolute top-16 right-0 bottom-0 w-72 bg-white shadow-2xl overflow-y-auto">
               <nav className="p-4 space-y-1">
                 {!user ? (
                   <>
@@ -803,7 +803,7 @@ export default function SiteLayout() {
                 )}
               </nav>
             </div>
-          </>
+          </div>
         )}
       </header>
 
