@@ -20,6 +20,11 @@ export default function SiteLayout() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Mobile menu sections collapsed state
+  const [mobileToolsExpanded, setMobileToolsExpanded] = useState(true);
+  const [mobileResourcesExpanded, setMobileResourcesExpanded] = useState(false);
+  const [mobileAboutExpanded, setMobileAboutExpanded] = useState(false);
   const toolsMenuRef = useRef(null);
   const resourcesMenuRef = useRef(null);
   const aboutMenuRef = useRef(null);
@@ -641,22 +646,27 @@ export default function SiteLayout() {
             </div>
           </div>
         </div>
+      </header>
 
-      {/* Mobile Slide-out Menu */}
+      {/* Mobile Slide-out Menu - OUTSIDE HEADER */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] lg:hidden">
+        <>
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/50"
+            className="fixed left-0 right-0 bottom-0 bg-black/50 z-[60] lg:hidden"
+            style={{ top: '64px' }}
             onClick={() => setMobileMenuOpen(false)}
           />
 
           {/* Slide-out Panel */}
-          <div className="absolute top-16 right-0 bottom-0 w-72 bg-white shadow-2xl overflow-y-auto">
+          <div
+            className="fixed right-0 bottom-0 w-[85vw] max-w-sm bg-white shadow-2xl z-[70] lg:hidden overflow-y-auto animate-slideInRight"
+            style={{ top: '64px' }}
+          >
               <nav className="p-4 space-y-1">
                 {!user ? (
                   <>
-                    {/* Guest Navigation */}
+                    {/* Guest Navigation - Matches desktop: Home, Products, Pricing, Resources, About */}
                     <NavLink
                       to="/"
                       end
@@ -679,13 +689,57 @@ export default function SiteLayout() {
                     >
                       Pricing
                     </NavLink>
-                    <NavLink
-                      to="/docs"
-                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Documentation
-                    </NavLink>
+
+                    {/* Resources Section - Collapsible */}
+                    <div className="pt-3">
+                      <button
+                        onClick={() => setMobileResourcesExpanded(!mobileResourcesExpanded)}
+                        className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700"
+                      >
+                        Resources
+                        <ChevronDown className={`w-4 h-4 transition-transform ${mobileResourcesExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      {mobileResourcesExpanded && (
+                        <>
+                          <NavLink
+                            to="/docs"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Documentation
+                          </NavLink>
+                          <NavLink
+                            to="/faq"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            FAQs
+                          </NavLink>
+                          <NavLink
+                            to="/contact"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Contact Us
+                          </NavLink>
+                          <NavLink
+                            to="/blog"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Blog
+                          </NavLink>
+                          <NavLink
+                            to="/tips"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Planning Tips
+                          </NavLink>
+                        </>
+                      )}
+                    </div>
+
                     <NavLink
                       to="/about"
                       className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
@@ -707,28 +761,47 @@ export default function SiteLayout() {
                   </>
                 ) : (
                   <>
-                    {/* Authenticated Navigation */}
-                    <NavLink
-                      to="/planner"
-                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Planner
-                    </NavLink>
-                    <NavLink
-                      to="/vineyard"
-                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Vineyard
-                    </NavLink>
-                    <NavLink
-                      to="/plans"
-                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      My Plans
-                    </NavLink>
+                    {/* Authenticated Navigation - Matches desktop: Tools, Documentation, Resources, About */}
+
+                    {/* Tools Section - Collapsible */}
+                    <div>
+                      <button
+                        onClick={() => setMobileToolsExpanded(!mobileToolsExpanded)}
+                        className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700"
+                      >
+                        Tools
+                        <ChevronDown className={`w-4 h-4 transition-transform ${mobileToolsExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      {mobileToolsExpanded && (
+                        <>
+                          {Object.values(MODULES).map(module => {
+                            const hasAccess = subscription.modules.includes(module.id);
+                            const Icon = Icons[module.icon] || Icons.Package;
+
+                            return (
+                              <button
+                                key={module.id}
+                                onClick={() => {
+                                  setMobileMenuOpen(false);
+                                  handleModuleClick(module);
+                                }}
+                                className="w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors text-gray-700 hover:text-teal-700 hover:bg-teal-50/50 flex items-center gap-2"
+                              >
+                                <Icon className="w-4 h-4" />
+                                {module.name}
+                                {!hasAccess && <Icons.Lock className="w-3 h-3 text-gray-400 ml-auto" />}
+                                {module.comingSoon && (
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded ml-auto">
+                                    Soon
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </>
+                      )}
+                    </div>
+
                     <NavLink
                       to="/docs"
                       className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
@@ -736,27 +809,85 @@ export default function SiteLayout() {
                     >
                       Documentation
                     </NavLink>
-                    <NavLink
-                      to="/products"
-                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Products
-                    </NavLink>
-                    <NavLink
-                      to="/pricing"
-                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Pricing
-                    </NavLink>
-                    <NavLink
-                      to="/about"
-                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      About
-                    </NavLink>
+
+                    {/* Resources Section - Collapsible */}
+                    <div className="pt-3">
+                      <button
+                        onClick={() => setMobileResourcesExpanded(!mobileResourcesExpanded)}
+                        className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700"
+                      >
+                        Resources
+                        <ChevronDown className={`w-4 h-4 transition-transform ${mobileResourcesExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      {mobileResourcesExpanded && (
+                        <>
+                          <NavLink
+                            to="/pricing"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Pricing
+                          </NavLink>
+                          <NavLink
+                            to="/faq"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            FAQs
+                          </NavLink>
+                          <NavLink
+                            to="/contact"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Contact Us
+                          </NavLink>
+                          <NavLink
+                            to="/blog"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Blog
+                          </NavLink>
+                          <NavLink
+                            to="/tips"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Planning Tips
+                          </NavLink>
+                        </>
+                      )}
+                    </div>
+
+                    {/* About Section - Collapsible */}
+                    <div className="pt-3">
+                      <button
+                        onClick={() => setMobileAboutExpanded(!mobileAboutExpanded)}
+                        className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700"
+                      >
+                        About
+                        <ChevronDown className={`w-4 h-4 transition-transform ${mobileAboutExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      {mobileAboutExpanded && (
+                        <>
+                          <NavLink
+                            to="/products"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Products
+                          </NavLink>
+                          <NavLink
+                            to="/about"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Our Story
+                          </NavLink>
+                        </>
+                      )}
+                    </div>
 
                     {/* Account Section */}
                     <div className="pt-4 mt-4 border-t border-gray-200 space-y-1">
@@ -803,9 +934,8 @@ export default function SiteLayout() {
                 )}
               </nav>
             </div>
-          </div>
+          </>
         )}
-      </header>
 
       {/* Main Content */}
       <main className={needsPadding ? "max-w-screen-2xl mx-auto px-6 py-10 mt-16" : "mt-16"}>
