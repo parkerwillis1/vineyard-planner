@@ -334,7 +334,7 @@ export function CalendarView({ onNavigate }) {
                   <span
                     className={`text-sm font-bold ${
                       today
-                        ? 'w-7 h-7 bg-[#10b981] text-white rounded-full flex items-center justify-center'
+                        ? 'w-7 h-7 bg-slate-700 text-white rounded-full flex items-center justify-center'
                         : !dayData.isCurrentMonth
                         ? 'text-gray-400'
                         : 'text-[#1f2937]'
@@ -370,7 +370,7 @@ export function CalendarView({ onNavigate }) {
               <div
                 key={idx}
                 className={`py-4 text-center border-r last:border-r-0 border-gray-200 ${
-                  today ? 'bg-emerald-50' : ''
+                  today ? 'bg-slate-50' : ''
                 }`}
               >
                 <div className="text-xs font-semibold text-[#4b5563] mb-1">
@@ -378,7 +378,7 @@ export function CalendarView({ onNavigate }) {
                 </div>
                 <div className={`text-lg font-bold ${
                   today
-                    ? 'w-8 h-8 bg-[#10b981] text-white rounded-full flex items-center justify-center mx-auto'
+                    ? 'w-8 h-8 bg-slate-700 text-white rounded-full flex items-center justify-center mx-auto'
                     : 'text-[#1f2937]'
                 }`}>
                   {date.getDate()}
@@ -413,10 +413,10 @@ export function CalendarView({ onNavigate }) {
       <Card className="overflow-hidden border border-gray-200 shadow-lg">
         <CardContent className="p-6">
           {/* Day Header */}
-          <div className={`mb-6 pb-6 border-b-2 border-gray-200 ${today ? 'bg-emerald-50 -m-6 p-6 mb-6' : ''}`}>
+          <div className={`mb-6 pb-6 border-b-2 border-gray-200 ${today ? 'bg-slate-50 -m-6 p-6 mb-6' : ''}`}>
             <div className="flex items-center gap-4">
               {today && (
-                <div className="w-2 h-12 bg-[#10b981] rounded-full"></div>
+                <div className="w-2 h-12 bg-slate-700 rounded-full"></div>
               )}
               <div>
                 <div className="text-sm font-semibold text-[#4b5563] mb-1">
@@ -533,7 +533,7 @@ export function CalendarView({ onNavigate }) {
                     onClick={() => setView(v)}
                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all duration-150 capitalize ${
                       view === v
-                        ? 'bg-[#10b981] text-white shadow-md'
+                        ? 'bg-slate-700 text-white shadow-md'
                         : 'text-[#4b5563] hover:text-[#1f2937] hover:bg-gray-200'
                     }`}
                   >
@@ -556,7 +556,7 @@ export function CalendarView({ onNavigate }) {
               </div>
 
               <Button
-                className="bg-[#10b981] hover:bg-[#059669] text-white shadow-md hover:shadow-lg transition-all font-bold"
+                className="bg-slate-700 hover:bg-slate-800 text-white shadow-md hover:shadow-lg transition-all font-bold"
                 size="sm"
                 onClick={() => onNavigate && onNavigate('tasks')}
               >
@@ -663,7 +663,7 @@ export function CalendarView({ onNavigate }) {
       {showEventModal && selectedEvent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scaleIn">
-            <div className="bg-gradient-to-r from-[#10b981] to-[#008080] px-6 py-5 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-5 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Event Details</h2>
               <button
                 type="button"
@@ -687,7 +687,7 @@ export function CalendarView({ onNavigate }) {
 
               <div className="space-y-3 text-[#4b5563]">
                 <div className="flex items-center gap-3">
-                  <CalendarIcon className="w-5 h-5 text-[#10b981]" />
+                  <CalendarIcon className="w-5 h-5 text-slate-700" />
                   <span className="font-medium">
                     {new Date(selectedEvent.date).toLocaleDateString('en-US', {
                       weekday: 'long',
@@ -700,14 +700,14 @@ export function CalendarView({ onNavigate }) {
 
                 {selectedEvent.blockName && (
                   <div className="flex items-center gap-3">
-                    <MapPin className="w-5 h-5 text-[#10b981]" />
+                    <MapPin className="w-5 h-5 text-slate-700" />
                     <span className="font-medium">{selectedEvent.blockName}</span>
                   </div>
                 )}
 
                 {selectedEvent.variety && (
                   <div className="flex items-center gap-3">
-                    <Grape className="w-5 h-5 text-[#10b981]" />
+                    <Grape className="w-5 h-5 text-slate-700" />
                     <span className="font-medium">{selectedEvent.variety}</span>
                   </div>
                 )}
@@ -717,7 +717,7 @@ export function CalendarView({ onNavigate }) {
                     {selectedEvent.status === 'done' ? (
                       <CheckCircle2 className="w-5 h-5 text-green-600" />
                     ) : (
-                      <Clock className="w-5 h-5 text-[#10b981]" />
+                      <Clock className="w-5 h-5 text-slate-700" />
                     )}
                     <span className="font-medium capitalize">{selectedEvent.status.replace('_', ' ')}</span>
                   </div>
@@ -730,7 +730,7 @@ export function CalendarView({ onNavigate }) {
                     setShowEventModal(false);
                     handleEventClick(selectedEvent);
                   }}
-                  className="w-full bg-[#10b981] hover:bg-[#059669] text-white font-bold"
+                  className="w-full bg-slate-700 hover:bg-slate-800 text-white font-bold"
                 >
                   View Full Details
                 </Button>

@@ -204,7 +204,7 @@ export function TeamManagement() {
               {/* Right side - Edit button */}
               <Button
                 onClick={() => setEditingMember({ type: 'org', data: organization })}
-                className="bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-[#1f2937] shadow-sm hover:shadow-md transition-all duration-300"
+                className="bg-gradient-to-r from-vine-green-500 to-emerald-600 hover:from-vine-green-600 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
               >
                 <Edit2 className="w-4 h-4 mr-2" />
                 Edit Details

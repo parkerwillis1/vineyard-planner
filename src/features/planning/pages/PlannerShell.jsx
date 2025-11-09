@@ -46,6 +46,7 @@ import { BusinessPlanReport } from '@/features/planning/components/BusinessPlanR
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
 import { Checkbox } from "@/shared/components/ui/checkbox";
+import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 
 // Remove the unused Table imports
 import {
@@ -649,6 +650,7 @@ export default function PlannerShell({ embedded = false }) {
 
   const [plans, setPlans] = useState([]);
   const [currentPlanName, setCurrentPlanName] = useState('');
+  const [upgradeDialog, setUpgradeDialog] = useState({ isOpen: false, message: '' });
 
   const toggleSection = (sectionTitle) => {
     setSectionsState(prev => ({
@@ -1039,9 +1041,7 @@ const handlePlanChange = (nextId) => {
         ? `You've reached your plan limit (${limits.plans} plan). Upgrade to Vineyard ($29/mo) for unlimited plans!`
         : `You've reached your plan limit (${planCheck.limit} plans). Upgrade to get more plans!`;
 
-      if (confirm(upgradeMessage + '\n\nGo to pricing page?')) {
-        window.location.href = '/pricing';
-      }
+      setUpgradeDialog({ isOpen: true, message: upgradeMessage });
       return;
     }
 
@@ -4418,6 +4418,18 @@ const EstablishmentProgressTracker = ({
           {MainUI}
         </div>
       </main>
+
+      {/* Upgrade Dialog */}
+      <ConfirmDialog
+        isOpen={upgradeDialog.isOpen}
+        onClose={() => setUpgradeDialog({ isOpen: false, message: '' })}
+        onConfirm={() => navigate('/pricing')}
+        title="Upgrade Required"
+        message={upgradeDialog.message}
+        confirmText="Go to Pricing"
+        cancelText="Cancel"
+        variant="warning"
+      />
     </div>
   );
 }

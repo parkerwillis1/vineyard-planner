@@ -784,6 +784,7 @@ export async function listFieldAttachments(fieldId = null) {
     .from('field_attachments')
     .select('*')
     .eq('user_id', user.id)
+    .is('archived_at', null)
     .order('created_at', { ascending: false });
 
   if (fieldId) {
@@ -822,6 +823,31 @@ export async function updateFieldAttachment(attachmentId, updates) {
 }
 
 export async function deleteFieldAttachment(attachmentId) {
+  // Soft delete - set archived_at timestamp
+  return supabase
+    .from('field_attachments')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', attachmentId)
+    .select()
+    .single();
+}
+
+export async function archiveFieldAttachment(attachmentId) {
+  // Alias for deleteFieldAttachment (soft delete)
+  return deleteFieldAttachment(attachmentId);
+}
+
+export async function restoreFieldAttachment(attachmentId) {
+  // Restore archived attachment
+  return supabase
+    .from('field_attachments')
+    .update({ archived_at: null })
+    .eq('id', attachmentId)
+    .select()
+    .single();
+}
+
+export async function permanentlyDeleteFieldAttachment(attachmentId) {
   // Get attachment info first to delete from storage
   const { data: attachment } = await supabase
     .from('field_attachments')
@@ -836,11 +862,29 @@ export async function deleteFieldAttachment(attachmentId) {
       .remove([attachment.storage_path]);
   }
 
-  // Delete record
+  // Hard delete - permanently remove from database
   return supabase
     .from('field_attachments')
     .delete()
     .eq('id', attachmentId);
+}
+
+export async function listArchivedFieldAttachments(fieldId = null) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('field_attachments')
+    .select('*')
+    .eq('user_id', user.id)
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false });
+
+  if (fieldId) {
+    query = query.eq('field_id', fieldId);
+  }
+
+  return query;
 }
 
 // =====================================================
@@ -954,6 +998,7 @@ export async function listTasks(filters = {}) {
     .from('tasks')
     .select('*')
     .eq('user_id', user.id)
+    .is('archived_at', null)
     .order('due_date', { ascending: true });
 
   // Apply filters
@@ -1009,10 +1054,61 @@ export async function updateTask(taskId, updates) {
 }
 
 export async function deleteTask(taskId) {
+  // Soft delete - set archived_at timestamp
+  return supabase
+    .from('tasks')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', taskId)
+    .select()
+    .single();
+}
+
+export async function archiveTask(taskId) {
+  // Alias for deleteTask (soft delete)
+  return deleteTask(taskId);
+}
+
+export async function restoreTask(taskId) {
+  // Restore archived task
+  return supabase
+    .from('tasks')
+    .update({ archived_at: null })
+    .eq('id', taskId)
+    .select()
+    .single();
+}
+
+export async function permanentlyDeleteTask(taskId) {
+  // Hard delete - permanently remove from database
   return supabase
     .from('tasks')
     .delete()
     .eq('id', taskId);
+}
+
+export async function listArchivedTasks(filters = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', user.id)
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false });
+
+  // Apply filters
+  if (filters.seasonId) {
+    query = query.eq('season_id', filters.seasonId);
+  }
+  if (filters.status) {
+    query = query.eq('status', filters.status);
+  }
+  if (filters.type) {
+    query = query.eq('type', filters.type);
+  }
+
+  return query;
 }
 
 export async function updateTaskStatus(taskId, status, extraUpdates = {}) {
@@ -1771,6 +1867,7 @@ export async function listHarvestSamples(blockId = null, season = null) {
       organization_members(full_name)
     `)
     .eq('organization_id', org.id)
+    .is('archived_at', null)
     .order('sample_date', { ascending: false });
 
   if (blockId) {
@@ -1803,12 +1900,25 @@ export async function createHarvestSample(sample) {
   const { data: org } = await getOrCreateOrganization();
   if (!org) return { error: new Error('No organization found') };
 
+  // Get the organization member ID for the current user
+  let sampledById = sample.sampled_by;
+  if (!sampledById && user?.id) {
+    const { data: member } = await supabase
+      .from('organization_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('organization_id', org.id)
+      .single();
+
+    sampledById = member?.id;
+  }
+
   return supabase
     .from('harvest_field_samples')
     .insert({
       ...sample,
       organization_id: org.id,
-      sampled_by: sample.sampled_by || user?.id
+      sampled_by: sampledById
     })
     .select()
     .single();
@@ -1824,10 +1934,64 @@ export async function updateHarvestSample(sampleId, updates) {
 }
 
 export async function deleteHarvestSample(sampleId) {
+  // Soft delete - set archived_at timestamp
+  return supabase
+    .from('harvest_field_samples')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', sampleId)
+    .select()
+    .single();
+}
+
+export async function archiveHarvestSample(sampleId) {
+  // Alias for deleteHarvestSample (soft delete)
+  return deleteHarvestSample(sampleId);
+}
+
+export async function restoreHarvestSample(sampleId) {
+  // Restore archived sample
+  return supabase
+    .from('harvest_field_samples')
+    .update({ archived_at: null })
+    .eq('id', sampleId)
+    .select()
+    .single();
+}
+
+export async function permanentlyDeleteHarvestSample(sampleId) {
+  // Hard delete - permanently remove from database
   return supabase
     .from('harvest_field_samples')
     .delete()
     .eq('id', sampleId);
+}
+
+export async function listArchivedHarvestSamples(blockId = null, season = null) {
+  const { data: org } = await getOrCreateOrganization();
+  if (!org) return { data: [], error: null };
+
+  let query = supabase
+    .from('harvest_field_samples')
+    .select(`
+      *,
+      vineyard_blocks(name, variety),
+      organization_members(full_name)
+    `)
+    .eq('organization_id', org.id)
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false });
+
+  if (blockId) {
+    query = query.eq('block_id', blockId);
+  }
+
+  if (season) {
+    const startDate = `${season}-01-01`;
+    const endDate = `${season}-12-31`;
+    query = query.gte('sample_date', startDate).lte('sample_date', endDate);
+  }
+
+  return query;
 }
 
 export async function getLatestSampleByBlock(blockId) {

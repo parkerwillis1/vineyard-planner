@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
-import { GoogleMap, useLoadScript, Polygon, Marker, Polyline, DrawingManager, Autocomplete, InfoWindow } from '@react-google-maps/api';
-import { Map as MapIcon, Satellite, Pencil, Trash2, MapPin, Eye, EyeOff, RotateCw, ChevronUp, ChevronDown, Settings, Layers, Grid, MoreVertical, Save, X, Search, CloudRain, Droplet } from 'lucide-react';
+import { GoogleMap, useLoadScript, Polygon, Marker, Polyline, DrawingManager, Autocomplete, InfoWindow, GroundOverlay } from '@react-google-maps/api';
+import { Map as MapIcon, Satellite, Pencil, Trash2, MapPin, Eye, EyeOff, RotateCw, ChevronUp, ChevronDown, Settings, Layers, Grid, MoreVertical, Save, X, Search, CloudRain, Droplet, Sun, Activity, Mountain, AlertTriangle, Thermometer } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import {
@@ -13,6 +13,16 @@ import {
   fetchFieldRainfall,
   fetchFieldForecast
 } from '@/shared/lib/fieldWeatherService';
+import {
+  fetchNDVIForBlock,
+  createZonesFromNDVI
+} from '@/shared/lib/sentinelHubApi';
+import {
+  fetchOpenETData,
+  getGrapeKc,
+  applyKcToTimeseries,
+  getDateRange
+} from '@/shared/lib/openETApi';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const LIBRARIES = ['drawing', 'geometry', 'places'];
@@ -292,8 +302,32 @@ export function BlockMap({
   const [autocomplete, setAutocomplete] = useState(null); // For address search
   const [drawingManagerRef, setDrawingManagerRef] = useState(null);
   const [rainfallData, setRainfallData] = useState({}); // {blockId: {totalMm, totalInches, predictedMm, lastRainEvent, etc}}
-  const [showRainfallOverlay, setShowRainfallOverlay] = useState(true); // Toggle rainfall badges
+  const [showRainfallOverlay, setShowRainfallOverlay] = useState(false); // Synced with rainfall layer toggle
   const [loadingRainfall, setLoadingRainfall] = useState(false);
+
+  // Visualization layer state - all layers start off (user selects one at a time)
+  const [activeLayers, setActiveLayers] = useState({
+    ndvi: false,
+    et: false,
+    waterDeficit: false,
+    topography: false,
+    floodZones: false,
+    rainfall: false // User must explicitly enable
+  });
+  const [layerData, setLayerData] = useState({
+    ndvi: {}, // {blockId: {rasterData, width, height, bbox, stats}}
+    et: {}, // {blockId: {timeseries, summary, rasterData, bbox}}
+    waterDeficit: {}, // {blockId: {deficitMm, rasterData, bbox}}
+    topography: {}, // {blockId: {elevationData, bbox}}
+    floodZones: {} // {blockId: {zoneData, bbox}}
+  });
+  const [loadingLayers, setLoadingLayers] = useState({
+    ndvi: false,
+    et: false,
+    waterDeficit: false,
+    topography: false,
+    floodZones: false
+  });
 
   const { isLoaded, loadError} = useLoadScript({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -424,6 +458,231 @@ export function BlockMap({
 
     loadAllRainfallData();
   }, [blocks, isLoaded]);
+
+  // Fetch NDVI data for all blocks when NDVI layer is enabled
+  useEffect(() => {
+    async function loadNDVIData() {
+      console.log('🔍 NDVI useEffect triggered:', {
+        ndviActive: activeLayers.ndvi,
+        isLoaded,
+        blockCount: blocks.length
+      });
+
+      if (!activeLayers.ndvi || !isLoaded) return;
+
+      const blocksWithGeom = blocks.filter(b => b.geom && b.geom.coordinates);
+      console.log(`📍 Blocks with geometry: ${blocksWithGeom.length}`);
+
+      if (blocksWithGeom.length === 0) return;
+
+      setLoadingLayers(prev => ({ ...prev, ndvi: true }));
+
+      try {
+        const ndviPromises = blocksWithGeom.map(async (block) => {
+          try {
+            // Check if we already have data for this block
+            if (layerData.ndvi[block.id]) {
+              console.log(`✓ Using cached NDVI data for ${block.name}`);
+              return { blockId: block.id, data: layerData.ndvi[block.id] };
+            }
+
+            console.log(`🛰️ Fetching NDVI for ${block.name}`);
+            const ndviData = await fetchNDVIForBlock(block, { days: 30 });
+            console.log(`✓ Received NDVI data for ${block.name}:`, {
+              hasRasterData: !!ndviData?.rasterData,
+              width: ndviData?.width,
+              height: ndviData?.height,
+              bbox: ndviData?.bbox
+            });
+
+            return {
+              blockId: block.id,
+              data: ndviData
+            };
+          } catch (error) {
+            console.error(`Error loading NDVI for block ${block.id}:`, error);
+            return {
+              blockId: block.id,
+              data: null,
+              error: error.message
+            };
+          }
+        });
+
+        const results = await Promise.all(ndviPromises);
+
+        const ndviMap = {};
+        results.forEach(({ blockId, data }) => {
+          if (data) ndviMap[blockId] = data;
+        });
+
+        setLayerData(prev => ({
+          ...prev,
+          ndvi: { ...prev.ndvi, ...ndviMap }
+        }));
+        console.log('✅ Loaded NDVI data for', Object.keys(ndviMap).length, 'blocks');
+      } catch (error) {
+        console.error('Error loading NDVI data:', error);
+      } finally {
+        setLoadingLayers(prev => ({ ...prev, ndvi: false }));
+      }
+    }
+
+    loadNDVIData();
+  }, [activeLayers.ndvi, blocks, isLoaded]);
+
+  // Fetch ET data for all blocks when ET layer is enabled
+  useEffect(() => {
+    async function loadETData() {
+      if (!activeLayers.et || !isLoaded) return;
+
+      const blocksWithCoords = blocks.filter(b => b.lat && b.lng);
+      if (blocksWithCoords.length === 0) return;
+
+      setLoadingLayers(prev => ({ ...prev, et: true }));
+
+      try {
+        const { startDate, endDate } = getDateRange('30days');
+
+        const etPromises = blocksWithCoords.map(async (block) => {
+          try {
+            // Check if we already have data for this block
+            if (layerData.et[block.id]) {
+              return { blockId: block.id, data: layerData.et[block.id] };
+            }
+
+            console.log(`📡 Fetching ET for ${block.name}`);
+            const etResponse = await fetchOpenETData({
+              lat: block.lat,
+              lng: block.lng,
+              startDate,
+              endDate,
+              model: 'ensemble',
+              interval: 'daily'
+            });
+
+            const timeseriesWithKc = applyKcToTimeseries(etResponse.timeseries, getGrapeKc);
+            const totalET = timeseriesWithKc.reduce((sum, day) => sum + day.et, 0);
+            const totalETc = timeseriesWithKc.reduce((sum, day) => sum + day.etc, 0);
+            const avgET = totalET / timeseriesWithKc.length;
+
+            return {
+              blockId: block.id,
+              data: {
+                timeseries: timeseriesWithKc,
+                summary: {
+                  avgET: parseFloat(avgET.toFixed(2)),
+                  totalET: parseFloat(totalET.toFixed(2)),
+                  totalETc: parseFloat(totalETc.toFixed(2))
+                },
+                source: etResponse.source
+              }
+            };
+          } catch (error) {
+            console.error(`Error loading ET for block ${block.id}:`, error);
+            return {
+              blockId: block.id,
+              data: null,
+              error: error.message
+            };
+          }
+        });
+
+        const results = await Promise.all(etPromises);
+
+        const etMap = {};
+        results.forEach(({ blockId, data }) => {
+          if (data) etMap[blockId] = data;
+        });
+
+        setLayerData(prev => ({
+          ...prev,
+          et: { ...prev.et, ...etMap }
+        }));
+        console.log('✅ Loaded ET data for', Object.keys(etMap).length, 'blocks');
+      } catch (error) {
+        console.error('Error loading ET data:', error);
+      } finally {
+        setLoadingLayers(prev => ({ ...prev, et: false }));
+      }
+    }
+
+    loadETData();
+  }, [activeLayers.et, blocks, isLoaded]);
+
+  // Water Deficit layer - calculated from ET and rainfall
+  useEffect(() => {
+    async function calculateWaterDeficit() {
+      if (!activeLayers.waterDeficit || !isLoaded) return;
+
+      const blocksWithData = blocks.filter(b =>
+        layerData.et[b.id] && rainfallData[b.id]
+      );
+
+      if (blocksWithData.length === 0) return;
+
+      setLoadingLayers(prev => ({ ...prev, waterDeficit: true }));
+
+      try {
+        const deficitMap = {};
+
+        blocksWithData.forEach(block => {
+          const etcMm = layerData.et[block.id].summary.totalETc || 0;
+          const rainfallMm = rainfallData[block.id].totalMm || 0;
+          const deficitMm = etcMm - rainfallMm; // Positive = deficit, Negative = surplus
+
+          deficitMap[block.id] = {
+            deficitMm,
+            etcMm,
+            rainfallMm
+          };
+        });
+
+        setLayerData(prev => ({
+          ...prev,
+          waterDeficit: { ...prev.waterDeficit, ...deficitMap }
+        }));
+        console.log('✅ Calculated water deficit for', Object.keys(deficitMap).length, 'blocks');
+      } catch (error) {
+        console.error('Error calculating water deficit:', error);
+      } finally {
+        setLoadingLayers(prev => ({ ...prev, waterDeficit: false }));
+      }
+    }
+
+    calculateWaterDeficit();
+  }, [activeLayers.waterDeficit, layerData.et, rainfallData, blocks, isLoaded]);
+
+  // Toggle layer function - Only one layer can be active at a time
+  const toggleLayer = (layerName) => {
+    // Turn off all layers first
+    const allOff = {
+      ndvi: false,
+      et: false,
+      waterDeficit: false,
+      topography: false,
+      floodZones: false,
+      rainfall: false
+    };
+
+    // If the layer is already on, turn it off. Otherwise, turn it on (and all others off)
+    const isCurrentlyOn = activeLayers[layerName];
+
+    if (isCurrentlyOn) {
+      // Turn off the layer
+      setActiveLayers(allOff);
+      setShowRainfallOverlay(false);
+    } else {
+      // Turn on only this layer
+      setActiveLayers({
+        ...allOff,
+        [layerName]: true
+      });
+
+      // Sync rainfall overlay with rainfall layer
+      setShowRainfallOverlay(layerName === 'rainfall');
+    }
+  };
 
   const handleMapClick = (e) => {
     if (!drawingMode) return;
@@ -693,6 +952,161 @@ export function BlockMap({
       .reduce((sum, b) => sum + (parseFloat(b.acres) || 0), 0);
   }, [blocks]);
 
+  // Helper function to create NDVI heat map canvas for a block
+  const createNDVICanvas = (block) => {
+    const ndviBlockData = layerData.ndvi[block.id];
+
+    console.log(`createNDVICanvas for ${block.name}:`, {
+      hasData: !!ndviBlockData,
+      hasRasterData: !!ndviBlockData?.rasterData,
+      dataKeys: ndviBlockData ? Object.keys(ndviBlockData) : []
+    });
+
+    if (!ndviBlockData || !ndviBlockData.rasterData) {
+      console.log(`No NDVI raster data for ${block.name}`);
+      return null;
+    }
+
+    const { rasterData, width, height, bbox } = ndviBlockData;
+    const fieldCoords = block.geom.coordinates[0];
+
+    console.log(`Processing NDVI canvas for ${block.name}:`, { width, height, bbox, rasterDataLength: rasterData.length });
+
+    // Point-in-polygon test
+    const isPointInPolygon = (lat, lng) => {
+      let inside = false;
+      for (let i = 0, j = fieldCoords.length - 1; i < fieldCoords.length; j = i++) {
+        const xi = fieldCoords[i][0], yi = fieldCoords[i][1];
+        const xj = fieldCoords[j][0], yj = fieldCoords[j][1];
+        const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    };
+
+    // Color mapping for NDVI
+    const getColorForNDVI = (ndvi) => {
+      if (!isFinite(ndvi) || isNaN(ndvi)) return { r: 0, g: 0, b: 0, a: 0 };
+      ndvi = Math.max(-1, Math.min(1, ndvi));
+
+      if (ndvi < 0) {
+        const intensity = (ndvi + 1) * 128;
+        return { r: intensity, g: 0, b: 0, a: 180 };
+      } else if (ndvi < 0.3) {
+        const t = ndvi / 0.3;
+        return { r: 139 + (255 - 139) * t, g: 0, b: 0, a: 180 };
+      } else if (ndvi < 0.5) {
+        const t = (ndvi - 0.3) / 0.2;
+        return { r: 255, g: 165 * t, b: 0, a: 180 };
+      } else if (ndvi < 0.7) {
+        const t = (ndvi - 0.5) / 0.2;
+        return { r: 255, g: 165 + (255 - 165) * t, b: 0, a: 180 };
+      } else if (ndvi < 0.85) {
+        const t = (ndvi - 0.7) / 0.15;
+        return { r: 255 - 128 * t, g: 255, b: 50 * t, a: 180 };
+      } else {
+        const t = (ndvi - 0.85) / 0.15;
+        return { r: 127 - 93 * t, g: 255, b: 50, a: 180 };
+      }
+    };
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.createImageData(width, height);
+    const data = imageData.data;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const lng = bbox[0] + (x / width) * (bbox[2] - bbox[0]);
+        const lat = bbox[3] - (y / height) * (bbox[3] - bbox[1]);
+        const insideField = isPointInPolygon(lat, lng);
+        const idx = y * width + x;
+        const ndvi = rasterData[idx];
+        const color = insideField ? getColorForNDVI(ndvi) : { r: 0, g: 0, b: 0, a: 0 };
+        const pixelIdx = (y * width + x) * 4;
+        data[pixelIdx] = color.r;
+        data[pixelIdx + 1] = color.g;
+        data[pixelIdx + 2] = color.b;
+        data[pixelIdx + 3] = color.a;
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    return { dataUrl: canvas.toDataURL('image/png'), bbox };
+  };
+
+  // Helper function to create ET heat map for a block
+  const createETCanvas = (block) => {
+    const etBlockData = layerData.et[block.id];
+    if (!etBlockData || !etBlockData.summary) return null;
+
+    const avgET = etBlockData.summary.avgET;
+    if (!block.geom || !block.geom.coordinates) return null;
+
+    // For ET, we'll color the entire polygon based on average ET value
+    // ET range for grapes: 0-10 mm/day
+    const getColorForET = (et) => {
+      const normalized = Math.max(0, Math.min(1, et / 10));
+      if (normalized < 0.2) {
+        // Very low: light blue
+        return `rgba(191, 219, 254, 0.7)`;
+      } else if (normalized < 0.4) {
+        // Low: blue
+        return `rgba(96, 165, 250, 0.7)`;
+      } else if (normalized < 0.6) {
+        // Medium: yellow
+        return `rgba(253, 224, 71, 0.7)`;
+      } else if (normalized < 0.8) {
+        // High: orange
+        return `rgba(251, 146, 60, 0.7)`;
+      } else {
+        // Very high: red
+        return `rgba(239, 68, 68, 0.7)`;
+      }
+    };
+
+    return { color: getColorForET(avgET), value: avgET };
+  };
+
+  // Helper function to create Water Deficit heat map for a block
+  const createWaterDeficitCanvas = (block) => {
+    const deficitBlockData = layerData.waterDeficit[block.id];
+    if (!deficitBlockData) return null;
+
+    const deficitMm = deficitBlockData.deficitMm;
+    if (!block.geom || !block.geom.coordinates) return null;
+
+    // Water deficit color scale
+    const getColorForDeficit = (deficit) => {
+      if (deficit < -20) {
+        // Large surplus: dark blue (over-irrigated)
+        return `rgba(30, 58, 138, 0.7)`;
+      } else if (deficit < -10) {
+        // Moderate surplus: blue
+        return `rgba(59, 130, 246, 0.7)`;
+      } else if (deficit < 0) {
+        // Small surplus: light blue
+        return `rgba(147, 197, 253, 0.7)`;
+      } else if (deficit < 10) {
+        // Small deficit: light yellow (good)
+        return `rgba(254, 240, 138, 0.7)`;
+      } else if (deficit < 20) {
+        // Moderate deficit: yellow
+        return `rgba(251, 191, 36, 0.7)`;
+      } else if (deficit < 30) {
+        // High deficit: orange
+        return `rgba(249, 115, 22, 0.7)`;
+      } else {
+        // Critical deficit: red
+        return `rgba(220, 38, 38, 0.7)`;
+      }
+    };
+
+    return { color: getColorForDeficit(deficitMm), value: deficitMm };
+  };
+
   if (loadError) {
     return (
       <div className="h-full flex items-center justify-center bg-red-50 border border-red-200 rounded-lg">
@@ -914,25 +1328,206 @@ export function BlockMap({
           </DropdownMenu>
         )}
 
-        {/* Rainfall Overlay Toggle - Show when blocks have coordinates */}
-        {blocks.some(b => b.lat && b.lng) && (
-          <button
-            onClick={() => setShowRainfallOverlay(!showRainfallOverlay)}
-            className={`px-4 py-2 rounded-lg border shadow-sm transition-colors ${
-              showRainfallOverlay
-                ? 'bg-blue-100 border-blue-300 text-blue-900 hover:bg-blue-200'
-                : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-700'
-            }`}
-            title={showRainfallOverlay ? 'Hide rainfall data' : 'Show rainfall data'}
+        {/* Visualization Layers Dropdown */}
+        {blocks.some(b => b.geom || (b.lat && b.lng)) && (
+          <DropdownMenu
+            trigger={
+              <DropdownMenuTrigger className={`px-4 py-2 rounded-lg border shadow-sm transition-colors ${
+                Object.values(activeLayers).some(v => v)
+                  ? 'bg-purple-100 border-purple-300 text-purple-900 hover:bg-purple-200'
+                  : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-700'
+              }`}>
+                <Layers className="w-4 h-4" />
+                Layers
+                {Object.values(activeLayers).filter(v => v).length > 0 && (
+                  <span className="ml-2 px-2 py-0.5 bg-purple-500 text-white text-xs font-bold rounded-full">
+                    {Object.values(activeLayers).filter(v => v).length}
+                  </span>
+                )}
+              </DropdownMenuTrigger>
+            }
           >
-            <div className="flex items-center gap-2">
-              <CloudRain className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                {showRainfallOverlay ? 'Rainfall On' : 'Rainfall Off'}
-              </span>
+            <div className="py-1">
+              <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-200">
+                Visualization Layers
+              </div>
+
+              {/* NDVI Layer */}
+              <button
+                onClick={() => toggleLayer('ndvi')}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                  activeLayers.ndvi ? 'bg-green-50' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Activity className={`w-4 h-4 ${activeLayers.ndvi ? 'text-green-600' : 'text-gray-500'}`} />
+                  <div className="text-left">
+                    <div className={`font-medium ${activeLayers.ndvi ? 'text-green-900' : 'text-gray-700'}`}>
+                      NDVI
+                    </div>
+                    <div className="text-xs text-gray-500">Vegetation vigor</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {loadingLayers.ndvi && (
+                    <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  <input
+                    type="checkbox"
+                    checked={activeLayers.ndvi}
+                    onChange={() => {}}
+                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                  />
+                </div>
+              </button>
+
+              {/* ET Layer */}
+              <button
+                onClick={() => toggleLayer('et')}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                  activeLayers.et ? 'bg-orange-50' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Sun className={`w-4 h-4 ${activeLayers.et ? 'text-orange-600' : 'text-gray-500'}`} />
+                  <div className="text-left">
+                    <div className={`font-medium ${activeLayers.et ? 'text-orange-900' : 'text-gray-700'}`}>
+                      ET (Evapotranspiration)
+                    </div>
+                    <div className="text-xs text-gray-500">Crop water use</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {loadingLayers.et && (
+                    <div className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  <input
+                    type="checkbox"
+                    checked={activeLayers.et}
+                    onChange={() => {}}
+                    className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                  />
+                </div>
+              </button>
+
+              {/* Water Deficit Layer */}
+              <button
+                onClick={() => toggleLayer('waterDeficit')}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                  activeLayers.waterDeficit ? 'bg-red-50' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Droplet className={`w-4 h-4 ${activeLayers.waterDeficit ? 'text-red-600' : 'text-gray-500'}`} />
+                  <div className="text-left">
+                    <div className={`font-medium ${activeLayers.waterDeficit ? 'text-red-900' : 'text-gray-700'}`}>
+                      Water Deficit
+                    </div>
+                    <div className="text-xs text-gray-500">Irrigation needs</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {loadingLayers.waterDeficit && (
+                    <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  <input
+                    type="checkbox"
+                    checked={activeLayers.waterDeficit}
+                    onChange={() => {}}
+                    className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+                  />
+                </div>
+              </button>
+
+              {/* Rainfall Layer */}
+              <button
+                onClick={() => toggleLayer('rainfall')}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                  activeLayers.rainfall ? 'bg-blue-50' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <CloudRain className={`w-4 h-4 ${activeLayers.rainfall ? 'text-blue-600' : 'text-gray-500'}`} />
+                  <div className="text-left">
+                    <div className={`font-medium ${activeLayers.rainfall ? 'text-blue-900' : 'text-gray-700'}`}>
+                      Rainfall
+                    </div>
+                    <div className="text-xs text-gray-500">7-day precipitation</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {loadingRainfall && (
+                    <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  <input
+                    type="checkbox"
+                    checked={activeLayers.rainfall}
+                    onChange={() => {}}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+              </button>
+
+              <DropdownMenuSeparator />
+
+              {/* Topography Layer */}
+              <button
+                onClick={() => toggleLayer('topography')}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                  activeLayers.topography ? 'bg-amber-50' : ''
+                }`}
+                disabled
+                title="Coming soon"
+              >
+                <div className="flex items-center gap-3">
+                  <Mountain className={`w-4 h-4 text-gray-400`} />
+                  <div className="text-left">
+                    <div className="font-medium text-gray-400">
+                      Topography
+                    </div>
+                    <div className="text-xs text-gray-400">Elevation/terrain (Coming soon)</div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={activeLayers.topography}
+                  onChange={() => {}}
+                  disabled
+                  className="w-4 h-4 text-gray-400 rounded cursor-not-allowed"
+                />
+              </button>
+
+              {/* Flood Zones Layer */}
+              <button
+                onClick={() => toggleLayer('floodZones')}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                  activeLayers.floodZones ? 'bg-yellow-50' : ''
+                }`}
+                disabled
+                title="Coming soon"
+              >
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className={`w-4 h-4 text-gray-400`} />
+                  <div className="text-left">
+                    <div className="font-medium text-gray-400">
+                      Flood Zones
+                    </div>
+                    <div className="text-xs text-gray-400">FEMA flood maps (Coming soon)</div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={activeLayers.floodZones}
+                  onChange={() => {}}
+                  disabled
+                  className="w-4 h-4 text-gray-400 rounded cursor-not-allowed"
+                />
+              </button>
             </div>
-          </button>
+          </DropdownMenu>
         )}
+
+        {/* Rainfall Overlay Toggle - Removed, now part of Layers dropdown */}
 
         {/* Stats - Right aligned */}
         <div className="ml-auto flex items-center gap-4">
@@ -1000,9 +1595,15 @@ export function BlockMap({
           // Color-code by rainfall amount when rainfall overlay is enabled
           let fillColor = isSelected ? '#3b82f6' : '#8b5cf6';
           let strokeColor = isSelected ? '#2563eb' : '#7c3aed';
+          let fillOpacity = isSelected ? 0.4 : 0.3;
 
-          if (showRainfallOverlay && rainfall && rainfall.dataSource === 'nws_api') {
+          // When raster-based layers are active, make polygons transparent so overlays show through
+          if (activeLayers.ndvi || activeLayers.et || activeLayers.waterDeficit) {
+            fillOpacity = 0.05; // Nearly transparent
+            strokeColor = isSelected ? '#7c3aed' : '#8b5cf6';
+          } else if (showRainfallOverlay && rainfall && rainfall.dataSource === 'nws_api') {
             const totalInches = rainfall.totalInches || 0;
+            fillOpacity = 0.5;
             // Color gradient from light blue (low) to dark blue (high)
             if (totalInches >= 2.0) {
               fillColor = '#1e3a8a'; // Deep blue (heavy rain)
@@ -1033,11 +1634,116 @@ export function BlockMap({
               paths={path}
               options={{
                 fillColor,
-                fillOpacity: showRainfallOverlay && rainfall ? 0.5 : (isSelected ? 0.4 : 0.3),
+                fillOpacity,
                 strokeColor,
                 strokeOpacity: 0.9,
                 strokeWeight: isSelected ? 3 : 2,
-                clickable: true
+                clickable: true,
+                zIndex: 1
+              }}
+              onClick={() => handleBlockClick(block.id)}
+            />
+          );
+        })}
+
+        {/* Render NDVI layer overlays */}
+        {activeLayers.ndvi && blocks.map(block => {
+          if (!block.geom) {
+            console.log(`Block ${block.name} has no geometry`);
+            return null;
+          }
+
+          // Check if we have NDVI data for this block
+          const hasNDVIData = layerData.ndvi[block.id];
+          console.log(`Block ${block.name} - Has NDVI data:`, !!hasNDVIData, hasNDVIData);
+
+          const ndviCanvas = createNDVICanvas(block);
+          if (!ndviCanvas) {
+            console.log(`❌ No NDVI canvas created for block ${block.name}`);
+            return null;
+          }
+
+          const { dataUrl, bbox } = ndviCanvas;
+
+          // Create proper Google Maps LatLngBounds
+          if (!window.google || !window.google.maps) {
+            console.log('❌ Google Maps not loaded');
+            return null;
+          }
+
+          const bounds = new window.google.maps.LatLngBounds(
+            new window.google.maps.LatLng(bbox[1], bbox[0]), // SW corner
+            new window.google.maps.LatLng(bbox[3], bbox[2])  // NE corner
+          );
+
+          console.log(`✅ Rendering NDVI overlay for ${block.name}`, {
+            bbox,
+            bounds: bounds.toString(),
+            dataUrlLength: dataUrl.length,
+            dataUrlPreview: dataUrl.substring(0, 50) + '...'
+          });
+
+          return (
+            <GroundOverlay
+              key={`ndvi-${block.id}`}
+              url={dataUrl}
+              bounds={bounds}
+              opacity={0.85}
+              options={{
+                zIndex: 10
+              }}
+            />
+          );
+        })}
+
+        {/* Render ET layer overlays */}
+        {activeLayers.et && blocks.map(block => {
+          if (!block.geom) return null;
+          const etOverlay = createETCanvas(block);
+          if (!etOverlay) return null;
+
+          const path = geojsonToPath(block.geom);
+          const isSelected = block.id === selectedBlockId;
+
+          return (
+            <Polygon
+              key={`et-${block.id}`}
+              paths={path}
+              options={{
+                fillColor: etOverlay.color,
+                fillOpacity: 0.6,
+                strokeColor: isSelected ? '#f59e0b' : '#6b7280',
+                strokeOpacity: 0.8,
+                strokeWeight: isSelected ? 3 : 2,
+                clickable: true,
+                zIndex: 5
+              }}
+              onClick={() => handleBlockClick(block.id)}
+            />
+          );
+        })}
+
+        {/* Render Water Deficit layer overlays */}
+        {activeLayers.waterDeficit && blocks.map(block => {
+          if (!block.geom) return null;
+          const deficitOverlay = createWaterDeficitCanvas(block);
+          if (!deficitOverlay) return null;
+
+          const path = geojsonToPath(block.geom);
+          const isSelected = block.id === selectedBlockId;
+
+          return (
+            <Polygon
+              key={`deficit-${block.id}`}
+              paths={path}
+              options={{
+                fillColor: deficitOverlay.color,
+                fillOpacity: 0.6,
+                strokeColor: isSelected ? '#f59e0b' : '#6b7280',
+                strokeOpacity: 0.8,
+                strokeWeight: isSelected ? 3 : 2,
+                clickable: true,
+                zIndex: 6
               }}
               onClick={() => handleBlockClick(block.id)}
             />
@@ -1045,7 +1751,7 @@ export function BlockMap({
         })}
 
         {/* Render rainfall badges on fields */}
-        {showRainfallOverlay && blocks.map(block => {
+        {activeLayers.rainfall && blocks.map(block => {
           if (!block.geom || !block.lat || !block.lng) return null;
 
           const rainfall = rainfallData[block.id];
@@ -1242,9 +1948,137 @@ export function BlockMap({
           </div>
         )}
 
+        {/* NDVI Legend */}
+        {!drawingMode && activeLayers.ndvi && (
+          <div className="absolute bottom-4 left-4 z-20 bg-white rounded-xl shadow-2xl border-2 border-green-300 p-4 w-[280px]">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity className="w-5 h-5 text-green-600" />
+              <h3 className="text-sm font-bold text-gray-900">NDVI - Vegetation Vigor</h3>
+            </div>
+            <div className="space-y-2">
+              {[
+                { color: '#22c55e', label: 'Very High', desc: '0.85 - 1.0 (Healthy)', range: 'High vigor' },
+                { color: '#7fff32', label: 'High', desc: '0.7 - 0.85', range: 'Good' },
+                { color: '#ffff00', label: 'Moderate', desc: '0.5 - 0.7', range: 'Moderate vigor' },
+                { color: '#ffa500', label: 'Low', desc: '0.3 - 0.5', range: 'Lower vigor' },
+                { color: '#ff0000', label: 'Very Low', desc: '< 0.3', range: 'Stressed' }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div
+                    className="w-6 h-6 rounded border border-gray-400 flex-shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold text-gray-900">{item.label}</div>
+                    <div className="text-xs text-gray-500">{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {loadingLayers.ndvi && (
+              <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-2 text-xs text-green-600">
+                <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                <span>Loading NDVI data...</span>
+              </div>
+            )}
+            <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
+              Satellite data from Sentinel-2
+            </div>
+          </div>
+        )}
+
+        {/* ET Legend */}
+        {!drawingMode && activeLayers.et && (
+          <div className={`absolute z-20 bg-white rounded-xl shadow-2xl border-2 border-orange-300 p-4 w-[280px] ${
+            activeLayers.ndvi ? 'bottom-4 left-[300px]' : 'bottom-4 left-4'
+          }`}>
+            <div className="flex items-center gap-2 mb-3">
+              <Sun className="w-5 h-5 text-orange-600" />
+              <h3 className="text-sm font-bold text-gray-900">ET - Water Use</h3>
+            </div>
+            <div className="space-y-2">
+              {[
+                { color: 'rgba(239, 68, 68, 0.7)', label: 'Very High', desc: '> 8 mm/day', range: 'Peak demand' },
+                { color: 'rgba(251, 146, 60, 0.7)', label: 'High', desc: '6-8 mm/day', range: 'High demand' },
+                { color: 'rgba(253, 224, 71, 0.7)', label: 'Moderate', desc: '4-6 mm/day', range: 'Normal' },
+                { color: 'rgba(96, 165, 250, 0.7)', label: 'Low', desc: '2-4 mm/day', range: 'Low demand' },
+                { color: 'rgba(191, 219, 254, 0.7)', label: 'Very Low', desc: '< 2 mm/day', range: 'Dormant' }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div
+                    className="w-6 h-6 rounded border border-gray-400 flex-shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold text-gray-900">{item.label}</div>
+                    <div className="text-xs text-gray-500">{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {loadingLayers.et && (
+              <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-2 text-xs text-orange-600">
+                <div className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                <span>Loading ET data...</span>
+              </div>
+            )}
+            <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
+              Satellite data from OpenET
+            </div>
+          </div>
+        )}
+
+        {/* Water Deficit Legend */}
+        {!drawingMode && activeLayers.waterDeficit && (
+          <div className={`absolute z-20 bg-white rounded-xl shadow-2xl border-2 border-red-300 p-4 w-[280px] ${
+            activeLayers.et && activeLayers.ndvi ? 'bottom-4 left-[600px]' :
+            activeLayers.et || activeLayers.ndvi ? 'bottom-4 left-[300px]' :
+            'bottom-4 left-4'
+          }`}>
+            <div className="flex items-center gap-2 mb-3">
+              <Droplet className="w-5 h-5 text-red-600" />
+              <h3 className="text-sm font-bold text-gray-900">Water Deficit</h3>
+            </div>
+            <div className="space-y-2">
+              {[
+                { color: 'rgba(220, 38, 38, 0.7)', label: 'Critical', desc: '> 30 mm', range: 'Urgent' },
+                { color: 'rgba(249, 115, 22, 0.7)', label: 'High Deficit', desc: '20-30 mm', range: 'Needs water' },
+                { color: 'rgba(251, 191, 36, 0.7)', label: 'Moderate', desc: '10-20 mm', range: 'Monitor' },
+                { color: 'rgba(254, 240, 138, 0.7)', label: 'Good', desc: '0-10 mm', range: 'Optimal' },
+                { color: 'rgba(147, 197, 253, 0.7)', label: 'Surplus', desc: '< 0 mm', range: 'Over-irrigated' }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div
+                    className="w-6 h-6 rounded border border-gray-400 flex-shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold text-gray-900">{item.label}</div>
+                    <div className="text-xs text-gray-500">{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {loadingLayers.waterDeficit && (
+              <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-2 text-xs text-red-600">
+                <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                <span>Calculating deficit...</span>
+              </div>
+            )}
+            <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
+              Calculated from ET and rainfall data
+            </div>
+          </div>
+        )}
+
         {/* Rainfall Legend */}
-        {!drawingMode && showRainfallOverlay && blocks.some(b => b.lat && b.lng) && (
-          <div className="absolute bottom-4 left-4 z-20 bg-white rounded-xl shadow-2xl border border-gray-300 p-4 w-[280px]">
+        {!drawingMode && activeLayers.rainfall && blocks.some(b => b.lat && b.lng) && (
+          <div className={`absolute z-20 bg-white rounded-xl shadow-2xl border-2 border-blue-300 p-4 w-[280px] ${
+            activeLayers.waterDeficit && activeLayers.et && activeLayers.ndvi ? 'bottom-4 left-[900px]' :
+            activeLayers.et && activeLayers.ndvi ? 'bottom-4 left-[600px]' :
+            (activeLayers.et || activeLayers.ndvi || activeLayers.waterDeficit) ? 'bottom-4 left-[300px]' :
+            'bottom-4 left-4'
+          }`}>
             <div className="flex items-center gap-2 mb-3">
               <CloudRain className="w-5 h-5 text-blue-600" />
               <h3 className="text-sm font-bold text-gray-900">Rainfall Map (7 days)</h3>

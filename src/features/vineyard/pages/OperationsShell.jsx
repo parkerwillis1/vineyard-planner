@@ -18,7 +18,8 @@ import {
   X,
   Zap,
   Wind,
-  Tractor
+  Tractor,
+  Archive
 } from 'lucide-react';
 import { VineyardDashboard } from '../components/VineyardDashboard';
 import { BlockManagement } from '../components/BlockManagement';
@@ -36,6 +37,7 @@ import { IrrigationManagement } from '../components/IrrigationManagement';
 import { HardwareIntegration } from '../components/HardwareIntegration';
 import { DeviceZoneMapping } from '../components/DeviceZoneMapping';
 import { WebhookTester } from '../components/WebhookTester';
+import { ArchivedItems } from '../components/ArchivedItems';
 import { FieldDetailPage } from './FieldDetailPage';
 
 export function OperationsShell() {
@@ -103,6 +105,7 @@ export function OperationsShell() {
         { id: 'team', label: 'My Vineyard', icon: Users, color: 'vine-green' },
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'emerald' },
         { id: 'calendar', label: 'Calendar', icon: Calendar, color: 'blue' },
+        { id: 'weather', label: 'Weather', icon: CloudRain, color: 'sky' },
       ]
     },
     {
@@ -110,9 +113,9 @@ export function OperationsShell() {
       items: [
         { id: 'blocks', label: 'Fields', icon: Grape, color: 'purple' },
         { id: 'tasks', label: 'Tasks', icon: ClipboardList, color: 'indigo' },
-        { id: 'harvest', label: 'Harvest', icon: Tractor, color: 'amber' },
-        { id: 'spray', label: 'Spray Records', icon: Wind, color: 'cyan' },
         { id: 'irrigation', label: 'Irrigation', icon: Droplet, color: 'blue' },
+        { id: 'spray', label: 'Spray Records', icon: Wind, color: 'cyan' },
+        { id: 'harvest', label: 'Harvest', icon: Tractor, color: 'amber' },
       ]
     },
     {
@@ -122,21 +125,17 @@ export function OperationsShell() {
         { id: 'costs', label: 'Cost Analysis', icon: DollarSign, color: 'green' },
         { id: 'equipment', label: 'Equipment', icon: Wrench, color: 'orange' },
         { id: 'labor', label: 'Labor Tracking', icon: Users, color: 'rose' },
-        { id: 'weather', label: 'Weather', icon: CloudRain, color: 'sky' },
       ]
     },
     {
-      title: 'Hardware',
+      title: 'Settings',
       items: [
         { id: 'hardware', label: 'Devices', icon: Zap, color: 'violet' },
         { id: 'webhook-test', label: 'Webhook Tester', icon: Zap, color: 'indigo' },
+        { id: 'archived', label: 'Archived', icon: Archive, color: 'slate' },
       ]
     }
   ];
-
-  const currentItem = navigationSections
-    .flatMap(section => section.items)
-    .find(item => item.id === activeView);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -236,47 +235,12 @@ export function OperationsShell() {
       {/* Main Content Area */}
       <main
         className={`
-          flex-1 transition-all duration-300 mt-16 max-w-full overflow-x-hidden
+          flex-1 transition-all duration-300 max-w-full overflow-x-hidden
           ${sidebarOpen ? 'ml-64' : 'ml-20'}
         `}
       >
-        {/* Top Bar */}
-        <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-          <div className="px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {currentItem && (
-                <>
-                  <div className={`w-10 h-10 bg-${currentItem.color}-100 rounded-lg flex items-center justify-center`}>
-                    {React.createElement(currentItem.icon, {
-                      className: `w-5 h-5 text-${currentItem.color}-600`
-                    })}
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{currentItem.label}</h1>
-                    <p className="text-sm text-gray-500">
-                      {activeView === 'team' ? 'Your vineyard profile and team' : 'Vineyard Operations Management'}
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-xs text-gray-500">Current Date</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {new Date().toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Content Area */}
-        <div className="p-6 max-w-full overflow-x-hidden">
+        <div className="px-6 pt-2 pb-6 max-w-full overflow-x-hidden">
           {isFieldDetailPage ? (
             <FieldDetailPage id={fieldId} onBack={() => {
               navigate(-1); // Go back to previous page
@@ -304,6 +268,7 @@ export function OperationsShell() {
                 />
               )}
               {activeView === 'webhook-test' && <WebhookTester />}
+              {activeView === 'archived' && <ArchivedItems />}
             </>
           )}
         </div>

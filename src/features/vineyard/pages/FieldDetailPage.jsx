@@ -12,16 +12,22 @@ import {
   BarChart3,
   Info,
   Grape,
-  Calendar
+  Calendar,
+  Archive,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog';
 import {
   getVineyardBlock,
   updateVineyardBlock,
   listHarvestSamples,
   createHarvestSample,
+  updateHarvestSample,
+  deleteHarvestSample,
   getLatestSampleByBlock
 } from '@/shared/lib/vineyardApi';
 import { BlockMap } from '../components/BlockMap';
@@ -44,6 +50,9 @@ export function FieldDetailPage({ id: propId, onBack }) {
   const [samples, setSamples] = useState([]);
   const [showSampleModal, setShowSampleModal] = useState(false);
   const [savingSample, setSavingSample] = useState(false);
+  const [editingSample, setEditingSample] = useState(null);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [sampleToArchive, setSampleToArchive] = useState(null);
 
   const [editForm, setEditForm] = useState({
     name: '',
@@ -140,13 +149,46 @@ export function FieldDetailPage({ id: propId, onBack }) {
     setSaving(false);
   };
 
+  const handleEditSample = (sample) => {
+    setEditingSample(sample);
+    setSampleFormData({
+      brix: sample.brix || '',
+      ta: sample.ta || '',
+      ph: sample.ph || '',
+      berry_size: sample.berry_size || '',
+      cluster_condition: sample.cluster_condition || '',
+      disease_pressure: sample.disease_pressure || '',
+      ready_to_pick: sample.ready_to_pick || false,
+      estimated_days_to_harvest: sample.estimated_days_to_harvest || '',
+      notes: sample.notes || ''
+    });
+    setShowSampleModal(true);
+  };
+
+  const handleArchiveSample = (sampleId) => {
+    setSampleToArchive(sampleId);
+    setShowArchiveConfirm(true);
+  };
+
+  const confirmArchiveSample = async () => {
+    if (!sampleToArchive) return;
+
+    const { error } = await deleteHarvestSample(sampleToArchive);
+    if (error) {
+      alert(`Error archiving sample: ${error.message}`);
+    } else {
+      await loadSamples();
+    }
+    setSampleToArchive(null);
+  };
+
   const handleAddSample = async (e) => {
     e.preventDefault();
     setSavingSample(true);
 
     const sampleData = {
       block_id: id,
-      sample_date: new Date().toISOString().split('T')[0],
+      sample_date: editingSample?.sample_date || new Date().toISOString().split('T')[0],
       brix: sampleFormData.brix ? parseFloat(sampleFormData.brix) : null,
       ta: sampleFormData.ta ? parseFloat(sampleFormData.ta) : null,
       ph: sampleFormData.ph ? parseFloat(sampleFormData.ph) : null,
@@ -158,12 +200,22 @@ export function FieldDetailPage({ id: propId, onBack }) {
       notes: sampleFormData.notes || null
     };
 
-    const { data, error } = await createHarvestSample(sampleData);
+    let error;
+    if (editingSample) {
+      // Update existing sample
+      const result = await updateHarvestSample(editingSample.id, sampleData);
+      error = result.error;
+    } else {
+      // Create new sample
+      const result = await createHarvestSample(sampleData);
+      error = result.error;
+    }
 
     if (error) {
-      alert(`Error creating sample: ${error.message}`);
+      alert(`Error ${editingSample ? 'updating' : 'creating'} sample: ${error.message}`);
     } else {
       setShowSampleModal(false);
+      setEditingSample(null);
       setSampleFormData({
         brix: '',
         ta: '',
@@ -277,31 +329,31 @@ export function FieldDetailPage({ id: propId, onBack }) {
 
       {/* Key Metrics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="border-l-4 border-purple-500 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm font-medium text-gray-600">Variety</div>
-              <Grape className="w-5 h-5 text-purple-500" />
+              <Grape className="w-5 h-5 text-gray-400" />
             </div>
             <div className="text-2xl font-bold text-gray-900">{field.variety || 'Not set'}</div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-emerald-500 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm font-medium text-gray-600">Size</div>
-              <MapPin className="w-5 h-5 text-emerald-500" />
+              <MapPin className="w-5 h-5 text-gray-400" />
             </div>
             <div className="text-2xl font-bold text-gray-900">
               {field.acres} <span className="text-lg font-normal text-gray-600">acres</span>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-cyan-500 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm font-medium text-gray-600">Spacing</div>
-              <Info className="w-5 h-5 text-cyan-500" />
+              <Info className="w-5 h-5 text-gray-400" />
             </div>
             <div className="text-xl font-bold text-gray-900">
               {field.row_spacing_ft || '-'} × {field.vine_spacing_ft || '-'}
@@ -311,11 +363,11 @@ export function FieldDetailPage({ id: propId, onBack }) {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-blue-500 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm font-medium text-gray-600">Total Vines</div>
-              <Info className="w-5 h-5 text-blue-500" />
+              <Info className="w-5 h-5 text-gray-400" />
             </div>
             <div className="text-2xl font-bold text-gray-900">{totalVines ? totalVines.toLocaleString() : '-'}</div>
             {vinesPerAcre && (
@@ -323,11 +375,11 @@ export function FieldDetailPage({ id: propId, onBack }) {
             )}
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-amber-500 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm font-medium text-gray-600">Age</div>
-              <Calendar className="w-5 h-5 text-amber-500" />
+              <Calendar className="w-5 h-5 text-gray-400" />
             </div>
             <div className="text-2xl font-bold text-gray-900">
               {fieldAge ? `${fieldAge} years` : '-'}
@@ -702,6 +754,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
                           <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Condition</th>
                           <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Ready</th>
                           <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Notes</th>
+                          <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -735,6 +788,24 @@ export function FieldDetailPage({ id: propId, onBack }) {
                             <td className="py-4 px-4 text-sm text-gray-600">
                               {sample.notes || '-'}
                             </td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => handleEditSample(sample)}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit sample"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleArchiveSample(sample.id)}
+                                  className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                  title="Archive sample"
+                                >
+                                  <Archive className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -750,7 +821,6 @@ export function FieldDetailPage({ id: propId, onBack }) {
           <FieldPhotos
             fieldId={field.id}
             fieldName={field.name}
-            onClose={() => setActiveTab('info')}
           />
         )}
 
@@ -759,7 +829,6 @@ export function FieldDetailPage({ id: propId, onBack }) {
             fieldId={field.id}
             fieldName={field.name}
             fieldAcres={field.acres}
-            onClose={() => setActiveTab('info')}
           />
         )}
       </div>
@@ -772,12 +841,15 @@ export function FieldDetailPage({ id: propId, onBack }) {
               <div>
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <Beaker className="w-6 h-6" />
-                  Field Sample - {field.name}
+                  {editingSample ? 'Edit' : 'Add'} Field Sample - {field.name}
                 </h2>
                 <p className="text-blue-50 text-sm mt-1">Record berry quality metrics</p>
               </div>
               <button
-                onClick={() => setShowSampleModal(false)}
+                onClick={() => {
+                  setShowSampleModal(false);
+                  setEditingSample(null);
+                }}
                 className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -935,7 +1007,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
                   ) : (
                     <>
                       <Beaker className="w-5 h-5" />
-                      Save Sample
+                      {editingSample ? 'Update Sample' : 'Save Sample'}
                     </>
                   )}
                 </button>
@@ -951,6 +1023,22 @@ export function FieldDetailPage({ id: propId, onBack }) {
           </div>
         </div>
       )}
+
+      {/* Archive Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showArchiveConfirm}
+        onClose={() => {
+          setShowArchiveConfirm(false);
+          setSampleToArchive(null);
+        }}
+        onConfirm={confirmArchiveSample}
+        title="Archive Sample"
+        message="Archive this sample? You can restore it later from Settings > Archives."
+        confirmText="Archive"
+        cancelText="Cancel"
+        variant="warning"
+        icon={Archive}
+      />
     </div>
   );
 }

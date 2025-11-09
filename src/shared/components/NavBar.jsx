@@ -149,8 +149,8 @@ export default function NavBar() {
           <span className="font-bold text-gray-900 group-hover:text-teal-700 transition-colors">Vine Pioneer</span>
         </Link>
 
-        {/* Main Navigation - Desktop */}
-        <nav className="ml-6 hidden md:flex items-center gap-1">
+        {/* Main Navigation - Desktop Only (Large screens and up) */}
+        <nav className="ml-6 hidden lg:flex items-center gap-1">
           {!user ? (
             <>
               {/* Guest Navigation: Home, Products, Pricing, Resources, About */}
@@ -183,10 +183,10 @@ export default function NavBar() {
 
         {/* Right side actions */}
         <div className="ml-auto flex items-center gap-2">
-          {/* Hamburger Menu Button - Mobile Only */}
+          {/* Hamburger Menu Button - Mobile & Tablet */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-teal-50 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-teal-50 transition-colors"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? (
@@ -199,10 +199,10 @@ export default function NavBar() {
           {/* Desktop actions */}
           {user ? (
             <>
-              <span className="hidden lg:block text-sm text-gray-600 max-w-[200px] truncate">
+              <span className="hidden xl:block text-sm text-gray-600 max-w-[200px] truncate">
                 {user.email}
               </span>
-              <div className="hidden md:block">
+              <div className="hidden lg:block">
                 <Dropdown
                   trigger={
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:border-teal-500 transition-colors">
@@ -217,12 +217,12 @@ export default function NavBar() {
             </>
           ) : (
             <>
-              <Link to="/signin" className={`${linkBase} ${idle} hidden md:block`}>
+              <Link to="/signin" className={`${linkBase} ${idle} hidden lg:block`}>
                 Sign in
               </Link>
               <Link
                 to="/signup"
-                className="hidden md:flex px-4 py-2 text-sm font-semibold bg-gradient-to-r from-teal-600 to-vine-green-600 text-white rounded-lg hover:from-teal-500 hover:to-vine-green-500 shadow-sm hover:shadow-md transition-all"
+                className="hidden lg:flex px-4 py-2 text-sm font-semibold bg-gradient-to-r from-teal-600 to-vine-green-600 text-white rounded-lg hover:from-teal-500 hover:to-vine-green-500 shadow-sm hover:shadow-md transition-all"
               >
                 Get Started Free
               </Link>
@@ -236,12 +236,12 @@ export default function NavBar() {
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />
 
           {/* Slide-out Panel */}
-          <div className="fixed top-16 right-0 bottom-0 w-64 bg-white shadow-2xl z-50 md:hidden overflow-y-auto">
+          <div className="fixed top-16 right-0 bottom-0 w-64 bg-white shadow-2xl z-50 lg:hidden overflow-y-auto">
             <nav className="p-4 space-y-1">
               {!user ? (
                 <>

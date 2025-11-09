@@ -84,6 +84,50 @@ export function ETExplainerCard({ currentET, isRealData = false }) {
             </p>
           </div>
 
+          {/* Is High or Low ET Good? */}
+          <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <Info className="w-4 h-4 text-amber-600" />
+              Is High or Low ET Good?
+            </h4>
+            <p className="text-sm text-gray-700 mb-3">
+              <strong>Neither!</strong> ET is simply a measurement of how much water your vines are using.
+            </p>
+            <div className="space-y-2 text-sm text-gray-700">
+              <div className="flex items-start gap-2">
+                <span className="font-semibold text-orange-600 min-w-[60px]">High ET:</span>
+                <div>Plants actively growing, hot/dry weather. Means you need to <strong>irrigate MORE</strong> to meet demand.</div>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-semibold text-blue-600 min-w-[60px]">Low ET:</span>
+                <div>Cooler weather, less active growth. Means you need to <strong>irrigate LESS</strong>.</div>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-amber-300 bg-white rounded p-3">
+              <p className="text-sm font-semibold text-gray-900 mb-2">What You Should Really Watch: The DEFICIT</p>
+              <div className="text-sm text-gray-700 space-y-1">
+                <p><strong>Deficit = Crop Water Use - (Irrigation + Rainfall)</strong></p>
+                <ul className="ml-4 mt-2 space-y-1">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600">✓</span>
+                    <span><strong>Near Zero:</strong> Perfectly managed - vines getting what they need</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-600">!</span>
+                    <span><strong>Positive (deficit):</strong> Under-irrigated - vines are stressed</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600">~</span>
+                    <span><strong>Negative (surplus):</strong> Over-irrigated - excess vegetative growth</span>
+                  </li>
+                </ul>
+                <p className="mt-2 text-xs text-gray-600 italic">
+                  For wine grapes, some controlled water stress (small positive deficit) during certain growth stages can improve fruit quality.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Normal Ranges */}
           <div className="bg-white rounded-lg p-4">
             <h4 className="font-semibold text-gray-900 mb-3">Normal ET Ranges for Grapes</h4>

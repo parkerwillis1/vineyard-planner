@@ -172,8 +172,8 @@ export function WeatherDashboard() {
     <Card>
       <CardContent className="pt-6">
         <div className="flex items-start justify-between mb-3">
-          <div className={`w-10 h-10 rounded-lg bg-${color}-50 flex items-center justify-center`}>
-            <Icon className={`w-5 h-5 text-${color}-600`} />
+          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+            <Icon className="w-5 h-5 text-gray-700" />
           </div>
         </div>
         <div className="text-2xl font-bold text-gray-900 mb-1">
@@ -216,31 +216,88 @@ export function WeatherDashboard() {
   const rainfall = weatherData?.historical;
   const forecast = weatherData?.forecast;
 
+  // Parse wind speed from NWS format (e.g., "5 to 10 mph" -> 10)
+  const parseWindSpeed = (windSpeedStr) => {
+    if (!windSpeedStr) return 0;
+    // Extract all numbers from the string
+    const numbers = windSpeedStr.match(/\d+/g);
+    if (!numbers || numbers.length === 0) return 0;
+    // Return the highest number (for ranges like "5 to 10 mph")
+    return Math.max(...numbers.map(Number));
+  };
+
   // Calculate dynamic insights based on real weather data
   const calculateSprayConditions = () => {
     if (!forecast?.periods) return { status: 'UNKNOWN', color: 'gray', message: 'Loading forecast data...' };
 
-    // Check next 2 days (4 periods) for rain probability
+    // Check next 2 days (4 periods) for rain probability and wind
     const next48Hours = forecast.periods.slice(0, 4);
     const maxPrecipProb = Math.max(...next48Hours.map(p => p.precipitationProbability || 0));
 
-    if (maxPrecipProb < 20) {
+    // Get wind speeds for daytime periods (when spraying would occur)
+    const daytimePeriods = next48Hours.filter(p => !p.name.toLowerCase().includes('night'));
+    const windSpeeds = daytimePeriods.map(p => parseWindSpeed(p.windSpeed)).filter(w => w > 0);
+    const maxWindSpeed = windSpeeds.length > 0 ? Math.max(...windSpeeds) : 0;
+    const avgWindSpeed = windSpeeds.length > 0 ? windSpeeds.reduce((a, b) => a + b, 0) / windSpeeds.length : 0;
+
+    // Determine wind suitability for spraying
+    // Ideal: 3-10 mph, Caution: 10-15 mph, Unfavorable: >15 mph or <3 mph
+    let windStatus = 'good';
+    let windMessage = '';
+
+    if (maxWindSpeed === 0) {
+      windStatus = 'unknown';
+      windMessage = 'Wind data unavailable.';
+    } else if (maxWindSpeed > 15) {
+      windStatus = 'poor';
+      windMessage = `High winds (up to ${maxWindSpeed} mph) - excessive drift risk.`;
+    } else if (maxWindSpeed > 10) {
+      windStatus = 'caution';
+      windMessage = `Moderate winds (${avgWindSpeed.toFixed(0)}-${maxWindSpeed} mph) - some drift possible.`;
+    } else if (avgWindSpeed < 3 && maxWindSpeed < 5) {
+      windStatus = 'caution';
+      windMessage = `Very light winds (${avgWindSpeed.toFixed(0)}-${maxWindSpeed} mph) - watch for inversions.`;
+    } else {
+      windStatus = 'good';
+      windMessage = `Good winds (${avgWindSpeed.toFixed(0)}-${maxWindSpeed} mph) - ideal for spraying.`;
+    }
+
+    // Combine precipitation and wind conditions
+    if (maxPrecipProb < 20 && windStatus === 'good') {
       return {
         status: 'FAVORABLE',
         color: 'green',
-        message: `Low precipitation risk (${maxPrecipProb}% max). Good conditions for spray applications in the next 48 hours.`
+        message: `Excellent spray conditions. ${windMessage} Low rain risk (${maxPrecipProb}% max).`
       };
-    } else if (maxPrecipProb < 50) {
+    } else if (maxPrecipProb < 20 && windStatus === 'caution') {
       return {
         status: 'CAUTION',
         color: 'yellow',
-        message: `Moderate precipitation risk (${maxPrecipProb}% max). Monitor forecast closely before spraying.`
+        message: `Proceed with caution. ${windMessage} Low rain risk (${maxPrecipProb}% max).`
+      };
+    } else if (maxPrecipProb < 20 && windStatus === 'poor') {
+      return {
+        status: 'UNFAVORABLE',
+        color: 'red',
+        message: `Wind conditions unfavorable for spraying. ${windMessage} Rain risk low (${maxPrecipProb}% max).`
+      };
+    } else if (maxPrecipProb < 50 && windStatus === 'good') {
+      return {
+        status: 'CAUTION',
+        color: 'yellow',
+        message: `${windMessage} However, moderate rain risk (${maxPrecipProb}% max) - monitor forecast closely.`
+      };
+    } else if (maxPrecipProb < 50) {
+      return {
+        status: 'UNFAVORABLE',
+        color: 'red',
+        message: `Unfavorable conditions. ${windMessage} Moderate rain risk (${maxPrecipProb}% max).`
       };
     } else {
       return {
         status: 'UNFAVORABLE',
         color: 'red',
-        message: `High precipitation risk (${maxPrecipProb}% max). Delay spray applications until conditions improve.`
+        message: `Poor spray conditions. High rain risk (${maxPrecipProb}% max). ${windMessage.replace('ideal for spraying', 'conditions not suitable')}`
       };
     }
   };
@@ -324,29 +381,44 @@ export function WeatherDashboard() {
     const avgTemp = next72Hours.reduce((sum, p) => sum + (p.temperature || 70), 0) / next72Hours.length;
     const anyRainPredicted = next72Hours.some(p => p.estimatedRainfallMm > 0);
 
-    if (maxPrecipProb < 20 && avgTemp >= 50 && avgTemp <= 85) {
+    // Check wind conditions - high winds can damage equipment and make harvest difficult
+    const daytimePeriods = next72Hours.filter(p => !p.name.toLowerCase().includes('night'));
+    const windSpeeds = daytimePeriods.map(p => parseWindSpeed(p.windSpeed)).filter(w => w > 0);
+    const maxWindSpeed = windSpeeds.length > 0 ? Math.max(...windSpeeds) : 0;
+
+    // High winds (>20 mph) can make harvest operations difficult and damage vines/equipment
+    const highWinds = maxWindSpeed > 20;
+    const moderateWinds = maxWindSpeed > 15 && maxWindSpeed <= 20;
+
+    if (maxPrecipProb < 20 && avgTemp >= 50 && avgTemp <= 85 && !highWinds && !moderateWinds) {
       return {
         status: 'EXCELLENT',
         color: 'emerald',
-        message: `Optimal conditions: Low precipitation risk (${maxPrecipProb}% max), moderate temps (${avgTemp.toFixed(0)}°F). Excellent 72-hour harvest window.`
+        message: `Optimal conditions: Low precipitation risk (${maxPrecipProb}% max), moderate temps (${avgTemp.toFixed(0)}°F), calm winds (${maxWindSpeed} mph max). Excellent 72-hour harvest window.`
       };
-    } else if (maxPrecipProb < 40 && !anyRainPredicted) {
+    } else if (maxPrecipProb < 40 && !anyRainPredicted && !highWinds) {
       return {
         status: 'GOOD',
         color: 'green',
-        message: `Good conditions: Moderate precipitation risk (${maxPrecipProb}% max). Favorable for harvest operations.`
+        message: `Good conditions: Moderate precipitation risk (${maxPrecipProb}% max), winds ${maxWindSpeed} mph max. ${moderateWinds ? 'Watch wind conditions closely.' : 'Favorable for harvest operations.'}`
       };
-    } else if (maxPrecipProb < 60) {
+    } else if (highWinds && maxPrecipProb < 40) {
       return {
         status: 'FAIR',
         color: 'yellow',
-        message: `Fair conditions: ${maxPrecipProb}% precipitation risk. Monitor forecast before scheduling harvest.`
+        message: `High winds (${maxWindSpeed} mph max) may impact operations. Precipitation risk ${maxPrecipProb}%. Proceed with caution.`
+      };
+    } else if (maxPrecipProb < 60 && !highWinds) {
+      return {
+        status: 'FAIR',
+        color: 'yellow',
+        message: `Fair conditions: ${maxPrecipProb}% precipitation risk, winds ${maxWindSpeed} mph max. Monitor forecast before scheduling harvest.`
       };
     } else {
       return {
         status: 'POOR',
         color: 'red',
-        message: `Unfavorable conditions: High precipitation risk (${maxPrecipProb}% max). Delay harvest if possible.`
+        message: `Unfavorable conditions: ${highWinds ? `High winds (${maxWindSpeed} mph).` : ''} ${maxPrecipProb >= 60 ? `High precipitation risk (${maxPrecipProb}% max).` : ''} Delay harvest if possible.`
       };
     }
   };
@@ -359,14 +431,14 @@ export function WeatherDashboard() {
   return (
     <div className="space-y-6">
       {/* Field Selector */}
-      <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-gray-50">
+      <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
-              <MapPin className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+              <MapPin className="w-6 h-6 text-gray-700" />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select Vineyard Field
               </label>
               <select
@@ -375,7 +447,7 @@ export function WeatherDashboard() {
                   const block = blocks.find(b => b.id === e.target.value);
                   setSelectedBlock(block);
                 }}
-                className="w-full max-w-2xl px-4 py-3 bg-white border-2 border-gray-200 rounded-xl font-semibold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:border-gray-300"
+                className="w-full max-w-2xl px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 {blocks.map(block => (
                   <option key={block.id} value={block.id}>
@@ -385,9 +457,9 @@ export function WeatherDashboard() {
               </select>
             </div>
             {loadingWeather && (
-              <div className="flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-lg border border-blue-300">
-                <Loader className="w-5 h-5 animate-spin text-blue-600" />
-                <span className="text-sm font-semibold text-blue-700">Loading...</span>
+              <div className="flex items-center gap-2">
+                <Loader className="w-5 h-5 animate-spin text-gray-600" />
+                <span className="text-sm text-gray-600">Loading...</span>
               </div>
             )}
           </div>
@@ -395,14 +467,14 @@ export function WeatherDashboard() {
       </Card>
 
       {/* Current Rainfall Summary */}
-      <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 rounded-2xl shadow-xl overflow-hidden">
-        <div className="px-8 py-6 bg-gradient-to-r from-black/10 to-transparent">
-          <div className="flex items-center justify-between mb-4">
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-bold text-white mb-1">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">
                 {selectedBlock?.name}
               </h2>
-              <p className="text-sm text-blue-100">
+              <p className="text-sm text-gray-600">
                 {new Date().toLocaleString('en-US', {
                   weekday: 'long',
                   month: 'long',
@@ -413,27 +485,27 @@ export function WeatherDashboard() {
               </p>
             </div>
             {rainfall?.stationName && (
-              <div className="text-right bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
-                <p className="text-xs text-blue-100">NWS Station</p>
-                <p className="font-semibold text-white text-sm">{rainfall.stationName}</p>
+              <div className="text-right bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                <p className="text-xs text-gray-500">NWS Station</p>
+                <p className="font-medium text-gray-900 text-sm">{rainfall.stationName}</p>
               </div>
             )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Last 7 Days */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-white/50">
+            <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
-                  <CloudRain className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <CloudRain className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Historical</div>
-                  <div className="text-lg font-bold text-gray-600">Last 7 Days</div>
+                  <div className="text-xs font-medium text-gray-500">Historical</div>
+                  <div className="text-sm font-semibold text-gray-900">Last 7 Days</div>
                 </div>
               </div>
-              <div className="text-4xl font-black text-gray-900">
-                {rainfall ? rainfall.totalInches.toFixed(2) : '0.00'}<span className="text-2xl text-gray-500">"</span>
+              <div className="text-3xl font-bold text-gray-900">
+                {rainfall ? rainfall.totalInches.toFixed(2) : '0.00'}<span className="text-xl text-gray-500 ml-1">"</span>
               </div>
               {rainfall && rainfall.totalMm > 0 && (
                 <div className="text-sm text-gray-500 mt-1">{rainfall.totalMm.toFixed(1)} mm</div>
@@ -441,18 +513,18 @@ export function WeatherDashboard() {
             </div>
 
             {/* Predicted Rainfall */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-white/50">
+            <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center shadow-md">
-                  <Droplet className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Droplet className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Forecast</div>
-                  <div className="text-lg font-bold text-gray-600">Next 7 Days</div>
+                  <div className="text-xs font-medium text-gray-500">Forecast</div>
+                  <div className="text-sm font-semibold text-gray-900">Next 7 Days</div>
                 </div>
               </div>
-              <div className="text-4xl font-black text-gray-900">
-                {forecast ? (forecast.predictedRainfallInches || 0).toFixed(2) : '0.00'}<span className="text-2xl text-gray-500">"</span>
+              <div className="text-3xl font-bold text-gray-900">
+                {forecast ? (forecast.predictedRainfallInches || 0).toFixed(2) : '0.00'}<span className="text-xl text-gray-500 ml-1">"</span>
               </div>
               {forecast && forecast.predictedRainfallMm > 0 && (
                 <div className="text-sm text-gray-500 mt-1">{forecast.predictedRainfallMm.toFixed(1)} mm</div>
@@ -460,19 +532,19 @@ export function WeatherDashboard() {
             </div>
 
             {/* Last Rain Event */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-white/50">
+            <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-md">
-                  <Calendar className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Event</div>
-                  <div className="text-lg font-bold text-gray-600">Recent Rain</div>
+                  <div className="text-xs font-medium text-gray-500">Last Event</div>
+                  <div className="text-sm font-semibold text-gray-900">Recent Rain</div>
                 </div>
               </div>
               {rainfall?.lastRainEvent?.date ? (
                 <>
-                  <div className="text-3xl font-black text-gray-900">
+                  <div className="text-3xl font-bold text-gray-900">
                     {new Date(rainfall.lastRainEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
@@ -481,24 +553,24 @@ export function WeatherDashboard() {
                 </>
               ) : (
                 <>
-                  <div className="text-3xl font-black text-gray-400">No Rain</div>
+                  <div className="text-3xl font-bold text-gray-400">No Rain</div>
                   <div className="text-sm text-gray-500 mt-1">Past 7 days</div>
                 </>
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* 7-Day Weather Forecast */}
       {forecast && forecast.periods && forecast.periods.length > 0 && (
-        <Card className="border-0 shadow-xl">
+        <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-md">
-                <Calendar className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-gray-700" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900">
                 7-Day Forecast
               </h3>
             </div>
@@ -533,29 +605,47 @@ export function WeatherDashboard() {
                     <div className="space-y-2">
                       <p className="text-sm text-gray-700 font-medium leading-snug">{period.shortForecast}</p>
 
-                      {period.precipitationProbability > 0 && (
-                        <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                          period.precipitationProbability > 50
-                            ? 'bg-blue-100 border border-blue-300'
-                            : 'bg-blue-50 border border-blue-200'
-                        }`}>
-                          <Droplet className={`w-4 h-4 ${
-                            period.precipitationProbability > 50 ? 'text-blue-700' : 'text-blue-600'
-                          }`} />
-                          <div className="flex-1">
-                            <span className={`text-sm font-bold ${
-                              period.precipitationProbability > 50 ? 'text-blue-900' : 'text-blue-700'
-                            }`}>
-                              {period.precipitationProbability}%
-                            </span>
-                            {period.estimatedRainfallMm > 0 && (
-                              <span className="text-xs text-gray-600 ml-1">
-                                (~{(period.estimatedRainfallMm / 25.4).toFixed(2)}")
+                      <div className="space-y-1">
+                        {period.precipitationProbability > 0 && (
+                          <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                            period.precipitationProbability > 50
+                              ? 'bg-blue-100 border border-blue-300'
+                              : 'bg-blue-50 border border-blue-200'
+                          }`}>
+                            <Droplet className={`w-4 h-4 ${
+                              period.precipitationProbability > 50 ? 'text-blue-700' : 'text-blue-600'
+                            }`} />
+                            <div className="flex-1">
+                              <span className={`text-sm font-bold ${
+                                period.precipitationProbability > 50 ? 'text-blue-900' : 'text-blue-700'
+                              }`}>
+                                {period.precipitationProbability}%
                               </span>
-                            )}
+                              {period.estimatedRainfallMm > 0 && (
+                                <span className="text-xs text-gray-600 ml-1">
+                                  (~{(period.estimatedRainfallMm / 25.4).toFixed(2)}")
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+
+                        {period.windSpeed && (
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-200">
+                            <Wind className="w-4 h-4 text-gray-600" />
+                            <div className="flex-1">
+                              <span className="text-sm font-medium text-gray-700">
+                                {period.windSpeed}
+                              </span>
+                              {period.windDirection && (
+                                <span className="text-xs text-gray-500 ml-1">
+                                  {period.windDirection}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

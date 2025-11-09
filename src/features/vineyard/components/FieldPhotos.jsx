@@ -4,7 +4,6 @@ import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { SkeletonGrid } from '@/shared/components/ui/skeleton';
 import { supabase } from '@/shared/lib/supabaseClient';
-import { usePreventBodyScroll } from '@/shared/hooks/usePreventBodyScroll';
 import { useToast } from '@/shared/components/Toast';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import {
@@ -13,7 +12,7 @@ import {
   deleteFieldAttachment
 } from '@/shared/lib/vineyardApi';
 
-export function FieldPhotos({ fieldId, fieldName, onClose }) {
+export function FieldPhotos({ fieldId, fieldName }) {
   const toast = useToast();
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,9 +23,6 @@ export function FieldPhotos({ fieldId, fieldName, onClose }) {
   const [dragOver, setDragOver] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-
-  // Prevent background scrolling when modal is open
-  usePreventBodyScroll();
 
   useEffect(() => {
     if (fieldId) {
@@ -206,49 +202,23 @@ export function FieldPhotos({ fieldId, fieldName, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-6xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="bg-slate-800 px-6 py-5 flex items-center justify-between sticky top-0 z-10 shadow-lg border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-700 rounded-lg">
-              <Camera className="w-6 h-6 text-slate-300" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">Field Photos</h2>
-              <p className="text-sm text-slate-400 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" />
-                {fieldName}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setShowUploadSection(!showUploadSection)}
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 flex items-center justify-center"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {showUploadSection ? 'Cancel' : 'Upload Photo'}
-            </Button>
-            <button
-              onClick={onClose}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all hover:scale-110 border border-white/20"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-          </div>
-        </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900">Field Photos</h2>
+        <Button
+          onClick={() => setShowUploadSection(!showUploadSection)}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+        >
+          <Upload className="w-4 h-4" />
+          {showUploadSection ? 'Cancel Upload' : 'Upload Photos'}
+        </Button>
+      </div>
 
-        <CardContent className="p-6">
-          {/* Upload Section */}
-          {showUploadSection && (
-          <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <div className="p-1.5 bg-gray-200 rounded-lg">
-                <Upload className="w-5 h-5 text-gray-700" />
-              </div>
-              Upload Photos
-            </h3>
-
+      <div>
+        {/* Upload Section */}
+        {showUploadSection && (
+        <Card className="shadow-sm">
+          <CardContent className="pt-6">
             <div className="space-y-4">
               {/* Drag & Drop Zone */}
               <div
@@ -347,11 +317,13 @@ export function FieldPhotos({ fieldId, fieldName, onClose }) {
                 </Button>
               )}
             </div>
-          </div>
-          )}
+          </CardContent>
+        </Card>
+        )}
 
-          {/* Photos Grid */}
-          <div>
+        {/* Photos Grid */}
+        <Card className="shadow-sm">
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <div className="p-1.5 bg-gray-100 rounded-lg">
@@ -410,9 +382,9 @@ export function FieldPhotos({ fieldId, fieldName, onClose }) {
                 ))}
               </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Image Lightbox */}
       {selectedImage && (

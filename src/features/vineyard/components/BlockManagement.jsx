@@ -93,6 +93,7 @@ export function BlockManagement() {
     vine_count_reported: null,
     // Area
     acres: '',
+    geom: null, // Geometry from map
     // Operations
     irrigation_zone: '',
     // Soil Data
@@ -104,7 +105,10 @@ export function BlockManagement() {
     soil_notes: '',
     // Custom Fields
     custom_fields: {},
-    notes: ''
+    notes: '',
+    // Auto-calculated metrics (user can override)
+    estimated_vines: null,
+    estimated_rows: null
   });
 
   // Load blocks from Supabase
@@ -241,6 +245,7 @@ export function BlockManagement() {
       year_planted: null,
       vine_count_reported: null,
       acres: '',
+      geom: null,
       irrigation_zone: '',
       soil_type: '',
       soil_ph: null,
@@ -249,7 +254,9 @@ export function BlockManagement() {
       soil_organic_matter_percent: null,
       soil_notes: '',
       custom_fields: {},
-      notes: ''
+      notes: '',
+      estimated_vines: null,
+      estimated_rows: null
     });
     setIsAddingBlock(false);
     setEditingBlock(null);
@@ -258,6 +265,13 @@ export function BlockManagement() {
   };
 
   const handleEdit = (block) => {
+    const blockMetrics = calculateMetrics({
+      acres: block.acres,
+      row_spacing_ft: block.row_spacing_ft,
+      vine_spacing_ft: block.vine_spacing_ft,
+      vine_count_reported: block.vine_count_reported
+    });
+
     setFormData({
       name: block.name || '',
       status: block.status || 'active',
@@ -271,6 +285,7 @@ export function BlockManagement() {
       year_planted: block.year_planted || null,
       vine_count_reported: block.vine_count_reported || null,
       acres: block.acres || '',
+      geom: block.geom || null,
       irrigation_zone: block.irrigation_zone || '',
       soil_type: block.soil_type || '',
       soil_ph: block.soil_ph || null,
@@ -279,7 +294,9 @@ export function BlockManagement() {
       soil_organic_matter_percent: block.soil_organic_matter_percent || null,
       soil_notes: block.soil_notes || '',
       custom_fields: block.custom_fields || {},
-      notes: block.notes || ''
+      notes: block.notes || '',
+      estimated_vines: blockMetrics.estimatedVines,
+      estimated_rows: blockMetrics.estimatedRows
     });
     setEditingBlock(block);
     setIsAddingBlock(true);
@@ -389,6 +406,22 @@ export function BlockManagement() {
       ...formData,
       custom_fields: updatedFields
     });
+  };
+
+  const handleAutoCalculateMetrics = () => {
+    const calculated = calculateMetrics(formData);
+    setFormData({
+      ...formData,
+      estimated_vines: calculated.estimatedVines,
+      estimated_rows: calculated.estimatedRows
+    });
+  };
+
+  const handleDrawFieldOnMap = () => {
+    // Close the form and open map mode with drawing enabled
+    setIsAddingBlock(false);
+    setViewMode('map');
+    setAutoStartDrawing(true);
   };
 
   const handleExportCSV = () => {
@@ -1010,10 +1043,10 @@ export function BlockManagement() {
             }
           }}>
             <Card
-              className="border border-gray-200 shadow-xl bg-white w-full max-w-6xl"
+              className="border border-gray-200 shadow-xl bg-white w-full max-w-6xl overflow-hidden rounded-lg"
               onClick={(e) => e.stopPropagation()}
             >
-            <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-4">
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-4 rounded-t-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -1061,17 +1094,28 @@ export function BlockManagement() {
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Acres <span className="text-red-500">*</span>
+                      Acres
                     </label>
-                    <input
-                      required
-                      type="number"
-                      step="0.01"
-                      value={formData.acres}
-                      onChange={(e) => setFormData({ ...formData, acres: e.target.value })}
-                      placeholder="e.g., 5.5"
-                      className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.acres}
+                        onChange={(e) => setFormData({ ...formData, acres: e.target.value })}
+                        placeholder="Draw on map or enter manually"
+                        className="flex-1 px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleDrawFieldOnMap}
+                        className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                        title="Draw field boundary on map to calculate acres"
+                      >
+                        <MapIcon className="w-4 h-4" />
+                        Draw on Map
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">Draw field boundary on map for accurate acreage</p>
                   </div>
 
                   <div>
@@ -1160,18 +1204,21 @@ export function BlockManagement() {
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Row Direction
+                      Row Direction (degrees)
                     </label>
-                    <select
+                    <input
+                      type="number"
+                      min="0"
+                      max="360"
+                      step="1"
                       value={formData.row_orientation_deg === null ? '' : formData.row_orientation_deg}
                       onChange={(e) => setFormData({ ...formData, row_orientation_deg: e.target.value === '' ? null : parseInt(e.target.value) })}
+                      placeholder="0-360 (0=N, 90=E, 180=S, 270=W)"
                       className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                    >
-                      <option value="">Auto (East-West)</option>
-                      <option value="0">North-South (Vertical)</option>
-                      <option value="90">East-West (Horizontal)</option>
-                    </select>
-                    <p className="text-xs text-gray-600 mt-1">Direction rows run on the map</p>
+                    />
+                    <p className="text-xs text-gray-600 mt-1">
+                      Custom rotation: 0°=North, 90°=East, 180°=South, 270°=West
+                    </p>
                   </div>
 
                   <div>
@@ -1452,58 +1499,78 @@ export function BlockManagement() {
                 )}
               </div>
 
-              {/* Derived Metrics (Read-only) */}
+              {/* Field Metrics (Editable with Auto-Calculate) */}
               <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-6 border-2 border-blue-200">
-                <button
-                  type="button"
-                  onClick={() => setShowDerived(!showDerived)}
-                  className="w-full flex items-center justify-between"
-                >
-                  <h4 className="text-lg font-bold text-blue-900 flex items-center gap-2">
-                    <Calculator className="w-5 h-5" />
-                    Auto-Calculated Metrics
-                  </h4>
-                  {showDerived ? <ChevronUp className="w-5 h-5 text-blue-700" /> : <ChevronDown className="w-5 h-5 text-blue-700" />}
-                </button>
-                <p className="text-sm text-blue-700 mt-1">Based on your spacing and acreage</p>
-
-                {showDerived && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                    <div className="bg-white rounded-lg p-4 border border-blue-200">
-                      <p className="text-xs text-gray-600 mb-1">Vines/Acre</p>
-                      <p className="text-2xl font-bold text-blue-900">{metrics.vinesPerAcre.toLocaleString()}</p>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4 border border-blue-200">
-                      <p className="text-xs text-gray-600 mb-1">Total Vines</p>
-                      <p className="text-2xl font-bold text-blue-900">{metrics.estimatedVines.toLocaleString()}</p>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4 border border-blue-200">
-                      <p className="text-xs text-gray-600 mb-1">Est. Rows</p>
-                      <p className="text-2xl font-bold text-blue-900">{metrics.estimatedRows}</p>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4 border border-blue-200">
-                      <p className="text-xs text-gray-600 mb-1">Est. Posts</p>
-                      <p className="text-2xl font-bold text-blue-900">{metrics.estimatedPosts.toLocaleString()}</p>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4 border border-blue-200 md:col-span-2">
-                      <p className="text-xs text-gray-600 mb-1">Est. Wire Length</p>
-                      <p className="text-2xl font-bold text-blue-900">{metrics.estimatedWireFt.toLocaleString()} ft</p>
-                    </div>
-
-                    {formData.vine_count_reported && Math.abs(formData.vine_count_reported - metrics.estimatedVines) / metrics.estimatedVines > 0.15 && (
-                      <div className="md:col-span-4 bg-amber-100 border border-amber-300 rounded-lg p-3 flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
-                        <p className="text-sm text-amber-800">
-                          Your reported vine count differs from the estimate by more than 15%. This is fine, but double-check your spacing measurements.
-                        </p>
-                      </div>
-                    )}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="text-lg font-bold text-blue-900 flex items-center gap-2">
+                      <Calculator className="w-5 h-5" />
+                      Field Metrics
+                    </h4>
+                    <p className="text-sm text-blue-700 mt-1">Enter your actual field data or use auto-calculate</p>
                   </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={handleAutoCalculateMetrics}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                  >
+                    <Calculator className="w-4 h-4" />
+                    Auto-Calculate
+                  </button>
+                </div>
+
+                {/* Manual Input Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Total Vines
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.estimated_vines || ''}
+                      onChange={(e) => setFormData({ ...formData, estimated_vines: e.target.value ? parseInt(e.target.value) : null })}
+                      placeholder="e.g., 2420"
+                      className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Number of Rows
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.estimated_rows || ''}
+                      onChange={(e) => setFormData({ ...formData, estimated_rows: e.target.value ? parseInt(e.target.value) : null })}
+                      placeholder="e.g., 55"
+                      className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Calculated Estimates */}
+                <div className="mt-4 pt-4 border-t border-blue-200">
+                  <p className="text-xs font-semibold text-gray-600 uppercase mb-3">Estimates based on spacing & acreage</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-white rounded-lg p-3 border border-blue-200">
+                      <p className="text-xs text-gray-600 mb-1">Total Vines</p>
+                      <p className="text-lg font-bold text-blue-900">{metrics.estimatedVines.toLocaleString()}</p>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-3 border border-blue-200">
+                      <p className="text-xs text-gray-600 mb-1">Number of Rows</p>
+                      <p className="text-lg font-bold text-blue-900">{metrics.estimatedRows}</p>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-3 border border-blue-200">
+                      <p className="text-xs text-gray-600 mb-1">Vines/Acre</p>
+                      <p className="text-lg font-bold text-blue-900">{metrics.vinesPerAcre.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Based on {formData.row_spacing_ft}' × {formData.vine_spacing_ft}' spacing and {formData.acres || 0} acres
+                  </p>
+                </div>
               </div>
 
               {/* Notes */}
@@ -1567,34 +1634,17 @@ export function BlockManagement() {
           <BlockMap
             blocks={blocks}
             onBlockCreate={async (blockData) => {
-              // Pre-fill form with map data
+              // Pre-fill form with map data (acres and geometry)
               setFormData({
                 ...formData,
                 acres: blockData.acres || '',
-                name: blockData.name || `Block ${blocks.length + 1}`
+                name: blockData.name || `Field ${blocks.length + 1}`,
+                geom: blockData.geom // Store geometry from map
               });
 
-              // If user provided a name or we want to auto-create
-              if (blockData.name) {
-                const newBlock = {
-                  ...formData,
-                  name: blockData.name,
-                  acres: blockData.acres,
-                  geom: blockData.geom
-                };
-
-                const { error } = await createVineyardBlock(newBlock);
-                if (!error) {
-                  await loadBlocks();
-                  setAutoStartDrawing(false);
-                } else {
-                  alert(`Error creating block: ${error.message}`);
-                }
-              } else {
-                // Open form with pre-filled data
-                setIsAddingBlock(true);
-                setAutoStartDrawing(false);
-              }
+              // Always open form with pre-filled data for user to complete
+              setIsAddingBlock(true);
+              setAutoStartDrawing(false);
             }}
             onBlockUpdate={async (blockId, blockData) => {
               // Optimistically update local state first for immediate UI feedback

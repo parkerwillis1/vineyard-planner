@@ -4,7 +4,7 @@ import { Droplets, Clock, Zap, AlertCircle, CheckCircle2 } from 'lucide-react';
 export function IrrigationRecommendation({
   deficitMm,
   blockAcres = 1,
-  systemFlowRate = 50, // GPM
+  systemFlowRate = 50, // GPM (from parent configuration)
   forecastedET = 0, // Next 7 days
   allowedDepletionPercent = 50 // MAD - Maximum Allowed Depletion
 }) {
@@ -26,8 +26,27 @@ export function IrrigationRecommendation({
     // Add forecasted ET for the next 7 days
     const totalNeedMm = deficitMm + forecastedET;
 
+    // **FIX: Cap maximum application to prevent runoff**
+    // Professional drip irrigation: max 0.75-1.0 inches per application
+    // Large deficits should be made up over multiple cycles (irrigate 2-3x per week)
+    const MAX_APPLICATION_MM = 25; // ~1.0 inch maximum for drip systems
+    const cappedNeedMm = Math.min(totalNeedMm, MAX_APPLICATION_MM);
+    const isCapped = totalNeedMm > MAX_APPLICATION_MM;
+
     // Convert mm to inches (1 inch = 25.4mm)
-    const totalNeedInches = totalNeedMm / 25.4;
+    const totalNeedInches = cappedNeedMm / 25.4;
+
+    // DEBUG: Log the calculation
+    console.log('🚰 IrrigationRecommendation Debug:', {
+      deficitMm: deficitMm.toFixed(1),
+      forecastedET: forecastedET.toFixed(1),
+      totalNeedMm: totalNeedMm.toFixed(1),
+      MAX_APPLICATION_MM,
+      cappedNeedMm: cappedNeedMm.toFixed(1),
+      isCapped,
+      totalNeedInches: totalNeedInches.toFixed(2),
+      blockAcres
+    });
 
     // Calculate gallons needed (1 acre-inch = 27,154 gallons)
     const gallonsNeeded = totalNeedInches * blockAcres * 27154;
@@ -70,10 +89,12 @@ export function IrrigationRecommendation({
       urgencyBg,
       message,
       icon,
-      amountMm: totalNeedMm,
+      amountMm: cappedNeedMm,
       amountInches: totalNeedInches,
       gallons: gallonsNeeded,
-      hours: hoursNeeded
+      hours: hoursNeeded,
+      isCapped,
+      totalDeficit: totalNeedMm
     };
   };
 
@@ -157,7 +178,7 @@ export function IrrigationRecommendation({
           <span className="font-semibold text-gray-900">{deficitMm.toFixed(1)} mm</span>
         </div>
         <div className="flex items-center justify-between bg-white rounded px-3 py-2">
-          <span className="text-gray-700">Forecasted ET (7 days)</span>
+          <span className="text-gray-700">Forecasted ET (next 3 days)</span>
           <span className="font-semibold text-gray-900">{forecastedET.toFixed(1)} mm</span>
         </div>
       </div>
@@ -171,8 +192,8 @@ export function IrrigationRecommendation({
           {recommendation.hours > 100 && (
             <li className="text-blue-600 font-semibold">Large vineyard: Run multiple zones simultaneously to reduce total time</li>
           )}
-          {deficitMm > 40 && (
-            <li className="text-amber-600">Note: Recommendation capped at 40mm - can't make up for all deficit at once</li>
+          {recommendation.isCapped && (
+            <li className="text-amber-600 font-semibold">⚠️ Recommendation capped at 1.0 inch to prevent runoff and promote deep root growth. Total deficit is {recommendation.totalDeficit.toFixed(1)}mm - make up remaining deficit over multiple irrigation cycles (2-3 days apart).</li>
           )}
           <li>Monitor soil moisture sensors to verify application</li>
           {recommendation.urgency === 'critical' && (

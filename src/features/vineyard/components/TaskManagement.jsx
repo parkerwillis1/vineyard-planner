@@ -20,7 +20,9 @@ import {
   Users,
   Edit,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
@@ -93,6 +95,9 @@ export function TaskManagement() {
     showCompleted: false, // Hide completed tasks by default
     currentSeasonOnly: true // Only show current season by default
   });
+
+  // Filters visibility
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   // Pagination for list view
   const [currentPage, setCurrentPage] = useState(1);
@@ -379,11 +384,24 @@ export function TaskManagement() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-4 h-4 text-gray-600" />
-            <h3 className="font-semibold text-gray-900">Filters</h3>
-          </div>
+        <CardContent className={filtersExpanded ? "pt-6" : "px-4 py-2"}>
+          <button
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+            className={`flex items-center justify-between w-full ${filtersExpanded ? 'mb-4' : ''}`}
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-gray-600" />
+              <h3 className="font-semibold text-gray-900 leading-none -translate-y-[7.5px]">Filters</h3>
+            </div>
+            {filtersExpanded ? (
+              <ChevronUp className="w-5 h-5 text-gray-600" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-600" />
+            )}
+          </button>
+
+          {filtersExpanded && (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Season</label>
@@ -485,6 +503,8 @@ export function TaskManagement() {
               </span>
             </label>
           </div>
+          </>
+          )}
         </CardContent>
       </Card>
 
@@ -529,7 +549,7 @@ export function TaskManagement() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <StatusIcon className={`w-5 h-5 text-${statusConfig.color}-600`} />
-                        <h3 className={`text-lg font-semibold ${overdue ? 'text-red-900' : 'text-gray-900'}`}>
+                        <h3 className={`text-lg font-semibold leading-none -translate-y-[7.5px] ${overdue ? 'text-red-900' : 'text-gray-900'}`}>
                           {task.title}
                         </h3>
                         {overdue && (
@@ -700,7 +720,7 @@ export function TaskManagement() {
                 <div className="sticky top-0 bg-white border-b border-gray-200 rounded-t-lg p-4 z-10">
                   <div className="flex items-center gap-2">
                     <StatusIcon className={`w-5 h-5 text-${statusConfig.color}-600`} />
-                    <h3 className="font-semibold text-gray-900">{statusConfig.label}</h3>
+                    <h3 className="font-semibold text-gray-900 leading-none -translate-y-[7.5px]">{statusConfig.label}</h3>
                     <span className={`ml-auto px-2 py-1 rounded-full text-xs font-medium ${
                       statusTasks.length > 0
                         ? `bg-${statusConfig.color}-100 text-${statusConfig.color}-700`
@@ -712,7 +732,7 @@ export function TaskManagement() {
                 </div>
 
                 {/* Column Content */}
-                <div className="p-3 space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+                <div className="p-3 space-y-3 min-h-[calc(100vh-300px)] max-h-[calc(100vh-300px)] overflow-y-auto">
                   {statusTasks.length === 0 ? (
                     <div className="text-center py-8 text-gray-400 text-sm">
                       {draggedTask && draggedTask.status !== statusConfig.value ? (

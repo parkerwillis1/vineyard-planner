@@ -17,6 +17,7 @@
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
     "express": "^5.1.0",
+    "geotiff": "^2.1.4-beta.0",
     "lucide-react": "^0.546.0",
     "oauth-1.0a": "^2.2.6",
     "react": "^19.1.0",

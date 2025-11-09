@@ -195,7 +195,9 @@ export async function fetchFieldForecast(lat, lng) {
         precipitationProbability: precipProb,
         shortForecast: period.shortForecast,
         detailedForecast: period.detailedForecast,
-        estimatedRainfallMm: estimatedMm
+        estimatedRainfallMm: estimatedMm,
+        windSpeed: period.windSpeed,
+        windDirection: period.windDirection
       });
     }
 

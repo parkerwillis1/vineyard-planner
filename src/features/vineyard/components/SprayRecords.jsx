@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/auth/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import {
   Plus,
   Droplet,
@@ -18,7 +19,12 @@ import {
   Clock,
   Trash2,
   Eye,
-  Zap
+  Zap,
+  Search,
+  Filter,
+  Download,
+  BarChart3,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
@@ -37,6 +43,7 @@ const INVERSION_RISKS = ['None', 'Low', 'Moderate', 'High'];
 
 export function SprayRecords() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [sprayRecords, setSprayRecords] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [chemicals, setChemicals] = useState([]);
@@ -46,6 +53,15 @@ export function SprayRecords() {
   const [currentStep, setCurrentStep] = useState(1);
   const [complianceWarnings, setComplianceWarnings] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Filter & Search State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterBlock, setFilterBlock] = useState('all');
+  const [filterChemical, setFilterChemical] = useState('all');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showUsageSummary, setShowUsageSummary] = useState(false);
 
   // Wizard form data
   const [wizardData, setWizardData] = useState({
@@ -313,7 +329,7 @@ export function SprayRecords() {
   const handleQuickSpraySubmit = async (sprayData, blocksData, mixData) => {
     setIsSubmitting(true);
     try {
-      const { error } = await createSprayApplication(sprayData, blocksData, mixData);
+      const { error} = await createSprayApplication(sprayData, blocksData, mixData);
 
       if (error) {
         console.error('Error creating spray application:', error);
@@ -327,6 +343,139 @@ export function SprayRecords() {
     }
   };
 
+  // Filter spray records based on search and filter criteria
+  const filteredRecords = useMemo(() => {
+    return sprayRecords.filter(spray => {
+      // Search term filter (searches applicator name, chemicals, blocks)
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesApplicator = spray.applicator_name?.toLowerCase().includes(term);
+        const matchesChemical = spray.spray_mix_lines?.some(line =>
+          line.inventory_items?.name?.toLowerCase().includes(term)
+        );
+        const matchesBlock = spray.spray_blocks?.some(block =>
+          block.vineyard_blocks?.name?.toLowerCase().includes(term)
+        );
+        if (!matchesApplicator && !matchesChemical && !matchesBlock) return false;
+      }
+
+      // Block filter
+      if (filterBlock !== 'all') {
+        const hasBlock = spray.spray_blocks?.some(b => b.block_id === filterBlock);
+        if (!hasBlock) return false;
+      }
+
+      // Chemical filter
+      if (filterChemical !== 'all') {
+        const hasChemical = spray.spray_mix_lines?.some(line => line.item_id === filterChemical);
+        if (!hasChemical) return false;
+      }
+
+      // Date range filter
+      if (filterDateFrom) {
+        if (new Date(spray.application_date) < new Date(filterDateFrom)) return false;
+      }
+      if (filterDateTo) {
+        if (new Date(spray.application_date) > new Date(filterDateTo)) return false;
+      }
+
+      return true;
+    });
+  }, [sprayRecords, searchTerm, filterBlock, filterChemical, filterDateFrom, filterDateTo]);
+
+  // Calculate chemical usage summary
+  const usageSummary = useMemo(() => {
+    const summary = {};
+
+    filteredRecords.forEach(spray => {
+      spray.spray_mix_lines?.forEach(line => {
+        const chemName = line.inventory_items?.name || 'Unknown';
+        const chemId = line.item_id;
+
+        if (!summary[chemId]) {
+          summary[chemId] = {
+            name: chemName,
+            totalQuantity: 0,
+            unit: line.unit,
+            applications: 0,
+            acresTreated: 0,
+            blocks: new Set()
+          };
+        }
+
+        summary[chemId].totalQuantity += parseFloat(line.total_quantity || 0);
+        summary[chemId].applications += 1;
+        summary[chemId].acresTreated += parseFloat(spray.treated_acres || 0);
+
+        spray.spray_blocks?.forEach(block => {
+          summary[chemId].blocks.add(block.vineyard_blocks?.name);
+        });
+      });
+    });
+
+    return Object.values(summary).map(item => ({
+      ...item,
+      blocks: Array.from(item.blocks)
+    }));
+  }, [filteredRecords]);
+
+  // Export to PDF/Print
+  const handleExport = () => {
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Spray Application Records</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: #1f2937; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #10b981; color: white; }
+          .header-info { margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="header-info">
+          <h1>Spray Application Records</h1>
+          <p><strong>Report Generated:</strong> ${new Date().toLocaleDateString()}</p>
+          <p><strong>Total Applications:</strong> ${filteredRecords.length}</p>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Applicator</th>
+              <th>Method</th>
+              <th>Blocks</th>
+              <th>Acres</th>
+              <th>Chemicals</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredRecords.map(spray => `
+              <tr>
+                <td>${new Date(spray.application_date).toLocaleDateString()}</td>
+                <td>${spray.applicator_name || 'N/A'}</td>
+                <td>${spray.spray_method || 'N/A'}</td>
+                <td>${spray.spray_blocks?.map(b => b.vineyard_blocks?.name).join(', ') || 'N/A'}</td>
+                <td>${spray.treated_acres?.toFixed(2) || '0.00'}</td>
+                <td>${spray.spray_mix_lines?.map(l => l.inventory_items?.name).join(', ') || 'N/A'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -338,7 +487,28 @@ export function SprayRecords() {
           </p>
         </div>
         {!showWizard && !showQuickSpray && (
-          <div className="flex gap-3">
+          <div className="flex gap-2">
+            <Button
+              onClick={() => navigate('/vineyard?view=calendar')}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border-slate-700"
+            >
+              <CalendarIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Calendar</span>
+            </Button>
+            <Button
+              onClick={() => setShowUsageSummary(!showUsageSummary)}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border-slate-700"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Usage Report</span>
+            </Button>
+            <Button
+              onClick={handleExport}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border-0 focus:ring-0 focus:ring-offset-0"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
             <Button
               onClick={() => setShowQuickSpray(true)}
               className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
@@ -356,6 +526,182 @@ export function SprayRecords() {
           </div>
         )}
       </div>
+
+      {/* Search and Filter Bar */}
+      {!showWizard && !showQuickSpray && sprayRecords.length > 0 && (
+        <Card>
+          <CardContent className="pt-4">
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="flex gap-3">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search applications, chemicals, blocks, or applicators..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <Button
+                  onClick={() => setShowFilters(!showFilters)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Filter className="w-4 h-4" />
+                  Filters
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                </Button>
+              </div>
+
+              {/* Advanced Filters */}
+              {showFilters && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-3 border-t border-gray-200">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Block</label>
+                    <select
+                      value={filterBlock}
+                      onChange={(e) => setFilterBlock(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    >
+                      <option value="all">All Blocks</option>
+                      {blocks.map(block => (
+                        <option key={block.id} value={block.id}>{block.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Chemical</label>
+                    <select
+                      value={filterChemical}
+                      onChange={(e) => setFilterChemical(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    >
+                      <option value="all">All Chemicals</option>
+                      {chemicals.map(chem => (
+                        <option key={chem.id} value={chem.id}>{chem.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Date From</label>
+                    <input
+                      type="date"
+                      value={filterDateFrom}
+                      onChange={(e) => setFilterDateFrom(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Date To</label>
+                    <input
+                      type="date"
+                      value={filterDateTo}
+                      onChange={(e) => setFilterDateTo(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Results Count */}
+              <div className="text-sm text-gray-600">
+                Showing <span className="font-semibold">{filteredRecords.length}</span> of{' '}
+                <span className="font-semibold">{sprayRecords.length}</span> applications
+                {(searchTerm || filterBlock !== 'all' || filterChemical !== 'all' || filterDateFrom || filterDateTo) && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setFilterBlock('all');
+                      setFilterChemical('all');
+                      setFilterDateFrom('');
+                      setFilterDateTo('');
+                    }}
+                    className="ml-2 text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Chemical Usage Summary */}
+      {showUsageSummary && !showWizard && !showQuickSpray && usageSummary.length > 0 && (
+        <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3 mb-4">
+              <BarChart3 className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-grow">
+                <h3 className="text-lg font-bold text-blue-900 mb-1">Chemical Usage Summary</h3>
+                <p className="text-sm text-blue-700">
+                  Based on {filteredRecords.length} application{filteredRecords.length !== 1 ? 's' : ''}
+                  {(searchTerm || filterBlock !== 'all' || filterChemical !== 'all' || filterDateFrom || filterDateTo) && ' (filtered)'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowUsageSummary(false)}
+                className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-blue-600" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {usageSummary.map((chem, index) => (
+                <div key={index} className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-grow">
+                      <h4 className="font-bold text-gray-900">{chem.name}</h4>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {chem.applications} application{chem.applications !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <Package className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Total Used:</span>
+                      <span className="text-sm font-bold text-gray-900">
+                        {chem.totalQuantity.toFixed(2)} {chem.unit}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Acres Treated:</span>
+                      <span className="text-sm font-bold text-gray-900">
+                        {chem.acresTreated.toFixed(2)} ac
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Avg Rate:</span>
+                      <span className="text-sm font-bold text-gray-900">
+                        {(chem.totalQuantity / chem.acresTreated).toFixed(2)} {chem.unit}/ac
+                      </span>
+                    </div>
+                  </div>
+
+                  {chem.blocks.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-xs text-gray-600 mb-1">Blocks:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {chem.blocks.map((block, i) => (
+                          <span key={i} className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                            {block}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Active PHI Locks Alert */}
       {activePHILocks.length > 0 && !showWizard && !showQuickSpray && (
@@ -1083,18 +1429,29 @@ export function SprayRecords() {
       {/* Spray Records List */}
       {!showWizard && (
         <div className="space-y-4">
-          {sprayRecords.length === 0 ? (
+          {filteredRecords.length === 0 ? (
             <Card className="border-2 border-dashed border-gray-300">
               <CardContent className="py-12 text-center">
                 <Droplet className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-2">No spray applications yet</p>
-                <p className="text-sm text-gray-500">
-                  Create your first application using the wizard above
-                </p>
+                {sprayRecords.length === 0 ? (
+                  <>
+                    <p className="text-gray-600 mb-2">No spray applications yet</p>
+                    <p className="text-sm text-gray-500">
+                      Create your first application using the wizard above
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-600 mb-2">No applications match your filters</p>
+                    <p className="text-sm text-gray-500">
+                      Try adjusting your search or filter criteria
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
           ) : (
-            sprayRecords.map(spray => (
+            filteredRecords.map(spray => (
               <Card key={spray.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-4">

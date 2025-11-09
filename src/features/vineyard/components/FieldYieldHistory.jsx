@@ -3,7 +3,6 @@ import { TrendingUp, Plus, Edit2, Trash2, X, Calendar, DollarSign, BarChart3 } f
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { SkeletonCard, SkeletonTable } from '@/shared/components/ui/skeleton';
-import { usePreventBodyScroll } from '@/shared/hooks/usePreventBodyScroll';
 import {
   listFieldYieldHistory,
   createFieldYieldHistory,
@@ -11,7 +10,7 @@ import {
   deleteFieldYieldHistory
 } from '@/shared/lib/vineyardApi';
 
-export function FieldYieldHistory({ fieldId, fieldName, fieldAcres, onClose }) {
+export function FieldYieldHistory({ fieldId, fieldName, fieldAcres }) {
   const [yields, setYields] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -69,20 +68,6 @@ export function FieldYieldHistory({ fieldId, fieldName, fieldAcres, onClose }) {
     setEditingYield(null);
   };
 
-  // Prevent background scrolling when modal is open
-  usePreventBodyScroll();
-
-  // Scroll to top when form is shown
-  useEffect(() => {
-    if (isAdding) {
-      // Scroll the modal container to top
-      const modalContainer = document.querySelector('.yield-history-modal-container');
-      if (modalContainer) {
-        modalContainer.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }
-  }, [isAdding]);
-
   const handleEdit = (yieldRecord) => {
     setFormData({
       harvest_year: yieldRecord.harvest_year || new Date().getFullYear(),
@@ -107,14 +92,28 @@ export function FieldYieldHistory({ fieldId, fieldName, fieldAcres, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Convert empty strings to null for numeric fields
     const yieldData = {
       field_id: fieldId,
-      ...formData
+      harvest_year: parseInt(formData.harvest_year),
+      harvest_date: formData.harvest_date || null,
+      tons_harvested: formData.tons_harvested ? parseFloat(formData.tons_harvested) : null,
+      tons_per_acre: formData.tons_per_acre ? parseFloat(formData.tons_per_acre) : null,
+      brix: formData.brix ? parseFloat(formData.brix) : null,
+      ph: formData.ph ? parseFloat(formData.ph) : null,
+      ta: formData.ta ? parseFloat(formData.ta) : null,
+      cluster_count: formData.cluster_count ? parseInt(formData.cluster_count) : null,
+      berry_weight_g: formData.berry_weight_g ? parseFloat(formData.berry_weight_g) : null,
+      quality_grade: formData.quality_grade || null,
+      destination: formData.destination || null,
+      buyer_name: formData.buyer_name || null,
+      price_per_ton: formData.price_per_ton ? parseFloat(formData.price_per_ton) : null,
+      notes: formData.notes || null
     };
 
-    // Calculate tons per acre if tons harvested is provided
-    if (formData.tons_harvested && fieldAcres && !formData.tons_per_acre) {
-      yieldData.tons_per_acre = parseFloat(formData.tons_harvested) / parseFloat(fieldAcres);
+    // Calculate tons per acre if tons harvested is provided and tons_per_acre is not
+    if (yieldData.tons_harvested && fieldAcres && !yieldData.tons_per_acre) {
+      yieldData.tons_per_acre = yieldData.tons_harvested / parseFloat(fieldAcres);
     }
 
     if (editingYield) {
@@ -158,34 +157,26 @@ export function FieldYieldHistory({ fieldId, fieldName, fieldAcres, onClose }) {
   } : null;
 
   return (
-    <div className="yield-history-modal-container fixed inset-0 bg-black/60 backdrop-blur-sm z-50 overflow-y-auto">
-      <div className="min-h-full flex items-center justify-center p-4">
-        <Card className="w-full max-w-6xl my-8 shadow-2xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden">
-          <div className="bg-slate-800 px-6 py-5 flex items-center justify-between flex-shrink-0 shadow-lg border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-700 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-slate-300" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">Yield History</h2>
-              <p className="text-sm text-slate-400 flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5" />
-                {fieldName} • {fieldAcres} acres
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all hover:scale-110 border border-white/20"
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900">Yield History</h2>
+        {!isAdding && (
+          <Button
+            onClick={() => setIsAdding(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
           >
-            <X className="w-6 h-6 text-white" />
-          </button>
-        </div>
+            <Plus className="w-4 h-4" />
+            Add Harvest Record
+          </Button>
+        )}
+      </div>
 
-        <CardContent className="p-6 overflow-y-auto flex-1">
-          {/* Statistics */}
-          {stats && (
-            <div className="grid grid-cols-3 gap-6 mb-6">
+      <div>
+        {/* Statistics */}
+        {stats && (
+          <Card className="shadow-sm">
+            <CardContent className="pt-6">
+            <div className="grid grid-cols-3 gap-6">
               <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide">Avg Tons/Acre</p>
@@ -211,22 +202,14 @@ export function FieldYieldHistory({ fieldId, fieldName, fieldAcres, onClose }) {
                 <p className="text-xs text-gray-500 mt-1">Lifetime earnings</p>
               </div>
             </div>
-          )}
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Add Button */}
-          {!isAdding && (
-            <Button
-              onClick={() => setIsAdding(true)}
-              className="w-full mb-6 bg-slate-800 hover:bg-slate-700 text-white rounded-xl py-6 flex items-center justify-center"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add Harvest Record
-            </Button>
-          )}
-
-          {/* Add/Edit Form */}
-          {isAdding && (
-            <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-300 mb-6">
+        {/* Add/Edit Form */}
+        {isAdding && (
+          <Card className="shadow-sm">
+            <CardContent className="pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <div className="p-1.5 bg-gray-200 rounded-lg">
                   <Plus className="w-5 h-5 text-gray-700" />
@@ -403,19 +386,21 @@ export function FieldYieldHistory({ fieldId, fieldName, fieldAcres, onClose }) {
 
                 {/* Actions */}
                 <div className="flex gap-3">
-                  <Button type="submit" className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-md hover:shadow-lg transition-all">
+                  <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
                     {editingYield ? 'Update' : 'Add'} Record
                   </Button>
-                  <Button type="button" variant="outline" onClick={resetForm} className="hover:bg-gray-100 transition-colors">
+                  <Button type="button" variant="outline" onClick={resetForm}>
                     Cancel
                   </Button>
                 </div>
               </form>
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Yield Records List */}
-          <div>
+        {/* Yield Records List */}
+        <Card className="shadow-sm">
+          <CardContent className="pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <div className="p-1.5 bg-gray-100 rounded-lg">
                 <TrendingUp className="w-5 h-5 text-gray-600" />
@@ -515,8 +500,7 @@ export function FieldYieldHistory({ fieldId, fieldName, fieldAcres, onClose }) {
                 ))}
               </div>
             )}
-          </div>
-        </CardContent>
+          </CardContent>
         </Card>
       </div>
     </div>
