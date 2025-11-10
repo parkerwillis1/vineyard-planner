@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import {
   Calculator,
   LayoutGrid,
@@ -13,12 +14,20 @@ import {
   Zap,
   Clock,
   Shield,
-  Users
+  Users,
+  MapPin,
+  Satellite,
+  Calendar,
+  Droplet,
+  Wind,
+  Tractor,
+  Activity
 } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 
 export default function ProductsPage() {
   const { user } = useAuth();
+  const [selectedTool, setSelectedTool] = useState('planner'); // 'planner' or 'operations'
 
   return (
     <div className="relative">
@@ -35,10 +44,10 @@ export default function ProductsPage() {
               <span className="text-sm font-semibold text-white">Professional Vineyard Planning Tools</span>
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">
-              Everything you need to plan a profitable vineyard
+              Complete vineyard management platform
             </h1>
             <p className="mt-6 text-xl leading-8 text-teal-50">
-              Powerful financial modeling, vineyard design, and loan planning tools that help you secure funding and make data-driven decisions.
+              From financial planning to daily operations—everything you need to design, manage, and optimize your vineyard business.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
@@ -107,21 +116,62 @@ export default function ProductsPage() {
         </div>
       </section>
 
+      {/* Tool Selector */}
+      <section className="bg-white py-12 border-b border-gray-200">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => setSelectedTool('planner')}
+              className={`px-8 py-4 rounded-xl font-bold text-lg transition-all ${
+                selectedTool === 'planner'
+                  ? 'bg-gradient-to-r from-teal-600 to-vine-green-600 text-white shadow-lg scale-105'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Calculator className="w-6 h-6" />
+                <span>Financial Planner</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setSelectedTool('operations')}
+              className={`px-8 py-4 rounded-xl font-bold text-lg transition-all ${
+                selectedTool === 'operations'
+                  ? 'bg-gradient-to-r from-vine-green-600 to-emerald-600 text-white shadow-lg scale-105'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <MapPin className="w-6 h-6" />
+                <span>Vineyard Operations</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Main Features Section */}
       <section id="features" className="bg-gradient-to-b from-gray-50 to-white py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mx-auto max-w-2xl text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Powerful tools designed for vineyard owners
+              {selectedTool === 'planner'
+                ? 'Powerful tools designed for vineyard planning'
+                : 'Comprehensive vineyard operations management'}
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              Every feature you need to plan, finance, and execute your vineyard project
+              {selectedTool === 'planner'
+                ? 'Every feature you need to plan, finance, and execute your vineyard project'
+                : 'Track activities, monitor health, and optimize your vineyard performance'}
             </p>
           </div>
 
           <div className="space-y-24">
-            {/* Feature 1: Financial Planning */}
-            <FeatureShowcase
+            {/* Planner Features */}
+            {selectedTool === 'planner' && (
+              <>
+                {/* Feature 1: Financial Planning */}
+                <FeatureShowcase
               reverse={false}
               icon={Calculator}
               iconColor="teal"
@@ -203,6 +253,97 @@ export default function ProductsPage() {
               ctaText="See Report Examples"
               ctaLink={user ? "/planner" : "/signup"}
             />
+              </>
+            )}
+
+            {/* Operations Features */}
+            {selectedTool === 'operations' && (
+              <>
+                {/* Feature 1: Satellite Monitoring */}
+                <FeatureShowcase
+                  reverse={false}
+                  icon={Satellite}
+                  iconColor="vine-green"
+                  eyebrow="Satellite Monitoring"
+                  title="Track vegetation health from space"
+                  description="Monitor your vineyard's performance with satellite-based NDVI vegetation tracking and evapotranspiration (ET) data. Identify stress early and optimize irrigation with real satellite data updated every 5 days."
+                  features={[
+                    "NDVI vegetation vigor tracking (10m resolution)",
+                    "Daily ET evapotranspiration measurements",
+                    "Historical trends and comparisons",
+                    "Early stress detection before visible symptoms",
+                    "Monthly progression throughout growing season",
+                    "Field-by-field performance analysis"
+                  ]}
+                  demoComponent={<NDVIDemo />}
+                  ctaText="Explore Satellite Features"
+                  ctaLink={user ? "/vineyard" : "/signup"}
+                />
+
+                {/* Feature 2: Field Mapping */}
+                <FeatureShowcase
+                  reverse={true}
+                  icon={MapPin}
+                  iconColor="teal"
+                  eyebrow="Field Mapping"
+                  title="Map and monitor all your fields"
+                  description="Draw custom field boundaries on satellite maps, track field metrics, and monitor performance across your entire vineyard. Visualize your operation with interactive maps and data overlays."
+                  features={[
+                    "Draw custom field boundaries on maps",
+                    "Track acres, varietals, and planting dates",
+                    "View satellite imagery and terrain",
+                    "Monitor field-specific metrics",
+                    "Compare performance across fields",
+                    "Historical data and analytics"
+                  ]}
+                  demoComponent={<VineyardLayoutDemo />}
+                  ctaText="Start Mapping Fields"
+                  ctaLink={user ? "/vineyard" : "/signup"}
+                />
+
+                {/* Feature 3: Task & Team Management */}
+                <FeatureShowcase
+                  reverse={false}
+                  icon={Calendar}
+                  iconColor="vine-green"
+                  title="Organize work and manage your team"
+                  description="Assign tasks to team members, track completion status, and manage daily operations across your vineyard. Keep everyone coordinated with calendar views and progress tracking."
+                  eyebrow="Operations Management"
+                  features={[
+                    "Assign tasks to crew members",
+                    "Track task status and completion",
+                    "Calendar view of all activities",
+                    "Labor hour tracking by field",
+                    "Irrigation and spray logging",
+                    "Harvest quality documentation"
+                  ]}
+                  demoComponent={<TaskManagementDemo />}
+                  ctaText="Manage Operations"
+                  ctaLink={user ? "/vineyard" : "/signup"}
+                />
+
+                {/* Feature 4: Analytics Dashboard */}
+                <FeatureShowcase
+                  reverse={true}
+                  icon={BarChart3}
+                  iconColor="teal"
+                  eyebrow="Analytics & Insights"
+                  title="Make data-driven decisions"
+                  description="Comprehensive analytics dashboard with vegetation vigor trends, water usage analysis, yield tracking, and field performance comparisons. Turn your data into actionable insights."
+                  features={[
+                    "Vegetation vigor trends over time",
+                    "Water usage and ET analysis",
+                    "Yield production by field",
+                    "Grape quality metrics (Brix, pH, acidity)",
+                    "Field performance comparisons",
+                    "Cost analysis and tracking"
+                  ]}
+                  demoComponent={<AnalyticsDemo />}
+                  ctaText="View Analytics Features"
+                  ctaLink={user ? "/vineyard" : "/signup"}
+                />
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -568,6 +709,179 @@ function ReportDemo() {
           <button className="w-full rounded-lg bg-gradient-to-r from-teal-600 to-vine-green-600 px-4 py-2.5 text-sm font-bold text-white hover:shadow-lg transition-shadow">
             Export as PDF
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Demo components for Operations features
+function NDVIDemo() {
+  return (
+    <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-8 shadow-2xl border-2 border-blue-500/20">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between pb-4 border-b border-white/20">
+          <div>
+            <span className="text-sm font-semibold text-blue-200">Vegetation Vigor Trends</span>
+            <div className="text-xs text-blue-300 mt-1">Powered by Sentinel-2 Satellites</div>
+          </div>
+          <Satellite className="w-5 h-5 text-blue-400" />
+        </div>
+
+        {/* NDVI Example Image */}
+        <div className="rounded-lg overflow-hidden border-2 border-white/20">
+          <img
+            src="/NDVI_Example.png"
+            alt="NDVI Vegetation Health Monitoring"
+            className="w-full h-auto"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+            <div className="text-xs text-blue-200 mb-1">Resolution</div>
+            <div className="font-semibold text-white">10m / 5 days</div>
+          </div>
+          <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+            <div className="text-xs text-blue-200 mb-1">Data Source</div>
+            <div className="font-semibold text-white">Sentinel-2</div>
+          </div>
+          <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+            <div className="text-xs text-blue-200 mb-1">ET Data</div>
+            <div className="font-semibold text-white">Daily</div>
+          </div>
+          <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+            <div className="text-xs text-blue-200 mb-1">Coverage</div>
+            <div className="font-semibold text-white">All Fields</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskManagementDemo() {
+  return (
+    <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-700">Active Tasks</span>
+          <Calendar className="w-5 h-5 text-vine-green-600" />
+        </div>
+
+        <div className="space-y-3">
+          <div className="bg-vine-green-50 border-l-4 border-vine-green-500 rounded-lg p-4">
+            <div className="flex items-start justify-between mb-2">
+              <div className="font-semibold text-gray-900">Spray Vineyard Block A</div>
+              <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-semibold">In Progress</span>
+            </div>
+            <div className="text-sm text-gray-600 mb-2">Apply fungicide to prevent powdery mildew</div>
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                Assigned to: John D.
+              </span>
+              <span>Due: Today</span>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4">
+            <div className="flex items-start justify-between mb-2">
+              <div className="font-semibold text-gray-900">Irrigation - Block C</div>
+              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">Scheduled</span>
+            </div>
+            <div className="text-sm text-gray-600 mb-2">Run irrigation for 4 hours based on ET data</div>
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                Assigned to: Sarah M.
+              </span>
+              <span>Due: Tomorrow</span>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 border-l-4 border-gray-300 rounded-lg p-4">
+            <div className="flex items-start justify-between mb-2">
+              <div className="font-semibold text-gray-900">Harvest Quality Check</div>
+              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">Done</span>
+            </div>
+            <div className="text-sm text-gray-600 mb-2">Sample Brix levels across all blocks</div>
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span>Completed: Yesterday</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsDemo() {
+  return (
+    <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-700">Vineyard Analytics Dashboard</span>
+          <BarChart3 className="w-5 h-5 text-teal-600" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+            <div className="text-xs font-semibold text-green-700 mb-1">Avg NDVI</div>
+            <div className="text-2xl font-bold text-gray-900">0.68</div>
+            <div className="text-xs text-green-600 mt-1">↑ +0.08 from last month</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
+            <div className="text-xs font-semibold text-blue-700 mb-1">Water Usage</div>
+            <div className="text-2xl font-bold text-gray-900">42,500</div>
+            <div className="text-xs text-blue-600 mt-1">gallons this week</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200">
+            <div className="text-xs font-semibold text-amber-700 mb-1">Est. Yield</div>
+            <div className="text-2xl font-bold text-gray-900">4.2</div>
+            <div className="text-xs text-amber-600 mt-1">tons per acre</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+            <div className="text-xs font-semibold text-purple-700 mb-1">Avg Brix</div>
+            <div className="text-2xl font-bold text-gray-900">24.2°</div>
+            <div className="text-xs text-purple-600 mt-1">across all blocks</div>
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <div className="text-xs font-semibold text-gray-700 mb-3">Field Performance Comparison</div>
+          <div className="space-y-2">
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-gray-600">Block A</span>
+                <span className="font-semibold text-gray-900">NDVI: 0.72</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full" style={{ width: '90%' }}></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-gray-600">Block B</span>
+                <span className="font-semibold text-gray-900">NDVI: 0.65</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-gradient-to-r from-yellow-500 to-amber-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-gray-600">Block C</span>
+                <span className="font-semibold text-gray-900">NDVI: 0.68</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-gradient-to-r from-teal-500 to-cyan-500 h-2 rounded-full" style={{ width: '82%' }}></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

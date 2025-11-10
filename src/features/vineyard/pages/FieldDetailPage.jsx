@@ -67,6 +67,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
   });
 
   const [sampleFormData, setSampleFormData] = useState({
+    sample_date: '',
     brix: '',
     ta: '',
     ph: '',
@@ -152,6 +153,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
   const handleEditSample = (sample) => {
     setEditingSample(sample);
     setSampleFormData({
+      sample_date: sample.sample_date || '',
       brix: sample.brix || '',
       ta: sample.ta || '',
       ph: sample.ph || '',
@@ -188,7 +190,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
 
     const sampleData = {
       block_id: id,
-      sample_date: editingSample?.sample_date || new Date().toISOString().split('T')[0],
+      sample_date: sampleFormData.sample_date || new Date().toISOString().split('T')[0],
       brix: sampleFormData.brix ? parseFloat(sampleFormData.brix) : null,
       ta: sampleFormData.ta ? parseFloat(sampleFormData.ta) : null,
       ph: sampleFormData.ph ? parseFloat(sampleFormData.ph) : null,
@@ -217,6 +219,7 @@ export function FieldDetailPage({ id: propId, onBack }) {
       setShowSampleModal(false);
       setEditingSample(null);
       setSampleFormData({
+        sample_date: '',
         brix: '',
         ta: '',
         ph: '',
@@ -857,6 +860,21 @@ export function FieldDetailPage({ id: propId, onBack }) {
             </div>
 
             <form onSubmit={handleAddSample} className="p-6 space-y-6">
+              {/* Sample Date */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Sample Date
+                </label>
+                <Input
+                  type="date"
+                  value={sampleFormData.sample_date}
+                  onChange={(e) => setSampleFormData({ ...sampleFormData, sample_date: e.target.value })}
+                  placeholder="Leave blank for today"
+                  className="w-full max-w-xs"
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave blank to use today's date</p>
+              </div>
+
               {/* Quality Metrics */}
               <div className="grid grid-cols-3 gap-4">
                 <div>

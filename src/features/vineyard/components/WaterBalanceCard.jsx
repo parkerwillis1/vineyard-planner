@@ -1,5 +1,5 @@
 import React from 'react';
-import { Droplet, TrendingDown, TrendingUp, AlertTriangle, CheckCircle, CloudRain } from 'lucide-react';
+import { Droplet, TrendingDown, TrendingUp, AlertTriangle, CheckCircle, CloudRain, Calendar } from 'lucide-react';
 
 export function WaterBalanceCard({ etData, irrigationEvents, rainfall = 0, blockAcres = 1 }) {
   if (!etData || !etData.summary) {
@@ -11,12 +11,22 @@ export function WaterBalanceCard({ etData, irrigationEvents, rainfall = 0, block
     );
   }
 
-  // Calculate total irrigation applied (convert gallons to mm)
-  const totalGallons = irrigationEvents.reduce((sum, event) => sum + (event.totalWater || 0), 0);
+  // USE RECENT DATA ONLY (last 14 days) to match the water budget calculation
+  const LOOKBACK_DAYS = 14;
+  const today = new Date();
+  const lookbackDate = new Date(today);
+  lookbackDate.setDate(lookbackDate.getDate() - LOOKBACK_DAYS);
+  const lookbackStr = lookbackDate.toISOString().split('T')[0];
+
+  // Filter irrigation events to match the same 14-day window
+  const recentIrrigationEvents = irrigationEvents.filter(event => event.date >= lookbackStr);
+
+  // Calculate total irrigation applied from RECENT events (convert gallons to mm)
+  const totalGallons = recentIrrigationEvents.reduce((sum, event) => sum + (event.totalWater || 0), 0);
   // 1 acre-inch = 27,154 gallons; 1 inch = 25.4 mm
   const irrigationMm = (totalGallons / (blockAcres * 27154)) * 25.4;
 
-  // Get ETc from data
+  // Get ETc from data (already filtered to recent period)
   const etcMm = etData.summary.totalETc || 0;
 
   // Calculate water balance: (Irrigation + Rainfall) - ETc
@@ -53,7 +63,15 @@ export function WaterBalanceCard({ etData, irrigationEvents, rainfall = 0, block
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900">Water Balance</h3>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-blue-600" />
+            Water Balance (Last 14 Days)
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            {recentIrrigationEvents.length} irrigation event{recentIrrigationEvents.length !== 1 ? 's' : ''} in this period
+          </p>
+        </div>
         <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${statusBg}`}>
           {statusIcon}
           <span className={`text-sm font-medium ${statusColor}`}>{status}</span>
@@ -113,8 +131,13 @@ export function WaterBalanceCard({ etData, irrigationEvents, rainfall = 0, block
             <div className="w-4 h-4 rounded-full bg-green-500" />
             <span className="text-sm text-gray-700">Irrigation Applied</span>
           </div>
-          <div className="text-sm font-semibold text-green-600">
-            +{irrigationMm.toFixed(1)} mm
+          <div className="text-right">
+            <div className="text-sm font-semibold text-green-600">
+              +{irrigationMm.toFixed(1)} mm
+            </div>
+            <div className="text-xs text-gray-500">
+              ({(irrigationMm / 25.4).toFixed(2)} inches)
+            </div>
           </div>
         </div>
 
@@ -139,8 +162,13 @@ export function WaterBalanceCard({ etData, irrigationEvents, rainfall = 0, block
       </div>
 
       {/* Info note */}
-      <div className="mt-4 text-xs text-gray-500 bg-gray-50 rounded p-2">
-        <strong>Formula:</strong> (Irrigation + Rainfall) - Crop ET = Water Balance
+      <div className="mt-4 text-xs text-gray-500 bg-blue-50 rounded p-2 border border-blue-200">
+        <div className="flex items-start gap-2">
+          <Calendar className="w-3 h-3 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <strong className="text-blue-900">14-Day Window:</strong> This balance shows recent water needs and irrigation applied over the last 14 days, providing actionable guidance for immediate irrigation decisions.
+          </div>
+        </div>
       </div>
     </div>
   );

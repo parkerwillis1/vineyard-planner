@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Edit2, Save, Trash2, Users } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
-import { updateTask, deleteTask, updateTaskStatus, listTeamMembers } from '@/shared/lib/vineyardApi';
+import { updateTask, deleteTask, updateTaskStatus } from '@/shared/lib/vineyardApi';
 
 const TASK_STATUSES = [
   { value: 'draft', label: 'Draft' },
@@ -36,22 +36,10 @@ const TASK_TYPES = [
   { value: 'other', label: 'Other' }
 ];
 
-export function TaskDrawer({ task, blocks, onClose, onUpdate }) {
+export function TaskDrawer({ task, blocks, teamMembers = [], onClose, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTask, setEditedTask] = useState(task);
   const [saving, setSaving] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([]);
-
-  useEffect(() => {
-    loadTeamMembers();
-  }, []);
-
-  const loadTeamMembers = async () => {
-    const { data, error } = await listTeamMembers();
-    if (!error && data) {
-      setTeamMembers(data);
-    }
-  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -267,7 +255,7 @@ export function TaskDrawer({ task, blocks, onClose, onUpdate }) {
                 </div>
               </div>
 
-              {/* Assignees */}
+              {/* Assigned To */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   <Users className="w-4 h-4" />
@@ -275,40 +263,34 @@ export function TaskDrawer({ task, blocks, onClose, onUpdate }) {
                 </label>
                 {isEditing ? (
                   <select
-                    multiple
-                    value={editedTask.assignees || []}
-                    onChange={(e) => {
-                      const selected = Array.from(e.target.selectedOptions, option => option.value);
-                      setEditedTask({ ...editedTask, assignees: selected });
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+                    value={editedTask.assigned_to || ''}
+                    onChange={(e) => setEditedTask({ ...editedTask, assigned_to: e.target.value || null })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    {teamMembers.filter(m => m.is_active).map(member => (
-                      <option key={member.user_id} value={member.user_id}>
-                        {member.full_name} ({member.role})
+                    <option value="">Unassigned</option>
+                    {teamMembers.map(member => (
+                      <option key={member.id} value={member.id}>
+                        {member.full_name} {member.role && `(${member.role})`}
                       </option>
                     ))}
                   </select>
                 ) : (
                   <div>
-                    {task.assignees && task.assignees.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {task.assignees.map(assigneeId => {
-                          const member = teamMembers.find(m => m.user_id === assigneeId);
-                          return (
-                            <span key={assigneeId} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                              {member ? member.full_name : 'Unknown'}
-                            </span>
-                          );
-                        })}
-                      </div>
+                    {task.assigned_to ? (
+                      (() => {
+                        const member = teamMembers.find(m => m.id === task.assigned_to);
+                        return member ? (
+                          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                            {member.full_name} {member.role && `(${member.role})`}
+                          </span>
+                        ) : (
+                          <p className="text-gray-500 italic">Unknown member</p>
+                        );
+                      })()
                     ) : (
                       <p className="text-gray-500 italic">No one assigned</p>
                     )}
                   </div>
-                )}
-                {isEditing && (
-                  <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple people</p>
                 )}
               </div>
 

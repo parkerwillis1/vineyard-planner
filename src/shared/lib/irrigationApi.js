@@ -282,8 +282,11 @@ export async function toggleIrrigationSchedule(scheduleId, isActive) {
 export async function generateEventsFromSchedule(schedule, endDate = null) {
   const events = [];
   const startDate = new Date(schedule.start_date);
+
+  // Determine the final date for event generation
+  // Priority: use the earlier of endDate and schedule.end_date, or just endDate if schedule has no end_date
   const finalDate = endDate
-    ? new Date(Math.min(new Date(endDate), schedule.end_date ? new Date(schedule.end_date) : new Date()))
+    ? (schedule.end_date ? new Date(Math.min(new Date(endDate), new Date(schedule.end_date))) : new Date(endDate))
     : (schedule.end_date ? new Date(schedule.end_date) : new Date());
 
   // Calculate duration in hours
@@ -351,18 +354,62 @@ export async function createScheduleWithBackfill(schedule) {
     user_id: user.id
   }));
 
-  const { data: createdEvents, error: eventsError } = await supabase
-    .from('irrigation_events')
-    .insert(eventsWithUser)
-    .select();
+  // Check for existing events to prevent duplicates
+  const startDate = events.length > 0 ? events[0].event_date : null;
+  const endDate = events.length > 0 ? events[events.length - 1].event_date : null;
 
+  if (startDate && endDate) {
+    const { data: existingEvents } = await supabase
+      .from('irrigation_events')
+      .select('event_date, id')
+      .eq('user_id', user.id)
+      .eq('block_id', createdSchedule.block_id)
+      .eq('schedule_id', createdSchedule.id)
+      .gte('event_date', startDate)
+      .lte('event_date', endDate);
+
+    const existingDates = new Set((existingEvents || []).map(e => e.event_date));
+
+    // Filter out events that already exist
+    const newEventsToInsert = eventsWithUser.filter(event => !existingDates.has(event.event_date));
+
+    console.log(`📅 createScheduleWithBackfill: ${events.length} events generated, ${existingDates.size} already exist, inserting ${newEventsToInsert.length} new events`);
+
+    if (newEventsToInsert.length === 0) {
+      return {
+        data: {
+          schedule: createdSchedule,
+          events: existingEvents || [],
+          eventCount: existingEvents?.length || 0
+        },
+        error: null
+      };
+    }
+
+    // Insert only new events
+    const { data: createdEvents, error: eventsError } = await supabase
+      .from('irrigation_events')
+      .insert(newEventsToInsert)
+      .select();
+
+    return {
+      data: {
+        schedule: createdSchedule,
+        events: createdEvents || [],
+        eventCount: createdEvents?.length || 0
+      },
+      error: eventsError
+    };
+  }
+
+  // Fallback if no events to insert
   return {
     data: {
       schedule: createdSchedule,
-      events: createdEvents || [],
-      eventCount: createdEvents?.length || 0
+      events: [],
+      eventCount: 0
     },
-    error: eventsError
+    error: null
   };
 }
 

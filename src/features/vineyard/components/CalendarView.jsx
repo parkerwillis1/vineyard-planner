@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { listTasks, getTask, listVineyardBlocks, listHarvestTracking } from '@/shared/lib/vineyardApi';
+import { listTasks, getTask, listVineyardBlocks, listHarvestTracking, listOrganizationMembers } from '@/shared/lib/vineyardApi';
 import { TaskDrawer } from './TaskDrawer';
 
 export function CalendarView({ onNavigate }) {
@@ -26,7 +26,6 @@ export function CalendarView({ onNavigate }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
-  const [events, setEvents] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [harvests, setHarvests] = useState([]);
   const [sprays, setsprays] = useState([]);
@@ -34,6 +33,8 @@ export function CalendarView({ onNavigate }) {
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDrawer, setShowTaskDrawer] = useState(false);
   const [blocks, setBlocks] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [selectedMember, setSelectedMember] = useState('all'); // 'all' or member id
 
   // Load all calendar data from Supabase
   useEffect(() => {
@@ -48,10 +49,11 @@ export function CalendarView({ onNavigate }) {
 
     const currentYear = new Date().getFullYear();
 
-    const [tasksRes, blocksRes, harvestsRes] = await Promise.all([
+    const [tasksRes, blocksRes, harvestsRes, membersRes] = await Promise.all([
       listTasks(),
       listVineyardBlocks(),
-      listHarvestTracking(currentYear)
+      listHarvestTracking(currentYear),
+      listOrganizationMembers()
     ]);
 
     if (tasksRes.error) {
@@ -62,41 +64,69 @@ export function CalendarView({ onNavigate }) {
 
     console.log('Loaded tasks:', tasksRes.data);
     console.log('Loaded harvests:', harvestsRes.data);
+    console.log('Loaded team members:', membersRes.data);
     setTasks(tasksRes.data || []);
     setBlocks(blocksRes.data || []);
     setHarvests(harvestsRes.data || []);
+    setTeamMembers(membersRes.data || []);
 
     setsprays([]);
 
-    const allEvents = [
-      ...(tasksRes.data || []).map(t => ({
+    setLoading(false);
+  };
+
+  const getTaskColor = (status) => {
+    const colors = {
+      'draft': 'gray',
+      'scheduled': 'blue',
+      'in_progress': 'yellow',
+      'needs_review': 'orange',
+      'done': 'green',
+      'blocked': 'red',
+      'archived': 'gray'
+    };
+    return colors[status] || 'indigo';
+  };
+
+  // Create events from tasks and harvests, filtered by selected team member
+  const events = useMemo(() => {
+    const taskEvents = tasks.map(t => {
+      const assignedMember = t.assigned_to ? teamMembers.find(m => m.id === t.assigned_to) : null;
+      return {
         id: `task-${t.id}`,
         taskId: t.id,
         type: 'task',
         title: t.title,
+        assignedMemberName: assignedMember?.full_name,
         date: t.due_date,
         start_date: t.start_date,
         status: t.status,
         priority: t.priority,
+        assigned_to: t.assigned_to,
         color: getTaskColor(t.status)
-      })),
-      ...(harvestsRes.data || []).map(h => ({
-        id: `harvest-${h.id}`,
-        harvestId: h.id,
-        type: 'harvest',
-        title: `Harvest: ${h.vineyard_blocks?.name || 'Unknown Block'}`,
-        date: h.target_pick_date,
-        status: h.status,
-        blockName: h.vineyard_blocks?.name,
-        variety: h.vineyard_blocks?.variety,
-        color: 'amber'
-      }))
-    ];
+      };
+    });
 
-    console.log('All events:', allEvents);
-    setEvents(allEvents);
-    setLoading(false);
-  };
+    const harvestEvents = harvests.map(h => ({
+      id: `harvest-${h.id}`,
+      harvestId: h.id,
+      type: 'harvest',
+      title: `Harvest: ${h.vineyard_blocks?.name || 'Unknown Block'}`,
+      date: h.target_pick_date,
+      status: h.status,
+      blockName: h.vineyard_blocks?.name,
+      variety: h.vineyard_blocks?.variety,
+      color: 'amber'
+    }));
+
+    // Filter task events by selected member
+    const filteredTaskEvents = selectedMember === 'all'
+      ? taskEvents
+      : taskEvents.filter(event => event.assigned_to === selectedMember);
+
+    // Combine filtered tasks with harvests (harvests are always shown)
+    return [...filteredTaskEvents, ...harvestEvents];
+  }, [tasks, harvests, selectedMember]);
 
   const handleEventClick = (event) => {
     if (event.type === 'task' && event.taskId) {
@@ -117,19 +147,6 @@ export function CalendarView({ onNavigate }) {
 
   const handleTaskUpdate = async () => {
     await loadCalendarData();
-  };
-
-  const getTaskColor = (status) => {
-    const colors = {
-      'draft': 'gray',
-      'scheduled': 'blue',
-      'in_progress': 'yellow',
-      'needs_review': 'orange',
-      'done': 'green',
-      'blocked': 'red',
-      'archived': 'gray'
-    };
-    return colors[status] || 'indigo';
   };
 
   // Calendar calculations
@@ -276,7 +293,14 @@ export function CalendarView({ onNavigate }) {
         )
       )}
       {event.type === 'harvest' && <Grape className={`${compact ? 'w-3 h-3' : 'w-4 h-4'} flex-shrink-0`} />}
-      <span className="truncate font-medium">{event.title}</span>
+      <div className="flex flex-col min-w-0 flex-1">
+        <span className="truncate font-medium">{event.title}</span>
+        {event.type === 'task' && event.assignedMemberName && (
+          <span className={`${compact ? 'text-[10px]' : 'text-xs'} opacity-75 truncate`}>
+            {event.assignedMemberName}
+          </span>
+        )}
+      </div>
     </div>
   );
 
@@ -487,43 +511,44 @@ export function CalendarView({ onNavigate }) {
       {/* Header Controls */}
       <Card className="border border-gray-200 shadow-sm">
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Date Navigation */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(-1)}
-                className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              {/* Date Navigation */}
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(-1)}
+                  className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
 
-              <h2 className="text-xl md:text-2xl font-bold text-[#1f2937] min-w-[200px] md:min-w-[280px] text-center">
-                {getDateRangeText()}
-              </h2>
+                <h2 className="text-xl md:text-2xl font-bold text-[#1f2937] min-w-[200px] md:min-w-[280px] text-center">
+                  {getDateRangeText()}
+                </h2>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(1)}
-                className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(1)}
+                  className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToToday}
-                className="border-gray-300 hover:border-gray-400 hover:bg-gray-50 font-semibold hidden md:flex"
-              >
-                Today
-              </Button>
-            </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToToday}
+                  className="border-gray-300 hover:border-gray-400 hover:bg-gray-50 font-semibold hidden md:flex"
+                >
+                  Today
+                </Button>
+              </div>
 
-            {/* View Toggle & Actions */}
-            <div className="flex items-center gap-3">
+              {/* View Toggle & Actions */}
+              <div className="flex items-center gap-3">
               {/* Desktop View Toggle */}
               <div className="hidden md:flex gap-1 bg-gray-100 rounded-lg p-1">
                 {['month', 'week', 'day'].map((v) => (
@@ -565,6 +590,27 @@ export function CalendarView({ onNavigate }) {
                 <span className="sm:hidden">Add</span>
               </Button>
             </div>
+          </div>
+
+          {/* Team Member Filter */}
+          {teamMembers.length > 0 && (
+            <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+              <Users className="w-5 h-5 text-gray-600 flex-shrink-0" />
+              <span className="text-sm font-semibold text-gray-700">Filter by Team Member:</span>
+              <select
+                value={selectedMember}
+                onChange={(e) => setSelectedMember(e.target.value)}
+                className="flex-1 md:flex-none md:min-w-[200px] px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+              >
+                <option value="all">All Tasks</option>
+                {teamMembers.map(member => (
+                  <option key={member.id} value={member.id}>
+                    {member.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           </div>
         </CardContent>
       </Card>
@@ -745,6 +791,7 @@ export function CalendarView({ onNavigate }) {
         <TaskDrawer
           task={selectedTask}
           blocks={blocks}
+          teamMembers={teamMembers}
           onClose={() => {
             setShowTaskDrawer(false);
             setSelectedTask(null);
@@ -753,7 +800,7 @@ export function CalendarView({ onNavigate }) {
         />
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;

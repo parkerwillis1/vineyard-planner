@@ -12,7 +12,14 @@ import {
   FileText,
   ChevronRight,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Droplet,
+  Wind,
+  Tractor,
+  Activity,
+  Package,
+  Wrench,
+  Satellite
 } from "lucide-react";
 
 export default function HomePage() {
@@ -81,10 +88,10 @@ export default function HomePage() {
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-32 md:py-40 lg:py-48">
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
-              Plan.Grow.Prosper.
+              Plan. Manage. Thrive.
             </h1>
             <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-6 sm:leading-8 text-white font-bold px-4 sm:px-0" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
-              Build detailed financial projections, design your vineyard layout, and model different scenarios—all in one place. No spreadsheets required.
+              From financial planning to daily operations—design your vineyard, manage your team, track activities, and monitor vineyard health with satellite data. All in one powerful platform.
             </p>
             <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-x-6 px-4 sm:px-0">
               <Link
@@ -121,22 +128,88 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Planning Tools Section */}
-      <section className="relative bg-gradient-to-br from-white via-teal-50/30 to-vine-green-50/40 overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-teal-200/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-vine-green-200/20 rounded-full blur-3xl"></div>
-
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-32">
+      {/* Simplified Capabilities Overview Section */}
+      <section className="relative bg-white py-16 sm:py-24 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-100 to-vine-green-100 px-4 py-1.5 mb-4">
               <Sparkles className="w-4 h-4 text-teal-600" />
-              <span className="text-sm font-semibold text-teal-700">Financial Planning</span>
+              <span className="text-sm font-semibold text-teal-700">Complete Platform</span>
             </div>
             <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 px-4 sm:px-0">
-              Build your vineyard business plan
+              Everything you need in one place
             </p>
             <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 px-4 sm:px-0">
+              From concept to harvest—comprehensive tools for vineyard planning and operations.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-12 sm:mt-16 max-w-5xl">
+            <div className="grid grid-cols-1 gap-8 sm:gap-10 md:grid-cols-3">
+              {/* Financial Planning */}
+              <div className="group relative bg-gradient-to-br from-teal-50 to-vine-green-50 rounded-3xl border-2 border-teal-200 p-8 hover:border-teal-400 hover:shadow-2xl transition-all">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-vine-green-500 mb-6 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Financial Planning</h3>
+                <p className="text-base text-gray-700 leading-relaxed">
+                  Design your vineyard layout, build 10-30 year projections, and create professional business plans that impress lenders and investors.
+                </p>
+              </div>
+
+              {/* Vineyard Operations */}
+              <div className="group relative bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border-2 border-emerald-200 p-8 hover:border-emerald-400 hover:shadow-2xl transition-all">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 mb-6 group-hover:scale-110 transition-transform">
+                  <Sprout className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Vineyard Operations</h3>
+                <p className="text-base text-gray-700 leading-relaxed">
+                  Map your fields, manage your team, track activities, and monitor vineyard health with satellite data—all in real-time.
+                </p>
+              </div>
+
+              {/* Analytics & Insights */}
+              <div className="group relative bg-gradient-to-br from-blue-50 to-cyan-50 rounded-3xl border-2 border-blue-200 p-8 hover:border-blue-400 hover:shadow-2xl transition-all">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 mb-6 group-hover:scale-110 transition-transform">
+                  <BarChart3 className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Analytics & Insights</h3>
+                <p className="text-base text-gray-700 leading-relaxed">
+                  View comprehensive analytics, vegetation trends, water usage, harvest quality metrics, and field performance comparisons.
+                </p>
+              </div>
+            </div>
+
+            {/* Learn More Link */}
+            <div className="mt-10 text-center">
+              <Link
+                to="/products"
+                className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-semibold text-lg group"
+              >
+                <span>Explore all features in detail</span>
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Planning Tools Section - Green Background */}
+      <section className="relative bg-gradient-to-br from-vine-green-500 to-emerald-600 overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl"></div>
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-32">
+          <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 mb-4 border border-white/30">
+              <Sparkles className="w-4 h-4 text-white" />
+              <span className="text-sm font-semibold text-white">Financial Planning</span>
+            </div>
+            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white px-4 sm:px-0">
+              Build your vineyard business plan
+            </p>
+            <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-white/90 px-4 sm:px-0">
               Create professional financial models that lenders and investors will respect.
               Our tools handle the complex calculations so you can focus on your vision.
             </p>
@@ -144,204 +217,325 @@ export default function HomePage() {
 
           <div className="mx-auto mt-12 sm:mt-16 max-w-7xl">
             <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-2">
-              <FeatureCard
-                icon={LayoutGrid}
-                iconColor="teal"
-                title="Design Your Vineyard Layout"
-                description="Configure vine spacing from 4×8' to 8×12', set your plot shape and dimensions, choose row orientation for optimal sun exposure."
-                details={[
-                  "Auto-calculate total vines needed",
-                  "Determine trellis materials required",
-                  "Plan irrigation system components",
-                  "Estimate fencing perimeter costs"
-                ]}
-              />
+              <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-6 sm:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 mb-4 sm:mb-5">
+                  <LayoutGrid className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Design Your Vineyard Layout</h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Configure vine spacing from 4×8' to 8×12', set your plot shape and dimensions, choose row orientation for optimal sun exposure.</p>
+                <ul className="space-y-2 sm:space-y-3">
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Auto-calculate total vines needed</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Determine trellis materials required</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Plan irrigation system components</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Estimate fencing perimeter costs</span>
+                  </li>
+                </ul>
+              </div>
 
-              <FeatureCard
-                icon={TrendingUp}
-                iconColor="teal"
-                title="Model Your Finances"
-                description="Build detailed 10-30 year financial projections with year-by-year revenue, costs, and cash flow analysis."
-                details={[
-                  "Choose bottled wine or bulk grape sales",
-                  "Set pricing and yield assumptions",
-                  "Track establishment and operating costs",
-                  "Calculate break-even timeline and ROI"
-                ]}
-              />
+              <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-6 sm:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 mb-4 sm:mb-5">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Model Your Finances</h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Build detailed 10-30 year financial projections with year-by-year revenue, costs, and cash flow analysis.</p>
+                <ul className="space-y-2 sm:space-y-3">
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Choose bottled wine or bulk grape sales</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Set pricing and yield assumptions</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Track establishment and operating costs</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Calculate break-even timeline and ROI</span>
+                  </li>
+                </ul>
+              </div>
 
-              <FeatureCard
-                icon={DollarSign}
-                iconColor="teal"
-                title="Plan Your Financing"
-                description="Model USDA FSA loans, commercial bank loans, and equipment financing with accurate payment calculations."
-                details={[
-                  "Compare multiple loan scenarios",
-                  "Calculate LTC and LTV ratios",
-                  "Track monthly debt service payments",
-                  "Identify equity gaps and funding needs"
-                ]}
-              />
+              <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-6 sm:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 mb-4 sm:mb-5">
+                  <DollarSign className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Plan Your Financing</h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Model USDA FSA loans, commercial bank loans, and equipment financing with accurate payment calculations.</p>
+                <ul className="space-y-2 sm:space-y-3">
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Compare multiple loan scenarios</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Calculate LTC and LTV ratios</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Track monthly debt service payments</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Identify equity gaps and funding needs</span>
+                  </li>
+                </ul>
+              </div>
 
-              <FeatureCard
-                icon={BarChart3}
-                iconColor="teal"
-                title="Analyze Different Scenarios"
-                description="Test various strategies by adjusting key variables and instantly seeing how they impact profitability."
-                details={[
-                  "Compare price points and their effects",
-                  "Model different acreage sizes",
-                  "Test various cost assumptions",
-                  "Evaluate financing structures"
-                ]}
-              />
+              <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-6 sm:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 mb-4 sm:mb-5">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Analyze Different Scenarios</h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Test various strategies by adjusting key variables and instantly seeing how they impact profitability.</p>
+                <ul className="space-y-2 sm:space-y-3">
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Compare price points and their effects</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Model different acreage sizes</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Test various cost assumptions</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                    <span>Evaluate financing structures</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="bg-gradient-to-b from-gray-50 to-white py-16 sm:py-24 lg:py-32">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-4 py-1.5 mb-4">
-              <CheckCircle2 className="w-4 h-4 text-vine-green-600" />
-              <span className="text-sm font-semibold text-gray-700">Simple Process</span>
-            </div>
-            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 px-4 sm:px-0">
-              From idea to business plan in minutes
-            </p>
-          </div>
-
-          <div className="mx-auto max-w-5xl">
-            <div className="space-y-4 sm:space-y-6">
-              <ProcessStep
-                number="1"
-                title="Design Your Vineyard"
-                description="Start by configuring your vineyard layout—vine spacing, plot dimensions, and row orientation. The calculator automatically determines materials needed."
-              />
-              <ProcessStep
-                number="2"
-                title="Input Your Financials"
-                description="Enter your acreage, land costs, and choose your sales strategy (bottled wine or bulk grapes). Customize establishment and operating costs."
-              />
-              <ProcessStep
-                number="3"
-                title="Add Financing Details"
-                description="Model your equipment purchases and loans with accurate terms. The system calculates payments and tracks your debt service."
-              />
-              <ProcessStep
-                number="4"
-                title="Review & Refine"
-                description="See your complete 10-year projection with break-even analysis, ROI calculations, and detailed cost breakdowns. Adjust assumptions until your model is perfect."
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Example Outputs Section */}
-      <section className="relative bg-gradient-to-br from-teal-600 to-vine-green-600 overflow-hidden">
-        {/* Decorative pattern */}
-        <div className="absolute inset-0 opacity-10">
+      {/* How It Works Section - Redesigned */}
+      <section className="relative bg-white py-16 sm:py-24 lg:py-32 overflow-hidden">
+        {/* Decorative background patterns - Topography */}
+        <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 left-0 w-full h-full" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundImage: `url('/topo.png')`,
+            backgroundRepeat: 'repeat',
+            backgroundSize: 'auto',
           }}></div>
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-32">
-          <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 mb-4">
-              <FileText className="w-4 h-4 text-white" />
-              <span className="text-sm font-semibold text-white">Professional Output</span>
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl text-center mb-16 sm:mb-20">
+            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-50 to-emerald-50 border-2 border-teal-200 px-4 py-2 mb-6 shadow-sm">
+              <CheckCircle2 className="w-5 h-5 text-teal-600" />
+              <span className="text-sm font-bold text-teal-700">Your Complete Journey</span>
             </div>
-            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white px-4 sm:px-0">
-              Generate lender-ready reports
-            </p>
-            <p className="mt-4 text-base sm:text-lg text-teal-50 px-4 sm:px-0">
-              Export polished PDF reports that impress investors and financial institutions
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 mb-6">
+              From concept to harvest in one platform
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              A seamless workflow that takes you from your initial vineyard vision all the way through to managing daily operations and analyzing performance.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <OutputCard
-              icon={DollarSign}
-              title="Year 0 Investment"
-              description="Complete breakdown of establishment costs with visual charts and per-acre analysis."
-              stats={["Land & Improvements", "Setup & Materials", "Financing Summary"]}
-            />
-            <OutputCard
-              icon={TrendingUp}
-              title="10-Year Projections"
-              description="Year-by-year financial details with revenue, costs, and cumulative cash flow tracking."
-              stats={["Break-Even Timeline", "ROI Calculation", "Profitability Charts"]}
-            />
-            <OutputCard
-              icon={BarChart3}
-              title="Detailed Analysis"
-              description="Deep dive into costs, production, lender ratios, and bottle economics."
-              stats={["Cost Breakdowns", "LTC/LTV Ratios", "Sensitivity Analysis"]}
-            />
+          {/* Journey Timeline */}
+          <div className="relative mx-auto max-w-6xl">
+            {/* Connecting line */}
+            <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-teal-200 via-emerald-300 to-vine-green-400 transform -translate-x-1/2"></div>
+
+            {/* Phase 1: Planning */}
+            <div className="relative mb-16 lg:mb-24">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-8">
+                {/* Left side - Step 1 */}
+                <div className="lg:w-1/2 lg:pr-12 lg:text-right">
+                  <div className="group relative bg-gradient-to-br from-teal-50 to-white rounded-2xl border-2 border-teal-200 p-8 shadow-lg hover:shadow-2xl hover:border-teal-400 transition-all hover:-translate-y-1">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 text-white font-bold text-2xl mb-4 shadow-md group-hover:scale-110 transition-transform lg:float-right lg:ml-4">
+                      1
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2 lg:justify-end">
+                      <LayoutGrid className="w-6 h-6 text-teal-600" />
+                      Design Your Vineyard
+                    </h3>
+                    <p className="text-base text-gray-700 leading-relaxed">
+                      Configure vineyard layout—vine spacing, plot dimensions, and row orientation. Automatically calculate materials, trellis systems, and irrigation needs.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2 lg:justify-end">
+                      <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-semibold">Layout Tools</span>
+                      <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-semibold">Auto Calculations</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Center badge */}
+                <div className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2 w-20 h-20 items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center border-4 border-white shadow-xl">
+                    <Sprout className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+
+                {/* Right side - Step 2 */}
+                <div className="lg:w-1/2 lg:pl-12">
+                  <div className="group relative bg-gradient-to-br from-teal-50 to-white rounded-2xl border-2 border-teal-200 p-8 shadow-lg hover:shadow-2xl hover:border-teal-400 transition-all hover:-translate-y-1">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 text-white font-bold text-2xl mb-4 shadow-md group-hover:scale-110 transition-transform lg:float-left lg:mr-4">
+                      2
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <TrendingUp className="w-6 h-6 text-teal-600" />
+                      Build Financial Projections
+                    </h3>
+                    <p className="text-base text-gray-700 leading-relaxed">
+                      Create 10-30 year projections with revenue models, cost analysis, and ROI calculations. Model different financing scenarios to find the best path forward.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-semibold">Cash Flow</span>
+                      <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-semibold">Loan Planning</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Phase 2: Operations */}
+            <div className="relative">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-8">
+                {/* Left side - Step 3 */}
+                <div className="lg:w-1/2 lg:pr-12 lg:text-right">
+                  <div className="group relative bg-gradient-to-br from-emerald-50 to-white rounded-2xl border-2 border-emerald-200 p-8 shadow-lg hover:shadow-2xl hover:border-emerald-400 transition-all hover:-translate-y-1">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold text-2xl mb-4 shadow-md group-hover:scale-110 transition-transform lg:float-right lg:ml-4">
+                      3
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2 lg:justify-end">
+                      <MapPin className="w-6 h-6 text-emerald-600" />
+                      Map Your Fields
+                    </h3>
+                    <p className="text-base text-gray-700 leading-relaxed">
+                      Draw field boundaries on satellite maps, track vegetation health with NDVI data, and monitor field performance throughout the season.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2 lg:justify-end">
+                      <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">Satellite NDVI</span>
+                      <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">Field Mapping</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Center badge */}
+                <div className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2 w-20 h-20 items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center border-4 border-white shadow-xl">
+                    <Satellite className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+
+                {/* Right side - Step 4 */}
+                <div className="lg:w-1/2 lg:pl-12">
+                  <div className="group relative bg-gradient-to-br from-emerald-50 to-white rounded-2xl border-2 border-emerald-200 p-8 shadow-lg hover:shadow-2xl hover:border-emerald-400 transition-all hover:-translate-y-1">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold text-2xl mb-4 shadow-md group-hover:scale-110 transition-transform lg:float-left lg:mr-4">
+                      4
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <Calendar className="w-6 h-6 text-emerald-600" />
+                      Manage Daily Operations
+                    </h3>
+                    <p className="text-base text-gray-700 leading-relaxed">
+                      Assign tasks to your team, log spray and irrigation events, track harvest quality data, and make data-driven decisions with real-time analytics.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">Task Management</span>
+                      <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">Analytics</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Coming Soon - Operations Section */}
-      <section className="relative bg-gradient-to-b from-white to-gray-50 py-16 sm:py-24 lg:py-32">
+      {/* Vineyard Operations Section - LIVE - Green Background */}
+      <section className="relative bg-gradient-to-br from-vine-green-600 to-emerald-700 overflow-hidden py-16 sm:py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center rounded-full bg-gradient-to-r from-yellow-100 to-amber-100 px-4 py-2 text-sm font-bold text-yellow-800 mb-4 shadow-sm">
+            <div className="inline-flex items-center rounded-full bg-white/20 px-4 py-2 text-sm font-bold text-white mb-4 shadow-sm border border-white/30">
               <Sparkles className="w-4 h-4 mr-2" />
-              Coming 2026
+              Available Now
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-100 to-vine-green-100 px-4 py-1.5 mb-4">
-              <Sprout className="w-4 h-4 text-vine-green-600" />
-              <span className="text-sm font-semibold text-vine-green-700">Vineyard Operations</span>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 mb-4 border border-white/30">
+              <Sprout className="w-4 h-4 text-white" />
+              <span className="text-sm font-semibold text-white">Vineyard Operations</span>
             </div>
-            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 px-4 sm:px-0">
+            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white px-4 sm:px-0">
               Manage your vineyard in real-time
             </p>
-            <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 px-4 sm:px-0">
+            <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-white/90 px-4 sm:px-0">
               Once your vineyard is planted, seamlessly transition from planning to operations with tools designed for day-to-day management.
               Track activities, monitor conditions, and make data-driven decisions across every block.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 mb-12 sm:mb-16">
-            <FutureFeature
+            <FeatureCard
               icon={MapPin}
               iconColor="teal"
-              title="Interactive Mapping"
-              description="Visualize your vineyard with satellite imagery overlay, custom block boundaries, GPS tracking for equipment, and precision sensor placement. Click any block to view detailed information and historical data."
+              title="Interactive Field Mapping"
+              description="Visualize your vineyard with satellite imagery, custom block boundaries, and vegetation health monitoring from space."
+              details={[
+                "Satellite NDVI vegetation vigor tracking",
+                "Draw custom field boundaries on maps",
+                "Track field metrics and performance",
+                "Historical satellite data trends"
+              ]}
             />
-            <FutureFeature
+            <FeatureCard
               icon={Thermometer}
               iconColor="teal"
-              title="Environmental Monitoring"
-              description="Track real-time data from IoT sensors measuring soil pH, nitrogen content, moisture levels, and temperature across your blocks. Receive alerts when conditions fall outside optimal ranges."
+              title="Weather & Environment"
+              description="Real-time weather data, forecasts, and environmental monitoring to make informed decisions."
+              details={[
+                "7-day weather forecasts",
+                "Evapotranspiration (ET) calculations",
+                "Frost and heat warnings",
+                "Optimal spray window recommendations"
+              ]}
             />
-            <FutureFeature
+            <FeatureCard
               icon={Calendar}
               iconColor="teal"
-              title="Operations Scheduling"
-              description="Plan and track spray schedules, pruning windows, harvest timing, and crew activities. Maintain compliance documents and access historical records for informed decision-making."
+              title="Task & Team Management"
+              description="Plan operations, assign work to crew members, and track progress across your vineyard."
+              details={[
+                "Assign tasks to team members",
+                "Track task status and completion",
+                "Calendar view of all activities",
+                "Labor hour tracking by field"
+              ]}
             />
           </div>
 
           {/* Additional operations features */}
-          <div className="mx-auto max-w-4xl mt-12 sm:mt-16 px-4 sm:px-0">
+          <div className="mx-auto max-w-6xl mt-12 sm:mt-16 px-4 sm:px-0">
             <div className="rounded-2xl bg-gradient-to-br from-teal-50 to-vine-green-50 p-6 sm:p-8 shadow-sm border border-teal-100">
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">
-                Complete Operational Visibility
+                Complete Operational Control
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <div className="flex items-start gap-3">
                   <div className="mt-1 rounded-lg bg-teal-100 p-2">
                     <CheckCircle2 className="w-5 h-5 text-teal-600" />
                   </div>
                   <div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Task Management</h4>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Assign tasks to crew members, track completion, and log labor hours by block</p>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Irrigation Management</h4>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Track water usage, log irrigation events, and calculate water application rates per field</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -349,8 +543,8 @@ export default function HomePage() {
                     <CheckCircle2 className="w-5 h-5 text-vine-green-600" />
                   </div>
                   <div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Weather Integration</h4>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">7-day forecasts with frost warnings, heat advisories, and optimal spray windows</p>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Spray Records</h4>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Document all spray applications with compliance-ready records and safety data sheets</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -359,7 +553,7 @@ export default function HomePage() {
                   </div>
                   <div>
                     <h4 className="text-sm sm:text-base font-semibold text-gray-900">Harvest Tracking</h4>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Log brix levels, tonnage by block, and real-time harvest progress with mobile app</p>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Log brix levels, pH, acidity, and tonnage by field for quality documentation</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -367,12 +561,190 @@ export default function HomePage() {
                     <CheckCircle2 className="w-5 h-5 text-vine-green-600" />
                   </div>
                   <div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Compliance Reports</h4>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Automatically generate pesticide use reports, organic certification docs, and audit trails</p>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Analytics Dashboard</h4>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">View vegetation vigor trends, water usage, yield production, and field performance comparisons</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 rounded-lg bg-teal-100 p-2">
+                    <CheckCircle2 className="w-5 h-5 text-teal-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Equipment & Inventory</h4>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Track equipment maintenance schedules and manage supply inventory levels</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 rounded-lg bg-teal-100 p-2">
+                    <CheckCircle2 className="w-5 h-5 text-vine-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Hardware Integration</h4>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Connect IoT devices and sensors for automated data collection and monitoring</p>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Satellite Monitoring Feature Spotlight */}
+      <section className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 overflow-hidden py-16 sm:py-24 lg:py-32">
+        {/* Decorative stars/satellites - Dense starfield */}
+        <div className="absolute inset-0 opacity-20">
+          {/* Large stars */}
+          <div className="absolute top-20 left-10 w-2 h-2 bg-white rounded-full animate-pulse"></div>
+          <div className="absolute bottom-32 right-1/4 w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.8s' }}></div>
+          <div className="absolute top-1/2 left-20 w-1.5 h-1.5 bg-blue-200 rounded-full animate-pulse" style={{ animationDelay: '3s' }}></div>
+          <div className="absolute top-2/3 right-16 w-1.5 h-1.5 bg-blue-100 rounded-full animate-pulse" style={{ animationDelay: '1.8s' }}></div>
+          <div className="absolute top-12 left-1/2 w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '3.5s' }}></div>
+          <div className="absolute bottom-20 left-1/4 w-1.5 h-1.5 bg-blue-200 rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
+
+          {/* Medium and small stars - scattered throughout */}
+          <div className="absolute top-40 right-20 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute top-32 left-1/3 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute top-1/4 right-1/2 w-1 h-1 bg-blue-100 rounded-full animate-pulse" style={{ animationDelay: '2.5s' }}></div>
+          <div className="absolute bottom-1/3 left-1/2 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '1.2s' }}></div>
+          <div className="absolute top-16 right-1/4 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+          <div className="absolute bottom-16 left-1/3 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '2.2s' }}></div>
+          <div className="absolute bottom-1/4 right-1/3 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+          <div className="absolute top-48 left-16 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '2.8s' }}></div>
+          <div className="absolute bottom-48 right-12 w-1 h-1 bg-blue-200 rounded-full animate-pulse" style={{ animationDelay: '1.4s' }}></div>
+          <div className="absolute bottom-12 right-1/2 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.9s' }}></div>
+          <div className="absolute top-1/2 right-24 w-1 h-1 bg-blue-100 rounded-full animate-pulse" style={{ animationDelay: '2.1s' }}></div>
+
+          {/* Additional dense star layer */}
+          <div className="absolute top-24 left-1/4 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          <div className="absolute top-36 right-1/3 w-1 h-1 bg-blue-100 rounded-full animate-pulse" style={{ animationDelay: '1.1s' }}></div>
+          <div className="absolute bottom-24 left-1/3 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '2.7s' }}></div>
+          <div className="absolute bottom-36 right-1/4 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '1.9s' }}></div>
+          <div className="absolute top-28 left-16 w-1 h-1 bg-blue-200 rounded-full animate-pulse" style={{ animationDelay: '3.2s' }}></div>
+          <div className="absolute top-44 right-16 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.7s' }}></div>
+          <div className="absolute bottom-28 left-20 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '2.4s' }}></div>
+          <div className="absolute bottom-44 right-20 w-1 h-1 bg-blue-100 rounded-full animate-pulse" style={{ animationDelay: '1.6s' }}></div>
+          <div className="absolute top-1/3 left-24 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '3.1s' }}></div>
+          <div className="absolute top-2/3 right-24 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+          <div className="absolute bottom-1/3 left-28 w-1 h-1 bg-blue-200 rounded-full animate-pulse" style={{ animationDelay: '2.9s' }}></div>
+          <div className="absolute bottom-2/3 right-28 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '1.3s' }}></div>
+          <div className="absolute top-1/4 left-32 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '3.3s' }}></div>
+          <div className="absolute top-3/4 right-32 w-1 h-1 bg-blue-100 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+          <div className="absolute bottom-1/4 left-36 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '2.6s' }}></div>
+          <div className="absolute bottom-3/4 right-36 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '1.7s' }}></div>
+
+          {/* Extra scattered stars for density */}
+          <div className="absolute top-14 left-1/4 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.9s' }}></div>
+          <div className="absolute top-52 right-3/4 w-0.5 h-0.5 bg-blue-100 rounded-full animate-pulse" style={{ animationDelay: '2.3s' }}></div>
+          <div className="absolute bottom-14 left-3/4 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '3.4s' }}></div>
+          <div className="absolute bottom-52 right-1/4 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '1.0s' }}></div>
+          <div className="absolute top-1/3 left-12 w-0.5 h-0.5 bg-blue-200 rounded-full animate-pulse" style={{ animationDelay: '2.0s' }}></div>
+          <div className="absolute top-2/3 right-12 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '3.6s' }}></div>
+          <div className="absolute bottom-1/3 left-40 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute bottom-2/3 right-40 w-0.5 h-0.5 bg-blue-100 rounded-full animate-pulse" style={{ animationDelay: '2.5s' }}></div>
+          <div className="absolute top-10 left-1/2 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute top-56 right-1/2 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '3.0s' }}></div>
+          <div className="absolute bottom-10 left-2/3 w-0.5 h-0.5 bg-blue-200 rounded-full animate-pulse" style={{ animationDelay: '0.8s' }}></div>
+          <div className="absolute bottom-56 right-2/3 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '2.8s' }}></div>
+          <div className="absolute top-1/2 left-8 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '1.2s' }}></div>
+          <div className="absolute top-1/2 right-8 w-0.5 h-0.5 bg-blue-100 rounded-full animate-pulse" style={{ animationDelay: '3.7s' }}></div>
+          <div className="absolute top-60 left-44 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+          <div className="absolute bottom-60 right-44 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '2.2s' }}></div>
+        </div>
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl text-center mb-12 sm:mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-4 py-2 mb-4 border border-blue-400/30">
+              <Satellite className="w-5 h-5 text-blue-300" />
+              <span className="text-sm font-bold text-blue-200">Powered by Sentinel-2 & OpenET Satellites</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white px-4 sm:px-0 mb-6">
+              Monitor vineyard health from space
+            </h2>
+            <p className="text-base sm:text-lg text-blue-100 px-4 sm:px-0">
+              Get unprecedented visibility into your vineyard's performance with satellite-based monitoring. Track NDVI (Normalized Difference Vegetation Index) for vegetation health and evapotranspiration (ET) data to optimize irrigation—all from space.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 max-w-6xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center mb-4">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">NDVI Tracking</h3>
+              <p className="text-sm text-blue-100">
+                10m resolution vegetation health data captured every 5 days to monitor vine vigor and detect stress early.
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center mb-4">
+                <Droplet className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">ET Data</h3>
+              <p className="text-sm text-blue-100">
+                Daily evapotranspiration measurements from satellite data help optimize irrigation scheduling and water usage.
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center mb-4">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Historical Trends</h3>
+              <p className="text-sm text-blue-100">
+                Compare vegetation vigor and water use across months and years to identify patterns and optimize management.
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center mb-4">
+                <Sprout className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Early Detection</h3>
+              <p className="text-sm text-blue-100">
+                Identify vine stress, water deficiency, or disease pressure before visible symptoms appear in the field.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Coming Soon - Production & Sales */}
+      <section className="relative bg-gradient-to-b from-gray-50 to-white py-16 sm:py-24 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
+            <div className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-2 text-sm font-bold text-amber-800 mb-4 shadow-sm">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Coming 2025-2026
+            </div>
+            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 px-4 sm:px-0">
+              From vineyard to bottle to customer
+            </p>
+            <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 px-4 sm:px-0">
+              We're expanding beyond vineyard operations to give you complete control of your wine business—from crush to customer delivery.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-3">
+            <FutureFeature
+              icon={Droplet}
+              iconColor="teal"
+              title="Winery Production"
+              description="Track crush, fermentation, barrel management, and bottling operations. Manage lot numbers, blending recipes, and aging schedules with full traceability."
+              comingSoon="Q4 2025"
+            />
+            <FutureFeature
+              icon={Package}
+              iconColor="teal"
+              title="Inventory Management"
+              description="Comprehensive inventory tracking for grapes, bulk wine, bottled products, and winemaking supplies. Automated stock alerts and batch tracking."
+              comingSoon="Q4 2025"
+            />
+            <FutureFeature
+              icon={DollarSign}
+              iconColor="teal"
+              title="Sales & Distribution"
+              description="CRM for wine clubs and wholesale accounts, order management, invoicing, and sales analytics. Streamline your tasting room and distribution operations."
+              comingSoon="Q2 2026"
+            />
           </div>
         </div>
       </section>
@@ -386,11 +758,10 @@ export default function HomePage() {
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-32">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white px-4 sm:px-0">
-              Ready to start planning?
+              Ready to grow your vineyard business?
             </h2>
             <p className="mx-auto mt-4 sm:mt-6 max-w-xl text-base sm:text-lg leading-7 sm:leading-8 text-teal-50 px-4 sm:px-0">
-              Our free planner gives you everything you need to create a professional vineyard business plan.
-              No credit card required. Start in minutes.
+              Start with our free financial planner, then upgrade to manage your vineyard operations with satellite monitoring, team management, and comprehensive analytics.
             </p>
             <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-x-6 px-4 sm:px-0">
               <Link
@@ -492,7 +863,7 @@ function OutputCard({ icon: Icon, title, description, stats }) {
   );
 }
 
-function FutureFeature({ icon: Icon, iconColor, title, description }) {
+function FutureFeature({ icon: Icon, iconColor, title, description, comingSoon }) {
   const iconColorClasses = {
     'teal': 'bg-gradient-to-br from-teal-100 to-teal-200 text-teal-600',
     'vine-green': 'bg-gradient-to-br from-vine-green-100 to-vine-green-200 text-vine-green-600'
@@ -500,8 +871,15 @@ function FutureFeature({ icon: Icon, iconColor, title, description }) {
 
   return (
     <div className="group bg-white rounded-2xl border-2 border-gray-200 p-6 sm:p-8 hover:border-teal-300 hover:shadow-xl transition-all">
-      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 sm:mb-5 ${iconColorClasses[iconColor]} group-hover:scale-110 transition-transform`}>
-        <Icon className="w-6 h-6" />
+      <div className="flex items-start justify-between mb-4">
+        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl ${iconColorClasses[iconColor]} group-hover:scale-110 transition-transform`}>
+          <Icon className="w-6 h-6" />
+        </div>
+        {comingSoon && (
+          <span className="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-100 rounded-full">
+            {comingSoon}
+          </span>
+        )}
       </div>
       <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">{title}</h3>
       <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">{description}</p>

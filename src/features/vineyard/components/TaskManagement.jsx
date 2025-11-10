@@ -32,7 +32,8 @@ import {
   listSeasons,
   listVineyardBlocks,
   updateTaskStatus,
-  createTask
+  createTask,
+  listOrganizationMembers
 } from '@/shared/lib/vineyardApi';
 import { TaskDrawer } from './TaskDrawer';
 
@@ -79,6 +80,7 @@ export function TaskManagement() {
   const [statistics, setStatistics] = useState(null);
   const [seasons, setSeasons] = useState([]);
   const [blocks, setBlocks] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
 
   // Drag and drop state
   const [draggedTask, setDraggedTask] = useState(null);
@@ -111,11 +113,12 @@ export function TaskManagement() {
 
   const loadData = async () => {
     setLoading(true);
-    const [tasksRes, statsRes, seasonsRes, blocksRes] = await Promise.all([
+    const [tasksRes, statsRes, seasonsRes, blocksRes, membersRes] = await Promise.all([
       listTasks(),
       getTaskStatistics(),
       listSeasons(),
-      listVineyardBlocks()
+      listVineyardBlocks(),
+      listOrganizationMembers()
     ]);
 
     if (!tasksRes.error && tasksRes.data) {
@@ -129,6 +132,9 @@ export function TaskManagement() {
     }
     if (!blocksRes.error && blocksRes.data) {
       setBlocks(blocksRes.data);
+    }
+    if (!membersRes.error && membersRes.data) {
+      setTeamMembers(membersRes.data);
     }
     setLoading(false);
   };
@@ -570,6 +576,15 @@ export function TaskManagement() {
                           <Calendar className="w-4 h-4" />
                           Due: {formatDate(task.due_date) || 'No date'}
                         </span>
+                        {task.assigned_to && (() => {
+                          const assignedMember = teamMembers.find(m => m.id === task.assigned_to);
+                          return assignedMember ? (
+                            <span className="flex items-center gap-1">
+                              <Users className="w-4 h-4" />
+                              {assignedMember.full_name}
+                            </span>
+                          ) : null;
+                        })()}
                         {task.blocks && task.blocks.length > 0 && (
                           <span>
                             {task.blocks.length} field{task.blocks.length !== 1 ? 's' : ''}
@@ -794,6 +809,17 @@ export function TaskManagement() {
                                   </p>
                                 )}
 
+                                {/* Assigned To */}
+                                {task.assigned_to && (() => {
+                                  const assignedMember = teamMembers.find(m => m.id === task.assigned_to);
+                                  return assignedMember ? (
+                                    <p className="text-xs text-gray-600 flex items-center gap-1">
+                                      <Users className="w-3 h-3" />
+                                      {assignedMember.full_name}
+                                    </p>
+                                  ) : null;
+                                })()}
+
                                 {/* Fields */}
                                 {task.blocks && task.blocks.length > 0 && (
                                   <p className="text-xs text-gray-600">
@@ -847,6 +873,7 @@ export function TaskManagement() {
         <TaskDrawer
           task={selectedTask}
           blocks={blocks}
+          teamMembers={teamMembers}
           onClose={() => {
             setShowTaskDrawer(false);
             setSelectedTask(null);
@@ -877,7 +904,7 @@ function NewTaskModal({ seasons, blocks, onClose, onCreated }) {
     priority: 'normal',
     season_id: seasons[0]?.id || null,
     blocks: [],
-    assignees: [],
+    assigned_to: null,
     start_date: '',
     due_date: '',
     instructions: '',
@@ -892,8 +919,8 @@ function NewTaskModal({ seasons, blocks, onClose, onCreated }) {
   }, []);
 
   const loadTeamMembers = async () => {
-    const { listTeamMembers } = await import('@/shared/lib/vineyardApi');
-    const { data, error } = await listTeamMembers();
+    const { listOrganizationMembers } = await import('@/shared/lib/vineyardApi');
+    const { data, error } = await listOrganizationMembers();
     if (!error && data) {
       setTeamMembers(data);
     }
@@ -1039,32 +1066,29 @@ function NewTaskModal({ seasons, blocks, onClose, onCreated }) {
             <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple fields</p>
           </div>
 
-          {/* Assignees */}
+          {/* Assigned To */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Assign To (select multiple)
+              Assign To
             </label>
             <select
-              multiple
-              value={formData.assignees}
-              onChange={(e) => {
-                const selected = Array.from(e.target.selectedOptions, option => option.value);
-                setFormData({ ...formData, assignees: selected });
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+              value={formData.assigned_to || ''}
+              onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value || null })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {teamMembers.filter(m => m.is_active).map(member => (
-                <option key={member.user_id} value={member.user_id}>
-                  {member.full_name} - {member.role}
+              <option value="">Unassigned</option>
+              {teamMembers.map(member => (
+                <option key={member.id} value={member.id}>
+                  {member.full_name} {member.role && `(${member.role})`}
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
-              {teamMembers.length === 0
-                ? 'No team members yet. Add team members in settings.'
-                : 'Hold Ctrl/Cmd to select multiple people'}
-            </p>
+            {teamMembers.length === 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                No team members yet. Add team members in Labor Management.
+              </p>
+            )}
           </div>
 
           {/* Dates */}

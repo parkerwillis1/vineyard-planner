@@ -85,18 +85,26 @@ export async function fetchNDVIForBlock(block, options = {}) {
   // Get auth token
   const token = await getAuthToken();
 
-  // Calculate date range for peak growing season (June-September)
-  // This ensures we get imagery when vegetation is at its peak, not dormant season
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-11
+  // Use custom date range if provided, otherwise calculate for peak growing season
+  let startDate, endDate;
 
-  // If we're before June, use last year's growing season
-  // If we're after September, use this year's growing season
-  const growingSeasonYear = currentMonth < 5 ? currentYear - 1 : currentYear;
+  if (options.startDate && options.endDate) {
+    startDate = options.startDate;
+    endDate = options.endDate;
+  } else {
+    // Calculate date range for peak growing season (June-September)
+    // This ensures we get imagery when vegetation is at its peak, not dormant season
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-11
 
-  const startDate = new Date(growingSeasonYear, 5, 1); // June 1
-  const endDate = new Date(growingSeasonYear, 8, 30); // September 30
+    // If we're before June, use last year's growing season
+    // If we're after September, use this year's growing season
+    const growingSeasonYear = currentMonth < 5 ? currentYear - 1 : currentYear;
+
+    startDate = new Date(growingSeasonYear, 5, 1); // June 1
+    endDate = new Date(growingSeasonYear, 8, 30); // September 30
+  }
 
   console.log('📅 NDVI Date Range (Peak Growing Season):', {
     start: startDate.toISOString().split('T')[0],

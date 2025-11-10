@@ -19,7 +19,8 @@ import {
   Zap,
   Wind,
   Tractor,
-  Archive
+  Archive,
+  TrendingUp
 } from 'lucide-react';
 import { VineyardDashboard } from '../components/VineyardDashboard';
 import { BlockManagement } from '../components/BlockManagement';
@@ -41,11 +42,9 @@ import { ArchivedItems } from '../components/ArchivedItems';
 import { FieldDetailPage } from './FieldDetailPage';
 
 export function OperationsShell() {
-  console.log('🌿 OperationsShell rendering...');
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  console.log('👤 User:', user);
 
   // Get active view from URL search params, defaulting to 'team'
   const searchParams = new URLSearchParams(location.search);
@@ -122,7 +121,7 @@ export function OperationsShell() {
       title: 'Management',
       items: [
         { id: 'inventory', label: 'Inventory', icon: Package, color: 'blue' },
-        { id: 'costs', label: 'Cost Analysis', icon: DollarSign, color: 'green' },
+        { id: 'costs', label: 'Analytics', icon: TrendingUp, color: 'teal' },
         { id: 'equipment', label: 'Equipment', icon: Wrench, color: 'orange' },
         { id: 'labor', label: 'Labor Tracking', icon: Users, color: 'rose' },
       ]

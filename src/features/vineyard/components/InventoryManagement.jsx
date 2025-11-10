@@ -9,7 +9,6 @@ import {
   TrendingDown,
   TrendingUp,
   Search,
-  Filter,
   Download,
   Calendar,
   DollarSign,
@@ -17,7 +16,6 @@ import {
   Shield,
   Droplet,
   Sprout,
-  Fuel,
   HardHat,
   Box
 } from 'lucide-react';
@@ -32,6 +30,8 @@ import {
   adjustInventoryStock,
   listInventoryTransactions
 } from '@/shared/lib/vineyardApi';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export function InventoryManagement() {
   const { user } = useAuth();
@@ -44,6 +44,8 @@ export function InventoryManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showTransactions, setShowTransactions] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFormat, setExportFormat] = useState('csv');
   const [formData, setFormData] = useState({
     category: 'chemical',
     name: '',
@@ -193,11 +195,146 @@ export function InventoryManagement() {
     }
   };
 
+  const handleExport = () => {
+    setShowExportDialog(true);
+  };
+
+  const confirmExport = () => {
+    setShowExportDialog(false);
+
+    if (exportFormat === 'csv') {
+      exportCSV();
+    } else {
+      exportPDF();
+    }
+  };
+
+  const exportCSV = () => {
+    // Create CSV header
+    const headers = [
+      'Category',
+      'Name',
+      'Manufacturer',
+      'Product Code',
+      'On Hand',
+      'Unit',
+      'Min Qty',
+      'Max Qty',
+      'Unit Cost',
+      'Total Value',
+      'Lot Number',
+      'Expires On',
+      'Storage Location',
+      'EPA Reg No',
+      'FRAC Code',
+      'REI Hours',
+      'PHI Days',
+      'Active Ingredient',
+      'Signal Word'
+    ];
+
+    // Create CSV rows
+    const rows = filteredItems.map(item => [
+      item.category,
+      item.name,
+      item.manufacturer || '',
+      item.product_code || '',
+      item.on_hand_qty,
+      item.unit,
+      item.min_qty || '',
+      item.max_qty || '',
+      item.unit_cost || '',
+      item.unit_cost ? (parseFloat(item.on_hand_qty) * parseFloat(item.unit_cost)).toFixed(2) : '',
+      item.lot_number || '',
+      item.expires_on || '',
+      item.storage_location || '',
+      item.epa_reg_no || '',
+      item.frac_code || '',
+      item.rei_hours || '',
+      item.phi_days || '',
+      item.active_ingredient || '',
+      item.signal_word || ''
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `inventory-export-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportPDF = () => {
+    try {
+      const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
+
+      // Add title
+      doc.setFontSize(18);
+      doc.text('Inventory Export', 14, 15);
+
+      // Add metadata
+      doc.setFontSize(10);
+      const categoryLabel = categories.find(c => c.value === selectedCategory)?.label || 'All Items';
+      doc.text(`Category: ${categoryLabel}`, 14, 22);
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 27);
+      doc.text(`Total Items: ${filteredItems.length}`, 14, 32);
+
+      // Prepare table data
+      const tableHeaders = [
+        'Name',
+        'Category',
+        'On Hand',
+        'Min/Max',
+        'Unit Cost',
+        'Total Value',
+        'Expires',
+        'Location'
+      ];
+
+      const tableRows = filteredItems.map(item => [
+        item.name,
+        item.category,
+        `${item.on_hand_qty} ${item.unit}`,
+        `${item.min_qty || '-'}/${item.max_qty || '-'}`,
+        item.unit_cost ? `$${parseFloat(item.unit_cost).toFixed(2)}` : '-',
+        item.unit_cost ? `$${(parseFloat(item.on_hand_qty) * parseFloat(item.unit_cost)).toFixed(2)}` : '-',
+        item.expires_on ? new Date(item.expires_on).toLocaleDateString() : '-',
+        item.storage_location || '-'
+      ]);
+
+      // Add table using autoTable function
+      autoTable(doc, {
+        head: [tableHeaders],
+        body: tableRows,
+        startY: 38,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [71, 85, 105], textColor: 255 },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { left: 14, right: 14 }
+      });
+
+      // Save PDF
+      doc.save(`inventory-export-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try CSV export instead.');
+    }
+  };
+
   const categories = [
     { value: 'all', label: 'All Items', icon: Package, color: 'gray' },
     { value: 'chemical', label: 'Chemicals', icon: Droplet, color: 'blue' },
     { value: 'fertilizer', label: 'Fertilizers', icon: Sprout, color: 'green' },
-    { value: 'fuel', label: 'Fuel', icon: Fuel, color: 'orange' },
     { value: 'ppe', label: 'PPE', icon: HardHat, color: 'yellow' },
     { value: 'supplies', label: 'Supplies', icon: Box, color: 'purple' }
   ];
@@ -239,6 +376,16 @@ export function InventoryManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Inventory Management</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Track supplies, chemicals, and materials for your vineyard
+          </p>
+        </div>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
@@ -317,29 +464,30 @@ export function InventoryManagement() {
       )}
 
       {/* Controls */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div className="flex flex-1 gap-3 w-full md:w-auto">
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+        {/* Left Side: Search and Category Tabs */}
+        <div className="flex flex-col sm:flex-row flex-1 gap-3">
           {/* Search */}
-          <div className="relative flex-1 md:w-80">
+          <div className="relative flex-1 sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               type="text"
               placeholder="Search inventory..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-10"
             />
           </div>
 
           {/* Category Tabs */}
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto hide-scrollbar">
             {categories.map((cat) => {
               const Icon = cat.icon;
               return (
                 <button
                   key={cat.value}
                   onClick={() => setSelectedCategory(cat.value)}
-                  className={`px-3 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2 ${
+                  className={`px-3 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
                     selectedCategory === cat.value
                       ? 'bg-white text-gray-900 shadow'
                       : 'text-gray-600 hover:text-gray-900'
@@ -347,35 +495,37 @@ export function InventoryManagement() {
                   title={cat.label}
                 >
                   <Icon className="w-4 h-4" />
-                  <span className="hidden md:inline">{cat.label}</span>
+                  <span className="hidden sm:inline">{cat.label}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
+        {/* Right Side: Action Buttons */}
+        <div className="flex gap-2 justify-end">
+          <button
             onClick={() => setShowTransactions(!showTransactions)}
+            className="inline-flex items-center justify-center px-3 h-10 text-sm font-medium text-white bg-slate-700 rounded-lg hover:bg-slate-800 transition-colors"
           >
-            <History className="w-4 h-4 mr-2" />
-            History
-          </Button>
-          <Button
-            variant="outline"
+            <History className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">History</span>
+          </button>
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center justify-center px-3 h-10 text-sm font-medium text-white bg-slate-700 rounded-lg hover:bg-slate-800 transition-colors"
           >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
+            <Download className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Export</span>
+          </button>
           {!isAddingItem && (
-            <Button
+            <button
               onClick={() => setIsAddingItem(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="inline-flex items-center justify-center px-4 h-10 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-sm hover:shadow transition-all"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Item
-            </Button>
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Item</span>
+            </button>
           )}
         </div>
       </div>
@@ -1009,6 +1159,86 @@ export function InventoryManagement() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Export Confirmation Dialog */}
+      {showExportDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-700 to-slate-600 px-6 py-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Download className="w-6 h-6" />
+                Export Inventory
+              </h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                You are about to export <span className="font-bold text-gray-900">{filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}</span> from{' '}
+                <span className="font-bold text-gray-900">
+                  {categories.find(c => c.value === selectedCategory)?.label || 'All Items'}
+                </span>.
+              </p>
+              {searchQuery && (
+                <p className="text-sm text-amber-600 mb-4">
+                  Note: Only items matching your search "{searchQuery}" will be exported.
+                </p>
+              )}
+
+              {/* Format Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Export Format
+                </label>
+                <div className="space-y-2">
+                  <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${exportFormat === 'csv' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'}`}>
+                    <input
+                      type="radio"
+                      name="exportFormat"
+                      value="csv"
+                      checked={exportFormat === 'csv'}
+                      onChange={(e) => setExportFormat(e.target.value)}
+                      className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div className="ml-3 flex-1">
+                      <div className="text-sm font-semibold text-gray-900">CSV (Spreadsheet)</div>
+                      <div className="text-xs text-gray-600">Best for Excel, Google Sheets, or data analysis</div>
+                    </div>
+                  </label>
+                  <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${exportFormat === 'pdf' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'}`}>
+                    <input
+                      type="radio"
+                      name="exportFormat"
+                      value="pdf"
+                      checked={exportFormat === 'pdf'}
+                      onChange={(e) => setExportFormat(e.target.value)}
+                      className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div className="ml-3 flex-1">
+                      <div className="text-sm font-semibold text-gray-900">PDF (Document)</div>
+                      <div className="text-xs text-gray-600">Best for printing or sharing as a report</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmExport}
+                  className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Export {exportFormat.toUpperCase()}
+                </button>
+                <button
+                  onClick={() => setShowExportDialog(false)}
+                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-all duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
