@@ -117,8 +117,12 @@ export default function NavBar() {
     { to: "/plans", label: "My Plans", icon: null },
   ];
 
-  // Resources dropdown items (for both guests and auth users)
-  const resourcesItems = [
+  // Resources dropdown items - different for guests vs authenticated users
+  const guestResourcesItems = [
+    { to: "/pricing", label: "Pricing", icon: null },
+  ];
+
+  const authResourcesItems = [
     { to: "/docs", label: "Documentation", icon: null },
     { to: "/pricing", label: "Pricing", icon: null },
   ];
@@ -163,7 +167,7 @@ export default function NavBar() {
               <NavLink to="/pricing" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
                 Pricing
               </NavLink>
-              <Dropdown trigger="Resources" items={resourcesItems} />
+              <Dropdown trigger="Resources" items={guestResourcesItems} />
               <NavLink to="/about" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
                 About
               </NavLink>
@@ -175,7 +179,7 @@ export default function NavBar() {
               <NavLink to="/docs" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
                 Documentation
               </NavLink>
-              <Dropdown trigger="Resources" items={resourcesItems} />
+              <Dropdown trigger="Resources" items={authResourcesItems} />
               <Dropdown trigger="About" items={aboutItems} />
             </>
           )}
@@ -266,13 +270,6 @@ export default function NavBar() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Pricing
-                  </NavLink>
-                  <NavLink
-                    to="/docs"
-                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Documentation
                   </NavLink>
                   <NavLink
                     to="/about"

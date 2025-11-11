@@ -176,21 +176,6 @@ export default function SiteLayout() {
                         <h3 className="text-base font-semibold text-gray-900 mb-3">Free resources for vineyard owners</h3>
 
                         <div className="grid grid-cols-2 gap-3">
-                          {/* Documentation */}
-                          <Link
-                            to="/docs"
-                            onClick={() => setShowResourcesMenu(false)}
-                            className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group"
-                          >
-                            <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0 group-hover:bg-teal-100 transition-colors">
-                              <BookOpen className="w-5 h-5 text-teal-600" />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-gray-900 mb-1">Documentation</div>
-                              <div className="text-sm text-gray-600">Learn how to use Vine Pioneer</div>
-                            </div>
-                          </Link>
-
                           {/* Pricing */}
                           <Link
                             to="/pricing"
@@ -702,13 +687,6 @@ export default function SiteLayout() {
                       {mobileResourcesExpanded && (
                         <>
                           <NavLink
-                            to="/docs"
-                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            Documentation
-                          </NavLink>
-                          <NavLink
                             to="/faq"
                             className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
                             onClick={() => setMobileMenuOpen(false)}
@@ -941,6 +919,164 @@ export default function SiteLayout() {
       <main className={needsPadding ? "max-w-screen-2xl mx-auto px-6 py-10 mt-16" : "mt-16"}>
         <Outlet key={location.pathname} />
       </main>
+
+      {/* Footer */}
+      <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-300 border-t border-gray-700">
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+            {/* Products Column */}
+            <div>
+              <h3 className="text-teal-400 font-bold text-base mb-4 uppercase tracking-wider">Products</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/planner" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Planner - Financial Planning
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/vineyard?view=dashboard" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Operations - Vineyard Management
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Features Column */}
+            <div>
+              <h3 className="text-teal-400 font-bold text-base mb-4 uppercase tracking-wider">Features</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/products#financial-planning" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Financial Planning & Projections
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/products#vineyard-design" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Vineyard Layout Calculator
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/products#block-management" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Block & Field Management
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/products#irrigation" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Irrigation Planning
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/products#satellite" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Satellite Analytics (NDVI & ET)
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/products#task-management" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Task & Team Management
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Resources Column */}
+            <div>
+              <h3 className="text-teal-400 font-bold text-base mb-4 uppercase tracking-wider">Resources</h3>
+              <ul className="space-y-2">
+                {user && (
+                  <li>
+                    <Link to="/docs" className="text-white hover:text-teal-400 transition-colors text-sm">
+                      Documentation
+                    </Link>
+                  </li>
+                )}
+                <li>
+                  <Link to="/pricing" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Pricing & Plans
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/blog" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/tips" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Vineyard Planning Tips
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company Column */}
+            <div>
+              <h3 className="text-teal-400 font-bold text-base mb-4 uppercase tracking-wider">Company</h3>
+              <ul className="space-y-2 mb-4">
+                <li>
+                  <Link to="/about" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Contact Us
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/products" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Our Products
+                  </Link>
+                </li>
+                <li>
+                  <a href="#" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-white hover:text-teal-400 transition-colors text-sm">
+                    Terms of Service
+                  </a>
+                </li>
+              </ul>
+
+              {/* Get in Touch Section */}
+              <div className="mt-6">
+                <h4 className="text-teal-400 font-semibold text-xs mb-2 uppercase tracking-wider">Get in Touch</h4>
+                <Link
+                  to="/contact"
+                  className="inline-block px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-all text-xs font-medium"
+                >
+                  Request a Demo
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="pt-6 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center gap-3">
+            {/* Logo and Copyright */}
+            <div className="flex items-center gap-3">
+              <img src="/VinePioneerLongV1.png" alt="Vine Pioneer" className="h-6" />
+              <div className="text-xs text-gray-400">
+                © {new Date().getFullYear()} Vine Pioneer. All rights reserved.
+              </div>
+            </div>
+
+            {/* Social Links */}
+            <div className="flex items-center gap-4">
+              <a
+                href="mailto:support@vinepioneer.com"
+                className="text-gray-400 hover:text-teal-400 transition-colors"
+                aria-label="Email"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -88,7 +88,7 @@ export default function HomePage() {
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-32 md:py-40 lg:py-48">
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
-              Plan. Manage. Thrive.
+              Plan. Grow. Prosper.
             </h1>
             <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-6 sm:leading-8 text-white font-bold px-4 sm:px-0" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
               From financial planning to daily operations—design your vineyard, manage your team, track activities, and monitor vineyard health with satellite data. All in one powerful platform.
@@ -101,10 +101,10 @@ export default function HomePage() {
                 Get Started Free
               </Link>
               <Link
-                to="/docs"
+                to="/products"
                 className="text-sm sm:text-base font-semibold leading-7 text-white hover:text-vine-green-500"
               >
-                View Documentation <span aria-hidden="true">→</span>
+                View Products <span aria-hidden="true">→</span>
               </Link>
             </div>
           </div>
@@ -204,14 +204,14 @@ export default function HomePage() {
           <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 mb-4 border border-white/30">
               <Sparkles className="w-4 h-4 text-white" />
-              <span className="text-sm font-semibold text-white">Financial Planning</span>
+              <span className="text-sm font-semibold text-white">Plan Your Vineyard</span>
             </div>
             <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white px-4 sm:px-0">
-              Build your vineyard business plan
+              Build your vineyard from the ground up.
             </p>
             <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-white/90 px-4 sm:px-0">
-              Create professional financial models that lenders and investors will respect.
-              Our tools handle the complex calculations so you can focus on your vision.
+              Our tools break down the real costs of establishing your vineyard — from planting to production — 
+              giving you clear estimates and projections that put you one step ahead with lenders, investors, and yourself.
             </p>
           </div>
 
@@ -328,7 +328,7 @@ export default function HomePage() {
       {/* How It Works Section - Redesigned */}
       <section className="relative bg-white py-16 sm:py-24 lg:py-32 overflow-hidden">
         {/* Decorative background patterns - Topography */}
-        <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0 opacity-50">
           <div className="absolute top-0 left-0 w-full h-full" style={{
             backgroundImage: `url('/topo.png')`,
             backgroundRepeat: 'repeat',
@@ -659,7 +659,7 @@ export default function HomePage() {
               <span className="text-sm font-bold text-blue-200">Powered by Sentinel-2 & OpenET Satellites</span>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white px-4 sm:px-0 mb-6">
-              Monitor vineyard health from space
+              Monitor your vineyards health from SPACE
             </h2>
             <p className="text-base sm:text-lg text-blue-100 px-4 sm:px-0">
               Get unprecedented visibility into your vineyard's performance with satellite-based monitoring. Track NDVI (Normalized Difference Vegetation Index) for vegetation health and evapotranspiration (ET) data to optimize irrigation—all from space.

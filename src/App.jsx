@@ -9,6 +9,7 @@ import VineyardsPage      from "./pages/vineyards/VineyardsPage.jsx";
 import DocumentationPage  from "./shared/components/DocumentationPage.jsx";
 import PlansPage          from "./shared/components/PlansPage.jsx";
 import AboutPage from "./pages/about/AboutPage.jsx";
+import ContactPage from "./pages/contact/ContactPage.jsx";
 import AccountSettingsPage from "./pages/account/AccountSettingsPage.jsx";
 import PricingPage from "./pages/pricing/PricingPage.jsx";
 import SelectPlanPage from "./pages/onboarding/SelectPlanPage.jsx";
@@ -24,6 +25,7 @@ import { useAuth }        from "./auth/AuthContext.jsx";
 // ⭐ NEW: Import subscription system
 import { SubscriptionProvider } from "./shared/hooks/useSubscription.jsx";
 import { UpgradeModal } from "./shared/components/UpgradeModal.jsx";
+import ScrollToTop from "./shared/components/ScrollToTop.jsx";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth() || {};
@@ -51,12 +53,14 @@ export default function App() {
   return (
     // ⭐ NEW: Wrap entire app with subscription provider
     <SubscriptionProvider>
+      <ScrollToTop />
       <Routes>
         <Route element={<SiteLayout />}>
           {/* Public routes */}
           <Route index element={<HomePage />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="about" element={<AboutPage />} />
+          <Route path="contact" element={<ContactPage />} />
           <Route path="docs" element={<DocumentationPage />} />
           <Route path="pricing" element={<PricingPage />} />
 
