@@ -50,6 +50,8 @@ import { OperationsShell } from "./features/vineyard/pages/OperationsShell.jsx";
 
 import SignIn             from "./auth/SignIn.jsx";
 import SignUp             from "./auth/SignUp.jsx";
+import ForgotPassword     from "./auth/ForgotPassword.jsx";
+import ResetPassword      from "./auth/ResetPassword.jsx";
 import { useAuth }        from "./auth/AuthContext.jsx";
 
 // ⭐ NEW: Import subscription system
@@ -141,6 +143,8 @@ export default function App() {
         {/* Auth pages (outside SiteLayout) */}
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
