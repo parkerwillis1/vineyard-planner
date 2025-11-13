@@ -30,9 +30,12 @@ import {
   Wallet,
   Grape,
   Menu,
-  X
+  X,
+  Settings,
+  Wine,
+  ShoppingCart,
+  Cog
 } from "lucide-react";
-import { NounProjectIconById } from "@/shared/components/ui/NounProjectIconById";
 import {
   VineyardLayoutConfig,
   calculateVineyardLayout,
@@ -518,46 +521,43 @@ function CollapsibleSection({ title, children, isOpen, onToggle }) {
     }
   };
 
-  // Icon mapping - each section gets its own professional Noun Project icon
+  // Icon mapping - each section gets its own lucide-react icon
   const getIcon = () => {
-    const iconMap = {
-      "Core Vineyard Parameters": 8056745,
-      "Vineyard Setup": 3535825,
-      "Pre-Planting / Site-Prep": 1141059,
-      "Planting Costs": 6041571,
-      "Cultural Operations": 145039,
-      "Harvest & Hauling": 6107180,
-      "Cash Overhead": 7985658,
-      "Equipment": 6044618,
-      "Loans": 8068602,
-      "Purchased Grapes": 8056747,
-      "Unsold Bottles": 8056745,
-      "Assessments & Fees": 6751554,
-      "Non-Cash Overhead": 6720771,
-      "Permits & Licenses": 8123130,
-      "Marketing & Management": 7474579,
-      "Equipment Operating Costs": 7697296
-    };
+    const iconProps = { className: "w-9 h-9 text-vine-green-500", strokeWidth: 1.5 };
 
-    const iconId = iconMap[title];
-
-    if (iconId) {
-      return <NounProjectIconById iconId={iconId} className="w-9 h-9" size={36} color="#654321" />;
-    }
-
-    // Fallback to Lucide icons for sections without Noun Project mappings
-    const iconProps = { className: "w-6 h-6 text-blue-600", size: 24 };
     switch(title) {
+      case "Core Vineyard Parameters":
+        return <Settings {...iconProps} />;
+      case "Vineyard Setup":
+        return <Building2 {...iconProps} />;
+      case "Pre-Planting / Site-Prep":
+        return <Tractor {...iconProps} />;
+      case "Planting Costs":
+        return <Sprout {...iconProps} />;
+      case "Cultural Operations":
+        return <Calendar {...iconProps} />;
+      case "Harvest & Hauling":
+        return <Grape {...iconProps} />;
+      case "Cash Overhead":
+        return <DollarSign {...iconProps} />;
+      case "Equipment":
+        return <Wrench {...iconProps} />;
+      case "Loans":
+        return <CreditCard {...iconProps} />;
+      case "Purchased Grapes":
+        return <ShoppingCart {...iconProps} />;
+      case "Unsold Bottles":
+        return <Wine {...iconProps} />;
       case "Assessments & Fees":
         return <FileText {...iconProps} />;
       case "Non-Cash Overhead":
         return <PiggyBank {...iconProps} />;
-      case "Equipment Operating Costs":
-        return <Wrench {...iconProps} />;
-      case "Marketing & Management":
-        return <TrendingUp {...iconProps} />;
       case "Permits & Licenses":
         return <ScrollText {...iconProps} />;
+      case "Marketing & Management":
+        return <TrendingUp {...iconProps} />;
+      case "Equipment Operating Costs":
+        return <Cog {...iconProps} />;
       default:
         return <TrendingUp {...iconProps} />;
     }
@@ -1815,7 +1815,7 @@ const EstablishmentProgressTracker = ({
     {
       id: 'planting',
       category: 'Planting',
-      icon: <NounProjectIconById iconId={6041571} className="w-6 h-6 text-blue-600" size={24} color="#654321" />,
+      icon: <Sprout className="w-6 h-6 text-vine-green-500" strokeWidth={1.5} />,
       color: 'green',
       tasks: stNum.planting.filter(r => r.include).map((row, idx) => {
         const costPerAcre = row.costPerAcre != null ? row.costPerAcre : (row.unitCost || 0) * (row.qtyPerAcre || 0);
@@ -1834,7 +1834,7 @@ const EstablishmentProgressTracker = ({
     {
       id: 'infrastructure',
       category: 'Infrastructure',
-      icon: <NounProjectIconById iconId={7202627} className="w-6 h-6 text-blue-600" size={24} color="#654321" />,
+      icon: <Building2 className="w-6 h-6 text-vine-green-500" strokeWidth={1.5} />,
       color: 'blue',
       tasks: Object.entries(stNum.setup)
         .filter(([key, obj]) => obj.include && key !== 'vines')
@@ -3760,7 +3760,7 @@ const EstablishmentProgressTracker = ({
                     {/* Pre-Planting Costs */}
                     <div>
                       <h4 className="text-lg font-semibold text-black font-bold mb-4 flex items-center gap-2">
-                        <NounProjectIconById iconId={1141059} className="w-6 h-6 text-blue-600" size={24} color="#654321" />
+                        <Tractor className="w-6 h-6 text-vine-green-500" strokeWidth={1.5} />
                         Pre-Planting Costs
                       </h4>
                       <div className="overflow-x-auto">
@@ -3799,7 +3799,7 @@ const EstablishmentProgressTracker = ({
                     {/* Planting Costs */}
                     <div>
                       <h4 className="text-lg font-semibold text-black font-bold mb-4 flex items-center gap-2">
-                        <NounProjectIconById iconId={6041571} className="w-6 h-6 text-blue-600" size={24} color="#654321" />
+                        <Sprout className="w-6 h-6 text-vine-green-500" strokeWidth={1.5} />
                         Planting Costs
                       </h4>
                       <div className="overflow-x-auto">
@@ -3851,7 +3851,7 @@ const EstablishmentProgressTracker = ({
                     {/* Setup/Infrastructure Costs */}
                     <div>
                       <h4 className="text-lg font-semibold text-black font-bold mb-4 flex items-center gap-2">
-                        <NounProjectIconById iconId={7202627} className="w-6 h-6 text-blue-600" size={24} color="#654321" />
+                        <Building2 className="w-6 h-6 text-vine-green-500" strokeWidth={1.5} />
                         Infrastructure Setup
                       </h4>
                       <div className="overflow-x-auto">
@@ -4083,14 +4083,14 @@ const EstablishmentProgressTracker = ({
 
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                 <div className="flex items-center justify-center mb-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <NounProjectIconById iconId={7975811} className="w-7 h-7 text-blue-600" size={28} color="#654321" />
+                  <div className="w-12 h-12 bg-vine-green-100 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-7 h-7 text-vine-green-500" strokeWidth={1.5} />
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-purple-600 mb-2">
-                    {projection.length > 0 
-                      ? `${Math.round((projection[projection.length - 1].cumulative / totalEstCost) * 100)}%` 
+                  <div className="text-4xl font-bold text-vine-green-600 mb-2">
+                    {projection.length > 0
+                      ? `${Math.round((projection[projection.length - 1].cumulative / totalEstCost) * 100)}%`
                       : "0%"}
                   </div>
                   <div className="text-sm text-gray-500">Annual ROI</div>

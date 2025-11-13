@@ -6,13 +6,43 @@ import SiteLayout from "./app/layout/SiteLayout.jsx";
 import HomePage           from "./pages/home/HomePage.jsx";
 import ProductsPage       from "./pages/products/ProductsPage.jsx";
 import VineyardsPage      from "./pages/vineyards/VineyardsPage.jsx";
-import DocumentationPage  from "./shared/components/DocumentationPage.jsx";
 import PlansPage          from "./shared/components/PlansPage.jsx";
 import AboutPage from "./pages/about/AboutPage.jsx";
 import ContactPage from "./pages/contact/ContactPage.jsx";
 import AccountSettingsPage from "./pages/account/AccountSettingsPage.jsx";
 import PricingPage from "./pages/pricing/PricingPage.jsx";
 import SelectPlanPage from "./pages/onboarding/SelectPlanPage.jsx";
+
+// Documentation pages
+import DocsIndex from "./pages/docs/DocsIndex.jsx";
+import QuickStartPage from "./pages/docs/getting-started/QuickStartPage.jsx";
+import ConceptsPage from "./pages/docs/getting-started/ConceptsPage.jsx";
+
+// Planner docs
+import PlannerOverview from "./pages/docs/planner/PlannerOverview.jsx";
+import DesignTabPage from "./pages/docs/planner/DesignTabPage.jsx";
+import FinancialInputsPage from "./pages/docs/planner/FinancialInputsPage.jsx";
+import VineyardSetupPage from "./pages/docs/planner/VineyardSetupPage.jsx";
+import TenYearPlanPage from "./pages/docs/planner/TenYearPlanPage.jsx";
+import DetailsTabPage from "./pages/docs/planner/DetailsTabPage.jsx";
+import FormulasPage from "./pages/docs/planner/FormulasPage.jsx";
+import BestPracticesPage from "./pages/docs/planner/BestPracticesPage.jsx";
+
+// Operations docs
+import OperationsOverview from "./pages/docs/operations/OperationsOverview.jsx";
+import BlocksPage from "./pages/docs/operations/BlocksPage.jsx";
+import IrrigationPage from "./pages/docs/operations/IrrigationPage.jsx";
+import TasksPage from "./pages/docs/operations/TasksPage.jsx";
+import TeamPage from "./pages/docs/operations/TeamPage.jsx";
+import SprayPage from "./pages/docs/operations/SprayPage.jsx";
+import CalendarPage from "./pages/docs/operations/CalendarPage.jsx";
+import AnalyticsPage from "./pages/docs/operations/AnalyticsPage.jsx";
+import HardwarePage from "./pages/docs/operations/HardwarePage.jsx";
+
+// Resources docs
+import FAQPage from "./pages/docs/FAQPage.jsx";
+import TroubleshootingPage from "./pages/docs/TroubleshootingPage.jsx";
+import SupportPage from "./pages/docs/SupportPage.jsx";
 
 
 import PlannerShell       from "./features/planning/pages/PlannerShell.jsx";
@@ -55,13 +85,45 @@ export default function App() {
     <SubscriptionProvider>
       <ScrollToTop />
       <Routes>
+        {/* Documentation routes (outside SiteLayout - uses its own DocsLayout) */}
+        <Route path="/docs" element={<DocsIndex />} />
+
+        {/* Getting Started */}
+        <Route path="/docs/getting-started/quick-start" element={<QuickStartPage />} />
+        <Route path="/docs/getting-started/concepts" element={<ConceptsPage />} />
+
+        {/* Vineyard Planner */}
+        <Route path="/docs/planner" element={<PlannerOverview />} />
+        <Route path="/docs/planner/design" element={<DesignTabPage />} />
+        <Route path="/docs/planner/financial-inputs" element={<FinancialInputsPage />} />
+        <Route path="/docs/planner/vineyard-setup" element={<VineyardSetupPage />} />
+        <Route path="/docs/planner/ten-year-plan" element={<TenYearPlanPage />} />
+        <Route path="/docs/planner/details" element={<DetailsTabPage />} />
+        <Route path="/docs/planner/formulas" element={<FormulasPage />} />
+        <Route path="/docs/planner/best-practices" element={<BestPracticesPage />} />
+
+        {/* Vineyard Operations */}
+        <Route path="/docs/operations" element={<OperationsOverview />} />
+        <Route path="/docs/operations/blocks" element={<BlocksPage />} />
+        <Route path="/docs/operations/irrigation" element={<IrrigationPage />} />
+        <Route path="/docs/operations/tasks" element={<TasksPage />} />
+        <Route path="/docs/operations/team" element={<TeamPage />} />
+        <Route path="/docs/operations/spray" element={<SprayPage />} />
+        <Route path="/docs/operations/calendar" element={<CalendarPage />} />
+        <Route path="/docs/operations/analytics" element={<AnalyticsPage />} />
+        <Route path="/docs/operations/hardware" element={<HardwarePage />} />
+
+        {/* Resources */}
+        <Route path="/docs/faq" element={<FAQPage />} />
+        <Route path="/docs/troubleshooting" element={<TroubleshootingPage />} />
+        <Route path="/docs/support" element={<SupportPage />} />
+
         <Route element={<SiteLayout />}>
           {/* Public routes */}
           <Route index element={<HomePage />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="contact" element={<ContactPage />} />
-          <Route path="docs" element={<DocumentationPage />} />
           <Route path="pricing" element={<PricingPage />} />
 
           {/* Protected routes - require authentication */}

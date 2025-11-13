@@ -292,6 +292,7 @@ export function BlockMap({
   const [mapZoom, setMapZoom] = useState(17);
   const [basemap, setBasemap] = useState('satellite'); // 'satellite' or 'roadmap'
   const [drawingMode, setDrawingMode] = useState(false);
+  const [isEditingExisting, setIsEditingExisting] = useState(false); // Track if editing existing vs drawing new
   const [tempPath, setTempPath] = useState([]);
   const [hasZoomedToBlocks, setHasZoomedToBlocks] = useState(false);
   const [showRows, setShowRows] = useState(true); // Toggle row visibility
@@ -342,11 +343,17 @@ export function BlockMap({
     zoomControl: true,
   };
 
-  // Calculate rows for all blocks
+  // Calculate rows for all blocks (including tempPath during editing)
   const allBlockRows = useMemo(() => {
     const rowsMap = {};
     blocks.forEach(block => {
-      if (block.geom && block.geom.coordinates) {
+      // If we're editing this block, use tempPath instead of saved geometry
+      if (drawingMode && block.id === selectedBlockId && tempPath.length >= 3) {
+        if (block.row_spacing_ft) {
+          const orientation = block.row_orientation_deg || 90; // Default to east-west
+          rowsMap[block.id] = generateRowLines(tempPath, block.row_spacing_ft, orientation);
+        }
+      } else if (block.geom && block.geom.coordinates) {
         const path = geojsonToPath(block.geom);
         if (path.length >= 3 && block.row_spacing_ft) {
           const orientation = block.row_orientation_deg || 90; // Default to east-west
@@ -355,7 +362,7 @@ export function BlockMap({
       }
     });
     return rowsMap;
-  }, [blocks]);
+  }, [blocks, drawingMode, selectedBlockId, tempPath]);
 
   // Auto-zoom to fit all blocks with geometry when map loads or blocks change
   useEffect(() => {
@@ -687,6 +694,9 @@ export function BlockMap({
   const handleMapClick = (e) => {
     if (!drawingMode) return;
 
+    // When editing existing field, don't add points on click - only drag existing vertices
+    if (isEditingExisting) return;
+
     const newPoint = {
       lat: e.latLng.lat(),
       lng: e.latLng.lng()
@@ -727,6 +737,7 @@ export function BlockMap({
         }
         setTempPath([]);
         setDrawingMode(false);
+        setIsEditingExisting(false);
         return;
       }
     }
@@ -742,6 +753,7 @@ export function BlockMap({
 
     setTempPath([]);
     setDrawingMode(false);
+    setIsEditingExisting(false);
   };
 
   const handleStartDrawing = () => {
@@ -786,6 +798,7 @@ export function BlockMap({
   const handleCancelDrawing = () => {
     setTempPath([]);
     setDrawingMode(false);
+    setIsEditingExisting(false);
   };
 
   const handleBlockClick = (blockId) => {
@@ -818,6 +831,7 @@ export function BlockMap({
 
       setTempPath(editPath);
       setDrawingMode(true);
+      setIsEditingExisting(true); // Mark that we're editing, not drawing new
 
       // When editing, save will update instead of create
       // We'll handle this in handleSavePolygon
@@ -1561,8 +1575,8 @@ export function BlockMap({
           onClick={handleMapClick}
           onLoad={(map) => { mapRef.current = map; }}
         >
-          {/* Drawing Manager for creating new polygons */}
-          {drawingMode && (
+          {/* Drawing Manager for creating new polygons - disabled when editing existing */}
+          {drawingMode && !isEditingExisting && (
             <DrawingManager
               onLoad={(drawingManager) => setDrawingManagerRef(drawingManager)}
               onPolygonComplete={onPolygonComplete}
@@ -1586,6 +1600,12 @@ export function BlockMap({
         {/* Render all block polygons */}
         {blocks.map(block => {
           if (!block.geom) return null;
+
+          // Hide this block's polygon if we're currently editing it
+          if (drawingMode && block.id === selectedBlockId && tempPath.length > 0) {
+            return null;
+          }
+
           const path = geojsonToPath(block.geom);
           if (path.length < 3) return null;
 
@@ -1843,7 +1863,10 @@ export function BlockMap({
                   strokeColor: '#10b981',
                   strokeOpacity: 0.8,
                   strokeWeight: 3,
-                  clickable: true,
+                  clickable: false,
+                  editable: false,
+                  draggable: false,
+                  zIndex: 10
                 }}
                 onRightClick={handlePolygonRightClick}
               />
@@ -1857,7 +1880,7 @@ export function BlockMap({
                   strokeColor: '#10b981',
                   strokeOpacity: 0.8,
                   strokeWeight: 3,
-                  clickable: true,
+                  clickable: false,
                 }}
                 onRightClick={handlePolygonRightClick}
               />
@@ -1866,23 +1889,56 @@ export function BlockMap({
             {/* Draggable vertex markers */}
             {tempPath.map((point, index) => (
               <Marker
-                key={index}
+                key={`vertex-${index}`}
                 position={point}
                 draggable={true}
                 onDrag={(e) => handleVertexDrag(index, e.latLng)}
                 icon={{
                   path: window.google.maps.SymbolPath.CIRCLE,
-                  scale: 7,
+                  scale: 8,
                   fillColor: '#10b981',
                   fillOpacity: 1,
                   strokeColor: '#fff',
-                  strokeWeight: 2,
+                  strokeWeight: 2.5,
                 }}
                 options={{
                   cursor: 'move'
                 }}
               />
             ))}
+
+            {/* Midpoint markers for adding new vertices (only show when 3+ points) */}
+            {tempPath.length >= 3 && tempPath.map((point, index) => {
+              const nextIndex = (index + 1) % tempPath.length;
+              const nextPoint = tempPath[nextIndex];
+              const midpoint = {
+                lat: (point.lat + nextPoint.lat) / 2,
+                lng: (point.lng + nextPoint.lng) / 2
+              };
+
+              return (
+                <Marker
+                  key={`midpoint-${index}`}
+                  position={midpoint}
+                  onClick={() => {
+                    const newPath = [...tempPath];
+                    newPath.splice(nextIndex, 0, midpoint);
+                    setTempPath(newPath);
+                  }}
+                  icon={{
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    scale: 5,
+                    fillColor: '#10b981',
+                    fillOpacity: 0.5,
+                    strokeColor: '#fff',
+                    strokeWeight: 1.5,
+                  }}
+                  options={{
+                    cursor: 'pointer'
+                  }}
+                />
+              );
+            })}
           </>
         )}
         </GoogleMap>
@@ -1916,32 +1972,63 @@ export function BlockMap({
 
               return (
                 <>
-                  {isUpdating && (
-                    <p className="text-xs font-semibold text-blue-900 mb-2 pb-2 border-b border-blue-200">
-                      Adding map to: {selectedBlock.name}
-                    </p>
-                  )}
-                  <p className="font-medium text-blue-900 mb-1">
-                    {tempPath.length === 0 ? 'Click to start drawing' : 'Click to add points'}
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    {tempPath.length < 3
-                      ? `Need ${3 - tempPath.length} more point${3 - tempPath.length !== 1 ? 's' : ''} to complete`
-                      : 'Drag points to adjust or click Save Changes'}
-                  </p>
-                  {tempPath.length > 0 && (
+                  {isEditingExisting ? (
                     <>
+                      <p className="text-xs font-semibold text-blue-900 mb-2 pb-2 border-b border-blue-200">
+                        Editing boundary: {selectedBlock?.name}
+                      </p>
+                      <p className="font-medium text-blue-900 mb-1">
+                        Drag points to adjust boundary
+                      </p>
+                      <p className="text-sm text-blue-700 mb-2">
+                        Click Save Changes when done
+                      </p>
                       <p className="text-xs text-blue-600 mt-2">
-                        💡 Drag the green circles to adjust the boundary
+                        💡 Drag the green circles to move vertices
                       </p>
                       <p className="text-xs text-blue-600 mt-1">
-                        💡 Right-click on the line to add a new point
+                        💡 Click the semi-transparent circles to add new points
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        💡 Right-click on the line to add a point anywhere
+                      </p>
+                      <p className="text-xs text-blue-600 mt-2">
+                        Points: {tempPath.length}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      {isUpdating && (
+                        <p className="text-xs font-semibold text-blue-900 mb-2 pb-2 border-b border-blue-200">
+                          Adding map to: {selectedBlock.name}
+                        </p>
+                      )}
+                      <p className="font-medium text-blue-900 mb-1">
+                        {tempPath.length === 0 ? 'Click to start drawing' : 'Click to add points'}
+                      </p>
+                      <p className="text-sm text-blue-700">
+                        {tempPath.length < 3
+                          ? `Need ${3 - tempPath.length} more point${3 - tempPath.length !== 1 ? 's' : ''} to complete`
+                          : 'Drag points to adjust or click Save Changes'}
+                      </p>
+                      {tempPath.length > 0 && (
+                        <>
+                          <p className="text-xs text-blue-600 mt-2">
+                            💡 Drag the green circles to move vertices
+                          </p>
+                          <p className="text-xs text-blue-600 mt-1">
+                            💡 Click the semi-transparent circles to add new points
+                          </p>
+                          <p className="text-xs text-blue-600 mt-1">
+                            💡 Right-click on the line to add a point anywhere
+                          </p>
+                        </>
+                      )}
+                      <p className="text-xs text-blue-600 mt-2">
+                        Points: {tempPath.length}
                       </p>
                     </>
                   )}
-                  <p className="text-xs text-blue-600 mt-2">
-                    Points: {tempPath.length}
-                  </p>
                 </>
               );
             })()}

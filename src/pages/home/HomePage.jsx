@@ -128,205 +128,323 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Simplified Capabilities Overview Section */}
-      <section className="relative bg-white py-16 sm:py-24 lg:py-32">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-100 to-vine-green-100 px-4 py-1.5 mb-4">
-              <Sparkles className="w-4 h-4 text-teal-600" />
-              <span className="text-sm font-semibold text-teal-700">Complete Platform</span>
-            </div>
-            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 px-4 sm:px-0">
-              Everything you need in one place
-            </p>
-            <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 px-4 sm:px-0">
-              From concept to harvest—comprehensive tools for vineyard planning and operations.
+      {/* Product Showcase - Zendesk Style */}
+      <section className="relative bg-white py-20 sm:py-32 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-6">
+          {/* Title */}
+          <div className="text-center mb-10 mt-4">
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-4">
+              Plan smarter. Operate better.
+            </h2>
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
+              Everything you need to design your vineyard, forecast financials, and manage daily operations—all in one platform.
             </p>
           </div>
 
-          <div className="mx-auto mt-12 sm:mt-16 max-w-5xl">
-            <div className="grid grid-cols-1 gap-8 sm:gap-10 md:grid-cols-3">
-              {/* Financial Planning */}
-              <div className="group relative bg-gradient-to-br from-teal-50 to-vine-green-50 rounded-3xl border-2 border-teal-200 p-8 hover:border-teal-400 hover:shadow-2xl transition-all">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-vine-green-500 mb-6 group-hover:scale-110 transition-transform">
-                  <TrendingUp className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Financial Planning</h3>
-                <p className="text-base text-gray-700 leading-relaxed">
-                  Design your vineyard layout, build 10-30 year projections, and create professional business plans that impress lenders and investors.
-                </p>
-              </div>
-
-              {/* Vineyard Operations */}
-              <div className="group relative bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border-2 border-emerald-200 p-8 hover:border-emerald-400 hover:shadow-2xl transition-all">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 mb-6 group-hover:scale-110 transition-transform">
-                  <Sprout className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Vineyard Operations</h3>
-                <p className="text-base text-gray-700 leading-relaxed">
-                  Map your fields, manage your team, track activities, and monitor vineyard health with satellite data—all in real-time.
-                </p>
-              </div>
-
-              {/* Analytics & Insights */}
-              <div className="group relative bg-gradient-to-br from-blue-50 to-cyan-50 rounded-3xl border-2 border-blue-200 p-8 hover:border-blue-400 hover:shadow-2xl transition-all">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 mb-6 group-hover:scale-110 transition-transform">
-                  <BarChart3 className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Analytics & Insights</h3>
-                <p className="text-base text-gray-700 leading-relaxed">
-                  View comprehensive analytics, vegetation trends, water usage, harvest quality metrics, and field performance comparisons.
-                </p>
-              </div>
+          {/* Main content with software mockup and people */}
+          <div className="relative flex items-center justify-center min-h-[600px]">
+            {/* Background layer - furthest back (z-index: 1) */}
+            {/* Far left - small and receded */}
+            <div className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-56 h-80 rounded-3xl overflow-hidden shadow-lg" style={{zIndex: 1}}>
+              <img
+                src="/farmer-1.jpg"
+                alt="Vineyard worker"
+                className="w-full h-full object-cover object-[50%_35%] scale-110 opacity-90"
+              />
             </div>
 
-            {/* Learn More Link */}
-            <div className="mt-10 text-center">
-              <Link
-                to="/products"
-                className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-semibold text-lg group"
-              >
-                <span>Explore all features in detail</span>
-                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
+            {/* Far right - small and receded */}
+            <div className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-56 h-80 rounded-3xl overflow-hidden shadow-lg" style={{zIndex: 1}}>
+              <img
+                src="/farmer-4.png"
+                alt="Vineyard team"
+                className="w-full h-full object-cover object-[50%_35%] scale-110 opacity-90"
+              />
+            </div>
+
+            {/* Middle layer - closer to viewer (z-index: 2) */}
+            {/* Left center - taller, closer */}
+            <div className="hidden lg:block absolute left-20 top-1/2 -translate-y-1/2 w-64 h-96 rounded-3xl overflow-hidden shadow-xl" style={{zIndex: 2}}>
+              <img
+                src="/farmer-2.jpg"
+                alt="Vineyard operations"
+                className="w-full h-full object-cover object-[50%_35%] scale-110"
+              />
+            </div>
+
+            {/* Right center - taller, closer */}
+            <div className="hidden lg:block absolute right-20 top-1/2 -translate-y-1/2 w-64 h-96 rounded-3xl overflow-hidden shadow-xl" style={{zIndex: 2}}>
+              <img
+                src="/farmer-3.png"
+                alt="Vineyard management"
+                className="w-full h-full object-cover object-[50%_35%] scale-110"
+              />
+            </div>
+
+            {/* Software Interface Mockup - IN FRONT (z-index: 10) */}
+            <div className="relative z-10 mx-auto max-w-[52rem] w-full">
+              {/* Browser-style mockup frame */}
+              <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+                {/* Browser chrome */}
+                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                  </div>
+                  <div className="flex-1 mx-4">
+                    <div className="bg-white rounded px-3 py-1 text-xs text-gray-500 max-w-md">
+                      vinepioneer.com/planner
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interface content - Planner view with sidebar */}
+                <div className="bg-gray-50 flex">
+                  {/* Sidebar */}
+                  <div className="w-40 bg-white border-r border-gray-200 p-2.5 flex flex-col">
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sprout className="w-4 h-4 text-vine-green-600" />
+                        <span className="font-bold text-sm text-gray-900">Planner</span>
+                      </div>
+                      <div className="bg-teal-600 text-white text-xs font-semibold px-2 py-1 rounded text-center">
+                        Saved
+                      </div>
+                    </div>
+
+                    <nav className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-gray-700">
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        <span>Vineyard Design</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-gray-700">
+                        <DollarSign className="w-3.5 h-3.5" />
+                        <span>Financial Inputs</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-gray-700">
+                        <Sprout className="w-3.5 h-3.5" />
+                        <span>Vineyard Setup</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-gray-900 font-medium">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span>10-Year Plan</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-gray-700">
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Business Plan</span>
+                      </div>
+                    </nav>
+
+                    {/* Bottom section */}
+                    <div className="mt-auto pt-3 border-t border-gray-200 space-y-2">
+                      <div className="text-center">
+                        <div className="text-xs text-gray-600 mb-1">Project Years</div>
+                        <div className="text-2xl font-bold text-gray-900">10</div>
+                      </div>
+                      <div className="bg-purple-50 rounded p-2 text-center">
+                        <div className="text-xs text-gray-600 mb-0.5">Total Est. Cost</div>
+                        <div className="text-lg font-bold text-purple-600">$220,883</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Main content */}
+                  <div className="flex-1 p-5">
+                    {/* Header */}
+                    <div className="mb-3">
+                      <h2 className="text-xl font-bold text-gray-900 mb-0.5">10-Year Plan</h2>
+                      <p className="text-xs text-gray-600">Financial forecast showing revenue, expenses, and profitability</p>
+                    </div>
+
+                    {/* Key metrics cards */}
+                    <div className="grid grid-cols-3 gap-2.5 mb-3">
+                      <div className="bg-white rounded-lg p-2.5 shadow-sm border border-gray-200 text-center">
+                        <TrendingUp className="w-5 h-5 text-blue-500 mx-auto mb-1" />
+                        <div className="text-xl font-bold text-blue-600">Year 7</div>
+                        <div className="text-xs text-gray-600">Break Even</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-2.5 shadow-sm border border-gray-200 text-center">
+                        <div className="w-5 h-5 rounded-full bg-teal-100 flex items-center justify-center mx-auto mb-1">
+                          <DollarSign className="w-3.5 h-3.5 text-teal-600" />
+                        </div>
+                        <div className="text-xl font-bold text-teal-600">$1.09M</div>
+                        <div className="text-xs text-gray-600">Total Revenue</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-2.5 shadow-sm border border-gray-200 text-center">
+                        <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-1">
+                          <TrendingUp className="w-3.5 h-3.5 text-green-600" />
+                        </div>
+                        <div className="text-xl font-bold text-green-600">210%</div>
+                        <div className="text-xs text-gray-600">Annual ROI</div>
+                      </div>
+                    </div>
+
+                    {/* Revenue projection chart */}
+                    <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-bold text-gray-900">10-Year Revenue Projection</h3>
+                        <BarChart3 className="w-4 h-4 text-teal-600" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Year 1-3</span>
+                          <span className="font-semibold text-gray-900">$0</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5"></div>
+
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Year 4-5</span>
+                          <span className="font-semibold text-gray-900">$90,890/yr</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div className="bg-yellow-500 h-1.5 rounded-full" style={{width: '60%'}}></div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Year 6-10</span>
+                          <span className="font-semibold text-gray-900">$181,780/yr</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div className="bg-teal-500 h-1.5 rounded-full" style={{width: '100%'}}></div>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 pt-2 border-t border-gray-200 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-700">Break-Even</span>
+                        <span className="text-sm font-bold text-teal-600">Year 7</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Moving Ticker - Trusted Vineyards */}
+          <div className="mt-12 border-t border-gray-200 pt-8">
+            <p className="text-center text-sm font-semibold text-gray-500 uppercase tracking-wide mb-8">
+              Trusted by vineyard operations across North America
+            </p>
+
+            {/* Ticker Animation */}
+            <div className="relative overflow-hidden">
+              <style dangerouslySetInnerHTML={{__html: `
+                @keyframes ticker-scroll {
+                  0% { transform: translateX(0); }
+                  100% { transform: translateX(-50%); }
+                }
+                .ticker-animate {
+                  animation: ticker-scroll 30s linear infinite;
+                }
+                .ticker-animate:hover {
+                  animation-play-state: paused;
+                }
+              `}} />
+              <div className="flex ticker-animate whitespace-nowrap">
+                {/* First set of names */}
+                <div className="flex items-center gap-12 px-6">
+                  <span className="text-gray-400 font-bold text-lg">Napa Valley Estates</span>
+                  <span className="text-gray-400 font-bold text-lg">Willamette Vintners</span>
+                  <span className="text-gray-400 font-bold text-lg">Sonoma Vineyards</span>
+                  <span className="text-gray-400 font-bold text-lg">Central Coast Wines</span>
+                  <span className="text-gray-400 font-bold text-lg">Paso Robles Growers</span>
+                  <span className="text-gray-400 font-bold text-lg">Santa Barbara Viticulture</span>
+                  <span className="text-gray-400 font-bold text-lg">Oregon Wine Co.</span>
+                  <span className="text-gray-400 font-bold text-lg">Finger Lakes Vineyard</span>
+                </div>
+                {/* Duplicate set for seamless loop */}
+                <div className="flex items-center gap-12 px-6">
+                  <span className="text-gray-400 font-bold text-lg">Napa Valley Estates</span>
+                  <span className="text-gray-400 font-bold text-lg">Willamette Vintners</span>
+                  <span className="text-gray-400 font-bold text-lg">Sonoma Vineyards</span>
+                  <span className="text-gray-400 font-bold text-lg">Central Coast Wines</span>
+                  <span className="text-gray-400 font-bold text-lg">Paso Robles Growers</span>
+                  <span className="text-gray-400 font-bold text-lg">Santa Barbara Viticulture</span>
+                  <span className="text-gray-400 font-bold text-lg">Oregon Wine Co.</span>
+                  <span className="text-gray-400 font-bold text-lg">Finger Lakes Vineyard</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Planning Tools Section - Green Background */}
-      <section className="relative bg-gradient-to-br from-vine-green-500 to-emerald-600 overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl"></div>
-
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-32">
-          <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 mb-4 border border-white/30">
-              <Sparkles className="w-4 h-4 text-white" />
-              <span className="text-sm font-semibold text-white">Plan Your Vineyard</span>
+      {/* Planning Tools Section - Clean & Balanced */}
+      <section className="bg-gradient-to-br from-vine-green-500 to-emerald-600 pt-16 pb-24 sm:pt-20 sm:pb-32">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 mb-3 border border-white/30">
+              <LayoutGrid className="w-4 h-4 text-white" strokeWidth={1.5} />
+              <span className="text-sm font-semibold text-white">Vineyard Planner</span>
             </div>
-            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white px-4 sm:px-0">
-              Build your vineyard from the ground up.
-            </p>
-            <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-white/90 px-4 sm:px-0">
-              Our tools break down the real costs of establishing your vineyard — from planting to production — 
-              giving you clear estimates and projections that put you one step ahead with lenders, investors, and yourself.
+            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
+              Build your vineyard with real numbers
+            </h2>
+            <p className="text-lg text-white/90 max-w-2xl mx-auto">
+              Model your complete financial picture with tools that show lenders you've done the homework.
             </p>
           </div>
 
-          <div className="mx-auto mt-12 sm:mt-16 max-w-7xl">
-            <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-2">
-              <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-6 sm:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 mb-4 sm:mb-5">
-                  <LayoutGrid className="w-6 h-6 text-white" />
+          {/* 2x2 grid with more substance */}
+          <div className="grid md:grid-cols-2 gap-12 text-white">
+            {/* Configure Layout */}
+            <div>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <LayoutGrid className="w-6 h-6" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Design Your Vineyard Layout</h3>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Configure vine spacing from 4×8' to 8×12', set your plot shape and dimensions, choose row orientation for optimal sun exposure.</p>
-                <ul className="space-y-2 sm:space-y-3">
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Auto-calculate total vines needed</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Determine trellis materials required</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Plan irrigation system components</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Estimate fencing perimeter costs</span>
-                  </li>
-                </ul>
+                <h3 className="text-2xl font-bold">Configure Your Layout</h3>
               </div>
+              <p className="text-base text-white/90 leading-relaxed">
+                Set vine spacing, define plot dimensions, and calculate total vines, trellis materials, irrigation components, and fencing costs.
+              </p>
+            </div>
 
-              <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-6 sm:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 mb-4 sm:mb-5">
-                  <TrendingUp className="w-6 h-6 text-white" />
+            {/* Cash Flow */}
+            <div>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Model Your Finances</h3>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Build detailed 10-30 year financial projections with year-by-year revenue, costs, and cash flow analysis.</p>
-                <ul className="space-y-2 sm:space-y-3">
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Choose bottled wine or bulk grape sales</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Set pricing and yield assumptions</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Track establishment and operating costs</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Calculate break-even timeline and ROI</span>
-                  </li>
-                </ul>
+                <h3 className="text-2xl font-bold">Project Your Cash Flow</h3>
               </div>
+              <p className="text-base text-white/90 leading-relaxed">
+                Create 10-30 year forecasts with revenue, expenses, and liquidity analysis. Choose bottled wine or bulk grape sales.
+              </p>
+            </div>
 
-              <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-6 sm:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 mb-4 sm:mb-5">
-                  <DollarSign className="w-6 h-6 text-white" />
+            {/* Structure Debt */}
+            <div>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <DollarSign className="w-6 h-6" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Plan Your Financing</h3>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Model USDA FSA loans, commercial bank loans, and equipment financing with accurate payment calculations.</p>
-                <ul className="space-y-2 sm:space-y-3">
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Compare multiple loan scenarios</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Calculate LTC and LTV ratios</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Track monthly debt service payments</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Identify equity gaps and funding needs</span>
-                  </li>
-                </ul>
+                <h3 className="text-2xl font-bold">Structure Your Debt</h3>
               </div>
+              <p className="text-base text-white/90 leading-relaxed">
+                Evaluate USDA FSA loans and commercial financing with precise payment calculations, loan-to-value ratios, and equity requirements.
+              </p>
+            </div>
 
-              <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-6 sm:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 mb-4 sm:mb-5">
-                  <BarChart3 className="w-6 h-6 text-white" />
+            {/* Scenarios */}
+            <div>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                  <BarChart3 className="w-6 h-6" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Analyze Different Scenarios</h3>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Test various strategies by adjusting key variables and instantly seeing how they impact profitability.</p>
-                <ul className="space-y-2 sm:space-y-3">
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Compare price points and their effects</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Model different acreage sizes</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Test various cost assumptions</span>
-                  </li>
-                  <li className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                    <span>Evaluate financing structures</span>
-                  </li>
-                </ul>
+                <h3 className="text-2xl font-bold">Analyze Scenarios</h3>
               </div>
+              <p className="text-base text-white/90 leading-relaxed">
+                Test different strategies by adjusting key variables and instantly see how they impact profitability and break-even timeline.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section - Redesigned */}
-      <section className="relative bg-white py-16 sm:py-24 lg:py-32 overflow-hidden">
+      {/* The Power of All Platforms */}
+      <section className="relative bg-gradient-to-br from-gray-50 to-white py-24 sm:py-32 overflow-hidden">
         {/* Decorative background patterns - Topography */}
         <div className="absolute inset-0 opacity-50">
           <div className="absolute top-0 left-0 w-full h-full" style={{
@@ -369,7 +487,7 @@ export default function HomePage() {
                       Design Your Vineyard
                     </h3>
                     <p className="text-base text-gray-700 leading-relaxed">
-                      Configure vineyard layout—vine spacing, plot dimensions, and row orientation. Automatically calculate materials, trellis systems, and irrigation needs.
+                      Set spacing, plot dimensions, and row orientation. Instantly calculate materials, trellis systems, and irrigation needs.
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2 lg:justify-end">
                       <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-semibold">Layout Tools</span>
@@ -396,7 +514,7 @@ export default function HomePage() {
                       Build Financial Projections
                     </h3>
                     <p className="text-base text-gray-700 leading-relaxed">
-                      Create 10-30 year projections with revenue models, cost analysis, and ROI calculations. Model different financing scenarios to find the best path forward.
+                      Create 10-30 year projections with revenue models, cost breakdowns, and ROI calculations. Compare different financing scenarios to find what works.
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-semibold">Cash Flow</span>
@@ -462,130 +580,297 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Vineyard Operations Section - LIVE - Green Background */}
-      <section className="relative bg-gradient-to-br from-vine-green-600 to-emerald-700 overflow-hidden py-16 sm:py-24 lg:py-32">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      {/* Vineyard Operations Section - Redesigned */}
+      <section className="relative bg-gradient-to-br from-teal-600 via-emerald-600 to-teal-700 overflow-hidden py-16 sm:py-24 lg:py-32">
+        {/* Decorative elements */}
+        <div className="absolute top-10 right-10 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 left-10 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl"></div>
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center rounded-full bg-white/20 px-4 py-2 text-sm font-bold text-white mb-4 shadow-sm border border-white/30">
-              <Sparkles className="w-4 h-4 mr-2" />
+              <Sparkles className="w-4 h-4 mr-2" strokeWidth={1.5} />
               Available Now
             </div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 mb-4 border border-white/30">
-              <Sprout className="w-4 h-4 text-white" />
+              <Sprout className="w-4 h-4 text-white" strokeWidth={1.5} />
               <span className="text-sm font-semibold text-white">Vineyard Operations</span>
             </div>
             <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white px-4 sm:px-0">
-              Manage your vineyard in real-time
+              Run operations with complete visibility
             </p>
             <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-white/90 px-4 sm:px-0">
-              Once your vineyard is planted, seamlessly transition from planning to operations with tools designed for day-to-day management.
-              Track activities, monitor conditions, and make data-driven decisions across every block.
+              Once planted, seamlessly transition from planning to execution with tools built for daily management.
+              Log activities, monitor conditions, and make informed decisions across every block.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 mb-12 sm:mb-16">
-            <FeatureCard
-              icon={MapPin}
-              iconColor="teal"
-              title="Interactive Field Mapping"
-              description="Visualize your vineyard with satellite imagery, custom block boundaries, and vegetation health monitoring from space."
-              details={[
-                "Satellite NDVI vegetation vigor tracking",
-                "Draw custom field boundaries on maps",
-                "Track field metrics and performance",
-                "Historical satellite data trends"
-              ]}
-            />
-            <FeatureCard
-              icon={Thermometer}
-              iconColor="teal"
-              title="Weather & Environment"
-              description="Real-time weather data, forecasts, and environmental monitoring to make informed decisions."
-              details={[
-                "7-day weather forecasts",
-                "Evapotranspiration (ET) calculations",
-                "Frost and heat warnings",
-                "Optimal spray window recommendations"
-              ]}
-            />
-            <FeatureCard
-              icon={Calendar}
-              iconColor="teal"
-              title="Task & Team Management"
-              description="Plan operations, assign work to crew members, and track progress across your vineyard."
-              details={[
-                "Assign tasks to team members",
-                "Track task status and completion",
-                "Calendar view of all activities",
-                "Labor hour tracking by field"
-              ]}
-            />
-          </div>
+          {/* Zigzag Feature Layout */}
+          <div className="space-y-20 sm:space-y-32">
+            {/* Feature 1 - Field Mapping (Image Left, Text Right) */}
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+              {/* Mockup/Image */}
+              <div className="relative">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl bg-white p-4">
+                  {/* Field Mapping Mockup */}
+                  <div className="aspect-[4/3] bg-gradient-to-br from-emerald-900 via-green-800 to-teal-900 rounded-2xl overflow-hidden relative">
+                    {/* Simulated satellite/map view */}
+                    <div className="absolute inset-0" style={{
+                      backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px), repeating-linear-gradient(90deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px)',
+                    }}></div>
 
-          {/* Additional operations features */}
-          <div className="mx-auto max-w-6xl mt-12 sm:mt-16 px-4 sm:px-0">
-            <div className="rounded-2xl bg-gradient-to-br from-teal-50 to-vine-green-50 p-6 sm:p-8 shadow-sm border border-teal-100">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">
-                Complete Operational Control
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 rounded-lg bg-teal-100 p-2">
-                    <CheckCircle2 className="w-5 h-5 text-teal-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Irrigation Management</h4>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Track water usage, log irrigation events, and calculate water application rates per field</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 rounded-lg bg-teal-100 p-2">
-                    <CheckCircle2 className="w-5 h-5 text-vine-green-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Spray Records</h4>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Document all spray applications with compliance-ready records and safety data sheets</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 rounded-lg bg-teal-100 p-2">
-                    <CheckCircle2 className="w-5 h-5 text-teal-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Harvest Tracking</h4>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Log brix levels, pH, acidity, and tonnage by field for quality documentation</p>
+                    {/* Field blocks with NDVI colors */}
+                    <div className="absolute top-12 left-8 w-32 h-24 bg-green-400 opacity-70 rounded-lg transform -rotate-12 border-2 border-white/30"></div>
+                    <div className="absolute top-16 right-12 w-28 h-20 bg-yellow-400 opacity-70 rounded-lg transform rotate-6 border-2 border-white/30"></div>
+                    <div className="absolute bottom-16 left-16 w-24 h-28 bg-red-400 opacity-70 rounded-lg transform rotate-12 border-2 border-white/30"></div>
+                    <div className="absolute bottom-12 right-16 w-36 h-20 bg-green-300 opacity-70 rounded-lg transform -rotate-6 border-2 border-white/30"></div>
+
+                    {/* NDVI Legend */}
+                    <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+                      <p className="text-xs font-bold text-gray-800 mb-1">NDVI Index</p>
+                      <div className="flex gap-1">
+                        <div className="w-6 h-3 bg-red-400 rounded"></div>
+                        <div className="w-6 h-3 bg-yellow-400 rounded"></div>
+                        <div className="w-6 h-3 bg-green-300 rounded"></div>
+                        <div className="w-6 h-3 bg-green-500 rounded"></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-600 mt-0.5">
+                        <span>Low</span>
+                        <span>High</span>
+                      </div>
+                    </div>
+
+                    {/* Map marker */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                      <MapPin className="w-8 h-8 text-white drop-shadow-lg" strokeWidth={2} fill="currentColor" />
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 rounded-lg bg-teal-100 p-2">
-                    <CheckCircle2 className="w-5 h-5 text-vine-green-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Analytics Dashboard</h4>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">View vegetation vigor trends, water usage, yield production, and field performance comparisons</p>
+                {/* Decorative element */}
+                <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-teal-400/20 rounded-full blur-2xl -z-10"></div>
+              </div>
+
+              {/* Text Content */}
+              <div>
+                <div className="inline-flex items-center gap-2 bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-xs font-semibold mb-4">
+                  <MapPin className="w-3.5 h-3.5" />
+                  Most Popular
+                </div>
+                <h3 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                  Map every block of your vineyard
+                </h3>
+                <p className="text-lg text-white/90 mb-6 leading-relaxed">
+                  Draw custom field boundaries, organize your blocks, and track key metrics for each area. Keep all your vineyard data organized in one visual interface that makes management simple.
+                </p>
+                <Link
+                  to="/products"
+                  className="inline-flex items-center gap-2 bg-white text-teal-700 px-6 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors shadow-lg"
+                >
+                  Explore Field Mapping
+                  <ChevronRight className="w-5 h-5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Feature 2 - Irrigation (Text Left, Image Right) */}
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+              {/* Text Content */}
+              <div className="lg:order-1">
+                <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-4">
+                  <Droplet className="w-3.5 h-3.5" />
+                  Smart Irrigation
+                </div>
+                <h3 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                  Optimize every drop of water
+                </h3>
+                <p className="text-lg text-white/90 mb-6 leading-relaxed">
+                  Log irrigation events, track water usage, and get ET-based recommendations. Calculate application rates by field and monitor flow rates to maximize efficiency.
+                </p>
+                <Link
+                  to="/products"
+                  className="inline-flex items-center gap-2 bg-white text-blue-700 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-lg"
+                >
+                  Explore Irrigation Tools
+                  <ChevronRight className="w-5 h-5" />
+                </Link>
+              </div>
+
+              {/* Mockup/Image */}
+              <div className="relative lg:order-2">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl bg-white p-4">
+                  {/* Irrigation Management Mockup */}
+                  <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 flex flex-col">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900">Water Usage</h4>
+                        <p className="text-xs text-gray-500">Last 7 days</p>
+                      </div>
+                      <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                        ET-Based
+                      </div>
+                    </div>
+
+                    {/* Water bars chart */}
+                    <div className="flex-1 flex items-end gap-2 mb-4">
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full bg-blue-400 rounded-t" style={{height: '60%'}}></div>
+                        <span className="text-xs text-gray-600">Mon</span>
+                      </div>
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full bg-blue-400 rounded-t" style={{height: '80%'}}></div>
+                        <span className="text-xs text-gray-600">Tue</span>
+                      </div>
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full bg-blue-400 rounded-t" style={{height: '45%'}}></div>
+                        <span className="text-xs text-gray-600">Wed</span>
+                      </div>
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full bg-blue-400 rounded-t" style={{height: '70%'}}></div>
+                        <span className="text-xs text-gray-600">Thu</span>
+                      </div>
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full bg-cyan-500 rounded-t" style={{height: '100%'}}></div>
+                        <span className="text-xs text-gray-600 font-semibold">Fri</span>
+                      </div>
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full bg-blue-300 rounded-t opacity-40" style={{height: '55%'}}></div>
+                        <span className="text-xs text-gray-400">Sat</span>
+                      </div>
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full bg-blue-300 rounded-t opacity-40" style={{height: '50%'}}></div>
+                        <span className="text-xs text-gray-400">Sun</span>
+                      </div>
+                    </div>
+
+                    {/* Stats cards */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-white rounded-lg p-2 text-center shadow-sm">
+                        <Droplet className="w-4 h-4 text-blue-500 mx-auto mb-1" />
+                        <p className="text-lg font-bold text-gray-900">2,450</p>
+                        <p className="text-xs text-gray-500">Gallons</p>
+                      </div>
+                      <div className="bg-white rounded-lg p-2 text-center shadow-sm">
+                        <Thermometer className="w-4 h-4 text-orange-500 mx-auto mb-1" />
+                        <p className="text-lg font-bold text-gray-900">0.24"</p>
+                        <p className="text-xs text-gray-500">ET Today</p>
+                      </div>
+                      <div className="bg-white rounded-lg p-2 text-center shadow-sm">
+                        <TrendingUp className="w-4 h-4 text-green-500 mx-auto mb-1" />
+                        <p className="text-lg font-bold text-gray-900">92%</p>
+                        <p className="text-xs text-gray-500">Efficiency</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 rounded-lg bg-teal-100 p-2">
-                    <CheckCircle2 className="w-5 h-5 text-teal-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Equipment & Inventory</h4>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Track equipment maintenance schedules and manage supply inventory levels</p>
+                {/* Decorative element */}
+                <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl -z-10"></div>
+              </div>
+            </div>
+
+            {/* Feature 3 - Analytics Dashboard (Image Left, Text Right) */}
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+              {/* Mockup/Image */}
+              <div className="relative">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl bg-white p-4">
+                  {/* Analytics Dashboard Mockup */}
+                  <div className="aspect-[4/3] bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 flex flex-col">
+                    {/* Header */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-bold text-gray-900">Harvest Quality Metrics</h4>
+                      <p className="text-xs text-gray-500">2024 Season • 4 Blocks</p>
+                    </div>
+
+                    {/* Three metric cards */}
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="bg-white rounded-lg p-2 shadow-sm border-l-4 border-purple-500">
+                        <p className="text-xs text-gray-500 mb-1">Avg Brix</p>
+                        <p className="text-2xl font-bold text-purple-600">24.2°</p>
+                        <p className="text-xs text-green-600 font-semibold mt-1">↑ 2.1</p>
+                      </div>
+                      <div className="bg-white rounded-lg p-2 shadow-sm border-l-4 border-pink-500">
+                        <p className="text-xs text-gray-500 mb-1">Avg pH</p>
+                        <p className="text-2xl font-bold text-pink-600">3.45</p>
+                        <p className="text-xs text-gray-500 font-semibold mt-1">↓ 0.05</p>
+                      </div>
+                      <div className="bg-white rounded-lg p-2 shadow-sm border-l-4 border-violet-500">
+                        <p className="text-xs text-gray-500 mb-1">TA g/L</p>
+                        <p className="text-2xl font-bold text-violet-600">6.8</p>
+                        <p className="text-xs text-green-600 font-semibold mt-1">↑ 0.3</p>
+                      </div>
+                    </div>
+
+                    {/* Mini line chart */}
+                    <div className="flex-1 bg-white rounded-lg p-3 shadow-sm">
+                      <div className="flex items-end justify-between h-full gap-1">
+                        <div className="flex-1 flex flex-col justify-end">
+                          <div className="bg-purple-200 rounded-t" style={{height: '45%'}}></div>
+                        </div>
+                        <div className="flex-1 flex flex-col justify-end">
+                          <div className="bg-purple-300 rounded-t" style={{height: '60%'}}></div>
+                        </div>
+                        <div className="flex-1 flex flex-col justify-end">
+                          <div className="bg-purple-400 rounded-t" style={{height: '55%'}}></div>
+                        </div>
+                        <div className="flex-1 flex flex-col justify-end">
+                          <div className="bg-purple-400 rounded-t" style={{height: '70%'}}></div>
+                        </div>
+                        <div className="flex-1 flex flex-col justify-end">
+                          <div className="bg-purple-500 rounded-t" style={{height: '85%'}}></div>
+                        </div>
+                        <div className="flex-1 flex flex-col justify-end">
+                          <div className="bg-purple-500 rounded-t" style={{height: '90%'}}></div>
+                        </div>
+                        <div className="flex-1 flex flex-col justify-end">
+                          <div className="bg-purple-600 rounded-t" style={{height: '100%'}}></div>
+                        </div>
+                      </div>
+                      <div className="flex justify-between mt-2 text-xs text-gray-500">
+                        <span>Week 1</span>
+                        <span>Week 7</span>
+                      </div>
+                    </div>
+
+                    {/* Block comparison */}
+                    <div className="mt-3 flex gap-2">
+                      <div className="flex-1 bg-gradient-to-r from-purple-100 to-purple-200 rounded-lg p-2 text-center">
+                        <p className="text-xs text-purple-700 font-semibold">North Block</p>
+                        <p className="text-sm font-bold text-purple-900">Best</p>
+                      </div>
+                      <div className="flex-1 bg-gradient-to-r from-pink-100 to-pink-200 rounded-lg p-2 text-center">
+                        <p className="text-xs text-pink-700 font-semibold">East Block</p>
+                        <p className="text-sm font-bold text-pink-900">Good</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 rounded-lg bg-teal-100 p-2">
-                    <CheckCircle2 className="w-5 h-5 text-vine-green-600" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Hardware Integration</h4>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">Connect IoT devices and sensors for automated data collection and monitoring</p>
-                  </div>
+                {/* Decorative element */}
+                <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl -z-10"></div>
+              </div>
+
+              {/* Text Content */}
+              <div>
+                <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold mb-4">
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  Data Analytics
                 </div>
+                <h3 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                  Visualize harvest quality data
+                </h3>
+                <p className="text-lg text-white/90 mb-6 leading-relaxed">
+                  Track brix, pH, and acidity from field samples with visual analytics. Compare harvest quality across blocks and years to make data-driven decisions about your vineyard.
+                </p>
+                <Link
+                  to="/products"
+                  className="inline-flex items-center gap-2 bg-white text-purple-700 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors shadow-lg"
+                >
+                  Explore Analytics
+                  <ChevronRight className="w-5 h-5" />
+                </Link>
               </div>
             </div>
           </div>
+
         </div>
       </section>
 
@@ -707,12 +992,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Coming Soon - Production & Sales */}
-      <section className="relative bg-gradient-to-b from-gray-50 to-white py-16 sm:py-24 lg:py-32">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      {/* Coming Soon - Production & Sales - Redesigned */}
+      <section className="relative bg-gradient-to-b from-gray-50 to-white py-16 sm:py-24 lg:py-32 overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-20 right-0 w-96 h-96 bg-amber-100/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-0 w-96 h-96 bg-orange-100/30 rounded-full blur-3xl"></div>
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-2 text-sm font-bold text-amber-800 mb-4 shadow-sm">
-              <Sparkles className="w-4 h-4 mr-2" />
+            <div className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-2 text-sm font-bold text-amber-800 mb-4 shadow-sm border border-amber-200">
+              <Sparkles className="w-4 h-4 mr-2" strokeWidth={1.5} />
               Coming 2025-2026
             </div>
             <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 px-4 sm:px-0">
@@ -723,106 +1012,122 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-3">
-            <FutureFeature
-              icon={Droplet}
-              iconColor="teal"
-              title="Winery Production"
-              description="Track crush, fermentation, barrel management, and bottling operations. Manage lot numbers, blending recipes, and aging schedules with full traceability."
-              comingSoon="Q4 2025"
-            />
-            <FutureFeature
-              icon={Package}
-              iconColor="teal"
-              title="Inventory Management"
-              description="Comprehensive inventory tracking for grapes, bulk wine, bottled products, and winemaking supplies. Automated stock alerts and batch tracking."
-              comingSoon="Q4 2025"
-            />
-            <FutureFeature
-              icon={DollarSign}
-              iconColor="teal"
-              title="Sales & Distribution"
-              description="CRM for wine clubs and wholesale accounts, order management, invoicing, and sales analytics. Streamline your tasting room and distribution operations."
-              comingSoon="Q2 2026"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            <div className="group relative bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
+              <div className="flex items-start justify-between mb-5">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Droplet className="w-7 h-7 text-amber-600" strokeWidth={1.5} />
+                </div>
+                <span className="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
+                  Q4 2025
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Winery Production</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">Track crush, fermentation, barrel management, and bottling operations. Manage lot numbers, blending recipes, and aging schedules with full traceability.</p>
+            </div>
+
+            <div className="group relative bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
+              <div className="flex items-start justify-between mb-5">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Package className="w-7 h-7 text-amber-600" strokeWidth={1.5} />
+                </div>
+                <span className="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
+                  Q4 2025
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Inventory Management</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">Comprehensive inventory tracking for grapes, bulk wine, bottled products, and winemaking supplies. Automated stock alerts and batch tracking.</p>
+            </div>
+
+            <div className="group relative bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
+              <div className="flex items-start justify-between mb-5">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <DollarSign className="w-7 h-7 text-amber-600" strokeWidth={1.5} />
+                </div>
+                <span className="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
+                  Q2 2026
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Sales & Distribution</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">CRM for wine clubs and wholesale accounts, order management, invoicing, and sales analytics. Streamline your tasting room and distribution operations.</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="relative bg-gradient-to-r from-vine-green-600 to-teal-600 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-vine-green-600 via-teal-600 to-emerald-600 overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-32">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white px-4 sm:px-0">
-              Ready to grow your vineyard business?
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-28 lg:py-36">
+          <div className="mx-auto max-w-3xl text-center">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold mb-6">
+              <Sprout className="w-4 h-4" />
+              Join 1,000+ vineyard planners
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight px-4 sm:px-0">
+              Start building a vineyard now
             </h2>
-            <p className="mx-auto mt-4 sm:mt-6 max-w-xl text-base sm:text-lg leading-7 sm:leading-8 text-teal-50 px-4 sm:px-0">
-              Start with our free financial planner, then upgrade to manage your vineyard operations with satellite monitoring, team management, and comprehensive analytics.
+            <p className="mx-auto mt-6 max-w-2xl text-lg sm:text-xl leading-relaxed text-white/90 px-4 sm:px-0">
+              Plan your vineyard, see if it works financially, then turn it into a real operation powered by satellite data, field monitoring, and team management tools.
             </p>
-            <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-x-6 px-4 sm:px-0">
+
+            {/* CTA Buttons */}
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 px-4 sm:px-0">
               <Link
                 to="/signup"
-                className="w-full sm:w-auto group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 sm:px-8 py-3 sm:py-3.5 text-sm sm:text-base font-bold text-teal-700 shadow-xl hover:bg-teal-50 transition-all hover:scale-105"
+                className="w-full sm:w-auto group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-bold text-vine-green-700 shadow-2xl hover:bg-gray-50 transition-all hover:scale-105"
               >
-                Sign Up Free
+                Start Planning Free
                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
-                to="/signin"
-                className="inline-flex items-center gap-2 text-sm sm:text-base font-semibold leading-7 text-white hover:text-teal-100 transition-colors"
+                to="/products"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 backdrop-blur-sm border-2 border-white/30 px-8 py-4 text-base font-semibold text-white hover:bg-white/20 transition-all"
               >
-                <span className="hidden sm:inline">Already have an account?</span> Sign In
+                Explore Features
+              </Link>
+            </div>
+
+            {/* Already have account link */}
+            <div className="mt-6">
+              <Link
+                to="/signin"
+                className="inline-flex items-center gap-2 text-base font-medium text-white/80 hover:text-white transition-colors"
+              >
+                Already have an account? <span className="underline underline-offset-4">Sign In</span>
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
 
-            {/* Social proof */}
-            <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-teal-100 px-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
-                <span className="text-sm">Free forever</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
-                <span className="text-sm">No credit card</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
-                <span className="text-sm">Start instantly</span>
+            {/* Trust indicators */}
+            <div className="mt-12 pt-8 border-t border-white/20">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10">
+                <div className="flex items-center gap-2 text-white">
+                  <CheckCircle2 className="w-5 h-5 text-teal-200" />
+                  <span className="text-sm font-medium">100% Free Core Tools</span>
+                </div>
+                <div className="flex items-center gap-2 text-white">
+                  <CheckCircle2 className="w-5 h-5 text-teal-200" />
+                  <span className="text-sm font-medium">No Credit Card Required</span>
+                </div>
+                <div className="flex items-center gap-2 text-white">
+                  <CheckCircle2 className="w-5 h-5 text-teal-200" />
+                  <span className="text-sm font-medium">Start in Under 2 Minutes</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
-    </div>
-  );
-}
-
-function FeatureCard({ icon: Icon, iconColor, title, description, details }) {
-  const iconColorClasses = {
-    'teal': 'bg-gradient-to-br from-teal-500 to-teal-600 text-white',
-    'vine-green': 'bg-gradient-to-br from-vine-green-500 to-vine-green-600 text-white'
-  };
-
-  return (
-    <div className="group relative bg-white rounded-2xl border-2 border-gray-200 p-6 sm:p-8 hover:border-teal-300 hover:shadow-xl transition-all">
-      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 sm:mb-5 ${iconColorClasses[iconColor]}`}>
-        <Icon className="w-6 h-6" />
-      </div>
-      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">{title}</h3>
-      <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">{description}</p>
-      <ul className="space-y-2 sm:space-y-3">
-        {details.map((detail, idx) => (
-          <li key={idx} className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-            <CheckCircle2 className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-            <span>{detail}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
@@ -859,30 +1164,6 @@ function OutputCard({ icon: Icon, title, description, stats }) {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function FutureFeature({ icon: Icon, iconColor, title, description, comingSoon }) {
-  const iconColorClasses = {
-    'teal': 'bg-gradient-to-br from-teal-100 to-teal-200 text-teal-600',
-    'vine-green': 'bg-gradient-to-br from-vine-green-100 to-vine-green-200 text-vine-green-600'
-  };
-
-  return (
-    <div className="group bg-white rounded-2xl border-2 border-gray-200 p-6 sm:p-8 hover:border-teal-300 hover:shadow-xl transition-all">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl ${iconColorClasses[iconColor]} group-hover:scale-110 transition-transform`}>
-          <Icon className="w-6 h-6" />
-        </div>
-        {comingSoon && (
-          <span className="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-100 rounded-full">
-            {comingSoon}
-          </span>
-        )}
-      </div>
-      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">{title}</h3>
-      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">{description}</p>
     </div>
   );
 }

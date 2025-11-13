@@ -807,17 +807,20 @@ export function BlockManagement() {
     const st = planData.st || {};
     const vineyardLayout = st.vineyardLayout || {};
     const calculatedLayout = vineyardLayout.calculatedLayout || {};
+    const fieldLayouts = vineyardLayout.fieldLayouts || {}; // Per-field layout data
 
     // Dump ENTIRE data structure to see what we have
     console.log('📦 COMPLETE PLAN DATA:', JSON.stringify(planData, null, 2));
     console.log('🌿 vineyardLayout object:', vineyardLayout);
     console.log('📐 calculatedLayout object:', calculatedLayout);
     console.log('🏗️ st object:', st);
+    console.log('📊 fieldLayouts object:', fieldLayouts);
 
     // Check ALL possible keys in vineyardLayout
     console.log('🔍 ALL vineyardLayout keys:', Object.keys(vineyardLayout));
     console.log('🔍 ALL calculatedLayout keys:', Object.keys(calculatedLayout));
     console.log('🔍 ALL st keys:', Object.keys(st));
+    console.log('🔍 ALL fieldLayouts keys:', Object.keys(fieldLayouts));
 
     // Try multiple possible locations for fields data
     let fields = [];
@@ -890,6 +893,29 @@ export function BlockManagement() {
             acres = areaSquareMeters / 4046.86; // Convert to acres
           }
 
+          // Calculate vine count for this specific field
+          let fieldVineCount = null;
+          let fieldRows = null;
+
+          // First, try to get from fieldLayouts (most accurate - per-field calculation)
+          if (fieldLayouts[field.id]?.vineLayout) {
+            fieldVineCount = fieldLayouts[field.id].vineLayout.totalVines;
+            fieldRows = fieldLayouts[field.id].vineLayout.numberOfRows;
+            console.log(`✅ Using fieldLayouts data for ${field.name}: ${fieldVineCount} vines, ${fieldRows} rows`);
+          }
+          // Second, try proportional calculation based on acreage
+          else if (calculatedLayout.vineLayout?.totalVines && st.acres) {
+            const vinesPerAcre = calculatedLayout.vineLayout.totalVines / st.acres;
+            fieldVineCount = Math.round(vinesPerAcre * acres);
+            console.log(`📐 Using proportional calculation for ${field.name}: ${fieldVineCount} vines`);
+          }
+          // Third, try field.vines if it exists
+          else if (field.vines) {
+            fieldVineCount = field.vines;
+            fieldRows = field.rows;
+            console.log(`📋 Using field.vines for ${field.name}: ${fieldVineCount} vines`);
+          }
+
           const newBlockData = {
             name: field.name || `${plan.name} - ${field.name || `Field ${successCount + 1}`}`,
             variety: st.variety || st.grapeVariety || 'Cabernet Sauvignon',
@@ -897,11 +923,11 @@ export function BlockManagement() {
             rootstock: st.rootstock || '',
             row_spacing_ft: calculatedLayout.spacing?.row || st.rowSpacing || 10,
             vine_spacing_ft: calculatedLayout.spacing?.vine || st.vineSpacing || 6,
-            vine_count_reported: calculatedLayout.vineLayout?.totalVines || null,
+            vine_count_reported: fieldVineCount,
             trellis_system: st.trellisSystem || 'VSP',
             row_orientation_deg: field.orientation === 'vertical' ? 0 : 90,
             geom: geom,
-            notes: `Imported from Vineyard Planner: "${plan.name}"\nField: ${field.name}\nTotal Vines: ${calculatedLayout.vineLayout?.totalVines || 0}\nRows: ${calculatedLayout.vineLayout?.numberOfRows || 0}`,
+            notes: `Imported from Vineyard Planner: "${plan.name}"\nField: ${field.name}\nField Vines: ${fieldVineCount || 'N/A'}\nField Rows: ${fieldRows || 'N/A'}`,
             status: 'active'
           };
 

@@ -31,6 +31,9 @@ export default function SiteLayout() {
 
   const needsPadding = ['/signin', '/signup', '/account/settings'].includes(location.pathname);
 
+  // Hide footer on tool pages to give users more workspace
+  const showFooter = !location.pathname.startsWith('/vineyard') && !location.pathname.startsWith('/planner');
+
   // Auto-hide navbar on scroll down, show on scroll up
   useEffect(() => {
     const handleScroll = () => {
@@ -921,6 +924,7 @@ export default function SiteLayout() {
       </main>
 
       {/* Footer */}
+      {showFooter && (
       <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-300 border-t border-gray-700">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
@@ -1077,6 +1081,7 @@ export default function SiteLayout() {
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 }

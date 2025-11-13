@@ -7,12 +7,19 @@ import { useAuth }        from "@/auth/AuthContext.jsx";
 import PlannerShell       from "@/features/planning/pages/PlannerShell.jsx";
 import { OperationsShell } from "@/features/vineyard/pages/OperationsShell.jsx";
 import { FieldDetailPage } from "@/features/vineyard/pages/FieldDetailPage.jsx";
-import DocumentationPage  from "@/shared/components/DocumentationPage.jsx";
 import PlansPage          from "@/shared/components/PlansPage.jsx";
 import HomePage           from "@/pages/home/HomePage.jsx";
 import SignIn             from "@/auth/SignIn.jsx";
 import SignUp             from "@/auth/SignUp.jsx";
 import { AcceptInvitationPage } from "@/pages/AcceptInvitationPage.jsx";
+
+// Documentation pages
+import DocsIndex from "@/pages/docs/DocsIndex.jsx";
+import QuickStartPage from "@/pages/docs/getting-started/QuickStartPage.jsx";
+import ConceptsPage from "@/pages/docs/getting-started/ConceptsPage.jsx";
+import PlannerOverview from "@/pages/docs/planner/PlannerOverview.jsx";
+import OperationsOverview from "@/pages/docs/operations/OperationsOverview.jsx";
+import FAQPage from "@/pages/docs/FAQPage.jsx";
 
 /* Guard for routes that require auth */
 function ProtectedRoute({ children }) {
@@ -37,6 +44,14 @@ export default function AppRouter() {
       <Route path="/signup" element={<SignUp />} />
       <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
 
+      {/* Documentation - Public access */}
+      <Route path="/docs" element={<DocsIndex />} />
+      <Route path="/docs/getting-started/quick-start" element={<QuickStartPage />} />
+      <Route path="/docs/getting-started/concepts" element={<ConceptsPage />} />
+      <Route path="/docs/planner" element={<PlannerOverview />} />
+      <Route path="/docs/operations" element={<OperationsOverview />} />
+      <Route path="/docs/faq" element={<FAQPage />} />
+
       {/* Auth-protected area */}
       <Route element={<ProtectedRoute />}>
         {/* Main editor/dashboard shell */}
@@ -45,7 +60,6 @@ export default function AppRouter() {
         <Route path="/vineyard" element={<OperationsShell />} />
         <Route path="/vineyard/field/:id" element={<FieldDetailPage />} />
         <Route path="/plans" element={<PlansPage />} />
-        <Route path="/docs"  element={<DocumentationPage />} />
       </Route>
 
       {/* Fallback */}
