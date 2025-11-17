@@ -5,7 +5,7 @@ import { supabase } from "@/shared/lib/supabaseClient";
 import { useSubscription } from "@/shared/hooks/useSubscription";
 import { MODULES } from "@/shared/config/modules";
 import * as Icons from "lucide-react";
-import { ChevronDown, BookOpen, DollarSign, HelpCircle, Mail, FileText, Lightbulb, Briefcase, BookMarked, Menu, X } from "lucide-react";
+import { ChevronDown, BookOpen, DollarSign, HelpCircle, Mail, FileText, Lightbulb, Briefcase, BookMarked, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function SiteLayout() {
   const { user } = useAuth() || {};
@@ -32,7 +32,7 @@ export default function SiteLayout() {
   const needsPadding = ['/signin', '/signup', '/account/settings'].includes(location.pathname);
 
   // Hide footer on tool pages to give users more workspace
-  const showFooter = !location.pathname.startsWith('/vineyard') && !location.pathname.startsWith('/planner');
+  const showFooter = !location.pathname.startsWith('/vineyard') && !location.pathname.startsWith('/planner') && !location.pathname.startsWith('/production');
 
   // Auto-hide navbar on scroll down, show on scroll up
   useEffect(() => {
@@ -120,7 +120,7 @@ export default function SiteLayout() {
     <div className="min-h-screen bg-white">
       {/* Main Header */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 transition-transform duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 transition-transform duration-300 print:hidden ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}
       >
@@ -520,9 +520,9 @@ export default function SiteLayout() {
                 aria-label="Toggle menu"
               >
                 {mobileMenuOpen ? (
-                  <X className="w-6 h-6 text-gray-900" />
+                  <ChevronLeft className="w-6 h-6 text-gray-900" />
                 ) : (
-                  <Menu className="w-6 h-6 text-gray-900" />
+                  <ChevronRight className="w-6 h-6 text-gray-900" />
                 )}
               </button>
 
@@ -925,7 +925,7 @@ export default function SiteLayout() {
 
       {/* Footer */}
       {showFooter && (
-      <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-300 border-t border-gray-700">
+      <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-300 border-t border-gray-700 print:hidden">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             {/* Products Column */}

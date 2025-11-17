@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/auth/AuthContext';
 import {
   Plus,
@@ -54,11 +55,23 @@ export function HarvestTracking() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showAddLoadModal, setShowAddLoadModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showEditCompletionModal, setShowEditCompletionModal] = useState(false);
   const [selectedHarvest, setSelectedHarvest] = useState(null);
   const [selectedHarvestForLoad, setSelectedHarvestForLoad] = useState(null);
   const [editingHarvest, setEditingHarvest] = useState(null);
+  const [harvestToComplete, setHarvestToComplete] = useState(null);
+  const [editingCompletionHarvest, setEditingCompletionHarvest] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [completionData, setCompletionData] = useState({
+    actual_tons: '',
+    actual_pick_date: new Date().toISOString().split('T')[0],
+    avg_brix: '',
+    avg_ph: '',
+    avg_ta: '',
+    notes: ''
+  });
   const [loadFormData, setLoadFormData] = useState({
     tons: '',
     bin_count: '',
@@ -238,7 +251,7 @@ export function HarvestTracking() {
     });
   };
 
-  const handleCompleteHarvest = (harvest) => {
+  const handleStartCompleteHarvest = (harvest) => {
     setConfirmAction({
       type: 'complete',
       harvest,
@@ -262,11 +275,19 @@ export function HarvestTracking() {
       } else if (type === 'pause') {
         ({ error } = await updateHarvestTracking(harvest.id, { status: 'planned' }));
       } else if (type === 'complete') {
-        ({ error } = await updateHarvestTracking(harvest.id, {
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          actual_pick_date: new Date().toISOString().split('T')[0]
-        }));
+        // Instead of completing immediately, show the completion form
+        setHarvestToComplete(harvest);
+        setCompletionData({
+          actual_tons: harvest.estimated_tons || '',
+          actual_pick_date: new Date().toISOString().split('T')[0],
+          avg_brix: harvest.target_brix || '',
+          avg_ph: harvest.target_ph || '',
+          avg_ta: harvest.target_ta || '',
+          notes: ''
+        });
+        setShowCompleteModal(true);
+        setConfirmAction(null);
+        return; // Don't proceed with immediate completion
       }
 
       if (error) {
@@ -280,6 +301,38 @@ export function HarvestTracking() {
     }
 
     setConfirmAction(null);
+  };
+
+  // Handle harvest completion with actual harvest data
+  const handleCompleteHarvest = async () => {
+    if (!harvestToComplete) return;
+
+    setSaving(true);
+    try {
+      const { error } = await updateHarvestTracking(harvestToComplete.id, {
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        actual_pick_date: completionData.actual_pick_date,
+        actual_tons: parseFloat(completionData.actual_tons) || 0,
+        avg_brix: parseFloat(completionData.avg_brix) || null,
+        avg_ph: parseFloat(completionData.avg_ph) || null,
+        avg_ta: parseFloat(completionData.avg_ta) || null,
+        completion_notes: completionData.notes
+      });
+
+      if (error) {
+        toast.error(`Error completing harvest: ${error.message}`);
+      } else {
+        toast.success('Harvest completed successfully with actual data');
+        setShowCompleteModal(false);
+        setHarvestToComplete(null);
+        await loadHarvestData();
+      }
+    } catch (err) {
+      toast.error('Failed to complete harvest');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEditHarvest = async (harvest) => {
@@ -321,6 +374,48 @@ export function HarvestTracking() {
     }
 
     setSaving(false);
+  };
+
+  const handleEditCompletion = (harvest) => {
+    setEditingCompletionHarvest(harvest);
+    setCompletionData({
+      actual_tons: harvest.actual_tons || '',
+      actual_pick_date: harvest.actual_pick_date || new Date().toISOString().split('T')[0],
+      avg_brix: harvest.avg_brix || '',
+      avg_ph: harvest.avg_ph || '',
+      avg_ta: harvest.avg_ta || '',
+      notes: harvest.completion_notes || ''
+    });
+    setShowEditCompletionModal(true);
+  };
+
+  const handleSaveCompletionEdit = async () => {
+    if (!editingCompletionHarvest) return;
+
+    setSaving(true);
+    try {
+      const { error } = await updateHarvestTracking(editingCompletionHarvest.id, {
+        actual_pick_date: completionData.actual_pick_date,
+        actual_tons: parseFloat(completionData.actual_tons) || 0,
+        avg_brix: parseFloat(completionData.avg_brix) || null,
+        avg_ph: parseFloat(completionData.avg_ph) || null,
+        avg_ta: parseFloat(completionData.avg_ta) || null,
+        completion_notes: completionData.notes
+      });
+
+      if (error) {
+        toast.error(`Error updating harvest data: ${error.message}`);
+      } else {
+        toast.success('Harvest data updated successfully');
+        setShowEditCompletionModal(false);
+        setEditingCompletionHarvest(null);
+        await loadHarvestData();
+      }
+    } catch (err) {
+      toast.error('Failed to update harvest data');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleViewHarvest = async (harvestId) => {
@@ -599,6 +694,17 @@ export function HarvestTracking() {
                                 Edit Plan
                               </DropdownMenuItem>
 
+                              {/* Edit Actual Data - only for completed harvests */}
+                              {harvest.status === 'completed' && (
+                                <DropdownMenuItem
+                                  icon={Edit2}
+                                  onClick={() => handleEditCompletion(harvest)}
+                                  variant="primary"
+                                >
+                                  Edit Actual Data
+                                </DropdownMenuItem>
+                              )}
+
                               <DropdownMenuSeparator />
 
                               {/* Status-specific actions */}
@@ -623,7 +729,7 @@ export function HarvestTracking() {
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     icon={CheckCircle2}
-                                    onClick={() => handleCompleteHarvest(harvest)}
+                                    onClick={() => handleStartCompleteHarvest(harvest)}
                                     variant="info"
                                   >
                                     Complete Harvest
@@ -1272,6 +1378,318 @@ export function HarvestTracking() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Complete Harvest Modal */}
+      {showCompleteModal && harvestToComplete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Complete Harvest</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {harvestToComplete.vineyard_blocks?.name} - {harvestToComplete.vineyard_blocks?.variety}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowCompleteModal(false);
+                    setHarvestToComplete(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-6">
+                Enter the actual harvest data collected in the field. This data will be used when importing to the Production module.
+              </p>
+
+              <div className="space-y-4">
+                {/* Actual Tons */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Actual Tons Harvested *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={completionData.actual_tons}
+                    onChange={(e) => setCompletionData({...completionData, actual_tons: e.target.value})}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vine-green-500 focus:border-transparent"
+                    placeholder="e.g., 12.5"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Estimated: {harvestToComplete.estimated_tons || 'N/A'} tons
+                  </p>
+                </div>
+
+                {/* Actual Pick Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Actual Pick Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={completionData.actual_pick_date}
+                    onChange={(e) => setCompletionData({...completionData, actual_pick_date: e.target.value})}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vine-green-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Average Brix */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Average Brix
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={completionData.avg_brix}
+                      onChange={(e) => setCompletionData({...completionData, avg_brix: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vine-green-500 focus:border-transparent"
+                      placeholder="e.g., 24.5"
+                    />
+                  </div>
+
+                  {/* Average pH */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Average pH
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={completionData.avg_ph}
+                      onChange={(e) => setCompletionData({...completionData, avg_ph: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vine-green-500 focus:border-transparent"
+                      placeholder="e.g., 3.45"
+                    />
+                  </div>
+
+                  {/* Average TA */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Average TA (g/L)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={completionData.avg_ta}
+                      onChange={(e) => setCompletionData({...completionData, avg_ta: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vine-green-500 focus:border-transparent"
+                      placeholder="e.g., 6.5"
+                    />
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Completion Notes
+                  </label>
+                  <textarea
+                    value={completionData.notes}
+                    onChange={(e) => setCompletionData({...completionData, notes: e.target.value})}
+                    rows="3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vine-green-500 focus:border-transparent"
+                    placeholder="Weather conditions, crew notes, quality observations..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-6 border-t border-gray-200 mt-6">
+                <button
+                  onClick={handleCompleteHarvest}
+                  disabled={saving || !completionData.actual_tons}
+                  className="flex-1 px-6 py-3 bg-vine-green-500 text-white rounded-lg hover:bg-vine-green-600 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Completing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      Complete Harvest
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCompleteModal(false);
+                    setHarvestToComplete(null);
+                  }}
+                  disabled={saving}
+                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Completion Data Modal */}
+      {showEditCompletionModal && editingCompletionHarvest && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+          <div className="rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-slate-800 px-6 py-4 flex items-center justify-between border-b border-slate-700 rounded-t-2xl flex-shrink-0">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Edit2 className="w-5 h-5" />
+                  Edit Actual Data
+                </h2>
+                <p className="text-sm text-slate-400">
+                  Update actual harvest data and quality metrics
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditCompletionModal(false);
+                  setEditingCompletionHarvest(null);
+                }}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 bg-white rounded-b-2xl">
+              <div className="p-6 space-y-4">
+              {/* Actual Pick Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Actual Pick Date
+                </label>
+                <input
+                  type="date"
+                  value={completionData.actual_pick_date}
+                  onChange={(e) => setCompletionData({...completionData, actual_pick_date: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                />
+              </div>
+
+              {/* Actual Tons */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Actual Tons
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={completionData.actual_tons}
+                  onChange={(e) => setCompletionData({...completionData, actual_tons: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                {/* Average Brix */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Actual Brix
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={completionData.avg_brix}
+                    onChange={(e) => setCompletionData({...completionData, avg_brix: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.0"
+                  />
+                </div>
+
+                {/* Average pH */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Actual pH
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={completionData.avg_ph}
+                    onChange={(e) => setCompletionData({...completionData, avg_ph: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                {/* Average TA */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Actual TA (g/L)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={completionData.avg_ta}
+                    onChange={(e) => setCompletionData({...completionData, avg_ta: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                    placeholder="0.0"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={completionData.notes}
+                  onChange={(e) => setCompletionData({...completionData, notes: e.target.value})}
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+                  placeholder="Any notes about this harvest data..."
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t border-gray-200">
+                <Button
+                  type="button"
+                  onClick={handleSaveCompletionEdit}
+                  disabled={saving}
+                  className="bg-vine-green-500 hover:bg-vine-green-600 flex items-center justify-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditCompletionModal(false);
+                    setEditingCompletionHarvest(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Confirm Action Dialog */}

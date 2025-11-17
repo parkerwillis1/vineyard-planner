@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { ChevronDown, Settings, LogOut, Menu, X } from "lucide-react";
+import { ChevronDown, Settings, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 import { supabase } from "@/shared/lib/supabaseClient";
 
@@ -194,9 +194,9 @@ export default function NavBar() {
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? (
-              <X className="w-6 h-6 text-gray-900" />
+              <ChevronLeft className="w-6 h-6 text-gray-900" />
             ) : (
-              <Menu className="w-6 h-6 text-gray-900" />
+              <ChevronRight className="w-6 h-6 text-gray-900" />
             )}
           </button>
 
@@ -245,7 +245,7 @@ export default function NavBar() {
           />
 
           {/* Slide-out Panel */}
-          <div className="fixed top-16 right-0 bottom-0 w-64 bg-white shadow-2xl z-50 lg:hidden overflow-y-auto">
+          <div className="fixed top-16 right-0 bottom-0 w-56 bg-white shadow-2xl z-50 lg:hidden overflow-y-auto">
             <nav className="p-4 space-y-1">
               {!user ? (
                 <>

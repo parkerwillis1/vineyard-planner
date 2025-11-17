@@ -1,14 +1,24 @@
-import { Link, useLocation } from "react-router-dom";
-import { ChevronRight, Search, Menu, X } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ChevronRight, ChevronLeft, LogOut } from "lucide-react";
 import { docsNavigation, getBreadcrumbs } from "./docsConfig";
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/auth/AuthContext";
+import { supabase } from "@/shared/lib/supabaseClient";
+import DocsSearch from "./DocsSearch";
+import { useSearchHighlight } from "./useSearchHighlight";
 
 export default function DocsLayout({ children }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const breadcrumbs = getBreadcrumbs(location.pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
   const scrollPositionRef = useRef(0);
+  const contentRef = useRef(null);
+  const { user } = useAuth() || {};
+
+  // Enable search term highlighting
+  useSearchHighlight(contentRef);
 
   // Save scroll position when scrolling
   const handleScroll = () => {
@@ -24,6 +34,11 @@ export default function DocsLayout({ children }) {
     }
   }, [location.pathname]);
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
   return (
     <div className="bg-white min-h-screen">
       {/* Top Bar */}
@@ -35,7 +50,7 @@ export default function DocsLayout({ children }) {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="lg:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100"
             >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
             </button>
 
             <Link to="/" className="flex items-center gap-2">
@@ -44,34 +59,43 @@ export default function DocsLayout({ children }) {
             <span className="text-sm text-gray-400 hidden sm:inline">docs</span>
           </div>
 
-          {/* Search bar placeholder */}
-          <div className="hidden sm:flex items-center gap-3 max-w-md flex-1 mx-8">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search docs..."
-                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500 focus:border-transparent"
-              />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-xs font-semibold text-gray-500 bg-gray-100 rounded">
-                /
-              </kbd>
+          {/* Search bar - centered */}
+          <div className="hidden sm:flex items-center justify-center flex-1 mx-8">
+            <div className="w-full max-w-xl">
+              <DocsSearch />
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <Link
-              to="/signin"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/signup"
-              className="text-sm font-semibold text-white bg-vine-green-500 hover:bg-vine-green-600 px-4 py-2 rounded-lg transition-colors"
-            >
-              Sign Up
-            </Link>
+            {user ? (
+              <>
+                <span className="text-sm text-gray-600 hidden sm:inline max-w-[150px] truncate">
+                  {user.email}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/signin"
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="text-sm font-semibold text-white bg-vine-green-500 hover:bg-vine-green-600 px-4 py-2 rounded-lg transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -83,7 +107,7 @@ export default function DocsLayout({ children }) {
           onScroll={handleScroll}
           className={`${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0 fixed lg:sticky top-16 left-0 z-30 w-64 h-[calc(100vh-4rem)] overflow-y-auto border-r border-gray-200 bg-white transition-transform duration-200 ease-in-out`}
+          } lg:translate-x-0 fixed lg:sticky top-16 left-0 z-30 w-56 h-[calc(100vh-4rem)] overflow-y-auto border-r border-gray-200 bg-white transition-transform duration-200 ease-in-out`}
         >
           <nav className="p-6 space-y-8">
             {docsNavigation.map((section) => (
@@ -142,7 +166,7 @@ export default function DocsLayout({ children }) {
           </div>
 
           {/* Page Content */}
-          <div className="max-w-4xl mx-auto px-6 sm:px-8 py-12">
+          <div ref={contentRef} className="max-w-4xl mx-auto px-6 sm:px-8 py-12">
             {children}
           </div>
         </main>

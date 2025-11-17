@@ -7,6 +7,8 @@ import { useAuth }        from "@/auth/AuthContext.jsx";
 import PlannerShell       from "@/features/planning/pages/PlannerShell.jsx";
 import { OperationsShell } from "@/features/vineyard/pages/OperationsShell.jsx";
 import { FieldDetailPage } from "@/features/vineyard/pages/FieldDetailPage.jsx";
+import { ProductionShell } from "@/features/production/pages/ProductionShell.jsx";
+import { VesselDetail } from "@/features/production/components/VesselDetail.jsx";
 import PlansPage          from "@/shared/components/PlansPage.jsx";
 import HomePage           from "@/pages/home/HomePage.jsx";
 import SignIn             from "@/auth/SignIn.jsx";
@@ -19,6 +21,7 @@ import QuickStartPage from "@/pages/docs/getting-started/QuickStartPage.jsx";
 import ConceptsPage from "@/pages/docs/getting-started/ConceptsPage.jsx";
 import PlannerOverview from "@/pages/docs/planner/PlannerOverview.jsx";
 import OperationsOverview from "@/pages/docs/operations/OperationsOverview.jsx";
+import TaskPermissionsPage from "@/pages/docs/operations/TaskPermissionsPage.jsx";
 import FAQPage from "@/pages/docs/FAQPage.jsx";
 
 /* Guard for routes that require auth */
@@ -50,6 +53,7 @@ export default function AppRouter() {
       <Route path="/docs/getting-started/concepts" element={<ConceptsPage />} />
       <Route path="/docs/planner" element={<PlannerOverview />} />
       <Route path="/docs/operations" element={<OperationsOverview />} />
+      <Route path="/docs/operations/task-permissions" element={<TaskPermissionsPage />} />
       <Route path="/docs/faq" element={<FAQPage />} />
 
       {/* Auth-protected area */}
@@ -59,6 +63,8 @@ export default function AppRouter() {
         <Route path="/planner/:id" element={<PlannerShell />} />
         <Route path="/vineyard" element={<OperationsShell />} />
         <Route path="/vineyard/field/:id" element={<FieldDetailPage />} />
+        <Route path="/production" element={<ProductionShell />} />
+        <Route path="/production/vessel/:id" element={<VesselDetail />} />
         <Route path="/plans" element={<PlansPage />} />
       </Route>
 

@@ -994,10 +994,11 @@ export async function listTasks(filters = {}) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: [], error: null };
 
+  // RLS policies now control task visibility based on role
+  // No need to filter by user_id - database handles it
   let query = supabase
     .from('tasks')
     .select('*')
-    .eq('user_id', user.id)
     .is('archived_at', null)
     .order('due_date', { ascending: true });
 
@@ -1016,6 +1017,14 @@ export async function listTasks(filters = {}) {
   }
   if (filters.assigneeId) {
     query = query.contains('assignees', [filters.assigneeId]);
+  }
+  // NEW: Support filtering by assigned_to (organization member ID)
+  if (filters.assignedTo) {
+    query = query.eq('assigned_to', filters.assignedTo);
+  }
+  // NEW: Support filtering by creator
+  if (filters.createdBy) {
+    query = query.eq('created_by', filters.createdBy);
   }
 
   return query;
@@ -1630,6 +1639,56 @@ export async function getCurrentUserRole() {
   }
 
   return { data: member, error: null };
+}
+
+// =====================================================
+// TEAM MANAGEMENT (RBAC)
+// =====================================================
+
+/**
+ * Get team members managed by the current user
+ * - Admins see all org members
+ * - Managers see their direct reports
+ * - Members see nobody (only themselves)
+ */
+export async function getMyTeamMembers() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  // Get current user's member record
+  const { data: currentMember } = await supabase
+    .from('organization_members')
+    .select('id, role, organization_id')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .single();
+
+  if (!currentMember) {
+    return { data: [], error: null };
+  }
+
+  // If admin, return all members in organization
+  if (currentMember.role === 'admin') {
+    return supabase
+      .from('organization_members')
+      .select('*')
+      .eq('organization_id', currentMember.organization_id)
+      .eq('is_active', true)
+      .order('full_name', { ascending: true });
+  }
+
+  // If manager, return direct reports
+  if (currentMember.role === 'manager') {
+    return supabase
+      .from('organization_members')
+      .select('*')
+      .eq('manager_id', currentMember.id)
+      .eq('is_active', true)
+      .order('full_name', { ascending: true });
+  }
+
+  // Members see no team (only themselves)
+  return { data: [], error: null };
 }
 
 // =====================================================

@@ -77,7 +77,7 @@ export default function HomePage() {
                   isCurrent ? 'opacity-90' : 'opacity-0'
                 }`}
                 loading={index === 0 ? 'eager' : 'lazy'}
-                fetchpriority={index === 0 ? 'high' : 'low'}
+                fetchPriority={index === 0 ? 'high' : 'low'}
               />
             );
           })}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/auth/AuthContext';
 import {
   ChevronLeft,
@@ -98,7 +99,7 @@ export function CalendarView({ onNavigate }) {
         type: 'task',
         title: t.title,
         assignedMemberName: assignedMember?.full_name,
-        date: t.due_date,
+        date: t.due_date || t.start_date, // Fallback to start_date if no due_date
         start_date: t.start_date,
         status: t.status,
         priority: t.priority,
@@ -706,7 +707,7 @@ export function CalendarView({ onNavigate }) {
       </div>
 
       {/* Event Modal */}
-      {showEventModal && selectedEvent && (
+      {showEventModal && selectedEvent && createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scaleIn">
             <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-5 flex items-center justify-between">
@@ -783,7 +784,8 @@ export function CalendarView({ onNavigate }) {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Task Drawer */}

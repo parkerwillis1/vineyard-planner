@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Zap, Plus, Minus } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
@@ -104,7 +105,7 @@ export function QuickSpray({
     formData.application_date &&
     formData.applicator_name;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
@@ -293,6 +294,7 @@ export function QuickSpray({
           </form>
         </CardContent>
       </Card>
-    </div>
+    </div>,
+    document.body
   );
 }

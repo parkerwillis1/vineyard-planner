@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CloudRain, Plus, Edit, Trash2, RefreshCw, MapPin, Wifi, WifiOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/card';
@@ -383,7 +384,7 @@ function RainGaugeModal({ gauge, vineyardBlocks, onClose, onSave }) {
     }));
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b sticky top-0 bg-white">
@@ -543,6 +544,7 @@ function RainGaugeModal({ gauge, vineyardBlocks, onClose, onSave }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

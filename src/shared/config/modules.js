@@ -32,17 +32,15 @@ export const MODULES = {
   production: {
     id: 'production',
     name: 'Winery Production',
-    description: 'Track crush, fermentation, and bottling',
-    icon: 'Droplet',
+    description: 'Track lots from crush to bottle',
+    icon: 'Wine',
     requiredTier: 'professional',
-    comingSoon: true,
-    expectedLaunch: 'Q4 2025',
     route: '/production',
     tabs: [
-      { id: 'crush', label: 'Crush Planning' },
+      { id: 'dashboard', label: 'Dashboard' },
+      { id: 'harvest', label: 'Harvest Intake' },
       { id: 'fermentation', label: 'Fermentation' },
-      { id: 'barrels', label: 'Barrel Management' },
-      { id: 'bottling', label: 'Bottling' }
+      { id: 'containers', label: 'Vessels' }
     ]
   },
   inventory: {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Check, Clock } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { MODULES } from '../config/modules';
@@ -33,7 +34,7 @@ export const UpgradeModal = ({ moduleId, onClose }) => {
     }
   };
   
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
         {/* Header */}
@@ -131,6 +132,7 @@ export const UpgradeModal = ({ moduleId, onClose }) => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

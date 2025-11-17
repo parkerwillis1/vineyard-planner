@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Camera, Upload, X, Download, Trash2, Calendar, MapPin } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
@@ -387,7 +388,7 @@ export function FieldPhotos({ fieldId, fieldName }) {
       </div>
 
       {/* Image Lightbox */}
-      {selectedImage && (
+      {selectedImage && createPortal(
         <div
           className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4"
           onClick={() => setSelectedImage(null)}
@@ -422,7 +423,8 @@ export function FieldPhotos({ fieldId, fieldName }) {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Confirm Delete Dialog */}

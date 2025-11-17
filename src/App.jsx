@@ -33,6 +33,7 @@ import OperationsOverview from "./pages/docs/operations/OperationsOverview.jsx";
 import BlocksPage from "./pages/docs/operations/BlocksPage.jsx";
 import IrrigationPage from "./pages/docs/operations/IrrigationPage.jsx";
 import TasksPage from "./pages/docs/operations/TasksPage.jsx";
+import TaskPermissionsPage from "./pages/docs/operations/TaskPermissionsPage.jsx";
 import TeamPage from "./pages/docs/operations/TeamPage.jsx";
 import SprayPage from "./pages/docs/operations/SprayPage.jsx";
 import CalendarPage from "./pages/docs/operations/CalendarPage.jsx";
@@ -43,10 +44,14 @@ import HardwarePage from "./pages/docs/operations/HardwarePage.jsx";
 import FAQPage from "./pages/docs/FAQPage.jsx";
 import TroubleshootingPage from "./pages/docs/TroubleshootingPage.jsx";
 import SupportPage from "./pages/docs/SupportPage.jsx";
+import BlogPage from "./pages/blog/BlogPage.jsx";
+import BlogPostPage from "./pages/blog/BlogPostPage.jsx";
+import TipsPage from "./pages/tips/TipsPage.jsx";
 
 
 import PlannerShell       from "./features/planning/pages/PlannerShell.jsx";
 import { OperationsShell } from "./features/vineyard/pages/OperationsShell.jsx";
+import { ProductionShell } from "./features/production/pages/ProductionShell.jsx";
 
 import SignIn             from "./auth/SignIn.jsx";
 import SignUp             from "./auth/SignUp.jsx";
@@ -109,6 +114,7 @@ export default function App() {
         <Route path="/docs/operations/blocks" element={<BlocksPage />} />
         <Route path="/docs/operations/irrigation" element={<IrrigationPage />} />
         <Route path="/docs/operations/tasks" element={<TasksPage />} />
+        <Route path="/docs/operations/task-permissions" element={<TaskPermissionsPage />} />
         <Route path="/docs/operations/team" element={<TeamPage />} />
         <Route path="/docs/operations/spray" element={<SprayPage />} />
         <Route path="/docs/operations/calendar" element={<CalendarPage />} />
@@ -127,6 +133,10 @@ export default function App() {
           <Route path="about" element={<AboutPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="pricing" element={<PricingPage />} />
+          <Route path="faq" element={<FAQPage />} />
+          <Route path="blog" element={<BlogPage />} />
+          <Route path="blog/:slug" element={<BlogPostPage />} />
+          <Route path="tips" element={<TipsPage />} />
 
           {/* Protected routes - require authentication */}
           <Route element={<ProtectedRoute />}>
@@ -134,6 +144,7 @@ export default function App() {
             <Route path="planner" element={<PlannerShell embedded />} />
             <Route path="planner/:id" element={<PlannerShell embedded />} />
             <Route path="vineyard/*" element={<OperationsShell />} />
+            <Route path="production/*" element={<ProductionShell />} />
             <Route path="vineyards" element={<VineyardsPage />} />
             <Route path="plans" element={<PlansPage />} />
             <Route path="account/settings" element={<AccountSettingsPage />} />

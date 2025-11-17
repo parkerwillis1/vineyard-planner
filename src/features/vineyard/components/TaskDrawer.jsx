@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit2, Save, Trash2, Users } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { ChevronRight, Edit2, Save, Trash2, Users } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { updateTask, deleteTask, updateTaskStatus } from '@/shared/lib/vineyardApi';
@@ -43,7 +44,11 @@ export function TaskDrawer({ task, blocks, teamMembers = [], onClose, onUpdate }
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await updateTask(task.id, editedTask);
+
+    // Remove computed/generated fields that can't be updated
+    const { total_cost, ...updatableFields } = editedTask;
+
+    const { error } = await updateTask(task.id, updatableFields);
     if (!error) {
       setIsEditing(false);
       onUpdate();
@@ -76,10 +81,18 @@ export function TaskDrawer({ task, blocks, teamMembers = [], onClose, onUpdate }
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString();
+    // Parse date without timezone conversion to avoid day shifts
+    const [year, month, day] = dateString.split('T')[0].split('-');
+    return new Date(year, month - 1, day).toLocaleDateString();
   };
 
-  return (
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    // Return YYYY-MM-DD format for date input
+    return dateString.split('T')[0];
+  };
+
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-end justify-end z-50">
       <div className="bg-white w-full max-w-2xl h-full shadow-2xl overflow-y-auto hide-scrollbar">
         {/* Header */}
@@ -94,7 +107,7 @@ export function TaskDrawer({ task, blocks, teamMembers = [], onClose, onUpdate }
             onClick={onClose}
             className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors border border-white/20"
           >
-            <X className="w-6 h-6 text-white" />
+            <ChevronRight className="w-6 h-6 text-white" />
           </button>
         </div>
 
@@ -229,7 +242,7 @@ export function TaskDrawer({ task, blocks, teamMembers = [], onClose, onUpdate }
                   {isEditing ? (
                     <input
                       type="date"
-                      value={editedTask.start_date || ''}
+                      value={formatDateForInput(editedTask.start_date)}
                       onChange={(e) => setEditedTask({ ...editedTask, start_date: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -245,7 +258,7 @@ export function TaskDrawer({ task, blocks, teamMembers = [], onClose, onUpdate }
                   {isEditing ? (
                     <input
                       type="date"
-                      value={editedTask.due_date || ''}
+                      value={formatDateForInput(editedTask.due_date)}
                       onChange={(e) => setEditedTask({ ...editedTask, due_date: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -382,6 +395,7 @@ export function TaskDrawer({ task, blocks, teamMembers = [], onClose, onUpdate }
           </Card>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

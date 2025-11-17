@@ -1,5 +1,6 @@
 // src/MaterialCostsVisualizer.jsx
 import React from "react";
+import { SignpostBig, Link, Droplet, Wrench, Anchor } from "lucide-react";
 
 export const MaterialCostsVisualizer = ({ materialCosts, layout }) => {
   if (!materialCosts || !layout) return null;
@@ -7,11 +8,11 @@ export const MaterialCostsVisualizer = ({ materialCosts, layout }) => {
   const totalCost = Object.values(materialCosts).reduce((sum, cost) => sum + cost, 0);
 
   const costBreakdown = [
-    { category: 'Posts', cost: materialCosts.posts, color: 'bg-amber-500', icon: '🗂️' },
-    { category: 'Trellis Wire', cost: materialCosts.wire, color: 'bg-orange-500', icon: '🔗' },
-    { category: 'Irrigation', cost: materialCosts.irrigation, color: 'bg-blue-500', icon: '💧' },
-    { category: 'Hardware', cost: materialCosts.hardware, color: 'bg-gray-500', icon: '🔧' },
-    { category: 'Earth Anchors', cost: materialCosts.earthAnchors, color: 'bg-stone-600', icon: '⚓' },
+    { category: 'Posts', cost: materialCosts.posts, color: 'bg-amber-500', textColor: 'text-amber-500', Icon: SignpostBig },
+    { category: 'Trellis Wire', cost: materialCosts.wire, color: 'bg-orange-500', textColor: 'text-orange-500', Icon: Link },
+    { category: 'Irrigation', cost: materialCosts.irrigation, color: 'bg-blue-500', textColor: 'text-blue-500', Icon: Droplet },
+    { category: 'Hardware', cost: materialCosts.hardware, color: 'bg-gray-500', textColor: 'text-gray-500', Icon: Wrench },
+    { category: 'Earth Anchors', cost: materialCosts.earthAnchors, color: 'bg-stone-600', textColor: 'text-stone-600', Icon: Anchor },
   ].sort((a, b) => b.cost - a.cost);
 
   return (
@@ -29,9 +30,12 @@ export const MaterialCostsVisualizer = ({ materialCosts, layout }) => {
         <div className="space-y-3">
           {costBreakdown.map((item) => {
             const percentage = (item.cost / totalCost) * 100;
+            const IconComponent = item.Icon;
             return (
               <div key={item.category} className="flex items-center gap-3">
-                <span className="text-lg">{item.icon}</span>
+                <div className={`${item.textColor}`}>
+                  <IconComponent className="w-5 h-5" />
+                </div>
                 <div className="flex-1">
                   <div className="flex justify-between text-sm mb-1">
                     <span className="font-medium">{item.category}</span>

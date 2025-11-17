@@ -29,8 +29,8 @@ import {
   PiggyBank,
   Wallet,
   Grape,
-  Menu,
-  X,
+  ChevronLeft,
+  ChevronRight,
   Settings,
   Wine,
   ShoppingCart,
@@ -257,6 +257,7 @@ const Sidebar = ({
       className={`
         fixed left-0 top-0 h-screen bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100
         transition-all duration-300 ease-in-out z-40 border-r border-gray-200
+        print:hidden
         ${sidebarOpen ? 'w-64' : 'w-20'}
       `}
     >
@@ -282,16 +283,16 @@ const Sidebar = ({
           className="p-2 hover:bg-gray-200 rounded-lg transition-colors ml-auto"
         >
           {sidebarOpen ? (
-            <X className="w-5 h-5 text-gray-600" />
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
           ) : (
-            <Menu className="w-5 h-5 text-gray-600" />
+            <ChevronRight className="w-5 h-5 text-gray-600" />
           )}
         </button>
       </div>
 
       {/* Plans & Save Section - Only when expanded - positioned at fixed location */}
       {sidebarOpen && (
-        <div className="absolute top-[144px] left-0 right-0 px-3 py-3 border-b border-gray-300 space-y-2 bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100">
+        <div className="absolute top-[128px] left-0 right-0 px-3 py-3 border-b border-gray-300 space-y-2 bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100">
           {/* Plans Dropdown */}
           <div className="relative" ref={planMenuRef}>
             <button
@@ -382,7 +383,7 @@ const Sidebar = ({
       )}
 
       {/* Navigation Items - positioned at fixed location */}
-      <nav className="absolute top-[270px] left-0 right-0 bottom-[180px] flex items-center justify-center px-2 hide-scrollbar">
+      <nav className="absolute top-[254px] left-0 right-0 bottom-[180px] flex items-center justify-center px-2 hide-scrollbar">
         <div className="space-y-3 w-full">
           {navigationItems.map((item) => {
             const Icon = item.icon;
@@ -719,11 +720,16 @@ export default function PlannerShell({ embedded = false }) {
     }
   }, [activeTab]);
 
-  const getYieldForYear = (year) => {
+  const getYieldForYear = (year, yieldPerAcre = AVERAGE_YIELD_TONS_PER_ACRE, customYields = {}) => {
+    // Check for custom override first
+    if (customYields[year] !== undefined) {
+      return customYields[year];
+    }
+    // Default yield ramp
     if (year <= 3) return 0;
     if (year === 4) return 1;
     if (year === 5) return 2.5;
-    return AVERAGE_YIELD_TONS_PER_ACRE;
+    return yieldPerAcre;
   };
 
   const DEFAULT_ST = useMemo(() => ({
@@ -732,11 +738,13 @@ export default function PlannerShell({ embedded = false }) {
     landPrice: "60000",
     buildPrice: "25000",
     waterCost: "400",
+    yieldPerAcre: "3.5",
+    customYields: {},
     insInclude: true,
     insType: "Liability + Crop",
     insCost: "4000",
     licenseCost: "100",
-    salesMode:       "wine",    
+    salesMode:       "wine",
     grapeSalePrice:  "1800",
     permits: [
         { include: true, key: 'federal',    label: "TTB Winery Permit",      cost: "0" },
@@ -1167,6 +1175,7 @@ const stNum = {
   buildPrice:      Number(st.buildPrice)  || 0,
   landPrice:       Number(st.landPrice)   || 0,
   waterCost:       Number(st.waterCost)   || 0,
+  yieldPerAcre:    Number(st.yieldPerAcre) || 3.5,
   insCost:         Number(st.insCost)     || 0,
   insInclude:      !!st.insInclude,
   licenseCost:     Number(st.licenseCost) || 0,
@@ -1433,14 +1442,14 @@ const annualFixed =
   // Maximum potential revenue at full production (assumes all bottles/grapes sold)
   const maxPotentialRevenue =
   st.salesMode === "wine"
-    ? stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * BOTTLES_PER_TON * stNum.bottlePrice
-    : stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE * stNum.grapeSalePrice;   // $/ton
+    ? stNum.acres * stNum.yieldPerAcre * BOTTLES_PER_TON * stNum.bottlePrice
+    : stNum.acres * stNum.yieldPerAcre * stNum.grapeSalePrice;   // $/ton
 
   const maxPotentialNet = maxPotentialRevenue - annualFixed;
 
   const isWine         = st.salesMode === "wine";
-  // Cost per ton at full production (based on mature yield of 3.5 tons/acre)
-  const denomTons = stNum.acres * AVERAGE_YIELD_TONS_PER_ACRE;
+  // Cost per ton at full production (based on mature yield)
+  const denomTons = stNum.acres * stNum.yieldPerAcre;
   const costPerTonAtFullProduction = denomTons > 0 ? (annualFixed / denomTons) : 0;
   const grapePrice = Number(stNum.grapeSalePrice || 0);
   const grossMarginTon = grapePrice - costPerTonAtFullProduction;
@@ -1458,7 +1467,7 @@ const annualFixed =
     const operatingYears = Array.from({ length: projYears }).map((_, idx) => {
     const year = idx + 1;
 
-    const yieldPA = getYieldForYear(year);
+    const yieldPA = getYieldForYear(year, stNum.yieldPerAcre, st.customYields || {});
     const tonsTotal = yieldPA * stNum.acres;
     const tonsSold        = tonsTotal;
     let bottlesProduced   = tonsTotal * BOTTLES_PER_TON;
@@ -1569,6 +1578,16 @@ const breakdownData = [
     );
   const updateSetup = (k, row) =>
     update("setup", { ...stNum.setup, [k]: row });
+
+  const updateCustomYield = (year, value) => {
+    const newCustomYields = { ...(st.customYields || {}) };
+    if (value === null || value === undefined || value === '') {
+      delete newCustomYields[year];
+    } else {
+      newCustomYields[year] = Number(value);
+    }
+    update("customYields", newCustomYields);
+  };
 
 // Store layout update to apply it properly
 const handleLayoutChange = (layout, materialCosts) => {
@@ -2196,6 +2215,13 @@ const EstablishmentProgressTracker = ({
                   {num("grapeSalePrice", 10)}
                 </div>
               )}
+              <div>
+                <label className="text-sm text-black font-bold font-medium block mb-2">
+                  Yield (t/acre)
+                </label>
+                {num("yieldPerAcre", 0.1)}
+                <p className="text-xs text-gray-500 mt-1">Expected yield at full maturity (default: 3.5 tons/acre)</p>
+              </div>
               <div>
                 <label>Operating Cost ($/yr)</label>
                     <Input
@@ -4313,7 +4339,15 @@ const EstablishmentProgressTracker = ({
                           {/* Year & yield */}
                           <td className="p-2">{p.year}</td>
                           <td className="p-2">
-                            {p.year === 0 ? "–" : p.yieldPA.toFixed(1)}
+                            {p.year === 0 ? "–" : (
+                              <Input
+                                type="number"
+                                step={0.1}
+                                value={p.yieldPA.toFixed(1)}
+                                onChange={(e) => updateCustomYield(p.year, e.target.value)}
+                                className="w-20 text-center bg-white shadow-sm border-gray-200 p-1 text-sm"
+                              />
+                            )}
                           </td>
 
                           {/* Mode‑specific production / sales columns */}
@@ -4409,7 +4443,7 @@ const EstablishmentProgressTracker = ({
       {/* Main Content Area */}
       <main
         className={`
-          flex-1 transition-all duration-300 mt-8
+          flex-1 transition-all duration-300 mt-8 print:mt-0 print:ml-0
           ${sidebarOpen ? 'ml-64' : 'ml-20'}
         `}
       >

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
 import {
@@ -1052,7 +1053,7 @@ export function BlockManagement() {
       </div>
 
       {/* Add/Edit Form Modal */}
-      {isAddingBlock && (
+      {isAddingBlock && createPortal(
         <div
           className="fixed inset-0 bg-black/50 z-50 overflow-y-auto"
           onClick={(e) => {
@@ -1634,7 +1635,8 @@ export function BlockManagement() {
           </CardContent>
             </Card>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Blocks Display - Map or List */}
@@ -1953,7 +1955,7 @@ export function BlockManagement() {
       )}
 
       {/* Field Sample Modal */}
-      {showSampleModal && selectedBlockForSample && (
+      {showSampleModal && selectedBlockForSample && createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar">
             <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-4 flex items-center justify-between">
@@ -2143,7 +2145,8 @@ export function BlockManagement() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

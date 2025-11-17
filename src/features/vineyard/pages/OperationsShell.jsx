@@ -14,8 +14,8 @@ import {
   Users,
   CloudRain,
   Package,
-  Menu,
-  X,
+  ChevronLeft,
+  ChevronRight,
   Zap,
   Wind,
   Tractor,
@@ -143,7 +143,7 @@ export function OperationsShell() {
         className={`
           fixed left-0 top-0 h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900
           transition-all duration-300 ease-in-out z-40
-          ${sidebarOpen ? 'w-64' : 'w-20'}
+          ${sidebarOpen ? 'w-56' : 'w-20'}
         `}
       >
         {/* Fixed spacer for navbar */}
@@ -168,15 +168,15 @@ export function OperationsShell() {
             className="p-2 hover:bg-slate-700 rounded-lg transition-colors ml-auto"
           >
             {sidebarOpen ? (
-              <X className="w-5 h-5 text-slate-400" />
+              <ChevronLeft className="w-5 h-5 text-slate-400" />
             ) : (
-              <Menu className="w-5 h-5 text-slate-400" />
+              <ChevronRight className="w-5 h-5 text-slate-400" />
             )}
           </button>
         </div>
 
         {/* Navigation Sections - positioned at fixed location */}
-        <nav className="absolute top-[144px] left-0 right-0 bottom-[85px] overflow-y-auto py-4 px-2 hide-scrollbar">
+        <nav className="absolute top-[128px] left-0 right-0 bottom-[85px] overflow-y-auto py-4 px-2 hide-scrollbar">
           {navigationSections.map((section, sectionIdx) => (
             <div key={section.title} className={sectionIdx > 0 ? 'mt-6' : ''}>
               {sidebarOpen && (
@@ -235,7 +235,7 @@ export function OperationsShell() {
       <main
         className={`
           flex-1 transition-all duration-300 max-w-full overflow-x-hidden
-          ${sidebarOpen ? 'ml-64' : 'ml-20'}
+          ${sidebarOpen ? 'ml-56' : 'ml-20'}
         `}
       >
         {/* Content Area */}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { useSubscription } from "@/shared/hooks/useSubscription";
 import { useUsageLimits } from "@/shared/hooks/useUsageLimits";
@@ -403,7 +404,7 @@ export default function AccountSettingsPage() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
+      {showDeleteConfirm && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <div className="flex items-start gap-4 mb-4">
@@ -432,7 +433,8 @@ export default function AccountSettingsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

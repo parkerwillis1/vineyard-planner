@@ -1,23 +1,24 @@
 import React from "react";
-import { X } from "lucide-react"; // or any close-icon
+import { createPortal } from "react-dom";
+import { ChevronLeft } from "lucide-react";
 
 export function DocumentationDrawer({ open, onClose }) {
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 bg-black/50 z-50"
       onClick={onClose}
     >
       <div
-        className="absolute left-0 top-0 h-full w-80 bg-white shadow-xl p-6 overflow-y-auto"
+        className="absolute left-0 top-0 h-full w-72 bg-white shadow-xl p-6 overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <button
           className="absolute top-4 right-4 p-1"
           onClick={onClose}
         >
-          <X className="w-5 h-5 text-gray-600" />
+          <ChevronLeft className="w-5 h-5 text-gray-600" />
         </button>
         <h2 className="text-2xl font-bold mb-4">Documentation</h2>
 
@@ -71,6 +72,7 @@ export function DocumentationDrawer({ open, onClose }) {
           </p>
         </section>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

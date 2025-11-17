@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/auth/AuthContext';
 import {
   Package,
@@ -1102,7 +1103,7 @@ export function InventoryManagement() {
       </div>
 
       {/* Transaction History Modal */}
-      {showTransactions && (
+      {showTransactions && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <Card className="max-w-4xl w-full max-h-[80vh] overflow-hidden">
             <CardContent className="pt-6">
@@ -1159,11 +1160,12 @@ export function InventoryManagement() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Export Confirmation Dialog */}
-      {showExportDialog && (
+      {showExportDialog && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
             <div className="bg-gradient-to-r from-slate-700 to-slate-600 px-6 py-4">
@@ -1239,7 +1241,8 @@ export function InventoryManagement() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

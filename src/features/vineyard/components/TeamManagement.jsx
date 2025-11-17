@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/auth/AuthContext';
 import {
   Users,
@@ -15,7 +16,8 @@ import {
   DollarSign,
   MapPin,
   Building2,
-  Sparkles
+  Sparkles,
+  Network
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
@@ -61,6 +63,7 @@ export function TeamManagement() {
   const [error, setError] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [viewingHierarchy, setViewingHierarchy] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -381,6 +384,13 @@ export function TeamManagement() {
                         </div>
                         <div className="flex gap-1">
                           <button
+                            onClick={() => setViewingHierarchy(member)}
+                            className="p-2 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-300"
+                            title="View reporting hierarchy"
+                          >
+                            <Network className="w-4 h-4 text-[#4b5563] hover:text-blue-600" />
+                          </button>
+                          <button
                             onClick={() => setEditingMember({ type: 'member', data: member })}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-300"
                           >
@@ -469,6 +479,15 @@ export function TeamManagement() {
           onSaved={loadData}
         />
       )}
+
+      {/* Hierarchy Modal */}
+      {viewingHierarchy && (
+        <HierarchyModal
+          member={viewingHierarchy}
+          allMembers={members}
+          onClose={() => setViewingHierarchy(null)}
+        />
+      )}
     </div>
   );
 }
@@ -483,6 +502,7 @@ function MemberModal({ member, isOrg, onClose, onSaved }) {
       job_title: '',
       phone: '',
       hourly_rate: '',
+      manager_id: null,
       is_active: true,
       can_view_costs: false,
       can_manage_team: false,
@@ -494,6 +514,24 @@ function MemberModal({ member, isOrg, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(member?.logo_url || null);
+  const [potentialManagers, setPotentialManagers] = useState([]);
+
+  // Load potential managers (admins and managers only)
+  useEffect(() => {
+    const loadPotentialManagers = async () => {
+      const { data: allMembers, error } = await listOrganizationMembers();
+      if (!error && allMembers) {
+        // Filter to only admins and managers, exclude current member being edited
+        const managers = allMembers.filter(m =>
+          (m.role === 'admin' || m.role === 'manager') &&
+          m.is_active &&
+          m.id !== member?.id
+        );
+        setPotentialManagers(managers);
+      }
+    };
+    loadPotentialManagers();
+  }, [member?.id]);
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
@@ -552,7 +590,8 @@ function MemberModal({ member, isOrg, onClose, onSaved }) {
     // Update or create member
     const dataToSave = {
       ...formData,
-      hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null
+      hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+      manager_id: formData.manager_id || null // Convert empty string to null
     };
 
     if (member) {
@@ -825,6 +864,28 @@ function MemberModal({ member, isOrg, onClose, onSaved }) {
             </div>
           </div>
 
+          {/* Manager Assignment */}
+          <div>
+            <label className="block text-sm font-bold text-[#1f2937] mb-2">
+              Reports To (Manager)
+            </label>
+            <select
+              value={formData.manager_id || ''}
+              onChange={(e) => setFormData({ ...formData, manager_id: e.target.value || null })}
+              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+            >
+              <option value="">None (reports directly to admin/owner)</option>
+              {potentialManagers.map(mgr => (
+                <option key={mgr.id} value={mgr.id}>
+                  {mgr.full_name} ({mgr.role === 'admin' ? 'Admin' : 'Manager'})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-[#4b5563] mt-2 font-medium">
+              Select which manager supervises this team member. Only admins and managers can be assigned as supervisors.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-[#1f2937] mb-2">Phone</label>
@@ -928,5 +989,229 @@ function MemberModal({ member, isOrg, onClose, onSaved }) {
         </form>
       </div>
     </div>
+  );
+}
+
+// Hierarchy Modal - Shows reporting structure
+function HierarchyModal({ member, allMembers, onClose }) {
+  // Find manager
+  const manager = allMembers.find(m => m.id === member.manager_id);
+
+  // Find direct reports
+  const directReports = allMembers.filter(m => m.manager_id === member.id);
+
+  // Find manager's manager (grandparent)
+  const managersManager = manager ? allMembers.find(m => m.id === manager.manager_id) : null;
+
+  // Find peers (people who report to the same manager)
+  const peers = member.manager_id
+    ? allMembers.filter(m => m.manager_id === member.manager_id && m.id !== member.id)
+    : [];
+
+  const getRoleConfig = (role) => {
+    return ROLES.find(r => r.value === role) || ROLES[2];
+  };
+
+  const MemberCard = ({ person, isCurrent = false, showLine = false }) => {
+    const roleConfig = getRoleConfig(person.role);
+    const RoleIcon = roleConfig.icon;
+
+    return (
+      <div className="flex flex-col items-center">
+        {/* Connecting line from above */}
+        {showLine && (
+          <div className="w-0.5 h-8 bg-gradient-to-b from-[#10b981] to-[#008080]"></div>
+        )}
+
+        {/* Card */}
+        <div className={`
+          relative rounded-xl p-4 transition-all duration-300 min-w-[240px]
+          ${isCurrent
+            ? 'bg-gradient-to-br from-[#10b981] to-[#008080] shadow-xl shadow-emerald-500/30 border-2 border-emerald-400'
+            : 'bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 border-2 border-slate-600 hover:border-emerald-500/50'
+          }
+        `}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg ${
+              isCurrent ? 'bg-white/20' : 'bg-gradient-to-br from-emerald-400 to-teal-500'
+            }`}>
+              {person.full_name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-white text-base">{person.full_name}</h4>
+              <p className={`text-xs ${isCurrent ? 'text-white/80' : 'text-slate-300'}`}>
+                {person.job_title || 'Team Member'}
+              </p>
+            </div>
+          </div>
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
+            roleConfig.value === 'admin'
+              ? 'bg-purple-500/20 text-purple-200 border border-purple-400/30'
+              : roleConfig.value === 'manager'
+              ? 'bg-blue-500/20 text-blue-200 border border-blue-400/30'
+              : 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30'
+          }`}>
+            <RoleIcon className="w-3.5 h-3.5" />
+            {roleConfig.label}
+          </div>
+
+          {isCurrent && (
+            <div className="absolute -top-3 -right-3 bg-white text-emerald-600 text-xs font-bold px-3 py-1 rounded-full shadow-lg border-2 border-emerald-500">
+              YOU
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center p-4"
+      style={{ zIndex: 99999 }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto border-2 border-slate-700 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-5 sticky top-0 z-10 border-b-2 border-emerald-500/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                  <Network className="w-6 h-6 text-white" />
+                </div>
+                Organization Hierarchy
+              </h2>
+              <p className="text-sm text-slate-300 mt-2 font-medium ml-13">
+                Reporting structure for {member.full_name}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2.5 hover:bg-slate-700 rounded-xl transition-all duration-200 border border-transparent hover:border-emerald-500/50"
+            >
+              <XCircle className="w-6 h-6 text-slate-900 hover:text-slate-800" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-8">
+          {/* Tree Structure */}
+          <div className="flex flex-col items-center space-y-0">
+
+            {/* Manager's Manager (Top of tree) */}
+            {managersManager && (
+              <div className="flex flex-col items-center">
+                <MemberCard person={managersManager} />
+              </div>
+            )}
+
+            {/* Direct Manager */}
+            {manager ? (
+              <MemberCard person={manager} showLine={!!managersManager} />
+            ) : !managersManager && (
+              <div className="bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-xl p-4 mb-4">
+                <p className="text-sm text-slate-300 text-center font-medium">
+                  Reports directly to admin/owner (no assigned manager)
+                </p>
+              </div>
+            )}
+
+            {/* Current Member (highlighted) */}
+            <MemberCard person={member} isCurrent={true} showLine={!!manager} />
+
+            {/* Direct Reports - branching structure */}
+            {directReports.length > 0 && (
+              <div className="flex flex-col items-center w-full">
+                {/* Vertical line down */}
+                <div className="w-0.5 h-8 bg-gradient-to-b from-[#10b981] to-[#008080]"></div>
+
+                {/* Horizontal branching line */}
+                {directReports.length > 1 && (
+                  <div className="relative w-full max-w-4xl">
+                    <div className="absolute top-0 left-1/2 right-0 h-0.5 bg-gradient-to-r from-[#10b981] to-transparent"></div>
+                    <div className="absolute top-0 left-0 right-1/2 h-0.5 bg-gradient-to-l from-[#10b981] to-transparent"></div>
+                  </div>
+                )}
+
+                {/* Direct Reports Grid */}
+                <div className={`grid ${
+                  directReports.length === 1
+                    ? 'grid-cols-1'
+                    : directReports.length === 2
+                    ? 'grid-cols-2'
+                    : 'grid-cols-3'
+                } gap-6 mt-0 w-full max-w-4xl`}>
+                  {directReports.map((report, idx) => (
+                    <div key={report.id} className="flex flex-col items-center">
+                      {directReports.length > 1 && (
+                        <div className="w-0.5 h-8 bg-gradient-to-b from-[#10b981] to-[#008080]"></div>
+                      )}
+                      <MemberCard person={report} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Peers Section (if any) */}
+          {peers.length > 0 && (
+            <div className="mt-12 pt-8 border-t-2 border-slate-700">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide px-4">
+                  Peers ({peers.length})
+                </h3>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {peers.map(peer => (
+                  <div key={peer.id} className="flex justify-center">
+                    <MemberCard person={peer} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Summary Stats */}
+          <div className="mt-8 bg-gradient-to-br from-slate-800/50 to-slate-700/50 rounded-xl p-6 border-2 border-slate-600">
+            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+              <div className="w-1 h-4 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-full"></div>
+              Hierarchy Summary
+            </h3>
+            <div className="grid grid-cols-3 gap-6 text-center">
+              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                <div className="text-3xl font-bold text-emerald-400">{manager ? 1 : 0}</div>
+                <div className="text-xs text-slate-300 font-medium mt-1">Manager</div>
+              </div>
+              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                <div className="text-3xl font-bold text-blue-400">{peers.length}</div>
+                <div className="text-xs text-slate-300 font-medium mt-1">Peers</div>
+              </div>
+              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                <div className="text-3xl font-bold text-teal-400">{directReports.length}</div>
+                <div className="text-xs text-slate-300 font-medium mt-1">Reports</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-slate-900 border-t-2 border-emerald-500/30 sticky bottom-0 rounded-b-2xl">
+          <Button
+            onClick={onClose}
+            className="w-full !bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold shadow-lg hover:shadow-xl transition-all py-3 focus:!outline-none focus:!ring-2 focus:!ring-emerald-400 focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-emerald-400 active:from-emerald-700 active:to-teal-800"
+          >
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }

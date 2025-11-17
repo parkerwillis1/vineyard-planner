@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { AlertTriangle } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function ConfirmDialog({
@@ -39,7 +40,7 @@ export function ConfirmDialog({
     onClose();
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
         <div className="p-6">
@@ -51,22 +52,16 @@ export function ConfirmDialog({
               <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
               <p className="text-sm text-gray-600">{message}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-700" />
-            </button>
           </div>
         </div>
 
         <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
-          <Button
+          <button
             onClick={onClose}
-            className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300"
+            className="px-4 py-2 rounded-md bg-white hover:bg-gray-100 text-gray-900 border border-gray-300 font-semibold transition-colors"
           >
             {cancelText}
-          </Button>
+          </button>
           <Button
             onClick={handleConfirm}
             className={`${styles.button} text-white flex items-center justify-center`}
@@ -75,6 +70,7 @@ export function ConfirmDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

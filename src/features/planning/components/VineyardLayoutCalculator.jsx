@@ -1719,8 +1719,27 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                   <div className="text-2xl font-bold text-purple-900">{aggregateLayout.vineLayout.numberOfRows}</div>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <div className="text-sm text-gray-600">Avg Vines/Acre</div>
+                  <div className="text-sm text-gray-600">Theoretical Density</div>
                   <div className="text-2xl font-bold text-amber-900">{Math.round(aggregateLayout.vineLayout.vinesPerAcre)}</div>
+                  <div className="text-xs text-gray-500 mt-1">vines/acre (from spacing)</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="text-sm text-gray-600">Actual Density</div>
+                  <div className="text-2xl font-bold text-emerald-900">
+                    {Math.round(aggregateLayout.vineLayout.totalVines / aggregateLayout.dimensions.acres)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">actual vines/acre</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="text-sm text-gray-600">Planted Area</div>
+                  <div className="text-2xl font-bold text-teal-900">
+                    {((aggregateLayout.vineLayout.totalVines / aggregateLayout.vineLayout.vinesPerAcre)).toFixed(2)} ac
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {((aggregateLayout.vineLayout.totalVines / aggregateLayout.vineLayout.vinesPerAcre / aggregateLayout.dimensions.acres) * 100).toFixed(0)}% of total
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -1748,8 +1767,27 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                   <div className="text-xl font-bold text-blue-900">{currentFieldLayout.vineLayout.numberOfRows}</div>
                 </div>
                 <div className="bg-amber-50 p-3 rounded-lg">
-                  <div className="text-xs text-gray-600">Vines/Acre</div>
+                  <div className="text-xs text-gray-600">Theoretical Density</div>
                   <div className="text-xl font-bold text-amber-900">{Math.round(currentFieldLayout.vineLayout.vinesPerAcre)}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">v/ac (spacing)</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div className="bg-emerald-50 p-3 rounded-lg">
+                  <div className="text-xs text-gray-600">Actual Density</div>
+                  <div className="text-xl font-bold text-emerald-900">
+                    {Math.round(currentFieldLayout.vineLayout.totalVines / currentFieldLayout.dimensions.acres)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">actual v/ac</div>
+                </div>
+                <div className="bg-teal-50 p-3 rounded-lg">
+                  <div className="text-xs text-gray-600">Planted Area</div>
+                  <div className="text-xl font-bold text-teal-900">
+                    {((currentFieldLayout.vineLayout.totalVines / currentFieldLayout.vineLayout.vinesPerAcre)).toFixed(2)} ac
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {((currentFieldLayout.vineLayout.totalVines / currentFieldLayout.vineLayout.vinesPerAcre / currentFieldLayout.dimensions.acres) * 100).toFixed(0)}% of total
+                  </div>
                 </div>
               </div>
             </CardContent>

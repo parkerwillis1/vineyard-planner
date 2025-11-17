@@ -24,13 +24,17 @@ export default function FinancialInputsPage() {
             Purchase price per acre for vineyard-suitable land. Varies dramatically by region:
           </p>
           <Table
-            headers={["Region", "Typical Range", "Premium AVAs"]}
+            headers={["Region", "Typical Range", "Premium/Established"]}
             rows={[
               ["Napa Valley, CA", "$100,000-$300,000/ac", "$500,000+/ac"],
               ["Sonoma County, CA", "$50,000-$150,000/ac", "$250,000+/ac"],
               ["Central Coast, CA", "$25,000-$75,000/ac", "$150,000+/ac"],
               ["Oregon Willamette", "$15,000-$50,000/ac", "$100,000+/ac"],
               ["Washington Columbia", "$10,000-$30,000/ac", "$75,000+/ac"],
+              ["Texas Hill Country", "$30,000-$75,000/ac", "$100,000+/ac"],
+              ["Arizona Verde Valley", "$30,000-$60,000/ac", "$80,000+/ac"],
+              ["New York Finger Lakes", "$20,000-$50,000/ac", "$80,000+/ac"],
+              ["New Mexico Southern", "$10,000-$35,000/ac", "$50,000+/ac"],
             ]}
           />
           <Callout type="warning" title="Don't Overpay">
@@ -129,7 +133,7 @@ export default function FinancialInputsPage() {
 
         <Subsection title="Yield Assumptions">
           <p>
-            Expected tons per acre at full maturity (typically Year 5+):
+            Set your expected tons per acre at full maturity (typically Year 5+). The default is 3.5 tons/acre, but you can customize this based on your variety, growing practices, and quality goals:
           </p>
           <Table
             headers={["Grape Type", "Typical Yield", "Premium Yield"]}
@@ -140,8 +144,8 @@ export default function FinancialInputsPage() {
               ["Sauvignon Blanc", "3-5 tons/acre", "2.5-4 tons/acre"],
             ]}
           />
-          <Callout type="tip" title="Yield Curve">
-            The planner automatically models a realistic yield ramp: Year 1 = 0%, Year 2 = 25%, Year 3 = 50%, Year 4 = 75%, Year 5+ = 100%.
+          <Callout type="tip" title="Customizable Yield">
+            You can adjust the "Yield (t/acre)" field in the Financial Inputs tab to match your specific vineyard expectations. The planner automatically models a realistic yield ramp: Year 1-3 = 0 tons, Year 4 = 1 ton/acre, Year 5 = 2.5 tons/acre, Year 6+ = your full yield target.
           </Callout>
         </Subsection>
       </Section>

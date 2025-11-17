@@ -15,7 +15,7 @@ export default function SignIn() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/vineyard?view=dashboard`,
+        redirectTo: `${window.location.origin}/products`,
         queryParams: {
           prompt: 'select_account'
         }
@@ -41,7 +41,7 @@ export default function SignIn() {
       setLoading(false);
       return;
     }
-    navigate('/vineyard?view=dashboard');
+    navigate('/products');
   }
 
   return (

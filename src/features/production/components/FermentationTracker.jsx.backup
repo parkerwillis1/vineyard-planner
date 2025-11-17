@@ -1,0 +1,549 @@
+import React, { useState, useEffect } from 'react';
+import { Activity, Plus, TrendingDown, Thermometer, AlertCircle, Check } from 'lucide-react';
+import { getActiveFermentations, createFermentationLog, listFermentationLogs } from '@/shared/lib/productionApi';
+
+export const FermentationTracker = () => {
+  const [activeFerments, setActiveFerments] = useState([]);
+  const [selectedLot, setSelectedLot] = useState(null);
+  const [fermentationLogs, setFermentationLogs] = useState([]);
+  const [showLogForm, setShowLogForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  const [logFormData, setLogFormData] = useState({
+    brix: '',
+    temp_f: '',
+    ph: '',
+    ta: '',
+    work_performed: [],
+    addition_type: '',
+    addition_name: '',
+    addition_amount: '',
+    addition_unit: '',
+    notes: ''
+  });
+
+  useEffect(() => {
+    loadActiveFermentations();
+  }, []);
+
+  useEffect(() => {
+    if (selectedLot) {
+      loadFermentationLogs(selectedLot.id);
+    }
+  }, [selectedLot]);
+
+  const loadActiveFermentations = async () => {
+    setLoading(true);
+    try {
+      const { data, error: fetchError } = await getActiveFermentations();
+      if (fetchError) throw fetchError;
+      setActiveFerments(data || []);
+      if (data && data.length > 0 && !selectedLot) {
+        setSelectedLot(data[0]);
+      }
+    } catch (err) {
+      console.error('Error loading fermentations:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadFermentationLogs = async (lotId) => {
+    try {
+      const { data, error: fetchError } = await listFermentationLogs(lotId);
+      if (fetchError) throw fetchError;
+      setFermentationLogs(data || []);
+    } catch (err) {
+      console.error('Error loading logs:', err);
+      setError(err.message);
+    }
+  };
+
+  const handleSubmitLog = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!selectedLot) {
+      setError('Please select a lot');
+      return;
+    }
+
+    try {
+      const logData = {
+        lot_id: selectedLot.id,
+        brix: logFormData.brix ? parseFloat(logFormData.brix) : null,
+        temp_f: logFormData.temp_f ? parseFloat(logFormData.temp_f) : null,
+        ph: logFormData.ph ? parseFloat(logFormData.ph) : null,
+        ta: logFormData.ta ? parseFloat(logFormData.ta) : null,
+        work_performed: logFormData.work_performed.length > 0 ? logFormData.work_performed : null,
+        addition_type: logFormData.addition_type || null,
+        addition_name: logFormData.addition_name || null,
+        addition_amount: logFormData.addition_amount ? parseFloat(logFormData.addition_amount) : null,
+        addition_unit: logFormData.addition_unit || null,
+        notes: logFormData.notes || null
+      };
+
+      const { error: createError } = await createFermentationLog(logData);
+      if (createError) throw createError;
+
+      setSuccess('Fermentation log added successfully');
+      resetLogForm();
+      loadFermentationLogs(selectedLot.id);
+      loadActiveFermentations();
+    } catch (err) {
+      console.error('Error creating log:', err);
+      setError(err.message);
+    }
+  };
+
+  const resetLogForm = () => {
+    setLogFormData({
+      brix: '',
+      temp_f: '',
+      ph: '',
+      ta: '',
+      work_performed: [],
+      addition_type: '',
+      addition_name: '',
+      addition_unit: '',
+      addition_amount: '',
+      notes: ''
+    });
+    setShowLogForm(false);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setLogFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleWorkToggle = (work) => {
+    setLogFormData(prev => ({
+      ...prev,
+      work_performed: prev.work_performed.includes(work)
+        ? prev.work_performed.filter(w => w !== work)
+        : [...prev.work_performed, work]
+    }));
+  };
+
+  const workOptions = [
+    { value: 'punchdown', label: 'Punchdown' },
+    { value: 'pumpover', label: 'Pumpover' },
+    { value: 'rack', label: 'Rack' },
+    { value: 'add_nutrient', label: 'Add Nutrient' },
+    { value: 'add_so2', label: 'Add SO₂' },
+    { value: 'inoculate', label: 'Inoculate' },
+    { value: 'other', label: 'Other' }
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading fermentations...</div>
+      </div>
+    );
+  }
+
+  if (activeFerments.length === 0) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8">
+        <div className="text-center text-gray-500">
+          <Activity className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+          <p>No active fermentations. Start a fermentation from the Harvest Intake page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const daysFermenting = selectedLot?.harvest_date
+    ? Math.floor((new Date() - new Date(selectedLot.harvest_date)) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">Fermentation Tracker</h2>
+        <p className="text-gray-600 mt-1">Monitor active fermentations and log daily cellar work</p>
+      </div>
+
+      {/* Alerts */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-red-800">
+            <AlertCircle className="w-5 h-5" />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-green-800">
+            <Check className="w-5 h-5" />
+            <span>{success}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Lot Selector */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Select Fermenting Lot
+        </label>
+        <select
+          value={selectedLot?.id || ''}
+          onChange={(e) => {
+            const lot = activeFerments.find(f => f.id === e.target.value);
+            setSelectedLot(lot);
+          }}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vine-green-500 focus:border-transparent"
+        >
+          {activeFerments.map(lot => (
+            <option key={lot.id} value={lot.id}>
+              {lot.name} - {lot.varietal} ({lot.vintage})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Current Status Card */}
+      {selectedLot && (
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 shadow-sm p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-xl font-bold text-purple-900">{selectedLot.name}</h3>
+              <p className="text-purple-700">{selectedLot.varietal} {selectedLot.vintage}</p>
+            </div>
+            <button
+              onClick={() => setShowLogForm(!showLogForm)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Log Entry
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingDown className="w-4 h-4 text-purple-600" />
+                <span className="text-xs text-gray-600 uppercase">Brix</span>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {selectedLot.current_brix !== null ? `${selectedLot.current_brix}°` : '—'}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Thermometer className="w-4 h-4 text-red-500" />
+                <span className="text-xs text-gray-600 uppercase">Temp</span>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {selectedLot.current_temp_f !== null ? `${selectedLot.current_temp_f}°F` : '—'}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="w-4 h-4 text-blue-500" />
+                <span className="text-xs text-gray-600 uppercase">Days</span>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{daysFermenting}</div>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs text-gray-600 uppercase">Volume</span>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {selectedLot.current_volume_gallons ? `${Math.round(selectedLot.current_volume_gallons)} gal` : '—'}
+              </div>
+            </div>
+          </div>
+
+          {selectedLot.container && (
+            <div className="mt-4 text-sm text-purple-700">
+              Container: <span className="font-semibold">{selectedLot.container.name}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Log Entry Form */}
+      {showLogForm && selectedLot && (
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">New Fermentation Log</h3>
+
+          <form onSubmit={handleSubmitLog} className="space-y-4">
+            {/* Chemistry Readings */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Brix
+                </label>
+                <input
+                  type="number"
+                  name="brix"
+                  value={logFormData.brix}
+                  onChange={handleChange}
+                  step="0.1"
+                  placeholder="e.g., 12.5"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Temp (°F)
+                </label>
+                <input
+                  type="number"
+                  name="temp_f"
+                  value={logFormData.temp_f}
+                  onChange={handleChange}
+                  step="0.1"
+                  placeholder="e.g., 75"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  pH
+                </label>
+                <input
+                  type="number"
+                  name="ph"
+                  value={logFormData.ph}
+                  onChange={handleChange}
+                  step="0.01"
+                  placeholder="e.g., 3.45"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  TA (g/L)
+                </label>
+                <input
+                  type="number"
+                  name="ta"
+                  value={logFormData.ta}
+                  onChange={handleChange}
+                  step="0.1"
+                  placeholder="e.g., 6.5"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Work Performed */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cellar Work Performed
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {workOptions.map(option => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleWorkToggle(option.value)}
+                    className={`px-3 py-1.5 rounded-lg border transition-colors ${
+                      logFormData.work_performed.includes(option.value)
+                        ? 'bg-purple-100 border-purple-500 text-purple-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Additions */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Addition Type
+                </label>
+                <select
+                  name="addition_type"
+                  value={logFormData.addition_type}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="">None</option>
+                  <option value="yeast">Yeast</option>
+                  <option value="nutrient">Nutrient</option>
+                  <option value="so2">SO₂</option>
+                  <option value="enzyme">Enzyme</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Addition Name
+                </label>
+                <input
+                  type="text"
+                  name="addition_name"
+                  value={logFormData.addition_name}
+                  onChange={handleChange}
+                  placeholder="e.g., RC212, Fermaid K"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  name="addition_amount"
+                  value={logFormData.addition_amount}
+                  onChange={handleChange}
+                  step="0.1"
+                  placeholder="e.g., 30"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Unit
+                </label>
+                <select
+                  name="addition_unit"
+                  value={logFormData.addition_unit}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="">—</option>
+                  <option value="g">grams</option>
+                  <option value="g/hL">g/hL</option>
+                  <option value="ppm">ppm</option>
+                  <option value="oz">oz</option>
+                  <option value="lbs">lbs</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notes
+              </label>
+              <textarea
+                name="notes"
+                value={logFormData.notes}
+                onChange={handleChange}
+                rows="2"
+                placeholder="Optional notes about today's work..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Form Actions */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="submit"
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Save Log Entry
+              </button>
+              <button
+                type="button"
+                onClick={resetLogForm}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Fermentation History */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Fermentation History</h3>
+
+        {fermentationLogs.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">No log entries yet. Add your first entry above.</p>
+        ) : (
+          <div className="space-y-4">
+            {fermentationLogs.map((log) => (
+              <div key={log.id} className="border-l-4 border-purple-400 bg-gray-50 p-4 rounded-r-lg">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="text-sm font-medium text-gray-900">
+                    {new Date(log.log_date).toLocaleDateString()} {new Date(log.log_date).toLocaleTimeString()}
+                  </div>
+                  {log.work_performed && log.work_performed.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {log.work_performed.map(work => (
+                        <span key={work} className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs capitalize">
+                          {work.replace('_', ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  {log.brix !== null && (
+                    <div>
+                      <span className="text-gray-600">Brix:</span>
+                      <span className="ml-2 font-semibold text-gray-900">{log.brix}°</span>
+                    </div>
+                  )}
+                  {log.temp_f !== null && (
+                    <div>
+                      <span className="text-gray-600">Temp:</span>
+                      <span className="ml-2 font-semibold text-gray-900">{log.temp_f}°F</span>
+                    </div>
+                  )}
+                  {log.ph !== null && (
+                    <div>
+                      <span className="text-gray-600">pH:</span>
+                      <span className="ml-2 font-semibold text-gray-900">{log.ph}</span>
+                    </div>
+                  )}
+                  {log.ta !== null && (
+                    <div>
+                      <span className="text-gray-600">TA:</span>
+                      <span className="ml-2 font-semibold text-gray-900">{log.ta} g/L</span>
+                    </div>
+                  )}
+                </div>
+
+                {log.addition_type && (
+                  <div className="mt-2 text-sm">
+                    <span className="text-gray-600">Addition:</span>
+                    <span className="ml-2 text-gray-900">
+                      {log.addition_name || log.addition_type}
+                      {log.addition_amount && ` (${log.addition_amount} ${log.addition_unit || ''})`}
+                    </span>
+                  </div>
+                )}
+
+                {log.notes && (
+                  <div className="mt-2 text-sm text-gray-700 italic">
+                    {log.notes}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
