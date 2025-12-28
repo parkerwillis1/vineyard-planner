@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Barrel, Calendar, Plus, Droplet, AlertTriangle, Clock, TrendingUp, CheckCircle2
+  Barrel, Calendar, Plus, Droplet, AlertTriangle, Clock, TrendingUp, CheckCircle2, ArrowRight, Wine, Zap, ExternalLink
 } from 'lucide-react';
-import { listLots, listContainers, updateContainer, createFermentationLog } from '@/shared/lib/productionApi';
+import { listLots, listContainers, updateContainer, updateLot, logLotAssignment, createLot, createFermentationLog } from '@/shared/lib/productionApi';
 
 export function AgingManagement() {
+  const navigate = useNavigate();
   const [lots, setLots] = useState([]);
   const [barrels, setBarrels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [selectedBarrels, setSelectedBarrels] = useState([]);
+  const [assigningLot, setAssigningLot] = useState(null);
+  const [selectedBarrel, setSelectedBarrel] = useState(null);
+  const [autoFilling, setAutoFilling] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -28,6 +33,7 @@ export function AgingManagement() {
         setLots(lotsResult.data || []);
       }
       if (!containersResult.error) {
+        // Only load barrels - wine ages in barrels only
         const barrelData = (containersResult.data || []).filter(c => c.type === 'barrel');
         setBarrels(barrelData);
       }
@@ -41,7 +47,7 @@ export function AgingManagement() {
 
   // Get barrels that need topping
   const getBarrelsNeedingTopping = () => {
-    return barrels.filter(barrel => {
+    const needsTopping = barrels.filter(barrel => {
       if (barrel.status !== 'in_use') return false;
 
       const lastTopping = barrel.last_topping_date;
@@ -49,6 +55,14 @@ export function AgingManagement() {
 
       const daysSinceTopping = Math.floor((new Date() - new Date(lastTopping)) / (1000 * 60 * 60 * 24));
       return daysSinceTopping > 30; // Need topping every 30 days
+    });
+
+    // Sort by barrel number
+    return needsTopping.sort((a, b) => {
+      const aNum = parseInt(a.name.match(/\d+/)?.[0] || '999');
+      const bNum = parseInt(b.name.match(/\d+/)?.[0] || '999');
+      if (aNum !== bNum) return aNum - bNum;
+      return a.name.localeCompare(b.name);
     });
   };
 
@@ -95,9 +109,227 @@ export function AgingManagement() {
     );
   };
 
+  // Assign pressed wine to barrel
+  const assignToBarrel = async (lotId, barrelId) => {
+    try {
+      const lot = lots.find(l => l.id === lotId);
+      const barrel = barrels.find(b => b.id === barrelId);
+
+      if (!lot || !barrel) {
+        throw new Error('Lot or barrel not found');
+      }
+
+      // Update lot to assign to barrel and change status to aging
+      await updateLot(lotId, {
+        container_id: barrelId,
+        status: 'aging'
+      });
+
+      // Update barrel status and increment fill count
+      await updateContainer(barrelId, {
+        status: 'in_use',
+        total_fills: (barrel.total_fills || 0) + 1
+      });
+
+      // Log the assignment in vessel history
+      await logLotAssignment(barrelId, lotId, lot.current_volume_gallons || 0);
+
+      setSuccess(`${lot.name} assigned to ${barrel.name} for aging`);
+      setAssigningLot(null);
+      setSelectedBarrel(null);
+      loadData();
+
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error('Error assigning to barrel:', err);
+      setError(err.message);
+    }
+  };
+
+  // Auto-fill barrels from a large lot
+  const autoFillBarrels = async (lotId) => {
+    setAutoFilling(true);
+    setError(null);
+
+    try {
+      const lot = lots.find(l => l.id === lotId);
+      if (!lot || !lot.current_volume_gallons) {
+        throw new Error('Lot or volume not found');
+      }
+
+      const totalVolume = lot.current_volume_gallons;
+
+      // Sort available barrels by name to maintain consistent ordering
+      const sortedBarrels = [...availableBarrels].sort((a, b) => {
+        // Extract numbers from names for natural sorting (e.g., "Barrel 1", "Barrel 2")
+        const aNum = parseInt(a.name.match(/\d+/)?.[0] || '999');
+        const bNum = parseInt(b.name.match(/\d+/)?.[0] || '999');
+        if (aNum !== bNum) return aNum - bNum;
+        // If no numbers or same numbers, sort alphabetically
+        return a.name.localeCompare(b.name);
+      });
+
+      if (sortedBarrels.length === 0) {
+        throw new Error('No available barrels. Clean or sanitize barrels first.');
+      }
+
+      // Calculate barrel allocation
+      let remainingVolume = totalVolume;
+      const allocations = [];
+
+      for (const barrel of sortedBarrels) {
+        if (remainingVolume <= 0) break;
+
+        const fillVolume = Math.min(remainingVolume, barrel.capacity_gallons);
+        allocations.push({
+          barrel,
+          volume: fillVolume
+        });
+        remainingVolume -= fillVolume;
+      }
+
+      if (remainingVolume > 0) {
+        throw new Error(`Not enough barrel capacity. Need ${remainingVolume.toFixed(0)} more gallons.`);
+      }
+
+      // Create child lots and assign to barrels
+      const createdLots = [];
+      for (let i = 0; i < allocations.length; i++) {
+        const { barrel, volume } = allocations[i];
+
+        // Create child lot
+        const childLot = await createLot({
+          name: `${lot.name} - Barrel ${i + 1}`,
+          vintage: lot.vintage,
+          varietal: lot.varietal,
+          appellation: lot.appellation,
+          block_id: lot.block_id,
+          parent_lot_id: lot.id,
+          status: 'aging',
+          container_id: barrel.id,
+          current_volume_gallons: volume,
+          current_brix: lot.current_brix,
+          current_ph: lot.current_ph,
+          current_ta: lot.current_ta,
+          harvest_date: lot.harvest_date,
+          press_date: lot.press_date,
+          yeast_strain: lot.yeast_strain
+        });
+
+        if (childLot.error) {
+          throw childLot.error;
+        }
+
+        if (!childLot.data) {
+          throw new Error('Failed to create child lot');
+        }
+
+        // Update barrel
+        await updateContainer(barrel.id, {
+          status: 'in_use',
+          total_fills: (barrel.total_fills || 0) + 1
+        });
+
+        // Log assignment
+        await logLotAssignment(barrel.id, childLot.data.id, volume);
+
+        createdLots.push(childLot.data);
+      }
+
+      // Update parent lot to "barreled" or "aging" status (archived)
+      await updateLot(lotId, {
+        status: 'aging',
+        notes: `Split into ${allocations.length} barrels`
+      });
+
+      setSuccess(`Successfully filled ${allocations.length} barrels with ${totalVolume.toFixed(0)} gallons`);
+      setAssigningLot(null);
+      loadData();
+
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      console.error('Error auto-filling barrels:', err);
+      setError(err.message);
+    } finally {
+      setAutoFilling(false);
+    }
+  };
+
+  // Calculate remaining volume for a lot (total - already barreled children)
+  const getRemainingVolume = (lot) => {
+    const childLots = lots.filter(l => l.parent_lot_id === lot.id && l.status === 'aging');
+    const barreledVolume = childLots.reduce((sum, child) => sum + (child.current_volume_gallons || 0), 0);
+    return (lot.current_volume_gallons || 0) - barreledVolume;
+  };
+
+  // Preview barrel allocation for a lot
+  const getBarrelAllocationPreview = (lot) => {
+    const totalVolume = getRemainingVolume(lot);
+    if (totalVolume <= 0) return null;
+
+    // Sort available barrels by name to maintain consistent ordering
+    const sortedBarrels = [...availableBarrels].sort((a, b) => {
+      const aNum = parseInt(a.name.match(/\d+/)?.[0] || '999');
+      const bNum = parseInt(b.name.match(/\d+/)?.[0] || '999');
+      if (aNum !== bNum) return aNum - bNum;
+      return a.name.localeCompare(b.name);
+    });
+
+    let remainingVolume = totalVolume;
+    const allocations = [];
+
+    for (const barrel of sortedBarrels) {
+      if (remainingVolume <= 0) break;
+      const fillVolume = Math.min(remainingVolume, barrel.capacity_gallons);
+      allocations.push({ barrel, volume: fillVolume });
+      remainingVolume -= fillVolume;
+    }
+
+    return {
+      allocations,
+      barrelCount: allocations.length,
+      remainingVolume,
+      canFit: remainingVolume <= 0
+    };
+  };
+
   const needsTopping = getBarrelsNeedingTopping();
   const needsReplacement = getBarrelsForReplacement();
-  const agingLots = lots.filter(lot => lot.status === 'aging');
+
+  // Sort aging lots by barrel number (extracted from lot name)
+  const agingLots = lots
+    .filter(lot => {
+      // Only show lots that are actually in barrels
+      if (lot.status !== 'aging' || !lot.container_id) return false;
+
+      // Check if the container exists in our barrels list
+      const container = barrels.find(b => b.id === lot.container_id);
+      return container !== undefined;
+    })
+    .sort((a, b) => {
+      // Sort by container name (barrel number)
+      const aContainer = barrels.find(barrel => barrel.id === a.container_id);
+      const bContainer = barrels.find(barrel => barrel.id === b.container_id);
+
+      const aName = aContainer?.name || '';
+      const bName = bContainer?.name || '';
+
+      // Extract numbers from barrel names
+      const aNum = parseInt(aName.match(/\d+/)?.[0] || '999999');
+      const bNum = parseInt(bName.match(/\d+/)?.[0] || '999999');
+
+      if (aNum !== bNum) return aNum - bNum;
+      return aName.localeCompare(bName);
+    });
+
+  // Only show pressed lots that still have volume remaining to barrel
+  const pressedLots = lots.filter(lot => {
+    if (lot.status !== 'pressed') return false;
+    const remaining = getRemainingVolume(lot);
+    return remaining > 0;
+  });
+
+  const availableBarrels = barrels.filter(b => b.status === 'empty' || b.status === 'sanitized');
 
   if (loading) {
     return (
@@ -172,6 +404,147 @@ export function AgingManagement() {
         </div>
       </div>
 
+      {/* Pressed Wine Ready for Barrels */}
+      {pressedLots.length > 0 && (
+        <div className="bg-gradient-to-br from-purple-50 to-rose-50 rounded-xl border-2 border-purple-200 shadow-lg p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Wine className="w-6 h-6 text-purple-700" />
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Pressed Wine Ready for Aging</h3>
+              <p className="text-sm text-gray-600 mt-1">Assign these lots to barrels to begin aging</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {pressedLots.map(lot => {
+              const remainingVolume = getRemainingVolume(lot);
+              const preview = getBarrelAllocationPreview(lot);
+
+              return (
+                <div key={lot.id} className="bg-white rounded-lg border border-purple-200 p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h4 className="text-lg font-bold text-gray-900">{lot.name}</h4>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                        <span>{lot.varietal} • {lot.vintage}</span>
+                        {lot.current_volume_gallons && (
+                          <span className="font-medium text-purple-700">
+                            Total: {lot.current_volume_gallons} gal
+                          </span>
+                        )}
+                        {remainingVolume !== lot.current_volume_gallons && (
+                          <span className="font-semibold text-orange-700">
+                            Remaining: {remainingVolume.toFixed(0)} gal
+                          </span>
+                        )}
+                        {lot.press_date && (
+                          <span>Pressed: {new Date(lot.press_date).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => autoFillBarrels(lot.id)}
+                        disabled={autoFilling || remainingVolume <= 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {autoFilling ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Filling...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4" />
+                            Auto-Fill Barrels
+                          </>
+                        )}
+                      </button>
+                    <button
+                      onClick={() => setAssigningLot(lot.id)}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+                    >
+                      <Barrel className="w-4 h-4" />
+                      Manual Assign
+                    </button>
+                  </div>
+                </div>
+
+                {/* Allocation Preview */}
+                {preview && remainingVolume > 0 && (
+                  <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-indigo-900 mb-1">
+                          Auto-fill will use {preview.barrelCount} barrel{preview.barrelCount !== 1 ? 's' : ''}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {preview.allocations.slice(0, 5).map((alloc, idx) => (
+                            <span key={idx} className="text-xs bg-white px-2 py-1 rounded border border-indigo-200 text-gray-700">
+                              {alloc.barrel.name}: {alloc.volume.toFixed(0)} gal
+                            </span>
+                          ))}
+                          {preview.allocations.length > 5 && (
+                            <span className="text-xs text-indigo-700">
+                              +{preview.allocations.length - 5} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {!preview.canFit && (
+                        <div className="ml-3 px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold">
+                          Need {preview.remainingVolume.toFixed(0)} more gal capacity
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Barrel Selection */}
+                {assigningLot === lot.id && (
+                  <div className="mt-4 pt-4 border-t border-purple-200">
+                    <p className="text-sm font-medium text-gray-700 mb-3">Select a barrel:</p>
+                    {availableBarrels.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        No available barrels. Clean or sanitize a barrel first.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {availableBarrels.map(barrel => (
+                          <button
+                            key={barrel.id}
+                            onClick={() => assignToBarrel(lot.id, barrel.id)}
+                            className="p-3 text-left border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-900">{barrel.name}</p>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {barrel.cooperage || 'Barrel'} • {barrel.capacity_gallons} gal
+                                  {barrel.total_fills > 0 && ` • ${barrel.total_fills} fills`}
+                                </p>
+                              </div>
+                              <ArrowRight className="w-5 h-5 text-purple-600" />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setAssigningLot(null)}
+                      className="mt-3 text-sm text-gray-600 hover:text-gray-800"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Topping Schedule */}
       {needsTopping.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
@@ -180,15 +553,32 @@ export function AgingManagement() {
               <Droplet className="w-5 h-5 text-[#7C203A]" />
               <h3 className="text-lg font-semibold text-gray-900">Topping Schedule</h3>
             </div>
-            {selectedBarrels.length > 0 && (
-              <button
-                onClick={handleBulkTopping}
-                className="flex items-center gap-2 px-4 py-2 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors shadow-sm"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                Mark {selectedBarrels.length} Topped
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {selectedBarrels.length === 0 ? (
+                <button
+                  onClick={() => setSelectedBarrels(needsTopping.map(b => b.id))}
+                  className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Select All ({needsTopping.length})
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setSelectedBarrels([])}
+                    className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Clear Selection
+                  </button>
+                  <button
+                    onClick={handleBulkTopping}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors shadow-sm"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Mark {selectedBarrels.length} Topped
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -250,7 +640,7 @@ export function AgingManagement() {
         {agingLots.length === 0 ? (
           <p className="text-gray-500 text-center py-8">No lots currently aging</p>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {agingLots.map(lot => {
               const daysAging = lot.press_date
                 ? Math.floor((new Date() - new Date(lot.press_date)) / (1000 * 60 * 60 * 24))
@@ -258,33 +648,56 @@ export function AgingManagement() {
               const monthsAging = (daysAging / 30).toFixed(1);
               const targetMonths = 18; // Default target
               const progress = Math.min((monthsAging / targetMonths) * 100, 100);
+              const container = barrels.find(b => b.id === lot.container_id);
 
               return (
-                <div key={lot.id} className="p-4 rounded-lg border border-gray-200 bg-gradient-to-r from-white to-amber-50">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-semibold text-gray-900">{lot.name}</p>
-                      <p className="text-sm text-gray-600">{lot.varietal} • {lot.vintage}</p>
+                <button
+                  key={lot.id}
+                  onClick={() => container && navigate(`/production/vessel/${container.id}?from=aging`)}
+                  className="p-4 rounded-xl border-2 border-gray-200 hover:border-amber-500 hover:shadow-lg bg-white transition-all text-left group"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Barrel className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                        <p className="font-bold text-gray-900 truncate group-hover:text-amber-700 transition-colors">
+                          {container?.name || 'Unknown Vessel'}
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-600 truncate">{lot.name}</p>
+                      <p className="text-xs text-gray-500 mt-1">{lot.varietal} • {lot.vintage}</p>
                     </div>
-                    <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
-                      {monthsAging} months
-                    </span>
+                    <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-amber-600 transition-colors flex-shrink-0 ml-2" />
+                  </div>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-amber-50 rounded-lg p-2">
+                      <p className="text-xs text-gray-600">Aging Time</p>
+                      <p className="text-sm font-bold text-amber-700">{monthsAging} mo</p>
+                    </div>
+                    {lot.current_volume_gallons && (
+                      <div className="bg-purple-50 rounded-lg p-2">
+                        <p className="text-xs text-gray-600">Volume</p>
+                        <p className="text-sm font-bold text-purple-700">{lot.current_volume_gallons.toFixed(0)} gal</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="mt-3">
+                  <div>
                     <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                      <span>Aging Progress</span>
-                      <span>Target: {targetMonths} months</span>
+                      <span>Progress</span>
+                      <span>{progress.toFixed(0)}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div
-                        className="bg-gradient-to-r from-amber-500 to-[#7C203A] h-2 rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-amber-500 to-[#7C203A] h-1.5 rounded-full transition-all duration-500"
                         style={{ width: `${progress}%` }}
                       ></div>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

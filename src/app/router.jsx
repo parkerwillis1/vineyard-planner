@@ -22,6 +22,8 @@ import ConceptsPage from "@/pages/docs/getting-started/ConceptsPage.jsx";
 import PlannerOverview from "@/pages/docs/planner/PlannerOverview.jsx";
 import OperationsOverview from "@/pages/docs/operations/OperationsOverview.jsx";
 import TaskPermissionsPage from "@/pages/docs/operations/TaskPermissionsPage.jsx";
+import { ProductionOverview } from "@/pages/docs/production/ProductionOverview.jsx";
+import { SensorsPage } from "@/pages/docs/production/SensorsPage.jsx";
 import FAQPage from "@/pages/docs/FAQPage.jsx";
 
 /* Guard for routes that require auth */
@@ -54,6 +56,8 @@ export default function AppRouter() {
       <Route path="/docs/planner" element={<PlannerOverview />} />
       <Route path="/docs/operations" element={<OperationsOverview />} />
       <Route path="/docs/operations/task-permissions" element={<TaskPermissionsPage />} />
+      <Route path="/docs/production" element={<ProductionOverview />} />
+      <Route path="/docs/production/sensors" element={<SensorsPage />} />
       <Route path="/docs/faq" element={<FAQPage />} />
 
       {/* Auth-protected area */}

@@ -40,6 +40,10 @@ import CalendarPage from "./pages/docs/operations/CalendarPage.jsx";
 import AnalyticsPage from "./pages/docs/operations/AnalyticsPage.jsx";
 import HardwarePage from "./pages/docs/operations/HardwarePage.jsx";
 
+// Production docs
+import { ProductionOverview } from "./pages/docs/production/ProductionOverview.jsx";
+import { SensorsPage } from "./pages/docs/production/SensorsPage.jsx";
+
 // Resources docs
 import FAQPage from "./pages/docs/FAQPage.jsx";
 import TroubleshootingPage from "./pages/docs/TroubleshootingPage.jsx";
@@ -120,6 +124,10 @@ export default function App() {
         <Route path="/docs/operations/calendar" element={<CalendarPage />} />
         <Route path="/docs/operations/analytics" element={<AnalyticsPage />} />
         <Route path="/docs/operations/hardware" element={<HardwarePage />} />
+
+        {/* Winery Production */}
+        <Route path="/docs/production" element={<ProductionOverview />} />
+        <Route path="/docs/production/sensors" element={<SensorsPage />} />
 
         {/* Resources */}
         <Route path="/docs/faq" element={<FAQPage />} />

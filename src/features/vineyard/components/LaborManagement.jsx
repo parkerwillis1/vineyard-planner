@@ -919,7 +919,7 @@ export function LaborManagement() {
               <div className="text-center py-8 text-gray-500">
                 <UserX className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p>No active team members</p>
-                <p className="text-sm">Add team members in My Vineyard > Team tab first</p>
+                <p className="text-sm">Add team members in My Vineyard &gt; Team tab first</p>
               </div>
             )}
           </CardContent>

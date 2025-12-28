@@ -1,25 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Edit2, Trash2, Barrel, Package, Droplet, MapPin, Layers, Sparkles, Calendar, Beaker, FileText, X } from 'lucide-react';
 import {
   getContainer,
   updateContainer,
   deleteContainer,
   listLots,
-  updateLot
+  updateLot,
+  logLotAssignment,
+  logLotRemoval
 } from '@/shared/lib/productionApi';
+import { VesselQuickView } from './VesselQuickView';
+import { VesselAnalytics } from './VesselAnalytics';
 
 export function VesselDetail({ id: propId, onBack }) {
   const { id: paramId } = useParams();
   const id = propId || paramId; // Use prop if provided, fallback to useParams
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Check if accessed via QR scan
+  const isScan = searchParams.get('scan') === 'true';
+
+  // Check where we came from
+  const fromView = searchParams.get('from');
+
+  // If scanned via QR, show mobile-optimized quick view
+  if (isScan) {
+    return <VesselQuickView />;
+  }
   const [container, setContainer] = useState(null);
   const [lot, setLot] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isEditingContents, setIsEditingContents] = useState(false);
   const [formData, setFormData] = useState(null);
   const [contentsFormData, setContentsFormData] = useState(null);
   const [currentVolume, setCurrentVolume] = useState(0);
@@ -46,8 +61,23 @@ export function VesselDetail({ id: propId, onBack }) {
       const associatedLot = lotsData?.find(l => l.container_id === id);
       setLot(associatedLot || null);
 
-      // Set current volume from container's current_volume_gallons field, or lot, or default to 0
-      setCurrentVolume(containerData.current_volume_gallons ?? associatedLot?.volume_gallons ?? 0);
+      // Set current volume - prioritize lot's volume over container's stored volume
+      setCurrentVolume(associatedLot?.current_volume_gallons ?? containerData.current_volume_gallons ?? 0);
+
+      // Auto-sync container status: if a lot is assigned but status is "empty", update to "in_use"
+      if (associatedLot && containerData.status === 'empty') {
+        try {
+          await updateContainer(id, { status: 'in_use' });
+          // Reload to get updated status
+          const { data: freshContainer } = await getContainer(id);
+          if (freshContainer) {
+            setContainer(freshContainer);
+          }
+        } catch (syncError) {
+          console.error('Error syncing container status:', syncError);
+          // Non-critical, continue loading
+        }
+      }
 
       // Initialize contents form data if lot exists
       if (associatedLot) {
@@ -75,6 +105,9 @@ export function VesselDetail({ id: propId, onBack }) {
         total_fills: containerData.total_fills || 0,
         last_cip_date: containerData.last_cip_date || '',
         cip_product: containerData.cip_product || '',
+        purchase_cost: containerData.purchase_cost || '',
+        annual_maintenance_cost: containerData.annual_maintenance_cost || '',
+        estimated_replacement_cost: containerData.estimated_replacement_cost || '',
         notes: containerData.notes || ''
       });
     } catch (err) {
@@ -87,16 +120,36 @@ export function VesselDetail({ id: propId, onBack }) {
 
   const handleSave = async () => {
     try {
-      const updateData = {
-        ...formData,
-        capacity_gallons: parseFloat(formData.capacity_gallons),
-        total_fills: parseInt(formData.total_fills) || 0,
-        purchase_date: formData.purchase_date || null,
-        last_cip_date: formData.last_cip_date || null
-      };
+      // Save based on active tab
+      if (activeTab === 'contents' && lot) {
+        // Save contents/fermentation data
+        const updateData = {
+          current_brix: parseFloat(contentsFormData.current_brix) || null,
+          current_ph: parseFloat(contentsFormData.current_ph) || null,
+          current_ta: parseFloat(contentsFormData.current_ta) || null,
+          current_temp_f: parseFloat(contentsFormData.current_temp_f) || null,
+          current_alcohol_pct: parseFloat(contentsFormData.current_alcohol_pct) || null,
+          status: contentsFormData.status
+        };
 
-      const { error: updateError } = await updateContainer(id, updateData);
-      if (updateError) throw updateError;
+        const { error: updateError } = await updateLot(lot.id, updateData);
+        if (updateError) throw updateError;
+      } else if (activeTab === 'details') {
+        // Save vessel details
+        const updateData = {
+          ...formData,
+          capacity_gallons: parseFloat(formData.capacity_gallons),
+          total_fills: parseInt(formData.total_fills) || 0,
+          purchase_date: formData.purchase_date || null,
+          last_cip_date: formData.last_cip_date || null,
+          purchase_cost: formData.purchase_cost ? parseFloat(formData.purchase_cost) : null,
+          annual_maintenance_cost: formData.annual_maintenance_cost ? parseFloat(formData.annual_maintenance_cost) : null,
+          estimated_replacement_cost: formData.estimated_replacement_cost ? parseFloat(formData.estimated_replacement_cost) : null
+        };
+
+        const { error: updateError } = await updateContainer(id, updateData);
+        if (updateError) throw updateError;
+      }
 
       await loadVesselData();
       setIsEditing(false);
@@ -208,31 +261,6 @@ export function VesselDetail({ id: propId, onBack }) {
     }
   };
 
-  // Save contents/fermentation data
-  const handleSaveContents = async () => {
-    if (!lot) return;
-
-    try {
-      const updateData = {
-        current_brix: parseFloat(contentsFormData.current_brix) || null,
-        current_ph: parseFloat(contentsFormData.current_ph) || null,
-        current_ta: parseFloat(contentsFormData.current_ta) || null,
-        current_temp_f: parseFloat(contentsFormData.current_temp_f) || null,
-        current_alcohol_pct: parseFloat(contentsFormData.current_alcohol_pct) || null,
-        status: contentsFormData.status
-      };
-
-      const { error: updateError } = await updateLot(lot.id, updateData);
-      if (updateError) throw updateError;
-
-      await loadVesselData();
-      setIsEditingContents(false);
-    } catch (err) {
-      console.error('Error updating contents:', err);
-      setError(err.message);
-    }
-  };
-
   // Load available lots for assignment
   const loadAvailableLots = async () => {
     try {
@@ -273,10 +301,22 @@ export function VesselDetail({ id: propId, onBack }) {
   // Assign a lot to this vessel
   const assignLotToVessel = async (lotId) => {
     try {
+      // Find the lot to get its volume
+      const lotToAssign = availableLots.find(l => l.id === lotId);
+      const volume = lotToAssign?.current_volume_gallons || 0;
+
       const { error: updateError } = await updateLot(lotId, {
         container_id: id
       });
       if (updateError) throw updateError;
+
+      // Log vessel history event
+      try {
+        await logLotAssignment(id, lotId, volume);
+      } catch (historyError) {
+        console.error('Error logging vessel history:', historyError);
+        // Don't throw - this is non-critical
+      }
 
       setShowLotPicker(false);
       await loadVesselData();
@@ -296,6 +336,14 @@ export function VesselDetail({ id: propId, onBack }) {
         container_id: null
       });
       if (updateError) throw updateError;
+
+      // Log vessel history event
+      try {
+        await logLotRemoval(id, lot.id, 'User removed lot from vessel');
+      } catch (historyError) {
+        console.error('Error logging vessel history:', historyError);
+        // Don't throw - this is non-critical
+      }
 
       await loadVesselData();
     } catch (err) {
@@ -324,14 +372,18 @@ export function VesselDetail({ id: propId, onBack }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
+      <div className="flex items-center justify-between pt-6">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => {
               if (onBack) {
                 onBack();
+              } else if (fromView) {
+                // Navigate back to the view they came from
+                navigate(`/production?view=${fromView}`);
               } else {
-                navigate('/production?view=containers');
+                // Default fallback - go back in history
+                navigate(-1);
               }
             }}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -339,7 +391,7 @@ export function VesselDetail({ id: propId, onBack }) {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 leading-none">{container.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{container.name}</h1>
             <p className="text-gray-600 mt-1 capitalize">
               {container.type} • {container.capacity_gallons} gallons
             </p>
@@ -407,6 +459,16 @@ export function VesselDetail({ id: propId, onBack }) {
             }`}
           >
             Vessel Details
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'analytics'
+                ? 'border-slate-800 text-slate-900'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Analytics
           </button>
         </nav>
       </div>
@@ -583,20 +645,22 @@ export function VesselDetail({ id: propId, onBack }) {
                     <Droplet className="w-5 h-5 text-slate-800" />
                     <h2 className="text-lg font-bold text-gray-900">What's Inside</h2>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={loadAvailableLots}
-                      className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
-                    >
-                      Change Lot
-                    </button>
-                    <button
-                      onClick={unassignLot}
-                      className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
-                    >
-                      Empty Vessel
-                    </button>
-                  </div>
+                  {isEditing && activeTab === 'contents' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={loadAvailableLots}
+                        className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                      >
+                        Change Lot
+                      </button>
+                      <button
+                        onClick={unassignLot}
+                        className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
+                      >
+                        Remove Lot
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -649,36 +713,9 @@ export function VesselDetail({ id: propId, onBack }) {
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-gray-900">Fermentation Status</h2>
-                  {!isEditingContents ? (
-                    <button
-                      onClick={() => setIsEditingContents(true)}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      Update Data
-                    </button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleSaveContents}
-                        className="px-3 py-1.5 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsEditingContents(false);
-                          loadVesselData();
-                        }}
-                        className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )}
                 </div>
 
-                {isEditingContents ? (
+                {isEditing && activeTab === 'contents' ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Brix (°)</label>
@@ -943,6 +980,39 @@ export function VesselDetail({ id: propId, onBack }) {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Cost ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.purchase_cost}
+                    onChange={(e) => setFormData({...formData, purchase_cost: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Annual Maintenance ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.annual_maintenance_cost}
+                    onChange={(e) => setFormData({...formData, annual_maintenance_cost: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Replacement Cost ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.estimated_replacement_cost}
+                    onChange={(e) => setFormData({...formData, estimated_replacement_cost: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="0.00"
+                  />
+                </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                   <textarea
@@ -1066,6 +1136,11 @@ export function VesselDetail({ id: propId, onBack }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Analytics Tab */}
+      {activeTab === 'analytics' && (
+        <VesselAnalytics containerId={id} container={container} />
       )}
 
       {/* Lot Picker Modal */}

@@ -17,20 +17,21 @@ import {
   BookOpen,
   FileText,
   Archive,
-  ChevronLeft,
-  ChevronRight,
+  Menu,
   Grape,
   Beaker,
   Warehouse,
   Barrel,
   Container,
-  BottleWine
+  BottleWine,
+  Thermometer
 } from 'lucide-react';
 import { ProductionDashboard } from '../components/ProductionDashboard';
+import { SensorManager } from '../components/SensorManager';
 import { HarvestIntake } from '../components/HarvestIntake';
 import { FermentationTracker } from '../components/FermentationTracker';
 import { ContainerManagement } from '../components/ContainerManagement';
-import { LabChemistry } from '../components/LabChemistry';
+import { WineAnalysis } from '../components/WineAnalysis';
 import { Analytics } from '../components/Analytics';
 import { AgingManagement } from '../components/AgingManagement';
 import { BlendingCalculator } from '../components/BlendingCalculator';
@@ -52,7 +53,11 @@ export function ProductionShell() {
   const searchParams = new URLSearchParams(location.search);
   const urlView = searchParams.get('view') || 'dashboard';
 
-  const [activeView, setActiveView] = useState(urlView);
+  // If on vessel detail page, check if we came from a specific view
+  const fromView = searchParams.get('from');
+  const effectiveView = isVesselDetailPage && fromView ? fromView : urlView;
+
+  const [activeView, setActiveView] = useState(effectiveView);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -81,10 +86,15 @@ export function ProductionShell() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const viewFromUrl = params.get('view');
-    if (viewFromUrl && viewFromUrl !== activeView) {
+    const fromViewParam = params.get('from');
+
+    // If on vessel detail page with 'from' param, use that for sidebar highlight
+    if (isVesselDetailPage && fromViewParam) {
+      setActiveView(fromViewParam);
+    } else if (viewFromUrl && viewFromUrl !== activeView) {
       setActiveView(viewFromUrl);
     }
-  }, [location.search]);
+  }, [location.search, location.pathname, isVesselDetailPage]);
 
   if (!user) {
     return (
@@ -116,7 +126,8 @@ export function ProductionShell() {
       title: 'Cellar',
       items: [
         { id: 'containers', label: 'Vessels', icon: Barrel, color: 'blue' },
-        { id: 'lab', label: 'Lab & Chemistry', icon: FlaskConical, color: 'cyan' },
+        { id: 'sensors', label: 'IoT Sensors', icon: Thermometer, color: 'green' },
+        { id: 'lab', label: 'Wine Analysis', icon: Beaker, color: 'cyan' },
         { id: 'bottling', label: 'Bottling', icon: BottleWine, color: 'emerald' },
       ]
     },
@@ -138,8 +149,10 @@ export function ProductionShell() {
         return <FermentationTracker />;
       case 'containers':
         return <ContainerManagement />;
+      case 'sensors':
+        return <SensorManager />;
       case 'lab':
-        return <LabChemistry />;
+        return <WineAnalysis />;
       case 'analytics':
         return <Analytics />;
       case 'aging':
@@ -177,22 +190,13 @@ export function ProductionShell() {
           }`}
         >
           {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-rose-500 rounded-lg flex items-center justify-center shadow-lg">
-                <Wine className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-white font-bold text-lg">Production</span>
-            </div>
+            <span className="text-white font-bold text-xl">Production</span>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 hover:bg-rose-900/30 rounded-lg transition-colors ml-auto"
           >
-            {sidebarOpen ? (
-              <ChevronLeft className="w-5 h-5 text-rose-200" />
-            ) : (
-              <ChevronRight className="w-5 h-5 text-rose-200" />
-            )}
+            <Menu className="w-5 h-5 text-slate-600" />
           </button>
         </div>
 
@@ -222,8 +226,8 @@ export function ProductionShell() {
                         w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
                         transition-all duration-200 group
                         ${isActive
-                          ? 'bg-gradient-to-r from-amber-100 to-rose-100 text-rose-900 shadow-lg'
-                          : 'bg-white/10 text-rose-50 hover:bg-gradient-to-r hover:from-amber-100 hover:to-rose-100 hover:text-rose-900'
+                          ? 'bg-white text-rose-900 shadow-lg'
+                          : 'bg-white/10 text-rose-50 hover:bg-white hover:text-rose-900'
                         }
                         ${!sidebarOpen && 'justify-center'}
                       `}
@@ -289,8 +293,10 @@ export function ProductionShell() {
             <VesselDetail
               id={vesselId}
               onBack={() => {
-                navigate('/production?view=containers');
-                setActiveView('containers');
+                // Use fromView if available, otherwise default to containers
+                const targetView = fromView || 'containers';
+                navigate(`/production?view=${targetView}`);
+                setActiveView(targetView);
               }}
             />
           ) : (

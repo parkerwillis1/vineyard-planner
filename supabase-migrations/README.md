@@ -112,6 +112,89 @@ Adds fermentation workflow tracking fields to production_lots table.
 
 ---
 
+### create_sensor_system.sql
+Creates the complete IoT sensor integration system for temperature monitoring.
+
+**What it does:**
+- Creates `temperature_sensors` table for sensor registration
+- Creates `temperature_readings` table for time-series temperature data
+- Creates `temperature_alert_rules` table for configurable alerts
+- Creates `temperature_alert_history` table for alert tracking
+- Includes API key authentication system
+- Sets up comprehensive RLS policies and indexes
+- Creates triggers for auto-updating lot temperatures from sensor data
+
+**When to run:**
+- **REQUIRED** to use the IoT Sensors feature (Production → IoT Sensors)
+- Supports unlimited sensors of any hardware type
+- Enables real-time temperature monitoring in fermentation tracking
+
+**Tables created:**
+- temperature_sensors
+- temperature_readings
+- temperature_alert_rules
+- temperature_alert_history
+
+**Documentation:**
+- `docs/operations/hardware/Connecting-Temperature-Sensor-Guide.md` - Step-by-step hardware setup
+- `docs/operations/hardware/IoT-Sensor-Integration.md` - Technical API reference
+- `DEPLOYMENT_GUIDE.md` - Complete deployment instructions
+
+---
+
+### add_sensor_location_type.sql
+Adds field vs cellar categorization to temperature sensors.
+
+**What it does:**
+- Adds `location_type` column to `temperature_sensors` table
+- Enforces CHECK constraint for 'field' or 'cellar' values
+- Creates index for efficient filtering
+- Defaults existing sensors to 'cellar' type
+
+**When to run:**
+- **RECOMMENDED** if using IoT sensors for both vineyard and winery monitoring
+- Must be run AFTER `create_sensor_system.sql`
+- Enables clear distinction between field sensors (weather, soil) and cellar sensors (tanks, barrels)
+
+**Tables modified:**
+- temperature_sensors
+
+**Supported Sensor Types:**
+- **Field**: Weather stations, soil moisture, flow meters, dendrometers
+- **Cellar**: Tilt hydrometers, tank probes, fermentation monitors
+
+---
+
+### create_vessel_history_and_costs.sql
+Adds comprehensive vessel tracking, cost management, and CIP (Clean-In-Place) monitoring.
+
+**What it does:**
+- Adds cost tracking fields to `production_containers` (purchase_cost, annual_maintenance_cost, estimated_replacement_cost)
+- Adds CIP tracking fields (last_cip_date, cip_product)
+- Updates status constraint to include 'sanitized' and 'needs_cip' status values
+- Creates `vessel_history` table for tracking all vessel events (fills, empties, transfers, CIP, maintenance)
+- Creates automatic volume change logging trigger
+- Creates `vessel_analytics` view for comprehensive vessel performance metrics
+- Includes cost-per-gallon calculations and maintenance cost tracking
+
+**When to run:**
+- **REQUIRED** for full vessel management features (Analytics tab, QR code scanning, cost tracking)
+- Must be run AFTER `create_production_tables.sql`
+
+**Tables created:**
+- vessel_history
+
+**Tables modified:**
+- production_containers (adds cost and CIP tracking fields, updates status constraint)
+
+**Views created:**
+- vessel_analytics
+
+**Triggers created:**
+- vessel_volume_change_trigger (automatically logs volume changes)
+
+---
+
 ### add_task_rbac.sql
 Implements Role-Based Access Control (RBAC) for tasks with Admin, Manager, and Member roles.
 
@@ -170,14 +253,18 @@ Migrations should be run in the following order:
 3. **create_irrigation_schedules.sql** (REQUIRED for Irrigation Scheduling feature)
 4. **create_production_tables.sql** (REQUIRED for Winery Production module)
 5. **add_fermentation_fields.sql** (REQUIRED for Fermentation Tracker - run after create_production_tables.sql)
-6. add_archived_at_columns.sql (Optional - required for Archive feature)
-6. add_field_metrics_to_blocks.sql
-7. add_soil_and_custom_fields_to_blocks.sql
-8. add_custom_fields_to_blocks.sql
-9. add_flow_rate_to_blocks.sql
-10. alter_subscriptions_add_stripe_columns.sql
-11. subscriptions.sql
-12. usage_tracking.sql
+6. **add_barrel_tracking_dates.sql** (REQUIRED for barrel topping/racking tracking - run after create_production_tables.sql)
+7. **create_vessel_history_and_costs.sql** (REQUIRED for vessel analytics & cost tracking - run after create_production_tables.sql)
+8. **create_sensor_system.sql** (REQUIRED for IoT Sensors - run after create_production_tables.sql)
+9. **add_sensor_location_type.sql** (RECOMMENDED for field/cellar sensor distinction - run after create_sensor_system.sql)
+10. add_archived_at_columns.sql (Optional - required for Archive feature)
+11. add_field_metrics_to_blocks.sql
+12. add_soil_and_custom_fields_to_blocks.sql
+13. add_custom_fields_to_blocks.sql
+14. add_flow_rate_to_blocks.sql
+15. alter_subscriptions_add_stripe_columns.sql
+16. subscriptions.sql
+17. usage_tracking.sql
 
 ## Notes
 

@@ -141,6 +141,53 @@ export async function updateLot(lotId, updates) {
 }
 
 export async function deleteLot(lotId) {
+  // First, get the lot to check if it's a child lot with a parent
+  const { data: lot, error: fetchError } = await supabase
+    .from('production_lots')
+    .select('parent_lot_id, current_volume_gallons, name')
+    .eq('id', lotId)
+    .single();
+
+  if (fetchError) {
+    console.error('Error fetching lot for deletion:', fetchError);
+    return { error: fetchError };
+  }
+
+  // If this lot has a parent, restore the volume to the parent
+  if (lot.parent_lot_id) {
+    const volumeToRestore = lot.current_volume_gallons || 0;
+
+    // Get parent lot's current volume
+    const { data: parentLot, error: parentFetchError } = await supabase
+      .from('production_lots')
+      .select('current_volume_gallons, notes, name')
+      .eq('id', lot.parent_lot_id)
+      .single();
+
+    if (parentFetchError) {
+      console.error('Error fetching parent lot:', parentFetchError);
+      return { error: parentFetchError };
+    }
+
+    // Restore volume to parent
+    const newParentVolume = (parentLot.current_volume_gallons || 0) + volumeToRestore;
+    const deletionNote = `\n\n--- BATCH DELETED ---\nDate: ${new Date().toLocaleDateString()}\nDeleted child lot: ${lot.name}\nVolume restored: ${volumeToRestore} gallons\nNew total: ${newParentVolume} gallons`;
+
+    const { error: updateError } = await supabase
+      .from('production_lots')
+      .update({
+        current_volume_gallons: newParentVolume,
+        notes: parentLot.notes ? `${parentLot.notes}${deletionNote}` : deletionNote
+      })
+      .eq('id', lot.parent_lot_id);
+
+    if (updateError) {
+      console.error('Error updating parent lot:', updateError);
+      return { error: updateError };
+    }
+  }
+
+  // Now delete the lot
   return supabase
     .from('production_lots')
     .delete()
@@ -265,6 +312,118 @@ export async function deleteBlendComponent(componentId) {
 }
 
 // =====================================================
+// LOT STATUS SYNCHRONIZATION
+// =====================================================
+
+// Status hierarchy (later statuses are "more advanced")
+const STATUS_HIERARCHY = [
+  'planning',
+  'harvested',
+  'crushing',
+  'fermenting',
+  'pressed',
+  'aging',
+  'blending',
+  'filtering',
+  'bottled',
+  'archived'
+];
+
+// Sync parent lot status based on children's most advanced status
+export async function syncParentLotStatus(parentLotId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  // Get parent lot
+  const { data: parentLot, error: parentError } = await supabase
+    .from('production_lots')
+    .select('*')
+    .eq('id', parentLotId)
+    .single();
+
+  if (parentError) return { error: parentError };
+
+  // Get all children of this parent
+  const { data: children, error: childrenError } = await supabase
+    .from('production_lots')
+    .select('*')
+    .eq('parent_lot_id', parentLotId)
+    .is('archived_at', null);
+
+  if (childrenError) return { error: childrenError };
+
+  if (!children || children.length === 0) {
+    // No children, nothing to sync
+    return { data: parentLot, error: null };
+  }
+
+  // Find the most advanced status among children
+  const childStatuses = children.map(c => c.status);
+  const mostAdvancedStatus = STATUS_HIERARCHY
+    .slice()
+    .reverse()
+    .find(status => childStatuses.includes(status));
+
+  // Get parent's current status index
+  const parentStatusIndex = STATUS_HIERARCHY.indexOf(parentLot.status);
+  const childStatusIndex = STATUS_HIERARCHY.indexOf(mostAdvancedStatus);
+
+  // Only update if child is more advanced than parent
+  if (childStatusIndex > parentStatusIndex) {
+    const { data, error } = await supabase
+      .from('production_lots')
+      .update({
+        status: mostAdvancedStatus,
+        notes: parentLot.notes
+          ? `${parentLot.notes}\n\n--- AUTO-SYNC ---\nDate: ${new Date().toLocaleDateString()}\nStatus updated to "${mostAdvancedStatus}" to match child lot progression`
+          : `--- AUTO-SYNC ---\nDate: ${new Date().toLocaleDateString()}\nStatus updated to "${mostAdvancedStatus}" to match child lot progression`
+      })
+      .eq('id', parentLotId)
+      .select()
+      .single();
+
+    return { data, error };
+  }
+
+  return { data: parentLot, error: null };
+}
+
+// Sync all parent lots in the system
+export async function syncAllParentLotStatuses() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  // Get all lots that are parents (have children)
+  const { data: allLots, error: lotsError } = await supabase
+    .from('production_lots')
+    .select('id, parent_lot_id')
+    .eq('user_id', user.id)
+    .is('archived_at', null);
+
+  if (lotsError) return { error: lotsError };
+
+  // Find unique parent IDs
+  const parentIds = [...new Set(allLots
+    .filter(lot => lot.parent_lot_id)
+    .map(lot => lot.parent_lot_id))];
+
+  // Sync each parent
+  const results = [];
+  for (const parentId of parentIds) {
+    const result = await syncParentLotStatus(parentId);
+    results.push(result);
+  }
+
+  return {
+    data: {
+      synced: results.filter(r => !r.error).length,
+      errors: results.filter(r => r.error).length
+    },
+    error: null
+  };
+}
+
+// =====================================================
 // DASHBOARD / ANALYTICS
 // =====================================================
 
@@ -316,4 +475,428 @@ export async function getProductionDashboardData() {
     },
     error: null
   };
+}
+
+// =====================================================
+// TEMPERATURE SENSORS (IoT Integration)
+// =====================================================
+
+export async function listSensors(filters = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('temperature_sensors')
+    .select(`
+      *,
+      container:production_containers(id, name, type),
+      lot:production_lots(id, name, varietal, vintage)
+    `)
+    .eq('user_id', user.id);
+
+  // Apply filters
+  if (filters.status) {
+    query = query.eq('status', filters.status);
+  }
+  if (filters.container_id) {
+    query = query.eq('container_id', filters.container_id);
+  }
+  if (filters.lot_id) {
+    query = query.eq('lot_id', filters.lot_id);
+  }
+
+  return query.order('created_at', { ascending: false });
+}
+
+export async function getSensor(sensorId) {
+  return supabase
+    .from('temperature_sensors')
+    .select(`
+      *,
+      container:production_containers(id, name, type, capacity_gallons),
+      lot:production_lots(id, name, varietal, vintage, status)
+    `)
+    .eq('id', sensorId)
+    .single();
+}
+
+export async function createSensor(sensor) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  return supabase
+    .from('temperature_sensors')
+    .insert({ ...sensor, user_id: user.id })
+    .select()
+    .single();
+}
+
+export async function updateSensor(sensorId, updates) {
+  return supabase
+    .from('temperature_sensors')
+    .update(updates)
+    .eq('id', sensorId)
+    .select()
+    .single();
+}
+
+export async function deleteSensor(sensorId) {
+  return supabase
+    .from('temperature_sensors')
+    .delete()
+    .eq('id', sensorId);
+}
+
+export async function regenerateSensorApiKey(sensorId) {
+  const newApiKey = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  return supabase
+    .from('temperature_sensors')
+    .update({ api_key: newApiKey })
+    .eq('id', sensorId)
+    .select()
+    .single();
+}
+
+// =====================================================
+// TEMPERATURE READINGS
+// =====================================================
+
+export async function getLatestReading(sensorId) {
+  return supabase
+    .from('temperature_readings')
+    .select('*')
+    .eq('sensor_id', sensorId)
+    .order('reading_timestamp', { ascending: false })
+    .limit(1)
+    .single();
+}
+
+export async function getReadingHistory(sensorId, hoursBack = 24) {
+  const startTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
+
+  return supabase
+    .from('temperature_readings')
+    .select('*')
+    .eq('sensor_id', sensorId)
+    .gte('reading_timestamp', startTime)
+    .order('reading_timestamp', { ascending: true });
+}
+
+export async function getLotReadings(lotId, hoursBack = 72) {
+  const startTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
+
+  return supabase
+    .from('temperature_readings')
+    .select(`
+      *,
+      sensor:temperature_sensors(id, name, sensor_type)
+    `)
+    .eq('lot_id', lotId)
+    .gte('reading_timestamp', startTime)
+    .order('reading_timestamp', { ascending: true });
+}
+
+export async function recordTemperatureReading(reading) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  return supabase
+    .from('temperature_readings')
+    .insert({ ...reading, user_id: user.id })
+    .select()
+    .single();
+}
+
+// =====================================================
+// ALERT RULES
+// =====================================================
+
+export async function listAlertRules(filters = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('temperature_alert_rules')
+    .select(`
+      *,
+      sensor:temperature_sensors(id, name, sensor_type),
+      lot:production_lots(id, name, varietal),
+      container:production_containers(id, name, type)
+    `)
+    .eq('user_id', user.id);
+
+  if (filters.enabled !== undefined) {
+    query = query.eq('enabled', filters.enabled);
+  }
+
+  return query.order('created_at', { ascending: false });
+}
+
+export async function createAlertRule(rule) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  return supabase
+    .from('temperature_alert_rules')
+    .insert({ ...rule, user_id: user.id })
+    .select()
+    .single();
+}
+
+export async function updateAlertRule(ruleId, updates) {
+  return supabase
+    .from('temperature_alert_rules')
+    .update(updates)
+    .eq('id', ruleId)
+    .select()
+    .single();
+}
+
+export async function deleteAlertRule(ruleId) {
+  return supabase
+    .from('temperature_alert_rules')
+    .delete()
+    .eq('id', ruleId);
+}
+
+// =====================================================
+// ALERT HISTORY
+// =====================================================
+
+export async function getAlertHistory(filters = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('temperature_alert_history')
+    .select(`
+      *,
+      sensor:temperature_sensors(id, name, sensor_type),
+      alert_rule:temperature_alert_rules(id, name)
+    `)
+    .eq('user_id', user.id);
+
+  if (filters.acknowledged !== undefined) {
+    query = query.eq('acknowledged', filters.acknowledged);
+  }
+
+  if (filters.severity) {
+    query = query.eq('severity', filters.severity);
+  }
+
+  return query.order('created_at', { ascending: false }).limit(100);
+}
+
+export async function acknowledgeAlert(alertId, notes) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  return supabase
+    .from('temperature_alert_history')
+    .update({
+      acknowledged: true,
+      acknowledged_at: new Date().toISOString(),
+      acknowledged_by: user.id,
+      resolution_notes: notes
+    })
+    .eq('id', alertId)
+    .select()
+    .single();
+}
+
+// =====================================================
+// VESSEL HISTORY & ANALYTICS
+// =====================================================
+
+/**
+ * Create a vessel history event
+ * @param {Object} event - Event details
+ * @param {string} event.container_id - Container UUID
+ * @param {string} event.event_type - Type: fill, empty, cip, maintenance, etc.
+ * @param {number} event.volume_before - Volume before event
+ * @param {number} event.volume_after - Volume after event
+ * @param {string} event.lot_id - Optional lot UUID
+ * @param {string} event.cip_product - Optional CIP product for cleaning events
+ * @param {string} event.maintenance_type - Optional maintenance type
+ * @param {number} event.cost - Optional cost of maintenance/repair
+ * @param {string} event.notes - Optional notes
+ */
+export async function createVesselHistoryEvent(event) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  const volume_change = event.volume_after !== undefined && event.volume_before !== undefined
+    ? event.volume_after - event.volume_before
+    : null;
+
+  return supabase
+    .from('vessel_history')
+    .insert({
+      ...event,
+      user_id: user.id,
+      performed_by: user.id,
+      volume_change,
+      event_date: event.event_date || new Date().toISOString()
+    })
+    .select()
+    .single();
+}
+
+/**
+ * Get vessel history for a specific container
+ * @param {string} containerId - Container UUID
+ * @param {Object} options - Query options
+ * @param {number} options.limit - Limit number of results (default: 100)
+ * @param {string} options.event_type - Filter by event type
+ */
+export async function getVesselHistory(containerId, options = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('vessel_history')
+    .select(`
+      *,
+      lot:production_lots(name, varietal, vintage)
+    `)
+    .eq('user_id', user.id)
+    .eq('container_id', containerId)
+    .order('event_date', { ascending: false });
+
+  if (options.event_type) {
+    query = query.eq('event_type', options.event_type);
+  }
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  } else {
+    query = query.limit(100);
+  }
+
+  return query;
+}
+
+/**
+ * Get all vessel history events for a user
+ * @param {Object} options - Query options
+ */
+export async function getAllVesselHistory(options = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('vessel_history')
+    .select(`
+      *,
+      container:production_containers(name, type),
+      lot:production_lots(name, varietal, vintage)
+    `)
+    .eq('user_id', user.id)
+    .order('event_date', { ascending: false });
+
+  if (options.limit) {
+    query = query.limit(options.limit);
+  } else {
+    query = query.limit(50);
+  }
+
+  return query;
+}
+
+/**
+ * Get vessel analytics for a specific container
+ * @param {string} containerId - Container UUID
+ */
+export async function getVesselAnalytics(containerId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: null };
+
+  return supabase
+    .from('vessel_analytics')
+    .select('*')
+    .eq('id', containerId)
+    .eq('user_id', user.id)
+    .single();
+}
+
+/**
+ * Get all vessel analytics for a user
+ */
+export async function getAllVesselAnalytics() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  return supabase
+    .from('vessel_analytics')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('name', { ascending: true });
+}
+
+/**
+ * Log a lot assignment to a vessel
+ * @param {string} containerId - Container UUID
+ * @param {string} lotId - Lot UUID
+ * @param {number} volume - Volume being assigned
+ */
+export async function logLotAssignment(containerId, lotId, volume) {
+  return createVesselHistoryEvent({
+    container_id: containerId,
+    event_type: 'lot_assigned',
+    lot_id: lotId,
+    volume_after: volume,
+    notes: 'Lot assigned to vessel'
+  });
+}
+
+/**
+ * Log a lot removal from a vessel
+ * @param {string} containerId - Container UUID
+ * @param {string} lotId - Lot UUID
+ * @param {string} reason - Reason for removal (pressed, transferred, etc.)
+ */
+export async function logLotRemoval(containerId, lotId, reason) {
+  return createVesselHistoryEvent({
+    container_id: containerId,
+    event_type: 'lot_removed',
+    lot_id: lotId,
+    volume_after: 0,
+    notes: reason || 'Lot removed from vessel'
+  });
+}
+
+/**
+ * Log a CIP (Clean-In-Place) event
+ * @param {string} containerId - Container UUID
+ * @param {string} cipProduct - CIP product used
+ * @param {number} cost - Optional cost of CIP
+ */
+export async function logCIPEvent(containerId, cipProduct, cost = null) {
+  return createVesselHistoryEvent({
+    container_id: containerId,
+    event_type: 'cip',
+    cip_product: cipProduct,
+    cost,
+    notes: `Vessel cleaned with ${cipProduct}`
+  });
+}
+
+/**
+ * Log a maintenance or repair event
+ * @param {string} containerId - Container UUID
+ * @param {string} maintenanceType - Type of maintenance/repair
+ * @param {number} cost - Cost of maintenance
+ * @param {string} notes - Details about the work done
+ */
+export async function logMaintenanceEvent(containerId, maintenanceType, cost, notes) {
+  return createVesselHistoryEvent({
+    container_id: containerId,
+    event_type: maintenanceType === 'repair' ? 'repair' : 'maintenance',
+    maintenance_type: maintenanceType,
+    cost,
+    notes
+  });
 }

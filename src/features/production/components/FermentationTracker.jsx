@@ -4,15 +4,20 @@ import { useLocation } from 'react-router-dom';
 import {
   Sparkles, Plus, TrendingDown, AlertTriangle, Clock,
   Thermometer, Activity, CheckCircle2, Circle, Droplets,
-  Copy, Zap, Target, Calendar, FlaskConical, X, Play
+  Copy, Zap, Target, Calendar, FlaskConical, X, Play, ChevronDown
 } from 'lucide-react';
 import {
   getActiveFermentations,
   createFermentationLog,
   listFermentationLogs,
   updateLot,
+  createLot,
   listLots,
-  listContainers
+  listContainers,
+  updateContainer,
+  listSensors,
+  getLotReadings,
+  logLotAssignment
 } from '@/shared/lib/productionApi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
@@ -106,12 +111,15 @@ export function FermentationTracker() {
   const [loading, setLoading] = useState(true);
   const [showLogForm, setShowLogForm] = useState(false);
   const [showQuickLog, setShowQuickLog] = useState(false);
+  const [showVesselDropdown, setShowVesselDropdown] = useState(false);
   const [showProfileSelector, setShowProfileSelector] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [showStartFermentationModal, setShowStartFermentationModal] = useState(false);
   const [containers, setContainers] = useState([]);
+  const [sensors, setSensors] = useState([]);
+  const [lotSensor, setLotSensor] = useState(null);
   const [fermentationStartData, setFermentationStartData] = useState({
     volume_gallons: '',
     so2_ppm: '',
@@ -121,6 +129,7 @@ export function FermentationTracker() {
     nutrient_grams: '',
     container_id: null,
     target_fermentation_days: 14,
+    fermentation_start_date: '', // Will be set to current datetime when modal opens
     notes: ''
   });
 
@@ -174,22 +183,37 @@ export function FermentationTracker() {
     }
   }, [lotIdFromUrl, lots]);
 
+  // Close vessel dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showVesselDropdown && !event.target.closest('.vessel-dropdown-container')) {
+        setShowVesselDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showVesselDropdown]);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [activeResult, readyResult, containersResult] = await Promise.all([
+      const [activeResult, readyResult, containersResult, sensorsResult] = await Promise.all([
         getActiveFermentations(),
         listLots({ status: 'harvested,crushing' }),
-        listContainers()
+        listContainers(),
+        listSensors({ status: 'active' })
       ]);
 
       if (activeResult.error) throw activeResult.error;
       if (readyResult.error) throw readyResult.error;
       if (containersResult.error) throw containersResult.error;
+      if (sensorsResult.error) throw sensorsResult.error;
 
       setLots(activeResult.data || []);
       setLotsReadyToStart(readyResult.data || []);
       setContainers(containersResult.data || []);
+      setSensors(sensorsResult.data || []);
 
       if (activeResult.data && activeResult.data.length > 0 && !selectedLot) {
         setSelectedLot(activeResult.data[0]);
@@ -216,8 +240,12 @@ export function FermentationTracker() {
   useEffect(() => {
     if (selectedLot) {
       loadLogs(selectedLot.id);
+
+      // Find sensor for this lot
+      const sensor = sensors.find(s => s.lot_id === selectedLot.id);
+      setLotSensor(sensor || null);
     }
-  }, [selectedLot]);
+  }, [selectedLot, sensors]);
 
   // Quick action: Open Quick Daily Log
   const handleOpenQuickLog = () => {
@@ -428,6 +456,12 @@ export function FermentationTracker() {
                      varietal.includes('riesling') || varietal.includes('pinot gris');
     const targetDays = isWhite ? 10 : 14; // Whites: ~10 days, Reds: ~14 days
 
+    // Format current datetime for datetime-local input (YYYY-MM-DDTHH:mm)
+    const now = new Date();
+    const localDatetime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+      .toISOString()
+      .slice(0, 16); // Gets "YYYY-MM-DDTHH:mm"
+
     setFermentationStartData({
       volume_gallons: lot.current_volume_gallons || '',
       so2_ppm: recommendedSO2 || '',
@@ -437,6 +471,7 @@ export function FermentationTracker() {
       nutrient_grams: '',
       container_id: lot.container_id || null,
       target_fermentation_days: targetDays,
+      fermentation_start_date: localDatetime,
       notes: ''
     });
     setShowStartFermentationModal(true);
@@ -448,8 +483,16 @@ export function FermentationTracker() {
     setError(null);
 
     try {
-      // Calculate target completion date
-      const startDate = new Date();
+      const fermentVolume = parseFloat(fermentationStartData.volume_gallons);
+      const parentVolume = parseFloat(selectedLot.current_volume_gallons);
+
+      // Validate volume
+      if (fermentVolume > parentVolume) {
+        throw new Error(`Cannot ferment ${fermentVolume} gallons - only ${parentVolume} gallons available in lot`);
+      }
+
+      // Parse the custom fermentation start date from the form
+      const startDate = new Date(fermentationStartData.fermentation_start_date);
       const targetDate = new Date(startDate);
       targetDate.setDate(targetDate.getDate() + parseInt(fermentationStartData.target_fermentation_days));
 
@@ -465,25 +508,82 @@ Yeast: ${fermentationStartData.yeast_strain} (${fermentationStartData.yeast_gram
 Nutrients: ${fermentationStartData.nutrient_type} (${fermentationStartData.nutrient_grams || '0'} g)
 ${containerInfo ? `Vessel: ${containerInfo.name} (${containerInfo.type})` : 'Vessel: Unassigned'}
 Target Duration: ${fermentationStartData.target_fermentation_days} days (target completion: ${targetDate.toLocaleDateString()})
+Split from parent lot: ${selectedLot.name} (${fermentVolume} of ${parentVolume} gallons)
 ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`;
 
-      const updates = {
+      // Create child lot name with vessel info
+      const childLotName = containerInfo
+        ? `${selectedLot.name} - ${containerInfo.name}`
+        : `${selectedLot.name} - Batch ${Date.now().toString().slice(-4)}`;
+
+      // Create new child lot for fermentation
+      const childLotData = {
+        name: childLotName,
+        vintage: selectedLot.vintage,
+        varietal: selectedLot.varietal,
+        appellation: selectedLot.appellation,
+        block_id: selectedLot.block_id,
+        parent_lot_id: selectedLot.id,
+        harvest_date: selectedLot.harvest_date,
+        initial_weight_lbs: null,
+        initial_brix: selectedLot.initial_brix,
+        initial_ph: selectedLot.initial_ph,
+        initial_ta: selectedLot.initial_ta,
+        current_volume_gallons: fermentVolume,
+        current_brix: selectedLot.current_brix,
+        current_ph: selectedLot.current_ph,
+        current_ta: selectedLot.current_ta,
         status: 'fermenting',
-        fermentation_start_date: new Date().toISOString(),
+        fermentation_start_date: startDate.toISOString(),
+        target_fermentation_days: parseInt(fermentationStartData.target_fermentation_days) || null,
         so2_ppm: parseFloat(fermentationStartData.so2_ppm) || null,
         yeast_strain: fermentationStartData.yeast_strain || null,
         container_id: fermentationStartData.container_id || null,
-        current_volume_gallons: parseFloat(fermentationStartData.volume_gallons) || null,
-        notes: selectedLot.notes ? `${selectedLot.notes}\n\n${startNotes}` : startNotes
+        notes: startNotes
       };
 
-      const { error: updateError } = await updateLot(selectedLot.id, updates);
-      if (updateError) {
-        console.error('Update error details:', updateError);
-        throw new Error(updateError.message || 'Failed to update lot');
+      // Create the child lot
+      const { data: newLot, error: createError } = await createLot(childLotData);
+      if (createError) {
+        console.error('Error creating child lot:', createError);
+        throw new Error(createError.message || 'Failed to create fermentation lot');
       }
 
-      setSuccess('Fermentation started successfully!');
+      // Update container status to "in_use" if a container was assigned
+      if (fermentationStartData.container_id && newLot?.id) {
+        const { error: containerError } = await updateContainer(fermentationStartData.container_id, {
+          status: 'in_use'
+        });
+        if (containerError) {
+          console.error('Error updating container status:', containerError);
+          // Don't throw - this is non-critical, lot was still created successfully
+        }
+
+        // Log vessel history event
+        try {
+          await logLotAssignment(fermentationStartData.container_id, newLot.id, fermentVolume);
+        } catch (historyError) {
+          console.error('Error logging vessel history:', historyError);
+          // Don't throw - this is non-critical
+        }
+      }
+
+      // Update parent lot - reduce volume, advance to fermenting status, and add note
+      const remainingVolume = parentVolume - fermentVolume;
+      const parentNote = `\n\n--- BATCH SPLIT ---\nDate: ${startDate.toLocaleDateString()}\nSplit ${fermentVolume} gallons into ${childLotName} for fermentation\nRemaining: ${remainingVolume} gallons`;
+
+      const { error: updateError } = await updateLot(selectedLot.id, {
+        current_volume_gallons: remainingVolume,
+        status: 'fermenting', // Advance parent to fermenting when child starts fermenting
+        notes: selectedLot.notes ? `${selectedLot.notes}${parentNote}` : parentNote
+      });
+
+      if (updateError) {
+        console.error('Error updating parent lot:', updateError);
+        throw new Error(updateError.message || 'Failed to update parent lot');
+      }
+
+      setSuccess(`Fermentation started! Created ${childLotName} with ${fermentVolume} gallons. Parent lot has ${remainingVolume} gallons remaining.`);
       setShowStartFermentationModal(false);
       loadData();
     } catch (err) {
@@ -497,7 +597,23 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
       if (!lot.harvest_date) return 0;
       return Math.floor((new Date() - new Date(lot.harvest_date)) / (1000 * 60 * 60 * 24));
     }
-    return Math.floor((new Date() - new Date(lot.fermentation_start_date)) / (1000 * 60 * 60 * 24));
+
+    const now = new Date();
+    const startDate = new Date(lot.fermentation_start_date);
+    const diffMs = now - startDate;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // Debug logging
+    console.log('Fermentation Timer Debug:', {
+      lotName: lot.name,
+      fermentation_start_date: lot.fermentation_start_date,
+      startDate: startDate.toISOString(),
+      now: now.toISOString(),
+      diffMs,
+      diffDays
+    });
+
+    return diffDays;
   };
 
   const getFermentationTimerInfo = (lot) => {
@@ -536,9 +652,14 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
 
       if (updateError) throw updateError;
 
-      setSuccess('Wine pressed successfully! Ready for barrel aging.');
+      setSuccess('Wine pressed successfully! Now assign to barrels in the Aging page.');
       loadData();
       setSelectedLot(null); // Clear selection since it's no longer fermenting
+
+      // Navigate to aging page after a brief delay
+      setTimeout(() => {
+        navigate('/production?view=aging');
+      }, 2000);
     } catch (err) {
       console.error('Error pressing wine:', err);
       setError(err.message);
@@ -548,7 +669,12 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
   const getChartData = () => {
     if (!logs || logs.length === 0) return [];
 
-    const data = [...logs].reverse().map((log, index) => ({
+    // Sort logs by date ascending (oldest first) to show chronological progression
+    const sortedLogs = [...logs].sort((a, b) =>
+      new Date(a.log_date) - new Date(b.log_date)
+    );
+
+    const data = sortedLogs.map((log, index) => ({
       day: index + 1,
       brix: log.brix,
       temp: log.temp_f,
@@ -670,6 +796,38 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
     return milestones;
   };
 
+  // Calculate vessel availability
+  const getAvailableVessels = () => {
+    // Get all active fermentations
+    const activeFermentations = lots.filter(lot => lot.status === 'fermenting');
+
+    // Calculate used volume per container
+    const containerUsage = {};
+    activeFermentations.forEach(lot => {
+      if (lot.container_id) {
+        containerUsage[lot.container_id] = (containerUsage[lot.container_id] || 0) + parseFloat(lot.current_volume_gallons || 0);
+      }
+    });
+
+    // Filter and annotate containers
+    return containers
+      .filter(c => c.type === 'tank' || c.type === 'tote' || c.type === 'ibc')
+      .map(container => {
+        const usedVolume = containerUsage[container.id] || 0;
+        const availableVolume = container.capacity_gallons - usedVolume;
+        const percentUsed = (usedVolume / container.capacity_gallons) * 100;
+
+        return {
+          ...container,
+          usedVolume,
+          availableVolume,
+          percentUsed,
+          isAvailable: availableVolume > 0
+        };
+      })
+      .sort((a, b) => b.availableVolume - a.availableVolume); // Sort by most available first
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -681,7 +839,8 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
     );
   }
 
-  if (lots.length === 0) {
+  // Show empty state only if there are no active fermentations AND no lots ready to start
+  if (lots.length === 0 && lotsReadyToStart.length === 0) {
     return (
       <div className="pt-4">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Fermentation Tracker</h2>
@@ -689,8 +848,8 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8 text-gray-400" />
           </div>
-          <p className="text-gray-500 mb-4">No active fermentations</p>
-          <p className="text-sm text-gray-400">Create a harvest intake with "Fermenting" status to start tracking</p>
+          <p className="text-gray-500 mb-4">No lots ready for fermentation</p>
+          <p className="text-sm text-gray-400">Create harvest intakes with "Crushing" status, then start fermentation from this page</p>
         </div>
       </div>
     );
@@ -779,35 +938,42 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                     <p className="text-sm font-semibold text-gray-900">{lot.current_ph?.toFixed(2) || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">TA</p>
-                    <p className="text-sm font-semibold text-gray-900">{lot.current_ta?.toFixed(1) || '—'}</p>
+                    <p className="text-xs text-gray-500">Volume</p>
+                    <p className="text-sm font-semibold text-gray-900">{Math.round(lot.current_volume_gallons || 0)} gal</p>
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleOpenStartFermentation(lot)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  <Play className="w-4 h-4" />
-                  Start Fermentation
-                </button>
+                {/* Show "100% Fermenting" if lot has been completely split, otherwise show Start button */}
+                {lot.current_volume_gallons <= 0 ? (
+                  <div className="w-full px-4 py-2 bg-green-100 text-green-800 rounded-lg border-2 border-green-300 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Activity className="w-4 h-4" />
+                      <span className="font-semibold text-sm">100% Fermenting</span>
+                    </div>
+                    <p className="text-xs text-green-700 mt-0.5">All volume moved to fermentation</p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleOpenStartFermentation(lot)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Play className="w-4 h-4" />
+                    Start Fermentation
+                  </button>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Lot Selector Timeline */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 bg-[#7C203A] rounded flex items-center justify-center">
-            <Activity className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="font-semibold text-gray-900">Active Fermentations</h3>
-        </div>
+      {/* Active Fermentations - only show if there are any */}
+      {lots.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 pt-0.5 pb-4">
+          <h3 className="font-semibold text-gray-900 mb-4">Active Fermentations</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {lots.map((lot) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {lots.map((lot) => {
             const days = getDaysFermenting(lot);
             const status = getFermentationStatus(lot);
             const isSelected = selectedLot?.id === lot.id;
@@ -851,15 +1017,13 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
           })}
         </div>
       </div>
+      )}
 
       {selectedLot && (
         <>
           {/* Quick Actions Bar */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Zap className="w-5 h-5 text-[#7C203A]" />
-              <h3 className="font-semibold text-gray-900">Quick Actions</h3>
-            </div>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 pt-0.5 pb-4">
+            <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleOpenQuickLog}
@@ -929,11 +1093,8 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
           </div>
 
           {/* Fermentation Timeline */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Calendar className="w-5 h-5 text-[#7C203A]" />
-              <h3 className="font-semibold text-gray-900">Fermentation Timeline</h3>
-            </div>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 pt-1.5 pb-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Fermentation Timeline</h3>
             <div className="relative">
               {/* Timeline line */}
               <div className="absolute top-6 left-0 right-0 h-1 bg-gray-200"></div>
@@ -971,12 +1132,24 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
 
           {/* Current Status Card */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">{selectedLot.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-bold text-gray-900">{selectedLot.name}</h3>
+                  {selectedLot.parent_lot_id && (
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                      Split Lot
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-600">{selectedLot.varietal} • {selectedLot.vintage}</p>
+                {selectedLot.parent_lot_id && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    ↳ Fermentation split from parent lot ({selectedLot.current_volume_gallons?.toFixed(0) || '—'} gallons)
+                  </p>
+                )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mt-0.5">
                 {selectedLot.status === 'fermenting' && (
                   <button
                     onClick={handlePressWine}
@@ -1043,8 +1216,21 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                     </div>
 
                     <div className="flex items-center justify-between mt-2 text-xs text-gray-600">
-                      <span>Day {timerInfo.daysElapsed} of {selectedLot.target_fermentation_days}</span>
+                      <span>Day {timerInfo.daysElapsed + 1} of {selectedLot.target_fermentation_days}</span>
                       <span>Target: {timerInfo.targetDate.toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                );
+              } else if (selectedLot.fermentation_start_date) {
+                // Fermentation started but no target duration set
+                return (
+                  <div className="mb-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <div className="flex items-center gap-2 text-amber-800">
+                      <Clock className="w-5 h-5" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm">Timer Not Available</p>
+                        <p className="text-xs mt-1">This fermentation was started before the timer feature was added. Start a new fermentation to see the countdown timer!</p>
+                      </div>
                     </div>
                   </div>
                 );
@@ -1070,11 +1256,29 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
               </div>
 
               <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Thermometer className="w-4 h-4 text-gray-500" />
-                  <span className="text-xs text-gray-600 uppercase font-medium">Temp</span>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <Thermometer className="w-4 h-4 text-gray-500" />
+                    <span className="text-xs text-gray-600 uppercase font-medium">Temp</span>
+                  </div>
+                  {lotSensor && lotSensor.status === 'active' && (
+                    <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded">
+                      <Activity className="w-3 h-3 text-green-600" />
+                      <span className="text-[10px] text-green-700 font-semibold uppercase">Live</span>
+                    </div>
+                  )}
                 </div>
                 <div className="text-2xl font-bold text-gray-900">{selectedLot.current_temp_f?.toFixed(0) || '—'}°F</div>
+                {lotSensor && (
+                  <div className="text-[11px] text-gray-500 mt-1">
+                    {lotSensor.name}
+                    {lotSensor.last_reading_at && (
+                      <span className="ml-1">
+                        • {new Date(lotSensor.last_reading_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="bg-gray-50 rounded-lg p-4">
@@ -1381,31 +1585,94 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
               <div className="border-t border-gray-200 pt-6">
                 <h4 className="font-semibold text-gray-900 mb-3">Fermentation Vessel & Volume</h4>
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
+                  <div className="relative vessel-dropdown-container">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Tank/Vat *</label>
-                    <select
-                      value={fermentationStartData.container_id || ''}
-                      onChange={(e) => {
-                        const selectedContainer = containers.find(c => c.id === e.target.value);
-                        setFermentationStartData({
-                          ...fermentationStartData,
-                          container_id: e.target.value || null,
-                          volume_gallons: selectedContainer ? selectedContainer.capacity_gallons : fermentationStartData.volume_gallons
-                        });
-                      }}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                    >
-                      <option value="">Select vessel...</option>
-                      {containers
-                        .filter(c => c.type === 'tank' || c.type === 'tote' || c.type === 'ibc')
-                        .map(container => (
-                          <option key={container.id} value={container.id}>
-                            {container.name} ({container.capacity_gallons} gal {container.type})
-                          </option>
-                        ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">Primary fermentation uses tanks, vats, or totes</p>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowVesselDropdown(!showVesselDropdown)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white text-left flex items-center justify-between"
+                      >
+                        <span className={fermentationStartData.container_id ? "text-gray-900" : "text-gray-400"}>
+                          {fermentationStartData.container_id
+                            ? containers.find(c => c.id === fermentationStartData.container_id)?.name || 'Select vessel...'
+                            : 'Select vessel...'
+                          }
+                        </span>
+                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showVesselDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {showVesselDropdown && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-96 overflow-y-auto">
+                          {getAvailableVessels().map(vessel => {
+                            const isDisabled = !vessel.isAvailable; // Only disable if completely full
+
+                            return (
+                              <button
+                                key={vessel.id}
+                                type="button"
+                                disabled={isDisabled}
+                                onClick={() => {
+                                  if (!isDisabled) {
+                                    setFermentationStartData({
+                                      ...fermentationStartData,
+                                      container_id: vessel.id,
+                                      // Always set volume to vessel's available capacity
+                                      volume_gallons: vessel.availableVolume
+                                    });
+                                    setShowVesselDropdown(false);
+                                  }
+                                }}
+                                className={`w-full px-4 py-3 text-left border-b border-gray-100 transition-colors ${
+                                  isDisabled
+                                    ? 'bg-gray-50 cursor-not-allowed opacity-60'
+                                    : 'hover:bg-purple-50 cursor-pointer'
+                                } ${fermentationStartData.container_id === vessel.id ? 'bg-purple-100' : ''}`}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-gray-900">{vessel.name}</span>
+                                    {vessel.percentUsed > 0 && vessel.percentUsed < 100 && (
+                                      <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded font-medium">
+                                        In Use
+                                      </span>
+                                    )}
+                                    {vessel.percentUsed >= 100 && (
+                                      <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded font-medium">
+                                        Full
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-sm text-gray-600">
+                                    {Math.round(vessel.availableVolume)} / {vessel.capacity_gallons} gal
+                                  </span>
+                                </div>
+
+                                {/* Capacity Bar */}
+                                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full transition-all ${
+                                      vessel.percentUsed >= 100
+                                        ? 'bg-red-500'
+                                        : vessel.percentUsed > 75
+                                          ? 'bg-amber-500'
+                                          : 'bg-green-500'
+                                    }`}
+                                    style={{ width: `${Math.min(vessel.percentUsed, 100)}%` }}
+                                  ></div>
+                                </div>
+
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {vessel.type.charAt(0).toUpperCase() + vessel.type.slice(1)}
+                                  {vessel.usedVolume > 0 && ` • ${Math.round(vessel.usedVolume)} gal used`}
+                                </p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Adjust volume to split across multiple vessels</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Volume going into vessel (gallons) *</label>
@@ -1528,18 +1795,31 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
               {/* Target Duration */}
               <div className="border-t border-gray-200 pt-6">
                 <h4 className="font-semibold text-gray-900 mb-3">Fermentation Timeline</h4>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Duration (days) *</label>
-                  <input
-                    type="number"
-                    value={fermentationStartData.target_fermentation_days}
-                    onChange={(e) => setFermentationStartData({...fermentationStartData, target_fermentation_days: e.target.value})}
-                    required
-                    min="1"
-                    max="30"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Typical: Whites 7-10 days, Reds 12-21 days</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fermentation Start Date & Time *</label>
+                    <input
+                      type="datetime-local"
+                      value={fermentationStartData.fermentation_start_date}
+                      onChange={(e) => setFermentationStartData({...fermentationStartData, fermentation_start_date: e.target.value})}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Backdate if fermentation was started earlier</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Target Duration (days) *</label>
+                    <input
+                      type="number"
+                      value={fermentationStartData.target_fermentation_days}
+                      onChange={(e) => setFermentationStartData({...fermentationStartData, target_fermentation_days: e.target.value})}
+                      required
+                      min="1"
+                      max="30"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Typical: Whites 7-10 days, Reds 12-21 days</p>
+                  </div>
                 </div>
               </div>
 

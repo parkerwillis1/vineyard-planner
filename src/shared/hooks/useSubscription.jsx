@@ -1,14 +1,31 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/shared/lib/supabaseClient';
 import { useAuth } from '@/auth/AuthContext';
+import { MODULES } from '@/shared/config/modules';
 
 const SubscriptionContext = createContext(null);
+
+// Helper function to get modules for a tier
+const getModulesForTier = (tier) => {
+  const tierHierarchy = {
+    free: ['free'],
+    starter: ['free', 'starter'],
+    professional: ['free', 'starter', 'professional'],
+    enterprise: ['free', 'starter', 'professional', 'enterprise']
+  };
+
+  const allowedTiers = tierHierarchy[tier] || ['free'];
+
+  return Object.values(MODULES)
+    .filter(module => allowedTiers.includes(module.requiredTier))
+    .map(module => module.id);
+};
 
 export const SubscriptionProvider = ({ children }) => {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState({
     tier: 'free',
-    modules: ['planner'],
+    modules: getModulesForTier('free'),
     status: 'active',
     trialEndsAt: null,
     cancelAt: null,
@@ -20,7 +37,7 @@ export const SubscriptionProvider = ({ children }) => {
       // Not logged in - free tier only
       setSubscription({
         tier: 'free',
-        modules: ['planner'],
+        modules: getModulesForTier('free'),
         status: 'active',
         trialEndsAt: null,
         cancelAt: null,
@@ -43,9 +60,10 @@ export const SubscriptionProvider = ({ children }) => {
         }
 
         if (data) {
+          const tier = data.tier || 'free';
           setSubscription({
-            tier: data.tier,
-            modules: data.modules || [],
+            tier: tier,
+            modules: getModulesForTier(tier),
             status: data.status,
             trialEndsAt: data.trial_ends_at,
             cancelAt: data.cancel_at,
@@ -55,7 +73,7 @@ export const SubscriptionProvider = ({ children }) => {
           // User exists but no subscription record - default to free
           setSubscription({
             tier: 'free',
-            modules: ['planner'],
+            modules: getModulesForTier('free'),
             status: 'active',
             trialEndsAt: null,
             cancelAt: null,
@@ -71,7 +89,7 @@ export const SubscriptionProvider = ({ children }) => {
     fetchSubscription();
 
     // Subscribe to realtime updates
-    const subscription = supabase
+    const channel = supabase
       .channel('subscription-changes')
       .on(
         'postgres_changes',
@@ -83,9 +101,10 @@ export const SubscriptionProvider = ({ children }) => {
         },
         (payload) => {
           if (payload.new) {
+            const tier = payload.new.tier || 'free';
             setSubscription({
-              tier: payload.new.tier,
-              modules: payload.new.modules || [],
+              tier: tier,
+              modules: getModulesForTier(tier),
               status: payload.new.status,
               trialEndsAt: payload.new.trial_ends_at,
               cancelAt: payload.new.cancel_at,
@@ -96,8 +115,36 @@ export const SubscriptionProvider = ({ children }) => {
       )
       .subscribe();
 
+    // Listen for network reconnection and refresh subscription
+    const handleOnline = () => {
+      console.log('Network reconnected, refreshing subscription...');
+      fetchSubscription();
+    };
+
+    // Listen for page visibility changes (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // User returned to the tab, refresh subscription to ensure fresh data
+        fetchSubscription();
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Listen for auth state changes (session refresh, etc.)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+        console.log('Auth state changed, refreshing subscription...');
+        fetchSubscription();
+      }
+    });
+
     return () => {
-      subscription.unsubscribe();
+      channel.unsubscribe();
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      authListener?.subscription?.unsubscribe();
     };
   }, [user]);
 

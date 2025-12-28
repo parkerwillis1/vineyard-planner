@@ -161,13 +161,50 @@ export function ContainerManagement() {
       if (containersResult.error) throw containersResult.error;
       if (lotsResult.error) throw lotsResult.error;
 
-      setContainers(containersResult.data || []);
-      setLots(lotsResult.data || []);
+      const containerData = containersResult.data || [];
+      const lotData = lotsResult.data || [];
+
+      setContainers(containerData);
+      setLots(lotData);
+
+      // Auto-sync container statuses based on lot assignments
+      await syncContainerStatuses(containerData, lotData);
     } catch (err) {
       console.error('Error loading data:', err);
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Sync container statuses based on whether they have lots assigned
+  const syncContainerStatuses = async (containerData, lotData) => {
+    try {
+      // Find all containers that have lots but status is "empty"
+      const containersToUpdate = containerData.filter(container => {
+        const hasLot = lotData.some(lot => lot.container_id === container.id);
+        return hasLot && container.status === 'empty';
+      });
+
+      // Update each container to "in_use"
+      if (containersToUpdate.length > 0) {
+        await Promise.all(
+          containersToUpdate.map(container =>
+            updateContainer(container.id, { status: 'in_use' })
+          )
+        );
+
+        // Reload data to reflect changes
+        if (containersToUpdate.length > 0) {
+          const freshContainers = await listContainers();
+          if (!freshContainers.error) {
+            setContainers(freshContainers.data || []);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error syncing container statuses:', err);
+      // Don't throw - this is a background operation
     }
   };
 
@@ -458,8 +495,8 @@ export function ContainerManagement() {
     // Use QR Code API to generate QR code as image
     const lot = getLotForContainer(qrContainer.id);
 
-    // Create URL that links to this vessel's detail page
-    const vesselUrl = `${window.location.origin}/production/vessel/${qrContainer.id}`;
+    // Create URL that links to this vessel's detail page with scan parameter for mobile view
+    const vesselUrl = `${window.location.origin}/production/vessel/${qrContainer.id}?scan=true`;
 
     // Use QR Server API to generate QR code
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=144x144&data=${encodeURIComponent(vesselUrl)}&ecc=H`;
@@ -600,7 +637,11 @@ export function ContainerManagement() {
     const empty = containers.filter(c => c.status === 'empty').length;
     const inUse = containers.filter(c => c.status === 'in_use').length;
     const totalCapacity = containers.reduce((sum, c) => sum + (c.capacity_gallons || 0), 0);
-    const totalVolume = containers.reduce((sum, c) => sum + (c.current_volume_gallons || 0), 0);
+    const totalVolume = containers.reduce((sum, c) => {
+      const lot = getLotForContainer(c.id);
+      const volume = lot?.current_volume_gallons || c.current_volume_gallons || 0;
+      return sum + volume;
+    }, 0);
     const utilization = totalCapacity > 0 ? (totalVolume / totalCapacity) * 100 : 0;
 
     // Calculate harvest volume statistics
@@ -659,8 +700,12 @@ export function ContainerManagement() {
           compareB = b.capacity_gallons || 0;
           break;
         case 'fill':
-          const fillA = a.capacity_gallons > 0 ? ((a.current_volume_gallons || 0) / a.capacity_gallons) * 100 : 0;
-          const fillB = b.capacity_gallons > 0 ? ((b.current_volume_gallons || 0) / b.capacity_gallons) * 100 : 0;
+          const lotA = getLotForContainer(a.id);
+          const lotB = getLotForContainer(b.id);
+          const volumeA = lotA?.current_volume_gallons || a.current_volume_gallons || 0;
+          const volumeB = lotB?.current_volume_gallons || b.current_volume_gallons || 0;
+          const fillA = a.capacity_gallons > 0 ? (volumeA / a.capacity_gallons) * 100 : 0;
+          const fillB = b.capacity_gallons > 0 ? (volumeB / b.capacity_gallons) * 100 : 0;
           compareA = fillA;
           compareB = fillB;
           break;
@@ -1323,8 +1368,9 @@ export function ContainerManagement() {
           {filteredContainers.map((container) => {
             const Icon = getContainerIcon(container.type);
             const lot = getLotForContainer(container.id);
+            const currentVolume = lot?.current_volume_gallons || container.current_volume_gallons || 0;
             const utilization = container.capacity_gallons > 0
-              ? ((container.current_volume_gallons || 0) / container.capacity_gallons) * 100
+              ? (currentVolume / container.capacity_gallons) * 100
               : 0;
 
             return (
@@ -1350,8 +1396,10 @@ export function ContainerManagement() {
 
                 {lot && (
                   <div className="mb-3 p-2 bg-purple-50 rounded-lg">
-                    <p className="text-xs font-medium text-purple-900">{lot.name}</p>
-                    <p className="text-xs text-purple-700">{lot.varietal} • {lot.vintage}</p>
+                    <p className="text-sm font-medium text-purple-900">{lot.varietal} • {lot.vintage}</p>
+                    {lot.block?.name && (
+                      <p className="text-xs text-purple-700">{lot.block.name}</p>
+                    )}
                   </div>
                 )}
 
@@ -1446,8 +1494,10 @@ export function ContainerManagement() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredContainers.map((container) => {
+                const lot = getLotForContainer(container.id);
+                const currentVolume = lot?.current_volume_gallons || container.current_volume_gallons || 0;
                 const utilization = container.capacity_gallons > 0
-                  ? ((container.current_volume_gallons || 0) / container.capacity_gallons) * 100
+                  ? (currentVolume / container.capacity_gallons) * 100
                   : 0;
 
                 return (
@@ -1860,7 +1910,7 @@ export function ContainerManagement() {
                     {/* Right side - QR Code */}
                     <div className="flex items-center justify-center" style={{ width: '1.6in' }}>
                       <QRCode
-                        value={`${window.location.origin}/production/vessel/${qrContainer.id}`}
+                        value={`${window.location.origin}/production/vessel/${qrContainer.id}?scan=true`}
                         size={144}
                         level="H"
                       />
@@ -1944,12 +1994,7 @@ export function ContainerManagement() {
                   {/* Right side - QR Code */}
                   <td style={{ width: '1.6in', textAlign: 'center', verticalAlign: 'middle', padding: '0.1in' }}>
                     <QRCode
-                      value={JSON.stringify({
-                        id: qrContainer.id,
-                        name: qrContainer.name,
-                        type: qrContainer.type,
-                        capacity: qrContainer.capacity_gallons
-                      })}
+                      value={`${window.location.origin}/production/vessel/${qrContainer.id}?scan=true`}
                       size={144}
                       level="H"
                     />

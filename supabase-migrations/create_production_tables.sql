@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS production_containers (
   toast_level TEXT,
   purchase_date DATE,
   total_fills INTEGER DEFAULT 0,
+  last_topping_date DATE,
+  last_racking_date DATE,
 
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),

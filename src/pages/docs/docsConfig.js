@@ -63,6 +63,13 @@ export const docsNavigation = [
     ],
   },
   {
+    title: "Winery Production",
+    items: [
+      { title: "Overview", href: "/docs/production", description: "Introduction to Winery Production module", keywords: "production winery cellar crush fermentation aging bottling blending barrel tank vessel lot chemistry professional tier wine making red white rose sparkling" },
+      { title: "IoT Sensors", href: "/docs/production/sensors", description: "Connect temperature sensors for real-time monitoring", keywords: "sensors IoT temperature monitoring fermentation tank barrel probe thermometer tilt plaato inkbird raspberry pi esp32 arduino hardware webhook API alert notification real-time live data cellar field vineyard weather soil moisture flow meter dendrometer davis vantage atmos tempest integration bluetooth wifi wireless" },
+    ],
+  },
+  {
     title: "Resources",
     items: [
       { title: "FAQ", href: "/docs/faq", description: "Frequently asked questions", keywords: "FAQ questions answers help common issues pricing account billing features" },

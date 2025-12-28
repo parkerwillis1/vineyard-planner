@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit2, Trash2, Grape, AlertCircle, Check, Download, Calendar, Container, X, Play } from 'lucide-react';
-import { listLots, createLot, updateLot, deleteLot } from '@/shared/lib/productionApi';
+import { Plus, Edit2, Trash2, Grape, AlertCircle, Check, Download, Calendar, Container, X, ChevronRight, ChevronDown } from 'lucide-react';
+import { listLots, createLot, updateLot, deleteLot, updateContainer, logLotAssignment } from '@/shared/lib/productionApi';
 import { listVineyardBlocks, listHarvestTracking, getHarvestTracking } from '@/shared/lib/vineyardApi';
 import { getAvailableContainers } from '@/shared/lib/productionApi';
 import { supabase } from '@/shared/lib/supabaseClient';
@@ -40,6 +40,12 @@ export const HarvestIntake = () => {
     variant: 'warning'
   });
 
+  // Collapsed parent lots state
+  const [collapsedParents, setCollapsedParents] = useState(new Set());
+
+  // Collapsed fields state
+  const [collapsedFields, setCollapsedFields] = useState(new Set());
+
   const [formData, setFormData] = useState({
     name: '',
     vintage: new Date().getFullYear(),
@@ -68,6 +74,18 @@ export const HarvestIntake = () => {
     loadData();
   }, []);
 
+  // Auto-refresh data when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -80,9 +98,31 @@ export const HarvestIntake = () => {
       if (lotsData.error) throw lotsData.error;
       if (blocksData.error) throw blocksData.error;
 
-      setLots(lotsData.data || []);
+      // Sort lots to show parent lots with their children grouped together
+      const allLots = lotsData.data || [];
+      const parentLots = allLots.filter(lot => !lot.parent_lot_id);
+      const childLots = allLots.filter(lot => lot.parent_lot_id);
+
+      // Build organized list: parent followed by its children
+      const organizedLots = [];
+      parentLots.forEach(parent => {
+        organizedLots.push(parent);
+        const children = childLots.filter(child => child.parent_lot_id === parent.id);
+        organizedLots.push(...children);
+      });
+
+      // Add any orphaned children at the end
+      const orphanedChildren = childLots.filter(child =>
+        !parentLots.some(parent => parent.id === child.parent_lot_id)
+      );
+      organizedLots.push(...orphanedChildren);
+
+      setLots(organizedLots);
       setBlocks(blocksData.data || []);
       setContainers(containersData.data || []);
+
+      // Keep all lots expanded by default (users can manually collapse if needed)
+      // This ensures all lots are visible on initial load
     } catch (err) {
       console.error('Error loading data:', err);
       setError(err.message);
@@ -101,22 +141,58 @@ export const HarvestIntake = () => {
       const weightTons = parseFloat(formData.initial_weight_lbs) / 2000;
       const estimatedVolume = weightTons * 160;
 
+      // Clean data: convert empty strings to null for timestamps, numbers, and UUIDs
       const lotData = {
         ...formData,
+        pick_start_time: formData.pick_start_time || null,
+        pick_end_time: formData.pick_end_time || null,
+        arrival_time: formData.arrival_time || null,
+        initial_weight_lbs: formData.initial_weight_lbs || null,
+        initial_brix: formData.initial_brix || null,
+        initial_ph: formData.initial_ph || null,
+        initial_ta: formData.initial_ta || null,
+        mog_percent: formData.mog_percent || null,
+        rot_percent: formData.rot_percent || null,
+        mildew_percent: formData.mildew_percent || null,
+        sunburn_percent: formData.sunburn_percent || null,
+        block_id: formData.block_id || null,
+        container_id: formData.container_id || null,
         current_volume_gallons: estimatedVolume,
-        current_brix: formData.initial_brix,
-        current_ph: formData.initial_ph,
-        current_ta: formData.initial_ta
+        current_brix: formData.initial_brix || null,
+        current_ph: formData.initial_ph || null,
+        current_ta: formData.initial_ta || null
       };
+
+      let savedLotId = editingLot?.id;
 
       if (editingLot) {
         const { error: updateError } = await updateLot(editingLot.id, lotData);
         if (updateError) throw updateError;
         setSuccess('Lot updated successfully');
       } else {
-        const { error: createError } = await createLot(lotData);
+        const { data: newLot, error: createError } = await createLot(lotData);
         if (createError) throw createError;
+        savedLotId = newLot?.id;
         setSuccess('Lot created successfully');
+      }
+
+      // Update container status to "in_use" if a container was assigned
+      if (formData.container_id && savedLotId) {
+        const { error: containerError } = await updateContainer(formData.container_id, {
+          status: 'in_use'
+        });
+        if (containerError) {
+          console.error('Error updating container status:', containerError);
+          // Don't throw - this is non-critical, lot was still created/updated successfully
+        }
+
+        // Log vessel history event
+        try {
+          await logLotAssignment(formData.container_id, savedLotId, estimatedVolume);
+        } catch (historyError) {
+          console.error('Error logging vessel history:', historyError);
+          // Don't throw - this is non-critical
+        }
       }
 
       resetForm();
@@ -128,7 +204,14 @@ export const HarvestIntake = () => {
   };
 
   const handleEdit = (lot) => {
+    // If already editing this lot, close the form
+    if (editingLot?.id === lot.id) {
+      resetForm();
+      return;
+    }
+
     setEditingLot(lot);
+    setShowForm(false); // Close the "New Harvest" form if open
     setFormData({
       name: lot.name,
       vintage: lot.vintage,
@@ -197,30 +280,8 @@ export const HarvestIntake = () => {
     setShowCrushModal(true);
   };
 
-  const handleStartFermentation = async (lot) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: `Start fermentation for ${lot.name}?`,
-      message: 'This will update the status to fermenting and set the fermentation start date.',
-      variant: 'info',
-      onConfirm: async () => {
-        try {
-          const { error: updateError } = await updateLot(lot.id, {
-            status: 'fermenting',
-            fermentation_start_date: new Date().toISOString()
-          });
-
-          if (updateError) throw updateError;
-
-          setSuccess('Fermentation started successfully');
-          loadData();
-        } catch (err) {
-          console.error('Error starting fermentation:', err);
-          setError(err.message);
-        }
-      }
-    });
-  };
+  // Removed old handleStartFermentation - users should use Fermentation Tracker
+  // to properly start fermentation with vessel selection, SO2, yeast, etc.
 
   const handleCrushSubmit = async (e) => {
     e.preventDefault();
@@ -258,12 +319,31 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
         destem_mode: crushData.destem_mode,
         whole_cluster_percent: crushData.whole_cluster_percent ? parseFloat(crushData.whole_cluster_percent) : null,
         current_volume_gallons: estimatedVolume,
-        container_id: crushData.receiving_container_id,
+        container_id: crushData.receiving_container_id || null,
         notes: crushingLot.notes ? `${crushingLot.notes}\n\n${crushNotes}` : crushNotes
       };
 
       const { error: updateError } = await updateLot(crushingLot.id, updates);
       if (updateError) throw updateError;
+
+      // Update container status to "in_use" if a container was assigned
+      if (crushData.receiving_container_id) {
+        const { error: containerError } = await updateContainer(crushData.receiving_container_id, {
+          status: 'in_use'
+        });
+        if (containerError) {
+          console.error('Error updating container status:', containerError);
+          // Don't throw - this is non-critical, lot was still updated successfully
+        }
+
+        // Log vessel history event
+        try {
+          await logLotAssignment(crushData.receiving_container_id, crushingLot.id, estimatedVolume);
+        } catch (historyError) {
+          console.error('Error logging vessel history:', historyError);
+          // Don't throw - this is non-critical
+        }
+      }
 
       setSuccess('Crush recorded successfully');
       setShowCrushModal(false);
@@ -295,8 +375,53 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
     setShowForm(false);
   };
 
+  const toggleParentCollapse = (parentId) => {
+    setCollapsedParents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(parentId)) {
+        newSet.delete(parentId);
+      } else {
+        newSet.add(parentId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleFieldCollapse = (fieldName) => {
+    setCollapsedFields(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(fieldName)) {
+        newSet.delete(fieldName);
+      } else {
+        newSet.add(fieldName);
+      }
+      return newSet;
+    });
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Prevent manually setting status to "fermenting" - must use Fermentation Tracker
+    if (name === 'status' && value === 'fermenting' && formData.status !== 'fermenting') {
+      setError('Cannot manually set status to "fermenting". Please use the Fermentation Tracker to properly start fermentation with vessel, SO₂, yeast, and volume selection.');
+      return;
+    }
+
+    // Warn when changing status away from "fermenting"
+    if (name === 'status' && formData.status === 'fermenting' && value !== 'fermenting') {
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Change Fermentation Status?',
+        message: 'Changing the status will clear fermentation start date, target duration, yeast strain, and SO₂ data. This action cannot be undone. Are you sure?',
+        variant: 'warning',
+        onConfirm: () => {
+          setFormData(prev => ({ ...prev, [name]: value }));
+        }
+      });
+      return;
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -438,6 +563,7 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
   const totalVolume = lots.reduce((sum, lot) => sum + parseFloat(lot.current_volume_gallons || 0), 0);
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between pt-4">
@@ -852,8 +978,16 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
                 >
                   <option value="harvested">Harvested</option>
                   <option value="crushing">Crushing</option>
-                  <option value="fermenting">Fermenting</option>
+                  {/* Fermenting status can only be set via Fermentation Tracker */}
+                  {formData.status === 'fermenting' && (
+                    <option value="fermenting">Fermenting (change via Fermentation Tracker)</option>
+                  )}
                 </select>
+                {formData.status !== 'fermenting' && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    To start fermentation, use the Fermentation Tracker tab
+                  </p>
+                )}
               </div>
             </div>
 
@@ -892,164 +1026,896 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
         </div>
       )}
 
-      {/* Harvest Lots List */}
+      {/* Harvest Lots List - Improved Layout */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <div className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Grape className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900">Recent Harvests</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-900">Harvest Lots</h3>
+            <p className="text-sm text-gray-500">{lots.length} lot{lots.length !== 1 ? 's' : ''}</p>
           </div>
 
           {lots.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No harvests recorded yet. Click "New Harvest" to add your first intake.</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Grape className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-600 font-medium mb-2">No harvests recorded yet</p>
+              <p className="text-sm text-gray-500">Click "New Harvest" above to add your first intake</p>
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lot</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Block</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Varietal</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harvest Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Weight</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Brix</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">pH</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quality</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Container</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Volume</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Crush Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {lots.map((lot) => {
-                    // Status colors
-                    const statusColors = {
-                      'harvested': 'bg-amber-100 text-amber-800',
-                      'crushing': 'bg-gray-100 text-gray-800',
-                      'fermenting': 'bg-green-100 text-green-800',
-                      'pressed': 'bg-blue-100 text-blue-800',
-                      'aging': 'bg-indigo-100 text-indigo-800'
-                    };
-                    const statusColor = statusColors[lot.status] || 'bg-gray-100 text-gray-700';
+            <div className="space-y-6">
+              {(() => {
+                // Group lots by field/block
+                const fieldGroups = {};
 
-                    // Calculate total defects percentage
-                    const mogPercent = parseFloat(lot.mog_percent || 0);
-                    const rotPercent = parseFloat(lot.rot_percent || 0);
-                    const mildewPercent = parseFloat(lot.mildew_percent || 0);
-                    const sunburnPercent = parseFloat(lot.sunburn_percent || 0);
-                    const totalDefects = mogPercent + rotPercent + mildewPercent + sunburnPercent;
+                lots.forEach(lot => {
+                  const fieldKey = lot.block?.name || 'Unknown Field';
+                  if (!fieldGroups[fieldKey]) {
+                    fieldGroups[fieldKey] = [];
+                  }
+                  fieldGroups[fieldKey].push(lot);
+                });
 
-                    // Determine quality indicator
-                    let qualityBadge = null;
-                    if (totalDefects === 0) {
-                      qualityBadge = <span className="text-gray-400 text-xs">—</span>;
-                    } else if (totalDefects < 5) {
-                      qualityBadge = <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">🟢 Clean</span>;
-                    } else if (totalDefects < 10) {
-                      qualityBadge = <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">🟡 Minor</span>;
-                    } else {
-                      qualityBadge = <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">🔴 Problem</span>;
-                    }
+                // Render each field group
+                return Object.entries(fieldGroups).map(([fieldName, fieldLots]) => {
+                  // Get first lot to extract field info (all lots in group share same field)
+                  const firstLot = fieldLots[0];
+                  const fieldDisplayName = firstLot.vintage && firstLot.varietal
+                    ? `${firstLot.vintage} ${firstLot.varietal} ${fieldName}`
+                    : fieldName;
 
-                    // Calculate time from pick to crush
-                    let timeToCrushBadge = null;
-                    if (lot.pick_end_time && lot.crush_date) {
-                      const pickEnd = new Date(lot.pick_end_time);
-                      const crushTime = new Date(lot.crush_date);
-                      const hoursDiff = (crushTime - pickEnd) / (1000 * 60 * 60);
+                  // Calculate field-level aggregated statistics (only parent lots, not splits)
+                  const parentLots = fieldLots.filter(lot => !lot.parent_lot_id);
+                  const totalVolume = parentLots.reduce((sum, lot) => sum + parseFloat(lot.current_volume_gallons || 0), 0);
+                  const totalWeight = parentLots.reduce((sum, lot) => sum + parseFloat(lot.total_weight_tons || 0), 0);
 
-                      if (hoursDiff >= 0) {
-                        const badgeColor = hoursDiff > 12 ? 'bg-red-100 text-red-800' : hoursDiff > 6 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800';
-                        timeToCrushBadge = (
-                          <span className={`px-2 py-1 ${badgeColor} rounded-full text-xs font-medium`}>
-                            {hoursDiff.toFixed(1)}h to crush
-                          </span>
+                  // For Brix and pH, only average lots that have values
+                  const lotsWithBrix = parentLots.filter(lot => lot.brix && parseFloat(lot.brix) > 0);
+                  const avgBrix = lotsWithBrix.length > 0
+                    ? lotsWithBrix.reduce((sum, lot) => sum + parseFloat(lot.brix), 0) / lotsWithBrix.length
+                    : 0;
+
+                  const lotsWithPh = parentLots.filter(lot => lot.ph && parseFloat(lot.ph) > 0);
+                  const avgPh = lotsWithPh.length > 0
+                    ? lotsWithPh.reduce((sum, lot) => sum + parseFloat(lot.ph), 0) / lotsWithPh.length
+                    : 0;
+
+                  // Count fermentation status
+                  const fermentingCount = fieldLots.filter(lot => lot.status === 'fermenting').length;
+                  const fermentingVolume = fieldLots
+                    .filter(lot => lot.status === 'fermenting')
+                    .reduce((sum, lot) => sum + parseFloat(lot.current_volume_gallons || 0), 0);
+                  const needToStartCount = parentLots.filter(lot =>
+                    lot.status === 'crushing' && parseFloat(lot.current_volume_gallons || 0) > 0 && !lot.container_id
+                  ).length;
+
+                  // Get earliest crushed date
+                  const crushedDates = parentLots
+                    .filter(lot => lot.crushed_date)
+                    .map(lot => new Date(lot.crushed_date))
+                    .sort((a, b) => a - b);
+                  const earliestCrushed = crushedDates.length > 0 ? crushedDates[0] : null;
+
+                  return (
+                    <div key={fieldName} className="mb-6">
+                      {/* Field Overview Card - Collapsible */}
+                      <div className="border-2 border-slate-300 rounded-xl bg-gradient-to-br from-slate-50 to-gray-50 overflow-hidden">
+                        {/* Field Header */}
+                        <div
+                          className="bg-gradient-to-r from-slate-600 to-slate-700 text-white px-4 py-3 cursor-pointer hover:from-slate-700 hover:to-slate-800 transition-all"
+                          onClick={() => toggleFieldCollapse(fieldName)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-lg">{fieldDisplayName}</h4>
+                            <button className="p-1 hover:bg-white/20 rounded transition-colors">
+                              {collapsedFields.has(fieldName) ? (
+                                <ChevronRight className="w-5 h-5" />
+                              ) : (
+                                <ChevronDown className="w-5 h-5" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Field Overview Content */}
+                        {!collapsedFields.has(fieldName) && (
+                          <div className="p-4">
+                            {/* Fermentation Status Section */}
+                            <div className="mb-4">
+                              <p className="text-xs font-semibold text-gray-600 mb-3 uppercase">Fermentation Status</p>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-gray-700">{(() => {
+                                  const actualTanks = fieldLots.filter(lot => lot.parent_lot_id).length;
+                                  return `${actualTanks} tank${actualTanks !== 1 ? 's' : ''} total`;
+                                })()}</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                {fermentingCount > 0 && (
+                                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs font-medium text-blue-900 uppercase">Fermenting</span>
+                                      <span className="text-lg font-bold text-blue-900">{fermentingCount}</span>
+                                    </div>
+                                    <div className="text-sm font-semibold text-blue-900">{fermentingCount}/{(() => {
+                                      const actualTanks = fieldLots.filter(lot => lot.parent_lot_id).length;
+                                      return actualTanks;
+                                    })()}</div>
+                                    <div className="text-sm text-blue-700 mt-1">{fermentingVolume.toFixed(0)} gal</div>
+                                  </div>
+                                )}
+
+                                {needToStartCount > 0 ? (
+                                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-center">
+                                    <div className="text-center">
+                                      <span className="text-xs font-medium text-gray-600 uppercase block mb-1">Need to Start</span>
+                                      <span className="text-2xl font-bold text-red-600">{needToStartCount}</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-center">
+                                    <div className="text-center">
+                                      <span className="text-xs font-medium text-gray-600 uppercase block mb-1">Need to Start</span>
+                                      <div className="flex items-center gap-2 justify-center">
+                                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span className="text-sm font-semibold text-green-600">All Started!</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-4 gap-6">
+                              {/* Volume */}
+                              <div>
+                                <p className="text-xs font-semibold text-gray-600 mb-1 uppercase">Volume</p>
+                                <div className="text-2xl font-bold text-gray-900">
+                                  {fermentingVolume > 0 ? fermentingVolume.toFixed(0) : '—'}
+                                  <span className="text-sm font-normal text-gray-600"> gal</span>
+                                </div>
+                                {fieldLots.filter(lot => lot.parent_lot_id).length > 0 && (
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    {fieldLots.filter(lot => lot.parent_lot_id).length} split{fieldLots.filter(lot => lot.parent_lot_id).length !== 1 ? 's' : ''}: {totalVolume.toFixed(0)} gal
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Brix */}
+                              <div>
+                                <p className="text-xs font-semibold text-gray-600 mb-1 uppercase">Brix</p>
+                                <div className="text-2xl font-bold text-gray-900">
+                                  {avgBrix > 0 ? avgBrix.toFixed(1) : '—'}
+                                  <span className="text-sm font-normal text-gray-600">°</span>
+                                </div>
+                              </div>
+
+                              {/* pH */}
+                              <div>
+                                <p className="text-xs font-semibold text-gray-600 mb-1 uppercase">pH</p>
+                                <div className="text-2xl font-bold text-gray-900">
+                                  {avgPh > 0 ? avgPh.toFixed(2) : '—'}
+                                </div>
+                              </div>
+
+                              {/* Weight */}
+                              <div>
+                                <p className="text-xs font-semibold text-gray-600 mb-1 uppercase">Weight</p>
+                                <div className="text-2xl font-bold text-gray-900">
+                                  {totalWeight > 0 ? totalWeight.toFixed(2) : '—'}
+                                  <span className="text-sm font-normal text-gray-600"> tons</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Crushed Date */}
+                            <div className="mt-4 pt-3 border-t border-gray-200">
+                              <p className="text-xs font-semibold text-gray-600 mb-1 uppercase">Crushed</p>
+                              <div className="text-base font-medium text-gray-900">
+                                {earliestCrushed ? new Date(earliestCrushed).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Lots in this field */}
+                      {!collapsedFields.has(fieldName) && (
+                        <div className="mt-3 space-y-3">
+                          {fieldLots.map((lot) => {
+                            const isChildLot = !!lot.parent_lot_id;
+
+                            // Hide child lots if parent is collapsed
+                            if (isChildLot && collapsedParents.has(lot.parent_lot_id)) {
+                              return null;
+                            }
+
+                            // Calculate child lots early (needed for status and volume calculations)
+                            const childrenOfThisLot = lots.filter(l => l.parent_lot_id === lot.id);
+                            const hasUnfermentedVolume = !isChildLot && parseFloat(lot.current_volume_gallons || 0) > 0;
+
+                            // Hide parent lots that have been fully split (no remaining volume)
+                            // The field overview shows the aggregate, we only show the split child lots
+                            if (!isChildLot && childrenOfThisLot.length > 0 && !hasUnfermentedVolume) {
+                              return null;
+                            }
+
+                            // Determine fermentation status for better UX
+                            const getFermentationStatus = () => {
+                              // For parent lots with remaining volume that hasn't been allocated to tanks
+                              if (hasUnfermentedVolume && lot.status === 'crushing') {
+                                return {
+                                  label: 'Crushed - Needs Fermentation',
+                                  badge: 'bg-gradient-to-r from-red-500 to-orange-500 text-white animate-pulse',
+                                  border: 'border-red-300',
+                                  bg: 'bg-gradient-to-br from-red-50 to-orange-50'
+                                };
+                              } else if (lot.status === 'fermenting') {
+                                return {
+                                  label: 'Fermenting',
+                                  badge: 'bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white',
+                                  border: 'border-purple-300',
+                                  bg: 'bg-gradient-to-br from-purple-50 to-fuchsia-50'
+                                };
+                              } else if (lot.status === 'crushing' && lot.container_id) {
+                                return {
+                                  label: 'Ready to Ferment',
+                                  badge: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white',
+                                  border: 'border-amber-300',
+                                  bg: 'bg-gradient-to-br from-amber-50 to-orange-50'
+                                };
+                              } else if (lot.status === 'crushing') {
+                                return {
+                                  label: 'Crushing',
+                                  badge: 'bg-gray-100 text-gray-700',
+                                  border: 'border-gray-200',
+                                  bg: 'bg-gray-50'
+                                };
+                              } else if (lot.status === 'harvested') {
+                                return {
+                                  label: 'Awaiting Crush',
+                                  badge: 'bg-yellow-100 text-yellow-800',
+                                  border: 'border-yellow-200',
+                                  bg: 'bg-yellow-50'
+                                };
+                              } else if (lot.status === 'pressed') {
+                                return {
+                                  label: 'Pressed',
+                                  badge: 'bg-blue-100 text-blue-800',
+                                  border: 'border-blue-200',
+                                  bg: 'bg-blue-50'
+                                };
+                              }
+                              return {
+                                label: lot.status,
+                                badge: 'bg-gray-100 text-gray-700',
+                                border: 'border-gray-200',
+                                bg: 'bg-gray-50'
+                              };
+                            };
+
+                            const statusStyle = getFermentationStatus();
+
+                            // Calculate quality metrics
+                            const mogPercent = parseFloat(lot.mog_percent || 0);
+                            const rotPercent = parseFloat(lot.rot_percent || 0);
+                            const mildewPercent = parseFloat(lot.mildew_percent || 0);
+                            const sunburnPercent = parseFloat(lot.sunburn_percent || 0);
+                            const totalDefects = mogPercent + rotPercent + mildewPercent + sunburnPercent;
+
+                            // Child volume calculation
+                            const childVolume = childrenOfThisLot.reduce((sum, child) => sum + parseFloat(child.current_volume_gallons || 0), 0);
+
+                            return (
+                              <div key={lot.id} className={isChildLot ? 'ml-8' : ''}>
+                                <div
+                                  className={`border-2 rounded-xl p-4 transition-all hover:shadow-md ${
+                                    isChildLot
+                                  ? 'border-blue-200 bg-blue-50/50'
+                                  : `${statusStyle.border} ${statusStyle.bg}`
+                              }`}
+                            >
+                              {/* Header Row */}
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    {/* Collapse/Expand button for parent lots with children */}
+                                    {!isChildLot && childrenOfThisLot.length > 0 && (
+                                      <button
+                                        onClick={() => toggleParentCollapse(lot.id)}
+                                        className="flex items-center gap-1.5 px-2 py-1 hover:bg-gray-200 rounded transition-colors group"
+                                        title={collapsedParents.has(lot.id) ? "Click to expand and show tank allocations" : "Click to collapse tank allocations"}
+                                      >
+                                        {collapsedParents.has(lot.id) ? (
+                                          <>
+                                            <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-[#7C203A]" />
+                                            <span className="text-xs font-medium text-gray-600 group-hover:text-[#7C203A]">
+                                              {childrenOfThisLot.length} tank{childrenOfThisLot.length > 1 ? 's' : ''}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <ChevronDown className="w-4 h-4 text-gray-600 group-hover:text-[#7C203A]" />
+                                        )}
+                                      </button>
+                                    )}
+                                    {isChildLot && <span className="text-blue-600 text-sm">↳</span>}
+                                    <h4 className="font-semibold text-gray-900">{lot.name}</h4>
+                                    {isChildLot && (
+                                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                        Split Lot
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                                    <span className="font-medium">{lot.varietal}</span>
+                                    <span>•</span>
+                                    <span>{lot.vintage}</span>
+                                    {lot.block?.name && (
+                                      <>
+                                        <span>•</span>
+                                        <span>{lot.block.name}</span>
+                                      </>
+                                    )}
+                                  </div>
+
+                                  {/* Alert for unfermented volume in parent lot */}
+                                  {hasUnfermentedVolume && (
+                                    <div className="mt-3 pt-3 border-t border-red-200">
+                                      <div className="bg-gradient-to-r from-red-100 to-orange-100 border-2 border-red-400 rounded-lg p-4">
+                                        <div className="flex items-start gap-3">
+                                          <div className="p-2 bg-red-500 rounded-lg animate-pulse">
+                                            <AlertCircle className="w-5 h-5 text-white" />
+                                          </div>
+                                          <div className="flex-1">
+                                            <p className="font-bold text-red-900 text-sm mb-1">Unfermented Volume</p>
+                                            <p className="text-sm text-red-800 mb-2">
+                                              <span className="font-bold text-2xl">{Math.round(lot.current_volume_gallons)}</span>
+                                              <span className="text-base ml-1">gallons still need to be allocated to tanks and fermented</span>
+                                            </p>
+                                            <p className="text-xs text-red-700 italic">
+                                              Go to <strong>Fermentation Tracker</strong> to start fermentation or split this lot into tanks
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Fermentation Status Summary for Parent Lots */}
+                                  {!isChildLot && childrenOfThisLot.length > 0 && (() => {
+                                    const fermentingChildren = childrenOfThisLot.filter(c => c.status === 'fermenting');
+                                    const notStartedChildren = childrenOfThisLot.filter(c => c.status !== 'fermenting');
+                                    const totalChildren = childrenOfThisLot.length;
+
+                                    return (
+                                      <div className="mt-3 pt-3 border-t border-gray-200">
+                                        <div className="flex items-center justify-between mb-3">
+                                          <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Fermentation Status</span>
+                                          <span className="text-xs text-gray-600">{totalChildren} tank{totalChildren > 1 ? 's' : ''} total</span>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                          {/* Fermenting */}
+                                          <div className="bg-gradient-to-br from-purple-100 to-fuchsia-100 border-2 border-purple-300 rounded-lg p-3">
+                                            <div className="flex items-center justify-between mb-1">
+                                              <span className="text-xs font-medium text-purple-700 uppercase">Fermenting</span>
+                                              <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full flex items-center justify-center">
+                                                <span className="text-[10px] font-bold text-white">{fermentingChildren.length}</span>
+                                              </div>
+                                            </div>
+                                            <p className="text-lg font-bold text-purple-900">
+                                              {fermentingChildren.length} / {totalChildren}
+                                            </p>
+                                            {fermentingChildren.length > 0 && (
+                                              <p className="text-xs text-purple-700 mt-1">
+                                                {Math.round(fermentingChildren.reduce((sum, c) => sum + parseFloat(c.current_volume_gallons || 0), 0))} gal
+                                              </p>
+                                            )}
+                                          </div>
+
+                                          {/* Not Started */}
+                                          <div className={`${
+                                            notStartedChildren.length > 0
+                                              ? 'bg-gradient-to-br from-amber-100 to-orange-100 border-2 border-amber-400'
+                                              : 'bg-gray-50 border-2 border-gray-200'
+                                          } rounded-lg p-3`}>
+                                            <div className="flex items-center justify-between mb-1">
+                                              <span className={`text-xs font-medium uppercase ${
+                                                notStartedChildren.length > 0 ? 'text-amber-700' : 'text-gray-500'
+                                              }`}>
+                                                Need to Start
+                                              </span>
+                                              {notStartedChildren.length > 0 ? (
+                                                <div className="w-5 h-5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center animate-pulse">
+                                                  <span className="text-[10px] font-bold text-white">{notStartedChildren.length}</span>
+                                                </div>
+                                              ) : (
+                                                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                                  <Check className="w-3 h-3 text-white" />
+                                                </div>
+                                              )}
+                                            </div>
+                                            <p className={`text-lg font-bold ${
+                                              notStartedChildren.length > 0 ? 'text-amber-900' : 'text-green-700'
+                                            }`}>
+                                              {notStartedChildren.length > 0 ? `${notStartedChildren.length} / ${totalChildren}` : 'All Started!'}
+                                            </p>
+                                            {notStartedChildren.length > 0 && (
+                                              <p className="text-xs text-amber-700 mt-1">
+                                                {Math.round(notStartedChildren.reduce((sum, c) => sum + parseFloat(c.current_volume_gallons || 0), 0))} gal
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-3 py-1 ${statusStyle.badge} rounded-full text-xs font-semibold uppercase tracking-wide shadow-sm`}>
+                                    {statusStyle.label}
+                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    {lot.status === 'harvested' && (
+                                      <button
+                                        onClick={() => handleOpenCrushModal(lot)}
+                                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        title="Record Crush"
+                                      >
+                                        <Container className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => handleEdit(lot)}
+                                      className="p-2 text-[#7C203A] hover:bg-rose-100 rounded-lg transition-colors"
+                                      title="Edit Lot"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDelete(lot.id)}
+                                      className="p-2 text-gray-500 hover:bg-red-100 hover:text-red-600 rounded-lg transition-colors"
+                                      title="Delete Lot"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Metrics Grid */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 pt-3 border-t border-gray-200">
+                                {/* Volume */}
+                                <div>
+                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Volume</p>
+                                  <p className={`text-lg font-bold ${isChildLot ? 'text-blue-700' : 'text-gray-900'}`}>
+                                    {lot.current_volume_gallons ? `${Math.round(lot.current_volume_gallons)}` : '—'}
+                                    <span className="text-xs font-normal text-gray-500 ml-1">gal</span>
+                                  </p>
+                                  {!isChildLot && childrenOfThisLot.length > 0 && (
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      {childrenOfThisLot.length} split{childrenOfThisLot.length > 1 ? 's' : ''}: {Math.round(childVolume)} gal
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Brix */}
+                                <div>
+                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Brix</p>
+                                  <p className="text-lg font-bold text-gray-900">
+                                    {lot.initial_brix ? `${lot.initial_brix}°` : '—'}
+                                  </p>
+                                </div>
+
+                                {/* pH */}
+                                <div>
+                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">pH</p>
+                                  <p className="text-lg font-bold text-gray-900">
+                                    {lot.initial_ph || '—'}
+                                  </p>
+                                </div>
+
+                                {/* Weight */}
+                                {!isChildLot && (
+                                  <div>
+                                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Weight</p>
+                                    <p className="text-lg font-bold text-gray-900">
+                                      {lot.initial_weight_lbs ? `${(lot.initial_weight_lbs / 2000).toFixed(2)}` : '—'}
+                                      <span className="text-xs font-normal text-gray-500 ml-1">tons</span>
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Harvest Date */}
+                                <div>
+                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                                    {lot.crush_date ? 'Crushed' : 'Harvested'}
+                                  </p>
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    {lot.crush_date
+                                      ? new Date(lot.crush_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                      : lot.harvest_date
+                                        ? new Date(lot.harvest_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                        : '—'
+                                    }
+                                  </p>
+                                </div>
+
+                                {/* Quality Badge */}
+                                {totalDefects > 0 && (
+                                  <div>
+                                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Quality</p>
+                                    {totalDefects < 5 ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                        Clean
+                                      </span>
+                                    ) : totalDefects < 10 ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
+                                        <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                        Minor Issues
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">
+                                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                                        Defects
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Container - always show for child lots or if assigned */}
+                                {(isChildLot || lot.container?.name) && (
+                                  <div>
+                                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Vessel</p>
+                                    <p className="text-sm font-semibold text-gray-900">
+                                      {lot.container?.name || '—'}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Inline Edit Form - appears directly below the card being edited */}
+                            {editingLot?.id === lot.id && (
+                              <div className="mt-4 p-6 bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-blue-300 rounded-xl shadow-inner">
+                                <div className="flex items-center justify-between mb-4">
+                                  <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    <Edit2 className="w-5 h-5 text-[#7C203A]" />
+                                    Editing: {lot.name}
+                                  </h4>
+                                  <button
+                                    onClick={resetForm}
+                                    className="p-2 text-gray-500 hover:bg-white rounded-lg transition-colors"
+                                    title="Cancel editing"
+                                  >
+                                    <X className="w-5 h-5" />
+                                  </button>
+                                </div>
+
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                  {/* Basic Information */}
+                                  <div>
+                                    <h5 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide border-b border-gray-300 pb-2">Basic Information</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Lot Name *</label>
+                                        <input
+                                          type="text"
+                                          name="name"
+                                          value={formData.name}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                          required
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Vintage *</label>
+                                        <input
+                                          type="number"
+                                          name="vintage"
+                                          value={formData.vintage}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                          required
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Varietal *</label>
+                                        <input
+                                          type="text"
+                                          name="varietal"
+                                          value={formData.varietal}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                          required
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Appellation</label>
+                                        <input
+                                          type="text"
+                                          name="appellation"
+                                          value={formData.appellation}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Block</label>
+                                        <select
+                                          name="block_id"
+                                          value={formData.block_id || ''}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        >
+                                          <option value="">Select Block</option>
+                                          {blocks.map((block) => (
+                                            <option key={block.id} value={block.id}>{block.name}</option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Container</label>
+                                        <select
+                                          name="container_id"
+                                          value={formData.container_id || ''}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        >
+                                          <option value="">No Container</option>
+                                          {containers.map((container) => (
+                                            <option key={container.id} value={container.id}>{container.name} ({container.type})</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Harvest Details */}
+                                  <div>
+                                    <h5 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide border-b border-gray-300 pb-2">Harvest Details</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Harvest Date</label>
+                                        <input
+                                          type="date"
+                                          name="harvest_date"
+                                          value={formData.harvest_date}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Pick Start Time</label>
+                                        <input
+                                          type="datetime-local"
+                                          name="pick_start_time"
+                                          value={formData.pick_start_time}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Pick End Time</label>
+                                        <input
+                                          type="datetime-local"
+                                          name="pick_end_time"
+                                          value={formData.pick_end_time}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Arrival Time</label>
+                                        <input
+                                          type="datetime-local"
+                                          name="arrival_time"
+                                          value={formData.arrival_time}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Weight (lbs)</label>
+                                        <input
+                                          type="number"
+                                          step="0.1"
+                                          name="initial_weight_lbs"
+                                          value={formData.initial_weight_lbs}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Volume (gallons)</label>
+                                        <input
+                                          type="number"
+                                          step="0.1"
+                                          name="current_volume_gallons"
+                                          value={formData.current_volume_gallons}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Chemistry & Quality */}
+                                  <div>
+                                    <h5 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide border-b border-gray-300 pb-2">Chemistry & Quality</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Brix (°)</label>
+                                        <input
+                                          type="number"
+                                          step="0.1"
+                                          name="initial_brix"
+                                          value={formData.initial_brix}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">pH</label>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          name="initial_ph"
+                                          value={formData.initial_ph}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">TA (g/L)</label>
+                                        <input
+                                          type="number"
+                                          step="0.1"
+                                          name="initial_ta"
+                                          value={formData.initial_ta}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">MOG (%)</label>
+                                        <input
+                                          type="number"
+                                          step="0.1"
+                                          name="mog_percent"
+                                          value={formData.mog_percent}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                          placeholder="Material Other than Grape"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Rot (%)</label>
+                                        <input
+                                          type="number"
+                                          step="0.1"
+                                          name="rot_percent"
+                                          value={formData.rot_percent}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Mildew (%)</label>
+                                        <input
+                                          type="number"
+                                          step="0.1"
+                                          name="mildew_percent"
+                                          value={formData.mildew_percent}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Sunburn (%)</label>
+                                        <input
+                                          type="number"
+                                          step="0.1"
+                                          name="sunburn_percent"
+                                          value={formData.sunburn_percent}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Sorting</label>
+                                        <select
+                                          name="sorting"
+                                          value={formData.sorting}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        >
+                                          <option value="">None</option>
+                                          <option value="field">Field Sorted</option>
+                                          <option value="table">Table Sorted</option>
+                                          <option value="optical">Optical Sorted</option>
+                                        </select>
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                        <select
+                                          name="status"
+                                          value={formData.status}
+                                          onChange={handleChange}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                        >
+                                          <option value="harvested">Harvested</option>
+                                          <option value="crushing">Crushing</option>
+                                          <option value="fermenting">Fermenting</option>
+                                          <option value="pressed">Pressed</option>
+                                        </select>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Notes */}
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                    <textarea
+                                      name="notes"
+                                      value={formData.notes}
+                                      onChange={handleChange}
+                                      rows="3"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                                      placeholder="Add any notes about this lot..."
+                                    />
+                                  </div>
+
+                                  <div className="flex items-center gap-3 pt-4 border-t border-gray-300">
+                                    <button
+                                      type="submit"
+                                      className="px-6 py-2.5 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors shadow-sm font-medium"
+                                    >
+                                      Update Lot
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={resetForm}
+                                      className="px-6 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </form>
+                              </div>
+                            )}
+
+                          </div>
                         );
-                      }
-                    }
-
-                    return (
-                      <tr key={lot.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{lot.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{lot.block?.name || '—'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{lot.varietal}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          <div className="flex flex-col gap-1">
-                            <span>{lot.harvest_date ? new Date(lot.harvest_date).toLocaleDateString() : '—'}</span>
-                            {timeToCrushBadge}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {lot.initial_weight_lbs ? `${lot.initial_weight_lbs.toLocaleString()} lbs` : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {lot.initial_brix ? `${lot.initial_brix}°` : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {lot.initial_ph || '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {qualityBadge}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {lot.container?.name || '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {lot.current_volume_gallons ? `${Math.round(lot.current_volume_gallons)} gal` : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {lot.crush_date ? new Date(lot.crush_date).toLocaleDateString() : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={`px-2 py-1 ${statusColor} rounded-full text-xs font-medium capitalize`}>
-                            {lot.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            {lot.status === 'harvested' && (
-                              <button
-                                onClick={() => handleOpenCrushModal(lot)}
-                                className="text-gray-600 hover:text-gray-700"
-                                title="Record Crush"
-                              >
-                                <Container className="w-4 h-4" />
-                              </button>
-                            )}
-                            {lot.status === 'crushing' && (
-                              <button
-                                onClick={() => handleStartFermentation(lot)}
-                                className="text-green-600 hover:text-green-700"
-                                title="Start Fermentation"
-                              >
-                                <Play className="w-4 h-4" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleEdit(lot)}
-                              className="text-[#7C203A] hover:text-[#8B2E48]"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(lot.id)}
-                              className="text-gray-500 hover:text-red-600"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                      })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           )}
         </div>
@@ -1455,9 +2321,10 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
         </div>,
         document.body
       )}
+    </div>
 
-      {/* Confirm Dialog */}
-      <ConfirmDialog
+    {/* Confirm Dialog */}
+    <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
         onConfirm={confirmDialog.onConfirm}
@@ -1467,6 +2334,6 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
         confirmText="OK"
         cancelText="Cancel"
       />
-    </div>
+    </>
   );
 };
