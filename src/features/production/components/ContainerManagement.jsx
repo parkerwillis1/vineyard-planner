@@ -816,83 +816,59 @@ export function ContainerManagement() {
       )}
 
       {/* Stats Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Package className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-600">Total Vessels</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {/* Total Vessels */}
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Total Vessels</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
           <p className="text-xs text-gray-500 mt-1">{stats.empty} empty • {stats.inUse} in use</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Droplet className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-600">Total Capacity</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.totalCapacity.toLocaleString()}</p>
+        {/* Total Capacity */}
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Total Capacity</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.totalCapacity.toLocaleString()}</p>
           <p className="text-xs text-gray-500 mt-1">gallons</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-600">Utilization</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.utilization.toFixed(0)}%</p>
+        {/* Utilization */}
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Utilization</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.utilization.toFixed(0)}%</p>
           <div className="mt-2">
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div
-                className="bg-[#7C203A] h-2 rounded-full transition-all duration-500"
+                className="bg-[#7C203A] h-1.5 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(stats.utilization, 100)}%` }}
               ></div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Barrel className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-600">Barrels</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.barrels}</p>
+        {/* Barrels */}
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Barrels</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.barrels}</p>
           <p className="text-xs text-gray-500 mt-1">
             {containers.filter(c => c.type === 'barrel' && c.status === 'empty').length} empty
           </p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Grape className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-600">Season Harvest</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.totalHarvestVolume.toLocaleString()}</p>
+        {/* Season Harvest */}
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Season Harvest</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.totalHarvestVolume.toLocaleString()}</p>
           <p className="text-xs text-gray-500 mt-1">{new Date().getFullYear()} vintage</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-600">Harvest Allocated</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.harvestAllocation.toFixed(0)}%</p>
+        {/* Harvest Allocated */}
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Harvest Allocated</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.harvestAllocation.toFixed(0)}%</p>
           <div className="mt-2">
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div
-                className="bg-[#7C203A] h-2 rounded-full transition-all duration-500"
+                className="bg-[#7C203A] h-1.5 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(stats.harvestAllocation, 100)}%` }}
               ></div>
             </div>

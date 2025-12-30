@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Barrel, Calendar, Plus, Droplet, AlertTriangle, Clock, TrendingUp, CheckCircle2, ArrowRight, Wine, Zap, ExternalLink
+  Barrel, Calendar, Plus, Droplet, AlertTriangle, Clock, TrendingUp, CheckCircle2, ArrowRight, Wine, Zap, ExternalLink, Layers
 } from 'lucide-react';
 import { listLots, listContainers, updateContainer, updateLot, logLotAssignment, createLot, createFermentationLog } from '@/shared/lib/productionApi';
 
@@ -295,6 +295,31 @@ export function AgingManagement() {
 
   const needsTopping = getBarrelsNeedingTopping();
   const needsReplacement = getBarrelsForReplacement();
+
+  // Get lots ready for blending (aged at least 6 months)
+  const getLotsReadyForBlending = () => {
+    return lots.filter(lot => {
+      if (lot.status !== 'aging' || !lot.container_id) return false;
+
+      // Calculate aging time
+      const container = barrels.find(b => b.id === lot.container_id);
+      if (!container) return false;
+
+      const monthsAging = lot.updated_at
+        ? Math.floor((new Date() - new Date(lot.updated_at)) / (1000 * 60 * 60 * 24 * 30))
+        : 0;
+
+      // Ready if aged for at least 6 months
+      return monthsAging >= 6;
+    }).sort((a, b) => {
+      // Sort by aging time (oldest first)
+      const aTime = a.updated_at ? new Date(a.updated_at) : new Date();
+      const bTime = b.updated_at ? new Date(b.updated_at) : new Date();
+      return aTime - bTime;
+    });
+  };
+
+  const readyForBlending = getLotsReadyForBlending();
 
   // Sort aging lots by barrel number (extracted from lot name)
   const agingLots = lots
@@ -703,6 +728,96 @@ export function AgingManagement() {
           </div>
         )}
       </div>
+
+      {/* Ready for Blending */}
+      {readyForBlending.length > 0 && (
+        <div className="bg-gradient-to-br from-rose-50 to-purple-50 rounded-xl border-2 border-rose-200 shadow-md p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Layers className="w-6 h-6 text-rose-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Ready for Blending</h3>
+              <span className="ml-2 px-2.5 py-0.5 bg-rose-100 text-rose-700 rounded-full text-sm font-medium">
+                {readyForBlending.length}
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/production?view=blending')}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-600 to-purple-600 text-white rounded-lg hover:from-rose-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+            >
+              <Layers className="w-4 h-4" />
+              <span>Create Blend</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-600 mb-4">
+            These lots have aged for 6+ months and are ready to be blended
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {readyForBlending.map(lot => {
+              const monthsAging = lot.updated_at
+                ? Math.floor((new Date() - new Date(lot.updated_at)) / (1000 * 60 * 60 * 24 * 30))
+                : 0;
+              const container = barrels.find(b => b.id === lot.container_id);
+
+              return (
+                <div
+                  key={lot.id}
+                  className="p-4 rounded-xl border-2 border-rose-200 hover:border-rose-400 bg-white hover:shadow-lg transition-all"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Wine className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                        <p className="font-bold text-gray-900 truncate">{lot.name}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">{lot.varietal} • {lot.vintage}</p>
+                      {container && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          <Barrel className="w-3 h-3 inline mr-1" />
+                          {container.name}
+                        </p>
+                      )}
+                    </div>
+                    <span className="ml-2 px-2 py-1 bg-rose-100 text-rose-700 rounded-lg text-xs font-semibold whitespace-nowrap">
+                      {monthsAging} mo
+                    </span>
+                  </div>
+
+                  {/* Chemistry */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {lot.current_ph && (
+                      <div className="bg-blue-50 rounded-lg p-2">
+                        <p className="text-xs text-gray-600">pH</p>
+                        <p className="text-sm font-bold text-blue-700">{lot.current_ph.toFixed(2)}</p>
+                      </div>
+                    )}
+                    {lot.current_ta && (
+                      <div className="bg-green-50 rounded-lg p-2">
+                        <p className="text-xs text-gray-600">TA</p>
+                        <p className="text-sm font-bold text-green-700">{lot.current_ta.toFixed(2)}</p>
+                      </div>
+                    )}
+                    {lot.current_volume_gallons && (
+                      <div className="bg-purple-50 rounded-lg p-2">
+                        <p className="text-xs text-gray-600">Vol</p>
+                        <p className="text-sm font-bold text-purple-700">{lot.current_volume_gallons.toFixed(0)} gal</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-rose-200">
+            <p className="text-sm text-gray-600 italic">
+              💡 Tip: Select multiple lots from different barrels to create complex blends with balanced chemistry
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Barrel Replacement Planning */}
       {needsReplacement.length > 0 && (

@@ -438,7 +438,7 @@ export const VineyardLayoutVisualizer = ({
   const [autocomplete, setAutocomplete] = useState(null);
   const [contextMenu, setContextMenu] = useState(null); // {x, y, edgeIndex, clickPosition}
   const [showRotationControls, setShowRotationControls] = useState(false);
-  const [showRows, setShowRows] = useState(false);
+  const [showRows, setShowRows] = useState(true);
 
   // No caching - match BlockMap.jsx exactly
 
@@ -1034,12 +1034,28 @@ export const VineyardLayoutVisualizer = ({
               </button>
             </>
           ) : (
-            <button
-              onClick={handleCancelDrawing}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Cancel Drawing
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  if (tempPath.length >= 3) {
+                    handleSavePolygon(tempPath);
+                    setTempPath([]);
+                    setDrawingMode(false);
+                  }
+                }}
+                disabled={tempPath.length < 3}
+                className="px-6 py-2 bg-vine-green-500 text-white rounded-lg hover:bg-vine-green-600 transition-colors font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Check className="w-4 h-4" />
+                Done Drawing
+              </button>
+              <button
+                onClick={handleCancelDrawing}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </>
           )}
         </div>
       )}
@@ -1064,13 +1080,13 @@ export const VineyardLayoutVisualizer = ({
                 Drawing New Field
               </p>
               <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
-                <li><strong>Click</strong> on the map to add points</li>
+                <li><strong>Click</strong> on the map to add points (need at least 3)</li>
                 <li><strong>Drag vertices</strong> to adjust positions</li>
                 <li><strong>Right-click</strong> on edges to add points</li>
-                <li><strong>Click near</strong> the first point to complete</li>
+                <li><strong>Click "Done Drawing"</strong> when finished, or click near the first point to auto-complete</li>
               </ul>
               <p className="text-sm text-blue-700 mt-2">
-                Points placed: {tempPath.length}
+                Points placed: {tempPath.length} {tempPath.length >= 3 ? '✓ Ready to save' : ''}
               </p>
             </>
           )}

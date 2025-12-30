@@ -8,7 +8,8 @@ import {
   getLatestReading,
   listFermentationLogs,
   getLotsByVintage,
-  syncAllParentLotStatuses
+  syncAllParentLotStatuses,
+  listBlends
 } from '@/shared/lib/productionApi';
 import {
   Wine,
@@ -45,6 +46,7 @@ export function ProductionDashboard() {
   const [sensorAlerts, setSensorAlerts] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [vintageComparison, setVintageComparison] = useState(null);
+  const [blends, setBlends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -82,13 +84,15 @@ export function ProductionDashboard() {
         fermentData,
         alertData,
         sensorsData,
-        previousYearData
+        previousYearData,
+        blendsData
       ] = await Promise.all([
         getProductionDashboardData(),
         getActiveFermentations(),
         getAlertHistory({ acknowledged: false }),
         listSensors({ status: 'active' }),
-        getLotsByVintage(new Date().getFullYear() - 1)
+        getLotsByVintage(new Date().getFullYear() - 1),
+        listBlends()
       ]);
 
       if (dashData.error) throw dashData.error;
@@ -97,6 +101,7 @@ export function ProductionDashboard() {
       setDashboardData(dashData.data);
       setActiveFermentations(fermentData.data || []);
       setAlerts(alertData.data || []);
+      setBlends(blendsData.data || []);
 
       // Get latest readings for active sensors
       const sensorsWithReadings = await Promise.all(
@@ -588,9 +593,97 @@ export function ProductionDashboard() {
                 <p className="text-xs text-gray-500">Chemistry & analysis</p>
               </div>
             </button>
+
+            <button
+              onClick={() => navigate('/production?view=blending')}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-rose-50 to-purple-50 hover:from-rose-100 hover:to-purple-100 border-2 border-rose-200 rounded-lg transition-all group"
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-rose-500 to-purple-600 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
+                <Layers className="w-4 h-4 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-semibold text-gray-900 text-sm">Create Blend</p>
+                <p className="text-xs text-gray-600">Combine aging lots</p>
+              </div>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Blend Overview Widget */}
+      {blends.length > 0 && (
+        <div className="bg-gradient-to-br from-rose-50 via-purple-50 to-pink-50 p-6 rounded-xl border-2 border-rose-200 shadow-md">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-rose-600 to-purple-600 rounded-xl flex items-center justify-center">
+                <Layers className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Active Blends</h2>
+                <p className="text-sm text-gray-600">{blends.length} blend{blends.length !== 1 ? 's' : ''} in production</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/production?view=blending')}
+              className="px-4 py-2 bg-gradient-to-r from-rose-600 to-purple-600 text-white rounded-lg hover:from-rose-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg text-sm font-medium"
+            >
+              View All
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {blends.slice(0, 6).map(blend => {
+              const componentCount = blend.blend_components?.length || 0;
+              const totalVolume = blend.current_volume_gallons || 0;
+
+              return (
+                <div
+                  key={blend.id}
+                  onClick={() => navigate('/production?view=blending')}
+                  className="bg-white p-4 rounded-xl border-2 border-rose-200 hover:border-rose-400 hover:shadow-lg transition-all cursor-pointer"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Wine className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                        <p className="font-bold text-gray-900 truncate">{blend.name}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">{blend.varietal} • {blend.vintage}</p>
+                    </div>
+                    <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold whitespace-nowrap">
+                      {componentCount} lots
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-purple-50 rounded-lg p-2">
+                      <p className="text-xs text-gray-600">Volume</p>
+                      <p className="text-sm font-bold text-purple-700">{totalVolume.toFixed(0)} gal</p>
+                    </div>
+                    {blend.current_ph && (
+                      <div className="bg-blue-50 rounded-lg p-2">
+                        <p className="text-xs text-gray-600">pH</p>
+                        <p className="text-sm font-bold text-blue-700">{blend.current_ph.toFixed(2)}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {blends.length > 6 && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => navigate('/production?view=blending')}
+                className="text-sm text-rose-700 hover:text-rose-800 font-medium"
+              >
+                + {blends.length - 6} more blend{blends.length - 6 !== 1 ? 's' : ''}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Two Column - Vintage Comparison & Lab Tests Due */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

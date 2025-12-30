@@ -258,7 +258,7 @@ const Sidebar = ({
         fixed left-0 top-0 h-screen bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100
         transition-all duration-300 ease-in-out z-40 border-r border-gray-200
         print:hidden
-        ${sidebarOpen ? 'w-64' : 'w-20'}
+        ${sidebarOpen ? 'w-56' : 'w-20'}
       `}
     >
       {/* Fixed spacer for navbar */}
@@ -811,11 +811,11 @@ export default function PlannerShell({ embedded = false }) {
         // …
       ],
       equipmentOps: [
-        { include: true, label: "Tractor fuel & maintenance", costPerAcre: "50", annualTotal: "0" },
+        { include: true, label: "Tractor fuel & maintenance", costPerAcre: "0", annualTotal: "2000" },
         // …
       ],
       marketing: [
-        { include: true, label: "VMC fees ($/acre)", costPerAcre: "771" },
+        { include: true, label: "VMC fees", costPerAcre: "0", annualTotal: "2500" },
         // …
       ],
       // … advancedAnalytics state goes here …
@@ -2181,6 +2181,14 @@ const EstablishmentProgressTracker = ({
           <CollapsibleSection isOpen={sectionsState["Core Vineyard Parameters"]} onToggle={toggleSection} title="Core Vineyard Parameters">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-8">
               <div>
+                <label className="text-sm text-black font-bold font-medium block mb-2">Acres</label>
+                {num("acres")}
+              </div>
+              <div>
+                <label className="text-sm text-black font-bold font-medium block mb-2">Land Price ($/acre)</label>
+                {num("landPrice", 1000)}
+              </div>
+              <div>
                 <label className="text-sm text-black font-bold font-medium block mb-2">
                   Sales Strategy
                 </label>
@@ -2192,10 +2200,6 @@ const EstablishmentProgressTracker = ({
                   <option value="wine">Bottle • sell finished wine</option>
                   <option value="grapes">Bulk • sell all grapes</option>
                 </select>
-              </div>
-              <div>
-                <label className="text-sm text-black font-bold font-medium block mb-2">Acres</label>
-                {num("acres")}
               </div>
               {st.salesMode === "wine" && (
                 <div>
@@ -2233,10 +2237,6 @@ const EstablishmentProgressTracker = ({
               <div>
                 <label className="text-sm text-black font-bold font-medium block mb-2">Water Cost ($/acre-yr)</label>
                 {num("waterCost", 10)}
-              </div>
-              <div>
-                <label className="text-sm text-black font-bold font-medium block mb-2">Land Price ($/acre)</label>
-                {num("landPrice", 1000)}
               </div>
               <div>
                 <label className="text-sm text-black font-bold font-medium block mb-2">Build Cost ($/acre)</label>
@@ -3058,18 +3058,31 @@ const EstablishmentProgressTracker = ({
 
         {/* Marketing & Management */}
         <CollapsibleSection isOpen={sectionsState["Marketing & Management"]} onToggle={toggleSection} title="Marketing & Management">
+        <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded mb-4">
+          <p className="font-medium text-blue-900">Marketing, sales, and management costs.</p>
+          <p className="text-blue-700 mt-1">Enter either $/Acre OR Annual Total. Entering one auto-calculates the other based on your acreage.</p>
+        </div>
         <div className="overflow-x-auto">
             <table className="w-full min-w-max">
             <thead>
                 <tr className="bg-vine-green-50">
                 <th className="text-left p-3 text-xs text-black font-bold">Include</th>
                 <th className="text-left p-3 text-xs text-black font-bold">Service</th>
-                <th className="text-left p-3 text-xs text-black font-bold">$/acre</th>
+                <th className="text-left p-3 text-xs text-black font-bold">$/Acre</th>
+                <th className="text-left p-3 text-xs text-black font-bold">Annual Total ($)</th>
                 <th className="text-left p-3 text-xs text-black font-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {stNum.marketing.map((row,i)=>( 
+                {stNum.marketing.map((row,i)=>{
+                const costPerAcre = Number(row.costPerAcre) || 0;
+                const annualTotal = Number(row.annualTotal) || 0;
+
+                // Calculate the display values based on which field was edited
+                const displayAnnual = annualTotal > 0 ? annualTotal : (costPerAcre * stNum.acres);
+                const displayPerAcre = costPerAcre > 0 ? costPerAcre : (stNum.acres > 0 ? annualTotal / stNum.acres : 0);
+
+                return (
                 <tr key={i} className="border-b hover:bg-gray-50">
                     <td className="p-3">
                     <Checkbox
@@ -3082,38 +3095,55 @@ const EstablishmentProgressTracker = ({
                     </td>
                     <td className="p-3">
                     <Input
-                        className="w-32 bg-white text-sm"
+                        className="w-40 bg-white text-sm"
                         value={row.label}
                         onChange={e=>{
                         const next=[...stNum.marketing]; next[i].label=e.target.value; update("marketing",next);
+                        }}
+                        placeholder="Marketing expense"
+                    />
+                    </td>
+                    <td className="p-3">
+                    <Input
+                        type="number" step="0.01"
+                        className="w-24 bg-white text-sm"
+                        value={displayPerAcre || ''}
+                        onChange={e=>{
+                        const next=[...stNum.marketing];
+                        next[i].costPerAcre = e.target.value;
+                        next[i].annualTotal = 0; // Clear annual when per-acre is edited
+                        update("marketing",next);
                         }}
                     />
                     </td>
                     <td className="p-3">
                     <Input
-                        type="number" step="1"
+                        type="number" step="0.01"
                         className="w-24 bg-white text-sm"
-                        value={row.costPerAcre}
+                        value={displayAnnual || ''}
                         onChange={e=>{
-                        const next=[...stNum.marketing]; next[i].costPerAcre=(e.target.value); update("marketing",next);
+                        const next=[...stNum.marketing];
+                        next[i].annualTotal = e.target.value;
+                        next[i].costPerAcre = 0; // Clear per-acre when annual is edited
+                        update("marketing",next);
                         }}
                     />
                     </td>
                     <td className="p-3">
                     <button
-                        className="text-red-600 hover:text-red-800 p-1"
+                        className="text-red-600 hover:text-red-800 p-1 text-sm"
                         onClick={()=>update("marketing",stNum.marketing.filter((_,j)=>j!==i))}
                     >
                         Remove
                     </button>
                     </td>
                 </tr>
-                ))}
+                )})}
             </tbody>
             </table>
             <AddButton
             text="Add Marketing Item"
-            onClick={()=>update("marketing",[...stNum.marketing,{ include:false,label:"",costPerAcre:0 }])}
+            onClick={()=>update("marketing",[...stNum.marketing,{ include:false,label:"",costPerAcre:0,annualTotal:0 }])}
             />
         </div>
         </CollapsibleSection>
@@ -4444,7 +4474,7 @@ const EstablishmentProgressTracker = ({
       <main
         className={`
           flex-1 transition-all duration-300 mt-8 print:mt-0 print:ml-0
-          ${sidebarOpen ? 'ml-64' : 'ml-20'}
+          ${sidebarOpen ? 'ml-56' : 'ml-20'}
         `}
       >
         {/* Content Container */}

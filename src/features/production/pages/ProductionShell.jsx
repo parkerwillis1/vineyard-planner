@@ -24,7 +24,9 @@ import {
   Barrel,
   Container,
   BottleWine,
-  Thermometer
+  Thermometer,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { ProductionDashboard } from '../components/ProductionDashboard';
 import { SensorManager } from '../components/SensorManager';
@@ -58,9 +60,10 @@ export function ProductionShell() {
   const effectiveView = isVesselDetailPage && fromView ? fromView : urlView;
 
   const [activeView, setActiveView] = useState(effectiveView);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Desktop sidebar expanded/collapsed
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile menu overlay open/closed
 
   // Track navbar visibility
   useEffect(() => {
@@ -172,12 +175,23 @@ export function ProductionShell() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* Mobile Menu Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[45] lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sticky Sidebar Navigation - Wine/Burgundy Theme */}
       <aside
         className={`
           fixed left-0 top-0 h-screen bg-gradient-to-b from-[#7C203A] via-[#8B2E48] to-[#6B1F35]
           transition-all duration-300 ease-in-out z-40
-          ${sidebarOpen ? 'w-56' : 'w-20'}
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+          ${sidebarOpen ? 'lg:w-56' : 'lg:w-20'}
+          max-lg:w-56
         `}
       >
         {/* Fixed spacer for navbar */}
@@ -194,9 +208,13 @@ export function ProductionShell() {
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-rose-900/30 rounded-lg transition-colors ml-auto"
+            className="hidden lg:block p-2 hover:bg-rose-900/30 rounded-lg transition-colors ml-auto"
           >
-            <Menu className="w-5 h-5 text-slate-600" />
+            {sidebarOpen ? (
+              <ChevronLeft className="w-5 h-5 text-slate-400" />
+            ) : (
+              <ChevronRight className="w-5 h-5 text-slate-400" />
+            )}
           </button>
         </div>
 
@@ -221,6 +239,7 @@ export function ProductionShell() {
                       onClick={() => {
                         navigate(`/production?view=${item.id}`);
                         setActiveView(item.id);
+                        setMobileMenuOpen(false);
                       }}
                       className={`
                         w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
@@ -256,11 +275,19 @@ export function ProductionShell() {
         )}
       </aside>
 
+      {/* Floating Mobile Menu Button */}
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="fixed bottom-6 right-6 z-[40] lg:hidden w-14 h-14 bg-gradient-to-br from-[#7C203A] to-[#6B1F35] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+
       {/* Main Content Area */}
       <main
         className={`
           flex-1 transition-all duration-300 max-w-full overflow-x-hidden
-          ${sidebarOpen ? 'ml-56' : 'ml-20'}
+          ${sidebarOpen ? 'lg:ml-56' : 'lg:ml-20'}
         `}
       >
         {/* Content Area */}

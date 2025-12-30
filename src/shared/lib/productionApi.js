@@ -900,3 +900,293 @@ export async function logMaintenanceEvent(containerId, maintenanceType, cost, no
     notes
   });
 }
+
+// =====================================================
+// BLENDING OPERATIONS
+// =====================================================
+
+/**
+ * Execute a blend - creates new blend lot and records components
+ * @param {Object} blendData - Blend lot details
+ * @param {Array} components - Array of {lot_id, percentage, volume_gallons}
+ * @param {string} containerId - Optional container to assign blend to
+ * @returns {Object} { data: { blendLot, components }, error }
+ */
+export async function executeBlend(blendData, components, containerId = null) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  try {
+    // 1. Create the blend lot
+    const { data: blendLot, error: blendError } = await supabase
+      .from('production_lots')
+      .insert({
+        ...blendData,
+        user_id: user.id,
+        is_blend: true,
+        container_id: containerId,
+        status: blendData.status || 'blending'
+      })
+      .select()
+      .single();
+
+    if (blendError) throw blendError;
+
+    // 2. Insert blend components
+    const componentRecords = components.map(comp => ({
+      blend_lot_id: blendLot.id,
+      component_lot_id: comp.lot_id,
+      volume_gallons: comp.volume_gallons,
+      percentage: comp.percentage
+    }));
+
+    const { data: savedComponents, error: componentsError } = await supabase
+      .from('blend_components')
+      .insert(componentRecords)
+      .select(`
+        *,
+        component_lot:production_lots!component_lot_id(id, name, varietal, vintage)
+      `);
+
+    if (componentsError) throw componentsError;
+
+    // 3. Deduct volumes from source lots
+    for (const comp of components) {
+      const { data: sourceLot, error: fetchError } = await supabase
+        .from('production_lots')
+        .select('current_volume_gallons, name')
+        .eq('id', comp.lot_id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const newVolume = (sourceLot.current_volume_gallons || 0) - comp.volume_gallons;
+
+      const { error: updateError } = await supabase
+        .from('production_lots')
+        .update({
+          current_volume_gallons: newVolume,
+          status: newVolume <= 0 ? 'blending' : undefined
+        })
+        .eq('id', comp.lot_id);
+
+      if (updateError) throw updateError;
+    }
+
+    // 4. If assigned to container, update container volume
+    if (containerId) {
+      const { data: container } = await supabase
+        .from('production_containers')
+        .select('current_volume_gallons')
+        .eq('id', containerId)
+        .single();
+
+      if (container) {
+        await supabase
+          .from('production_containers')
+          .update({
+            current_volume_gallons: (container.current_volume_gallons || 0) + blendData.current_volume_gallons,
+            status: 'in_use'
+          })
+          .eq('id', containerId);
+      }
+    }
+
+    return {
+      data: {
+        blendLot,
+        components: savedComponents
+      },
+      error: null
+    };
+  } catch (error) {
+    console.error('Error executing blend:', error);
+    return { data: null, error };
+  }
+}
+
+/**
+ * Get all blends for the current user
+ * @param {Object} filters - Optional filters
+ * @returns {Array} Blend lots with their components
+ */
+export async function listBlends(filters = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('production_lots')
+    .select(`
+      *,
+      container:production_containers(id, name, type, capacity_gallons),
+      block:vineyard_blocks(id, name),
+      blend_components!blend_lot_id(
+        id,
+        volume_gallons,
+        percentage,
+        component_lot:production_lots!component_lot_id(id, name, varietal, vintage, current_volume_gallons)
+      )
+    `)
+    .eq('user_id', user.id)
+    .eq('is_blend', true)
+    .is('archived_at', null);
+
+  if (filters.vintage) {
+    query = query.eq('vintage', filters.vintage);
+  }
+  if (filters.status) {
+    query = query.eq('status', filters.status);
+  }
+
+  return query.order('created_at', { ascending: false });
+}
+
+/**
+ * Get a single blend with full details
+ * @param {string} blendId - Blend lot UUID
+ */
+export async function getBlend(blendId) {
+  return supabase
+    .from('production_lots')
+    .select(`
+      *,
+      container:production_containers(id, name, type, capacity_gallons, location),
+      block:vineyard_blocks(id, name),
+      blend_components!blend_lot_id(
+        id,
+        volume_gallons,
+        percentage,
+        component_lot:production_lots!component_lot_id(
+          id,
+          name,
+          varietal,
+          vintage,
+          appellation,
+          current_volume_gallons,
+          current_ph,
+          current_ta,
+          current_alcohol_pct,
+          current_brix
+        )
+      ),
+      fermentation_logs(*)
+    `)
+    .eq('id', blendId)
+    .eq('is_blend', true)
+    .single();
+}
+
+/**
+ * Get lots that were used in a specific blend
+ * @param {string} lotId - Component lot UUID
+ * @returns {Array} Blends that used this lot
+ */
+export async function getBlendsUsingLot(lotId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  return supabase
+    .from('blend_components')
+    .select(`
+      *,
+      blend_lot:production_lots!blend_lot_id(
+        id,
+        name,
+        varietal,
+        vintage,
+        current_volume_gallons,
+        status,
+        created_at
+      )
+    `)
+    .eq('component_lot_id', lotId);
+}
+
+/**
+ * Calculate predicted blend chemistry from components
+ * @param {Array} components - Array of {lot, percentage, volume}
+ * @returns {Object} Weighted average chemistry values
+ */
+export function calculateBlendChemistry(components) {
+  const validComponents = components.filter(c => c.lot && c.percentage > 0);
+
+  if (validComponents.length === 0) {
+    return {
+      ph: null,
+      ta: null,
+      alcohol: null,
+      brix: null
+    };
+  }
+
+  const totalPercentage = validComponents.reduce((sum, c) => sum + c.percentage, 0);
+
+  // Weighted averages
+  const calculateWeightedAvg = (field) => {
+    const values = validComponents
+      .filter(c => c.lot[field] != null)
+      .map(c => ({
+        value: parseFloat(c.lot[field]),
+        weight: c.percentage / totalPercentage
+      }));
+
+    if (values.length === 0) return null;
+
+    return values.reduce((sum, v) => sum + (v.value * v.weight), 0);
+  };
+
+  return {
+    ph: calculateWeightedAvg('current_ph'),
+    ta: calculateWeightedAvg('current_ta'),
+    alcohol: calculateWeightedAvg('current_alcohol_pct'),
+    brix: calculateWeightedAvg('current_brix'),
+    componentCount: validComponents.length
+  };
+}
+
+/**
+ * Get varietal composition breakdown
+ * @param {Array} components - Array of {lot, percentage}
+ * @returns {Object} Varietal percentages
+ */
+export function calculateVarietalComposition(components) {
+  const validComponents = components.filter(c => c.lot && c.percentage > 0);
+
+  const composition = validComponents.reduce((acc, comp) => {
+    const varietal = comp.lot.varietal || 'Unknown';
+    acc[varietal] = (acc[varietal] || 0) + comp.percentage;
+    return acc;
+  }, {});
+
+  return Object.entries(composition)
+    .map(([varietal, percentage]) => ({ varietal, percentage }))
+    .sort((a, b) => b.percentage - a.percentage);
+}
+
+/**
+ * Delete a blend (only if not yet executed/saved)
+ * @param {string} blendId - Blend lot UUID
+ */
+export async function deleteBlend(blendId) {
+  // This will cascade delete blend_components due to DB constraints
+  return supabase
+    .from('production_lots')
+    .delete()
+    .eq('id', blendId)
+    .eq('is_blend', true);
+}
+
+/**
+ * Update blend lot (before components are finalized)
+ * @param {string} blendId - Blend lot UUID
+ * @param {Object} updates - Fields to update
+ */
+export async function updateBlend(blendId, updates) {
+  return supabase
+    .from('production_lots')
+    .update(updates)
+    .eq('id', blendId)
+    .eq('is_blend', true)
+    .select()
+    .single();
+}
