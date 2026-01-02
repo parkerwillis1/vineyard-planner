@@ -237,12 +237,18 @@ export async function getLotsByVintage(vintage) {
 // FERMENTATION LOGS
 // =====================================================
 
-export async function listFermentationLogs(lotId) {
-  return supabase
+export async function listFermentationLogs(lotId, includeArchived = false) {
+  let query = supabase
     .from('fermentation_logs')
     .select('*')
-    .eq('lot_id', lotId)
-    .order('log_date', { ascending: false });
+    .eq('lot_id', lotId);
+
+  // Filter out archived logs by default
+  if (!includeArchived) {
+    query = query.is('archived_at', null);
+  }
+
+  return query.order('log_date', { ascending: false });
 }
 
 export async function createFermentationLog(log) {
@@ -270,6 +276,39 @@ export async function deleteFermentationLog(logId) {
     .from('fermentation_logs')
     .delete()
     .eq('id', logId);
+}
+
+export async function archiveFermentationLog(logId) {
+  return supabase
+    .from('fermentation_logs')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', logId)
+    .select()
+    .single();
+}
+
+export async function unarchiveFermentationLog(logId) {
+  return supabase
+    .from('fermentation_logs')
+    .update({ archived_at: null })
+    .eq('id', logId)
+    .select()
+    .single();
+}
+
+export async function listArchivedFermentationLogs() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  return supabase
+    .from('fermentation_logs')
+    .select(`
+      *,
+      lot:production_lots(id, name, varietal, vintage)
+    `)
+    .eq('user_id', user.id)
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false });
 }
 
 export async function getLatestFermentationLog(lotId) {

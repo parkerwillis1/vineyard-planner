@@ -40,7 +40,8 @@ export const MODULES = {
       { id: 'dashboard', label: 'Dashboard' },
       { id: 'harvest', label: 'Harvest Intake' },
       { id: 'fermentation', label: 'Fermentation' },
-      { id: 'containers', label: 'Vessels' }
+      { id: 'containers', label: 'Vessels' },
+      { id: 'archives', label: 'Archives' }
     ]
   },
   inventory: {

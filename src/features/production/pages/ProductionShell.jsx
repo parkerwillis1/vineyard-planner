@@ -38,7 +38,7 @@ import { Analytics } from '../components/Analytics';
 import { AgingManagement } from '../components/AgingManagement';
 import { BlendingCalculator } from '../components/BlendingCalculator';
 import { BottlingManagement } from '../components/BottlingManagement';
-import { ArchivedLots } from '../components/ArchivedLots';
+import { ArchivesPage } from './ArchivesPage';
 import { VesselDetail } from '../components/VesselDetail';
 
 export function ProductionShell() {
@@ -137,7 +137,7 @@ export function ProductionShell() {
     {
       title: 'Settings',
       items: [
-        { id: 'archived', label: 'Archived Lots', icon: Archive, color: 'slate' },
+        { id: 'archives', label: 'Archives', icon: Archive, color: 'slate' },
       ]
     }
   ];
@@ -164,8 +164,8 @@ export function ProductionShell() {
         return <BlendingCalculator />;
       case 'bottling':
         return <BottlingManagement />;
-      case 'archived':
-        return <ArchivedLots />;
+      case 'archives':
+        return <ArchivesPage />;
       case 'reports':
         return <div className="p-8 text-center text-gray-500">Reports view coming soon...</div>;
       default:

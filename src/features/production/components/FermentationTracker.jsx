@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import {
   Sparkles, Plus, TrendingDown, AlertTriangle, Clock,
   Thermometer, Activity, CheckCircle2, Circle, Droplets,
-  Copy, Zap, Target, Calendar, FlaskConical, X, Play, ChevronDown
+  Copy, Zap, Target, Calendar, FlaskConical, X, Play, ChevronDown, Archive
 } from 'lucide-react';
 import {
   getActiveFermentations,
@@ -17,7 +17,8 @@ import {
   updateContainer,
   listSensors,
   getLotReadings,
-  logLotAssignment
+  logLotAssignment,
+  archiveFermentationLog
 } from '@/shared/lib/productionApi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
@@ -110,6 +111,18 @@ export function FermentationTracker() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showLogForm, setShowLogForm] = useState(false);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showLogForm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showLogForm]);
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [showVesselDropdown, setShowVesselDropdown] = useState(false);
   const [showProfileSelector, setShowProfileSelector] = useState(false);
@@ -133,7 +146,16 @@ export function FermentationTracker() {
     notes: ''
   });
 
+  // Confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState({
+    title: '',
+    message: '',
+    onConfirm: null
+  });
+
   const [formData, setFormData] = useState({
+    log_date: new Date().toISOString().split('T')[0], // Default to today
     brix: '',
     temp_f: '',
     ph: '',
@@ -389,10 +411,26 @@ export function FermentationTracker() {
     setSuccess(null);
 
     try {
+      // Convert empty strings to null for numeric fields
+      // Add current time to the date to avoid timezone issues
+      const logDateTime = new Date(formData.log_date + 'T' + new Date().toTimeString().slice(0, 8));
+
       const logData = {
         lot_id: selectedLot.id,
-        ...formData,
+        log_date: logDateTime.toISOString(),
+        brix: formData.brix ? parseFloat(formData.brix) : null,
+        temp_f: formData.temp_f ? parseFloat(formData.temp_f) : null,
+        ph: formData.ph ? parseFloat(formData.ph) : null,
+        ta: formData.ta ? parseFloat(formData.ta) : null,
+        free_so2: formData.free_so2 ? parseFloat(formData.free_so2) : null,
+        total_so2: formData.total_so2 ? parseFloat(formData.total_so2) : null,
+        va: formData.va ? parseFloat(formData.va) : null,
         work_performed: formData.work_performed.length > 0 ? formData.work_performed : null,
+        addition_type: formData.addition_type || null,
+        addition_name: formData.addition_name || null,
+        addition_amount: formData.addition_amount ? parseFloat(formData.addition_amount) : null,
+        addition_unit: formData.addition_unit || null,
+        notes: formData.notes || null,
       };
 
       const { error: createError } = await createFermentationLog(logData);
@@ -418,6 +456,7 @@ export function FermentationTracker() {
 
   const resetForm = () => {
     setFormData({
+      log_date: new Date().toISOString().split('T')[0],
       brix: '',
       temp_f: '',
       ph: '',
@@ -442,6 +481,29 @@ export function FermentationTracker() {
         ? prev.work_performed.filter(w => w !== workValue)
         : [...prev.work_performed, workValue]
     }));
+  };
+
+  const handleArchiveLog = (logId) => {
+    setConfirmModalData({
+      title: 'Archive Log Entry?',
+      message: 'This log will be moved to the Archives page.',
+      onConfirm: async () => {
+        try {
+          const { error } = await archiveFermentationLog(logId);
+          if (error) throw error;
+
+          // Reload logs to remove archived one from view
+          loadLogs(selectedLot.id);
+          setSuccess('Log archived successfully');
+          setShowConfirmModal(false);
+        } catch (err) {
+          console.error('Error archiving log:', err);
+          setError('Failed to archive log');
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
   };
 
   // Handle opening the fermentation start modal
@@ -641,56 +703,97 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
   };
 
   // Handle pressing wine (fermenting → pressed)
-  const handlePressWine = async () => {
-    if (!confirm(`Press ${selectedLot.name}?\n\nThis will mark the fermentation as complete and move the lot to "pressed" status.`)) return;
+  const handlePressWine = () => {
+    setConfirmModalData({
+      title: `Press ${selectedLot.name}?`,
+      message: 'This will mark the fermentation as complete and move the lot to "pressed" status.',
+      onConfirm: async () => {
+        try {
+          const { error: updateError } = await updateLot(selectedLot.id, {
+            status: 'pressed',
+            press_date: new Date().toISOString()
+          });
 
-    try {
-      const { error: updateError } = await updateLot(selectedLot.id, {
-        status: 'pressed',
-        press_date: new Date().toISOString()
-      });
+          if (updateError) throw updateError;
 
-      if (updateError) throw updateError;
+          setSuccess('Wine pressed successfully! Now assign to barrels in the Aging page.');
+          loadData();
+          setSelectedLot(null); // Clear selection since it's no longer fermenting
+          setShowConfirmModal(false);
 
-      setSuccess('Wine pressed successfully! Now assign to barrels in the Aging page.');
-      loadData();
-      setSelectedLot(null); // Clear selection since it's no longer fermenting
-
-      // Navigate to aging page after a brief delay
-      setTimeout(() => {
-        navigate('/production?view=aging');
-      }, 2000);
-    } catch (err) {
-      console.error('Error pressing wine:', err);
-      setError(err.message);
-    }
+          // Navigate to aging page after a brief delay
+          setTimeout(() => {
+            navigate('/production?view=aging');
+          }, 2000);
+        } catch (err) {
+          console.error('Error pressing wine:', err);
+          setError(err.message);
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
   };
 
   const getChartData = () => {
     if (!logs || logs.length === 0) return [];
 
-    // Sort logs by date ascending (oldest first) to show chronological progression
-    const sortedLogs = [...logs].sort((a, b) =>
-      new Date(a.log_date) - new Date(b.log_date)
-    );
+    // Sort logs by date
+    const sortedLogs = [...logs].sort((a, b) => new Date(a.log_date) - new Date(b.log_date));
 
-    const data = sortedLogs.map((log, index) => ({
-      day: index + 1,
-      brix: log.brix,
-      temp: log.temp_f,
-      date: new Date(log.log_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    }));
+    // Get the start date
+    const startDate = new Date(sortedLogs[0].log_date);
+    startDate.setHours(0, 0, 0, 0);
 
-    // Add target temp line if profile is selected
+    // Create data points with days since start
+    const data = sortedLogs.map((log) => {
+      const logDate = new Date(log.log_date);
+      logDate.setHours(0, 0, 0, 0);
+      const daysSinceStart = Math.floor((logDate - startDate) / (1000 * 60 * 60 * 24));
+
+      return {
+        day: daysSinceStart,
+        brix: log.brix || null,
+        temp: log.temp_f || null,
+        ph: log.ph || null,
+        ta: log.ta || null,
+        displayDate: logDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        rawDate: log.log_date
+      };
+    });
+
+    // If multiple logs on same day, take the latest reading for each metric
+    const consolidatedData = [];
+    const dayMap = new Map();
+
+    data.forEach(point => {
+      if (!dayMap.has(point.day)) {
+        dayMap.set(point.day, point);
+      } else {
+        const existing = dayMap.get(point.day);
+        dayMap.set(point.day, {
+          ...existing,
+          brix: point.brix !== null ? point.brix : existing.brix,
+          temp: point.temp !== null ? point.temp : existing.temp,
+          ph: point.ph !== null ? point.ph : existing.ph,
+          ta: point.ta !== null ? point.ta : existing.ta
+        });
+      }
+    });
+
+    // Convert map back to array and sort by day
+    const result = Array.from(dayMap.values()).sort((a, b) => a.day - b.day);
+
+    // Add target temp if profile selected
     if (selectedProfile && FERMENTATION_PROFILES[selectedProfile]) {
       const profile = FERMENTATION_PROFILES[selectedProfile];
-      return data.map(d => ({
+      return result.map(d => ({
         ...d,
         targetTemp: profile.tempRange.ideal
       }));
     }
 
-    return data;
+    return result;
   };
 
   const getFermentationStatus = (lot) => {
@@ -1292,12 +1395,41 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
             </div>
           </div>
 
-          {/* Log Entry Form */}
-          {showLogForm && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">New Fermentation Log</h3>
+          {/* Log Entry Modal */}
+          {showLogForm && createPortal(
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+              <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar">
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-gray-900">New Fermentation Log</h3>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Modal Body */}
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                {/* Log Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Log Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.log_date}
+                    onChange={(e) => setFormData({...formData, log_date: e.target.value})}
+                    required
+                    className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the date for this log entry (allows adding historical data)
+                  </p>
+                </div>
+
                 {/* Chemistry Readings */}
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-3">Chemistry Readings</h4>
@@ -1393,7 +1525,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                 </div>
 
                 {/* Form Actions */}
-                <div className="flex items-center gap-3 pt-4 border-t">
+                <div className="flex items-center gap-3 pt-4 border-t sticky bottom-0 bg-white">
                   <button
                     type="submit"
                     className="px-6 py-2 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors shadow-sm"
@@ -1409,104 +1541,219 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                   </button>
                 </div>
               </form>
-            </div>
+              </div>
+            </div>,
+            document.body
           )}
 
           {/* Charts */}
           {chartData.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Fermentation Progress</h3>
-                {selectedProfile && (
-                  <span className="text-sm text-gray-600">
-                    Target: <span className="font-medium text-[#7C203A]">
+              {/* Header with lot name and day count */}
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {selectedLot?.name || 'Fermentation Progress'}
+                </h3>
+                <div className="flex items-center gap-3">
+                  {selectedProfile && (
+                    <span className="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-semibold">
                       {FERMENTATION_PROFILES[selectedProfile].name}
                     </span>
+                  )}
+                  <span className="text-sm text-gray-500">
+                    Day {chartData.length} of {selectedProfile ? FERMENTATION_PROFILES[selectedProfile].durationDays : '~12'}
                   </span>
-                )}
+                </div>
               </div>
 
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 12 }}
-                      stroke="#9ca3af"
-                    />
-                    <YAxis
-                      yAxisId="left"
-                      label={{ value: 'Brix', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
-                      tick={{ fontSize: 12 }}
-                      stroke="#9ca3af"
-                    />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      label={{ value: 'Temp (°F)', angle: 90, position: 'insideRight', style: { fontSize: 12 } }}
-                      tick={{ fontSize: 12 }}
-                      stroke="#9ca3af"
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        padding: '8px 12px'
-                      }}
-                    />
-                    <Legend />
+              {/* Chart section */}
+              <div className="mb-6">
+                <div className="h-96">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={chartData}
+                      margin={{ top: 20, right: 60, left: 20, bottom: 40 }}
+                    >
+                      <defs>
+                        <linearGradient id="brixGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.1}/>
+                          <stop offset="95%" stopColor="#7c3aed" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="tempGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#dc2626" stopOpacity={0.1}/>
+                          <stop offset="95%" stopColor="#dc2626" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
 
-                    {/* Target temperature reference lines if profile is selected */}
-                    {selectedProfile && FERMENTATION_PROFILES[selectedProfile] && (
-                      <>
-                        <ReferenceLine
-                          yAxisId="right"
-                          y={FERMENTATION_PROFILES[selectedProfile].tempRange.ideal}
-                          stroke="#10b981"
-                          strokeDasharray="5 5"
-                          strokeWidth={2}
-                          label={{ value: 'Target Temp', position: 'insideTopRight', fill: '#10b981', fontSize: 11 }}
-                        />
-                        <ReferenceLine
-                          yAxisId="right"
-                          y={FERMENTATION_PROFILES[selectedProfile].tempRange.min}
-                          stroke="#94a3b8"
-                          strokeDasharray="3 3"
-                          strokeWidth={1}
-                        />
-                        <ReferenceLine
-                          yAxisId="right"
-                          y={FERMENTATION_PROFILES[selectedProfile].tempRange.max}
-                          stroke="#94a3b8"
-                          strokeDasharray="3 3"
-                          strokeWidth={1}
-                        />
-                      </>
-                    )}
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e5e7eb"
+                        vertical={true}
+                      />
 
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="brix"
-                      stroke="#7C203A"
-                      strokeWidth={2}
-                      dot={{ fill: '#7C203A', r: 4 }}
-                      name="Brix"
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="temp"
-                      stroke="#f59e0b"
-                      strokeWidth={2}
-                      dot={{ fill: '#f59e0b', r: 4 }}
-                      name="Temperature"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                      <XAxis
+                        dataKey="day"
+                        type="number"
+                        domain={[0, 'dataMax']}
+                        tick={{ fontSize: 13, fill: '#6b7280' }}
+                        stroke="#d1d5db"
+                        tickLine={false}
+                        label={{
+                          value: 'Days',
+                          position: 'insideBottom',
+                          offset: -10,
+                          style: { fontSize: 14, fill: '#374151', fontWeight: 500 }
+                        }}
+                        allowDecimals={false}
+                        interval={0}
+                      />
+
+                      <YAxis
+                        yAxisId="left"
+                        domain={[-5, 30]}
+                        tick={{ fontSize: 13, fill: '#7c3aed' }}
+                        stroke="#7c3aed"
+                        tickLine={false}
+                        label={{
+                          value: 'Brix (°)',
+                          angle: -90,
+                          position: 'insideLeft',
+                          offset: 10,
+                          style: { fontSize: 14, fill: '#7c3aed', fontWeight: 500 }
+                        }}
+                      />
+
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        domain={[50, 105]}
+                        tick={{ fontSize: 13, fill: '#dc2626' }}
+                        stroke="#dc2626"
+                        tickLine={false}
+                        label={{
+                          value: 'Temperature (°F)',
+                          angle: 90,
+                          position: 'insideRight',
+                          offset: 10,
+                          style: { fontSize: 14, fill: '#dc2626', fontWeight: 500 }
+                        }}
+                      />
+
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          padding: '12px',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                        }}
+                        labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+                        formatter={(value, name) => {
+                          if (name === 'Brix') return [`${value}°`, name];
+                          if (name === 'Temperature') return [`${value}°F`, name];
+                          return [value, name];
+                        }}
+                        labelFormatter={(value, payload) => {
+                          if (payload && payload[0] && payload[0].payload.displayDate) {
+                            return `Day ${value} (${payload[0].payload.displayDate})`;
+                          }
+                          return `Day ${value}`;
+                        }}
+                      />
+
+                      <Legend
+                        wrapperStyle={{ paddingTop: '30px' }}
+                        iconType="circle"
+                        formatter={(value) => <span style={{ color: '#374151', fontSize: 14 }}>{value}</span>}
+                      />
+
+                      {/* Danger zone reference line */}
+                      <ReferenceLine
+                        yAxisId="right"
+                        y={95}
+                        stroke="#dc2626"
+                        strokeDasharray="5 5"
+                        strokeWidth={1.5}
+                        label={{
+                          value: 'Danger',
+                          position: 'insideTopRight',
+                          fill: '#dc2626',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          offset: 10
+                        }}
+                      />
+
+                      {/* Dry zone reference line */}
+                      <ReferenceLine
+                        yAxisId="left"
+                        y={0}
+                        stroke="#10b981"
+                        strokeDasharray="5 5"
+                        strokeWidth={1.5}
+                        label={{
+                          value: 'Dry',
+                          position: 'insideTopRight',
+                          fill: '#10b981',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          offset: 10
+                        }}
+                      />
+
+                      <Line
+                        yAxisId="left"
+                        type="monotoneX"
+                        dataKey="brix"
+                        stroke="#7c3aed"
+                        strokeWidth={3.5}
+                        dot={{ fill: '#7c3aed', r: 5, strokeWidth: 0 }}
+                        activeDot={{ r: 7, fill: '#7c3aed' }}
+                        name="Brix"
+                        connectNulls
+                      />
+
+                      <Line
+                        yAxisId="right"
+                        type="monotoneX"
+                        dataKey="temp"
+                        stroke="#dc2626"
+                        strokeWidth={3.5}
+                        dot={{ fill: '#dc2626', r: 5, strokeWidth: 0 }}
+                        activeDot={{ r: 7, fill: '#dc2626' }}
+                        name="Temperature"
+                        connectNulls
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
+
+              {/* Quick stats below chart - matching marketing screenshot */}
+              {chartData.length > 0 && chartData[chartData.length - 1] && (
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100">
+                    <div className="text-sm text-gray-500 mb-1">pH</div>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {chartData[chartData.length - 1].ph || '—'}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100">
+                    <div className="text-sm text-gray-500 mb-1">TA</div>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {chartData[chartData.length - 1].ta || '—'}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100">
+                    <div className="text-sm text-gray-500 mb-1">Vol</div>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {selectedLot?.current_volume_gallons
+                        ? `${Math.round(selectedLot.current_volume_gallons)} gal`
+                        : '—'}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1538,10 +1785,20 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                         </p>
                       </div>
 
-                      <div className="flex gap-3 text-sm">
-                        {log.brix && <span className="text-gray-700"><strong>Brix:</strong> {log.brix}°</span>}
-                        {log.temp_f && <span className="text-gray-700"><strong>Temp:</strong> {log.temp_f}°F</span>}
-                        {log.ph && <span className="text-gray-700"><strong>pH:</strong> {log.ph}</span>}
+                      <div className="flex items-center gap-4">
+                        <div className="flex gap-3 text-sm">
+                          {log.brix && <span className="text-gray-700"><strong>Brix:</strong> {log.brix}°</span>}
+                          {log.temp_f && <span className="text-gray-700"><strong>Temp:</strong> {log.temp_f}°F</span>}
+                          {log.ph && <span className="text-gray-700"><strong>pH:</strong> {log.ph}</span>}
+                        </div>
+
+                        <button
+                          onClick={() => handleArchiveLog(log.id)}
+                          className="p-2 hover:bg-gray-200 rounded-lg transition-colors group"
+                          title="Archive this log"
+                        >
+                          <Archive className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />
+                        </button>
                       </div>
                     </div>
 
@@ -2114,6 +2371,35 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                 </button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {showConfirmModal && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              {confirmModalData.title}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {confirmModalData.message}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmModalData.onConfirm}
+                className="px-4 py-2 bg-[#7C203A] text-white rounded-lg hover:bg-[#6B1F35] transition-colors font-medium"
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>,
         document.body

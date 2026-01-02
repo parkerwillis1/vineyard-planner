@@ -11,6 +11,7 @@ import {
   syncAllParentLotStatuses,
   listBlends
 } from '@/shared/lib/productionApi';
+import { IconLabelHeading, IconLabelButton } from '@/shared/components/ui/IconLabel';
 import {
   Wine,
   Droplet,
@@ -349,12 +350,12 @@ export function ProductionDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Temperature Alerts */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Thermometer className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-lg font-bold text-gray-900">Temp Alerts</h2>
-          </div>
+          <IconLabelHeading
+            icon={Thermometer}
+            label="Temp Alerts"
+            headingLevel="h2"
+            className="mb-4"
+          />
           {sensorAlerts.length === 0 ? (
             <div className="text-center py-8">
               <Thermometer className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -403,12 +404,12 @@ export function ProductionDashboard() {
 
         {/* Recent Activity */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Activity className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
-          </div>
+          <IconLabelHeading
+            icon={Activity}
+            label="Recent Activity"
+            headingLevel="h2"
+            className="mb-4"
+          />
           {recentActivity.length === 0 ? (
             <div className="text-center py-8">
               <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -436,12 +437,12 @@ export function ProductionDashboard() {
 
         {/* Tasks Due */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-lg font-bold text-gray-900">Tasks Due</h2>
-          </div>
+          <IconLabelHeading
+            icon={Calendar}
+            label="Tasks Due"
+            headingLevel="h2"
+            className="mb-4"
+          />
           {tasksDue.length === 0 ? (
             <div className="text-center py-8">
               <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
@@ -487,12 +488,12 @@ export function ProductionDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Production Pipeline - 2 cols */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900">Production Pipeline</h2>
-          </div>
+          <IconLabelHeading
+            icon={BarChart3}
+            label="Production Pipeline"
+            headingLevel="h2"
+            className="mb-6"
+          />
 
           {totalLots === 0 ? (
             <div className="text-center py-12">
@@ -542,57 +543,33 @@ export function ProductionDashboard() {
           <h2 className="text-xl font-bold text-gray-900 mb-5">Quick Actions</h2>
 
           <div className="space-y-2">
-            <button
+            <IconLabelButton
+              icon={Grape}
+              label="New Harvest"
+              subtitle="Record incoming fruit"
               onClick={() => navigate('/production?view=harvest')}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors group"
-            >
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-[#7C203A] transition-colors">
-                <Grape className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-semibold text-gray-900 text-sm">New Harvest</p>
-                <p className="text-xs text-gray-500">Record incoming fruit</p>
-              </div>
-            </button>
+            />
 
-            <button
+            <IconLabelButton
+              icon={Sparkles}
+              label="Log Fermentation"
+              subtitle="Update daily readings"
               onClick={() => navigate('/production?view=fermentation')}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors group"
-            >
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-[#7C203A] transition-colors">
-                <Sparkles className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-semibold text-gray-900 text-sm">Log Fermentation</p>
-                <p className="text-xs text-gray-500">Update daily readings</p>
-              </div>
-            </button>
+            />
 
-            <button
+            <IconLabelButton
+              icon={Barrel}
+              label="Manage Vessels"
+              subtitle="Tanks, barrels, totes"
               onClick={() => navigate('/production?view=containers')}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors group"
-            >
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-[#7C203A] transition-colors">
-                <Barrel className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-semibold text-gray-900 text-sm">Manage Vessels</p>
-                <p className="text-xs text-gray-500">Tanks, barrels, totes</p>
-              </div>
-            </button>
+            />
 
-            <button
+            <IconLabelButton
+              icon={FlaskConical}
+              label="Lab Work"
+              subtitle="Chemistry & analysis"
               onClick={() => navigate('/production?view=lab')}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors group"
-            >
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-[#7C203A] transition-colors">
-                <FlaskConical className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-semibold text-gray-900 text-sm">Lab Work</p>
-                <p className="text-xs text-gray-500">Chemistry & analysis</p>
-              </div>
-            </button>
+            />
 
             <button
               onClick={() => navigate('/production?view=blending')}

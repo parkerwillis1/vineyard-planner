@@ -31,10 +31,29 @@ body {
   /* Let your app / Tailwind containers handle layout */
 }
 
-/* Headings */
-h1 { font-size: 2.25rem; line-height: 1.1; margin: 0 0 0.75rem; }
-h2 { font-size: 1.5rem; line-height: 1.15; margin: 2rem 0 0.75rem; }
-h3 { font-size: 1.25rem; line-height: 1.2; margin: 1.5rem 0 0.5rem; }
+/* Headings - ZERO margins by default for UI components */
+/* Use Tailwind utilities (mt-*, mb-*) or .prose class for content areas */
+h1 { font-size: 2.25rem; line-height: 1.1; margin: 0; }
+h2 { font-size: 1.5rem; line-height: 1.15; margin: 0; }
+h3 { font-size: 1.25rem; line-height: 1.2; margin: 0; }
+
+/* Heading margins ONLY in prose/content containers */
+.prose h1,
+.docs-content h1,
+article h1 {
+  margin: 0 0 0.75rem;
+}
+
+.prose h2,
+.docs-content h2 {
+  margin: 2rem 0 0.75rem;
+}
+
+.prose h3,
+.docs-content h3,
+article h3 {
+  margin: 1.5rem 0 0.5rem;
+}
 
 /* Links */
 a {

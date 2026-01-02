@@ -17,6 +17,12 @@ export function AgingManagement() {
   const [selectedBarrel, setSelectedBarrel] = useState(null);
   const [autoFilling, setAutoFilling] = useState(false);
 
+  // Filter states
+  const [filterVarietal, setFilterVarietal] = useState('all');
+  const [filterVintage, setFilterVintage] = useState('all');
+  const [filterParentLot, setFilterParentLot] = useState('all');
+  const [sortBy, setSortBy] = useState('barrel'); // barrel, age-new, age-old, name-asc, name-desc
+
   useEffect(() => {
     loadData();
   }, []);
@@ -107,6 +113,68 @@ export function AgingManagement() {
         ? prev.filter(id => id !== barrelId)
         : [...prev, barrelId]
     );
+  };
+
+  // Fix duplicate barrel names by renaming them sequentially
+  const fixDuplicateBarrelNames = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const barrelNames = {};
+      barrels.forEach(barrel => {
+        if (!barrelNames[barrel.name]) {
+          barrelNames[barrel.name] = [];
+        }
+        barrelNames[barrel.name].push(barrel);
+      });
+
+      const duplicates = Object.entries(barrelNames).filter(([_, barrels]) => barrels.length > 1);
+
+      if (duplicates.length === 0) {
+        setSuccess('No duplicate barrel names found!');
+        setTimeout(() => setSuccess(null), 3000);
+        setLoading(false);
+        return;
+      }
+
+      // Find the highest barrel number currently in use
+      let maxBarrelNum = 0;
+      barrels.forEach(barrel => {
+        const match = barrel.name.match(/Barrel (\d+)/);
+        if (match) {
+          const num = parseInt(match[1]);
+          if (num > maxBarrelNum) maxBarrelNum = num;
+        }
+      });
+
+      let fixedCount = 0;
+      let nextBarrelNum = maxBarrelNum + 1;
+
+      // For each set of duplicates, keep the first one and rename the rest
+      for (const [barrelName, duplicateBarrels] of duplicates) {
+        // Keep first barrel with original name, rename the rest
+        for (let i = 1; i < duplicateBarrels.length; i++) {
+          const barrelToRename = duplicateBarrels[i];
+          const newName = `Barrel ${nextBarrelNum}`;
+
+          await updateContainer(barrelToRename.id, {
+            name: newName
+          });
+
+          nextBarrelNum++;
+          fixedCount++;
+        }
+      }
+
+      setSuccess(`Renamed ${fixedCount} duplicate barrels!`);
+      loadData();
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      console.error('Error fixing duplicate barrel names:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Assign pressed wine to barrel
@@ -321,7 +389,33 @@ export function AgingManagement() {
 
   const readyForBlending = getLotsReadyForBlending();
 
-  // Sort aging lots by barrel number (extracted from lot name)
+  // Detect duplicate barrel names in the containers table
+  const duplicateBarrelNames = React.useMemo(() => {
+    const barrelNames = {};
+    barrels.forEach(barrel => {
+      if (!barrelNames[barrel.name]) {
+        barrelNames[barrel.name] = [];
+      }
+      barrelNames[barrel.name].push(barrel);
+    });
+    const duplicates = Object.entries(barrelNames).filter(([_, barrels]) => barrels.length > 1);
+    console.log('Duplicate barrel names:', duplicates.length, duplicates);
+    return duplicates;
+  }, [barrels]);
+
+  // Get unique values for filters
+  const varietals = ['all', ...new Set(lots.filter(l => l.status === 'aging').map(l => l.varietal).filter(Boolean))];
+  const vintages = ['all', ...new Set(lots.filter(l => l.status === 'aging').map(l => l.vintage).filter(Boolean))].sort((a, b) => {
+    if (a === 'all') return -1;
+    if (b === 'all') return 1;
+    return b - a;
+  });
+  const parentLots = ['all', ...new Set(lots.filter(l => l.status === 'aging' && l.parent_lot_id).map(l => {
+    const parent = lots.find(p => p.id === l.parent_lot_id);
+    return parent?.name;
+  }).filter(Boolean))];
+
+  // Filter and sort aging lots
   const agingLots = lots
     .filter(lot => {
       // Only show lots that are actually in barrels
@@ -329,22 +423,52 @@ export function AgingManagement() {
 
       // Check if the container exists in our barrels list
       const container = barrels.find(b => b.id === lot.container_id);
-      return container !== undefined;
+      if (!container) return false;
+
+      // Apply filters
+      if (filterVarietal !== 'all' && lot.varietal !== filterVarietal) return false;
+      if (filterVintage !== 'all' && lot.vintage !== parseInt(filterVintage)) return false;
+      if (filterParentLot !== 'all') {
+        const parent = lots.find(p => p.id === lot.parent_lot_id);
+        if (parent?.name !== filterParentLot) return false;
+      }
+
+      return true;
     })
     .sort((a, b) => {
-      // Sort by container name (barrel number)
-      const aContainer = barrels.find(barrel => barrel.id === a.container_id);
-      const bContainer = barrels.find(barrel => barrel.id === b.container_id);
-
-      const aName = aContainer?.name || '';
-      const bName = bContainer?.name || '';
-
-      // Extract numbers from barrel names
-      const aNum = parseInt(aName.match(/\d+/)?.[0] || '999999');
-      const bNum = parseInt(bName.match(/\d+/)?.[0] || '999999');
-
-      if (aNum !== bNum) return aNum - bNum;
-      return aName.localeCompare(bName);
+      // Apply sorting
+      switch (sortBy) {
+        case 'barrel':
+          // Sort by barrel number (1-X)
+          const aContainer = barrels.find(barrel => barrel.id === a.container_id);
+          const bContainer = barrels.find(barrel => barrel.id === b.container_id);
+          const aName = aContainer?.name || '';
+          const bName = bContainer?.name || '';
+          const aNum = parseInt(aName.match(/\d+/)?.[0] || '999999');
+          const bNum = parseInt(bName.match(/\d+/)?.[0] || '999999');
+          if (aNum !== bNum) return aNum - bNum;
+          return aName.localeCompare(bName);
+        case 'age-new':
+          // Newest first (most recent press_date)
+          return new Date(b.press_date || 0) - new Date(a.press_date || 0);
+        case 'age-old':
+          // Oldest first (earliest press_date)
+          return new Date(a.press_date || 0) - new Date(b.press_date || 0);
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        default:
+          // Default: sort by barrel number
+          const aContainerDef = barrels.find(barrel => barrel.id === a.container_id);
+          const bContainerDef = barrels.find(barrel => barrel.id === b.container_id);
+          const aNameDef = aContainerDef?.name || '';
+          const bNameDef = bContainerDef?.name || '';
+          const aNumDef = parseInt(aNameDef.match(/\d+/)?.[0] || '999999');
+          const bNumDef = parseInt(bNameDef.match(/\d+/)?.[0] || '999999');
+          if (aNumDef !== bNumDef) return aNumDef - bNumDef;
+          return aNameDef.localeCompare(bNameDef);
+      }
     });
 
   // Only show pressed lots that still have volume remaining to barrel
@@ -354,7 +478,15 @@ export function AgingManagement() {
     return remaining > 0;
   });
 
-  const availableBarrels = barrels.filter(b => b.status === 'empty' || b.status === 'sanitized');
+  // Available barrels: must be empty/sanitized AND not currently assigned to any lot
+  const availableBarrels = barrels.filter(b => {
+    // Must be empty or sanitized status
+    if (b.status !== 'empty' && b.status !== 'sanitized') return false;
+
+    // Check if any lot is currently using this barrel
+    const lotInBarrel = lots.find(lot => lot.container_id === b.id && lot.status === 'aging');
+    return !lotInBarrel; // Only available if no lot is using it
+  });
 
   if (loading) {
     return (
@@ -370,9 +502,20 @@ export function AgingManagement() {
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
-      <div className="pt-4">
-        <h2 className="text-2xl font-bold text-gray-900">Aging Management</h2>
-        <p className="text-gray-600 mt-1">Barrel rotation, topping schedules, and aging timeline</p>
+      <div className="pt-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Aging Management</h2>
+          <p className="text-gray-600 mt-1">Barrel rotation, topping schedules, and aging timeline</p>
+        </div>
+        {duplicateBarrelNames.length > 0 && (
+          <button
+            onClick={fixDuplicateBarrelNames}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+          >
+            <AlertTriangle className="w-5 h-5" />
+            Fix {duplicateBarrelNames.length} Duplicate Barrel Name{duplicateBarrelNames.length > 1 ? 's' : ''}
+          </button>
+        )}
       </div>
 
       {/* Alerts */}
@@ -657,10 +800,76 @@ export function AgingManagement() {
 
       {/* Aging Lots */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Calendar className="w-5 h-5 text-[#7C203A]" />
-          <h3 className="text-lg font-semibold text-gray-900">Aging Timeline</h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-[#7C203A]" />
+            <h3 className="text-lg font-semibold text-gray-900">Aging Timeline</h3>
+            <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
+              {agingLots.length}
+            </span>
+          </div>
         </div>
+
+        {/* Filters */}
+        {lots.filter(l => l.status === 'aging').length > 0 && (
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Varietal</label>
+                <select
+                  value={filterVarietal}
+                  onChange={(e) => setFilterVarietal(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                >
+                  {varietals.map(v => (
+                    <option key={v} value={v}>{v === 'all' ? 'All Varietals' : v}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vintage</label>
+                <select
+                  value={filterVintage}
+                  onChange={(e) => setFilterVintage(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                >
+                  {vintages.map(v => (
+                    <option key={v} value={v}>{v === 'all' ? 'All Vintages' : v}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fermentation Tank</label>
+                <select
+                  value={filterParentLot}
+                  onChange={(e) => setFilterParentLot(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                >
+                  {parentLots.map(p => (
+                    <option key={p} value={p}>{p === 'all' ? 'All Tanks' : p}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                >
+                  <option value="barrel">Barrel Number (1-X)</option>
+                  <option value="age-new">Newest First</option>
+                  <option value="age-old">Oldest First</option>
+                  <option value="name-asc">Name (A-Z)</option>
+                  <option value="name-desc">Name (Z-A)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         {agingLots.length === 0 ? (
           <p className="text-gray-500 text-center py-8">No lots currently aging</p>
