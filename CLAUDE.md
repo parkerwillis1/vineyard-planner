@@ -17,7 +17,7 @@ npm run preview
 
 ## Project Overview
 
-Vineyard Planner is a React-based SaaS application for vineyard planning and management, built with Vite, React 19, TailwindCSS, and Supabase.
+Trellis is a React-based SaaS application for vineyard planning and management, built with Vite, React 19, TailwindCSS, and Supabase.
 
 ## Architecture
 

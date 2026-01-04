@@ -41,7 +41,7 @@ export default function QuickStartPage() {
         subtitle="Create your first vineyard financial projection in under 10 minutes."
       />
 
-      <Callout type="tip" title="New to Vine Pioneer?">
+      <Callout type="tip" title="New to Trellis?">
         This guide walks you through creating your first financial plan using the Vineyard Planner tool. You'll go from zero to a complete 10-year projection with detailed cost breakdowns and revenue forecasts.
       </Callout>
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { ChevronDown, Settings, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, Settings, LogOut, ChevronLeft, ChevronRight, Calculator, MapPin, Wine } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 import { supabase } from "@/shared/lib/supabaseClient";
 
@@ -110,6 +110,13 @@ export default function NavBar() {
     };
   }, [mobileMenuOpen]);
 
+  // Products dropdown items (for guest users)
+  const productsItems = [
+    { to: "/products/planner", label: "Financial Planner", icon: <Calculator className="w-4 h-4" /> },
+    { to: "/products/operations", label: "Vineyard Operations", icon: <MapPin className="w-4 h-4" /> },
+    { to: "/products/production", label: "Winery Production", icon: <Wine className="w-4 h-4" /> },
+  ];
+
   // Tools dropdown items (for authenticated users)
   const toolsItems = [
     { to: "/vineyard?view=dashboard", label: "Dashboard", icon: null },
@@ -149,8 +156,8 @@ export default function NavBar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
-          <img src="/VineSightLogo.png" alt="Vine Pioneer" className="h-8" />
-          <span className="font-bold text-gray-900 group-hover:text-teal-700 transition-colors">Vine Pioneer</span>
+          <img src="/VineSightLogo.png" alt="Trellis" className="h-8" />
+          <span className="font-bold text-gray-900 group-hover:text-teal-700 transition-colors">Trellis</span>
         </Link>
 
         {/* Main Navigation - Desktop Only (Large screens and up) */}
@@ -161,9 +168,7 @@ export default function NavBar() {
               <NavLink to="/" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
                 Home
               </NavLink>
-              <NavLink to="/products" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
-                Products
-              </NavLink>
+              <Dropdown trigger="Products" items={productsItems} />
               <NavLink to="/pricing" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
                 Pricing
               </NavLink>

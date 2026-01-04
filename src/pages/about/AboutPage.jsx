@@ -82,7 +82,7 @@ export default function AboutPage() {
             </p>
 
             <p>
-              Vine Pioneer is the tool I wish I'd had. It handles the tedious calculations, organizes the costs,
+              Trellis is the tool I wish I'd had. It handles the tedious calculations, organizes the costs,
               incorporates real industry data, and lets you focus on the exciting part: designing your future
               vineyard. You can model different scenarios, compare strategies, and see exactly where your money
               goes, all in a fraction of the time it took me with spreadsheets.

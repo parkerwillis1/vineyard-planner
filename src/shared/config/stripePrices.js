@@ -1,6 +1,6 @@
 const PRICE_ENV_MAP = {
-  starter: 'VITE_STRIPE_PRICE_STARTER',
   professional: 'VITE_STRIPE_PRICE_PROFESSIONAL',
+  estate: 'VITE_STRIPE_PRICE_ESTATE',
   enterprise: 'VITE_STRIPE_PRICE_ENTERPRISE',
 };
 

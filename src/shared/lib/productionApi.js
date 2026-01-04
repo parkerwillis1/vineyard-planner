@@ -1229,3 +1229,321 @@ export async function updateBlend(blendId, updates) {
     .select()
     .single();
 }
+
+// =====================================================
+// BOTTLING RUNS
+// =====================================================
+
+/**
+ * List all bottling runs for the current user
+ * @param {Object} filters - Optional filters (status, lot_id)
+ */
+export async function listBottlingRuns(filters = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('bottling_runs')
+    .select('*, wine_lots(name, varietal, vintage, current_volume_gallons)')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (filters.status) {
+    query = query.eq('status', filters.status);
+  }
+
+  if (filters.lot_id) {
+    query = query.eq('lot_id', filters.lot_id);
+  }
+
+  return query;
+}
+
+/**
+ * Get a single bottling run with all related data
+ * @param {string} runId - Run UUID
+ */
+export async function getBottlingRun(runId) {
+  const result = await supabase
+    .from('bottling_runs')
+    .select(`
+      *,
+      wine_lots(name, varietal, vintage, current_volume_gallons, container_name),
+      bottling_qc_checks(*),
+      bottling_issues(*)
+    `)
+    .eq('id', runId)
+    .single();
+
+  return result;
+}
+
+/**
+ * Get draft run for a specific lot (for resume functionality)
+ * @param {string} lotId - Lot UUID
+ */
+export async function getDraftRunForLot(lotId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: null };
+
+  return supabase
+    .from('bottling_runs')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('lot_id', lotId)
+    .eq('status', 'draft')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+}
+
+/**
+ * Create a new bottling run (save draft)
+ * @param {Object} runData - Run configuration
+ */
+export async function createBottlingRun(runData) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  // Generate SKU
+  const sku = `${runData.sku_prefix}-${runData.lot_code}`;
+
+  return supabase
+    .from('bottling_runs')
+    .insert({
+      ...runData,
+      sku,
+      user_id: user.id
+    })
+    .select()
+    .single();
+}
+
+/**
+ * Update a bottling run (autosave during setup)
+ * @param {string} runId - Run UUID
+ * @param {Object} updates - Fields to update
+ */
+export async function updateBottlingRun(runId, updates) {
+  return supabase
+    .from('bottling_runs')
+    .update(updates)
+    .eq('id', runId)
+    .select()
+    .single();
+}
+
+/**
+ * Start a bottling run (change status to active)
+ * @param {string} runId - Run UUID
+ */
+export async function startBottlingRun(runId) {
+  return supabase
+    .from('bottling_runs')
+    .update({
+      status: 'active',
+      started_at: new Date().toISOString()
+    })
+    .eq('id', runId)
+    .eq('status', 'draft')
+    .select()
+    .single();
+}
+
+/**
+ * Complete a bottling run (atomic operation via RPC)
+ * @param {string} runId - Run UUID
+ * @param {number} actualBottles - Actual bottles filled
+ * @param {number} actualCases - Actual cases packed
+ */
+export async function completeBottlingRun(runId, actualBottles, actualCases) {
+  const { data, error } = await supabase.rpc('complete_bottling_run', {
+    p_run_id: runId,
+    p_actual_bottles: actualBottles,
+    p_actual_cases: actualCases
+  });
+
+  if (error) {
+    console.error('Complete bottling run error:', error);
+    return { data: null, error };
+  }
+
+  return { data, error: null };
+}
+
+/**
+ * Cancel a bottling run
+ * @param {string} runId - Run UUID
+ */
+export async function cancelBottlingRun(runId) {
+  return supabase
+    .from('bottling_runs')
+    .update({ status: 'cancelled' })
+    .eq('id', runId)
+    .select()
+    .single();
+}
+
+/**
+ * Delete a bottling run (only drafts)
+ * @param {string} runId - Run UUID
+ */
+export async function deleteBottlingRun(runId) {
+  return supabase
+    .from('bottling_runs')
+    .delete()
+    .eq('id', runId)
+    .eq('status', 'draft');
+}
+
+// =====================================================
+// BOTTLING QC CHECKS
+// =====================================================
+
+/**
+ * Toggle a QC checkpoint
+ * @param {string} runId - Run UUID
+ * @param {string} checkType - Type of check
+ * @param {boolean} completed - Completion status
+ * @param {string} notes - Optional notes
+ */
+export async function toggleQCCheck(runId, checkType, completed, notes = null) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  // Upsert (insert or update)
+  return supabase
+    .from('bottling_qc_checks')
+    .upsert({
+      run_id: runId,
+      user_id: user.id,
+      check_type: checkType,
+      completed,
+      completed_at: completed ? new Date().toISOString() : null,
+      notes
+    }, {
+      onConflict: 'run_id,check_type'
+    })
+    .select()
+    .single();
+}
+
+/**
+ * Get all QC checks for a run
+ * @param {string} runId - Run UUID
+ */
+export async function getQCChecks(runId) {
+  return supabase
+    .from('bottling_qc_checks')
+    .select('*')
+    .eq('run_id', runId)
+    .order('created_at', { ascending: true });
+}
+
+// =====================================================
+// BOTTLING ISSUES
+// =====================================================
+
+/**
+ * Create a new issue
+ * @param {string} runId - Run UUID
+ * @param {Object} issueData - Issue details (description, severity)
+ */
+export async function createBottlingIssue(runId, issueData) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  return supabase
+    .from('bottling_issues')
+    .insert({
+      run_id: runId,
+      user_id: user.id,
+      ...issueData
+    })
+    .select()
+    .single();
+}
+
+/**
+ * Get all issues for a run
+ * @param {string} runId - Run UUID
+ */
+export async function getBottlingIssues(runId) {
+  return supabase
+    .from('bottling_issues')
+    .select('*')
+    .eq('run_id', runId)
+    .order('created_at', { ascending: true });
+}
+
+/**
+ * Resolve an issue
+ * @param {string} issueId - Issue UUID
+ * @param {string} resolutionNotes - Resolution notes
+ */
+export async function resolveBottlingIssue(issueId, resolutionNotes) {
+  return supabase
+    .from('bottling_issues')
+    .update({
+      resolved: true,
+      resolution_notes: resolutionNotes
+    })
+    .eq('id', issueId)
+    .select()
+    .single();
+}
+
+// =====================================================
+// BOTTLED INVENTORY
+// =====================================================
+
+/**
+ * List bottled inventory
+ * @param {Object} filters - Optional filters (status, sku)
+ */
+export async function listBottledInventory(filters = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('bottled_inventory')
+    .select('*, bottling_runs(run_date, operator)')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (filters.status) {
+    query = query.eq('status', filters.status);
+  }
+
+  if (filters.sku) {
+    query = query.eq('sku', filters.sku);
+  }
+
+  return query;
+}
+
+/**
+ * Get bottled inventory by SKU
+ * @param {string} sku - SKU string
+ */
+export async function getInventoryBySKU(sku) {
+  return supabase
+    .from('bottled_inventory')
+    .select('*')
+    .eq('sku', sku)
+    .maybeSingle();
+}
+
+/**
+ * Update inventory status (e.g., quarantine -> available)
+ * @param {string} inventoryId - Inventory UUID
+ * @param {string} status - New status
+ */
+export async function updateInventoryStatus(inventoryId, status) {
+  return supabase
+    .from('bottled_inventory')
+    .update({ status })
+    .eq('id', inventoryId)
+    .select()
+    .single();
+}

@@ -6,7 +6,7 @@ export default function TroubleshootingPage() {
     <DocsLayout>
       <DocsHeader
         title="Troubleshooting Guide"
-        subtitle="Resolve common issues, error messages, and technical problems with Vine Pioneer."
+        subtitle="Resolve common issues, error messages, and technical problems with Trellis."
       />
 
       <Section title="Quick Diagnostics">
@@ -28,7 +28,7 @@ export default function TroubleshootingPage() {
       <Section title="Loading Problems">
         <Subsection title="White Screen or Page Won't Load">
           <p>
-            If Vine Pioneer shows a blank white screen:
+            If Trellis shows a blank white screen:
           </p>
           <ol className="list-decimal list-inside space-y-2 ml-4">
             <li><strong>Hard refresh the page:</strong>
@@ -57,7 +57,7 @@ export default function TroubleshootingPage() {
             </li>
           </ol>
           <Callout type="tip" title="Browser Compatibility">
-            Vine Pioneer works best on Chrome, Firefox, Safari, and Edge (latest versions). Internet Explorer is not supported. Update to latest browser version if experiencing issues.
+            Trellis works best on Chrome, Firefox, Safari, and Edge (latest versions). Internet Explorer is not supported. Update to latest browser version if experiencing issues.
           </Callout>
         </Subsection>
 
@@ -66,7 +66,7 @@ export default function TroubleshootingPage() {
             If pages load very slowly or time out:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
-            <li><strong>Check internet speed:</strong> Visit speedtest.net—Vine Pioneer needs minimum 5 Mbps</li>
+            <li><strong>Check internet speed:</strong> Visit speedtest.net—Trellis needs minimum 5 Mbps</li>
             <li><strong>Reduce active tabs:</strong> Close other browser tabs using memory (especially video/streaming)</li>
             <li><strong>Restart browser:</strong> Completely quit and restart browser application</li>
             <li><strong>Check VPN:</strong> If using VPN, try disabling it (some VPNs cause latency issues)</li>
@@ -172,7 +172,7 @@ export default function TroubleshootingPage() {
 
         <Subsection title="Lost Changes After Browser Crash">
           <p>
-            Vine Pioneer auto-saves every 30 seconds, but recent changes may be lost:
+            Trellis auto-saves every 30 seconds, but recent changes may be lost:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
             <li>Check "last saved" timestamp (top of page)—indicates most recent successful save</li>
@@ -331,7 +331,7 @@ export default function TroubleshootingPage() {
           </p>
           <ol className="list-decimal list-inside space-y-2 ml-4">
             <li>Force close app (swipe up on iOS, recent apps on Android)</li>
-            <li>Clear app cache (Settings → Apps → Vine Pioneer → Clear Cache)</li>
+            <li>Clear app cache (Settings → Apps → Trellis → Clear Cache)</li>
             <li>Update to latest app version (App Store / Play Store)</li>
             <li>Restart device</li>
             <li>Uninstall and reinstall app (last resort—data preserved on server)</li>
@@ -343,7 +343,7 @@ export default function TroubleshootingPage() {
             If app can't detect your location:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
-            <li>Check location permissions (Settings → Vine Pioneer → Location → Allow)</li>
+            <li>Check location permissions (Settings → Trellis → Location → Allow)</li>
             <li>Enable GPS in device settings</li>
             <li>Move outdoors (GPS doesn't work well indoors)</li>
             <li>Wait 30 seconds for GPS lock (cold start takes time)</li>
@@ -407,7 +407,7 @@ export default function TroubleshootingPage() {
         links={[
           {
             title: "Support & Contact",
-            description: "Get help from the Vine Pioneer team",
+            description: "Get help from the Trellis team",
             href: "/docs/support",
           },
           {

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Beaker, Plus, TrendingUp, AlertTriangle, Calendar,
   Droplets, Activity, CheckCircle2, Filter, ListTodo, Target,
   BarChart3, FlaskConical, ChevronDown, X, Sparkles, Pencil
 } from 'lucide-react';
-import { listLots, createFermentationLog, listFermentationLogs, updateFermentationLog } from '@/shared/lib/productionApi';
+import { listLots, createFermentationLog, listFermentationLogs, updateFermentationLog, updateLot } from '@/shared/lib/productionApi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 // Wine style spec ranges
@@ -60,6 +62,9 @@ const WINE_SPEC_PROFILES = {
 };
 
 export function WineAnalysis() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
   const [lots, setLots] = useState([]);
   const [selectedLot, setSelectedLot] = useState(null);
   const [labs, setLabs] = useState([]);
@@ -71,6 +76,15 @@ export function WineAnalysis() {
   const [showLabHistoryModal, setShowLabHistoryModal] = useState(false);
   const [lotLabsMap, setLotLabsMap] = useState({}); // Store labs for each lot
   const [editingLab, setEditingLab] = useState(null); // Track which lab is being edited in modal
+  const [statusFilter, setStatusFilter] = useState('aging'); // Default to aging
+
+  // URL parameter is the ONLY source of truth for lot selection when present
+  const lotParam = searchParams.get('lot');
+  // Lot IDs can be UUIDs (strings) or integers - keep as string for comparison
+  const lotParamId = lotParam;
+
+  // Track which lot param we've already auto-opened the modal for (prevents re-opening on re-renders)
+  const openedForLotRef = useRef(null);
 
   const [formData, setFormData] = useState({
     ph: '',
@@ -85,14 +99,42 @@ export function WineAnalysis() {
     notes: ''
   });
 
-  // Don't auto-open form
+  // STRICT FIX: Reset modal and ref whenever lotParam changes
   useEffect(() => {
+    openedForLotRef.current = null;
     setShowForm(false);
-  }, [selectedLot]);
+  }, [lotParam]);
 
+  // Load lots data on mount AND when lotParam changes (to handle navigation from other pages)
   useEffect(() => {
     loadData();
-  }, []);
+  }, [lotParam]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // STRICT FIX: Only auto-open modal when selectedLot.id matches lotParam (gated)
+  useEffect(() => {
+    if (!lotParamId) return;
+    if (!selectedLot) return;
+    // Compare as strings to handle both UUID and integer IDs
+    if (String(selectedLot.id) !== String(lotParamId)) return;
+    if (openedForLotRef.current === lotParamId) return;
+
+    // All gates passed - open modal
+    openedForLotRef.current = lotParamId;
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [lotParamId, selectedLot?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showForm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showForm]);
 
   const loadData = async () => {
     setLoading(true);
@@ -104,7 +146,50 @@ export function WineAnalysis() {
         !lot.archived_at && ['fermenting', 'aging', 'pressed', 'blending', 'filtering'].includes(lot.status)
       );
 
-      setLots(activeLots);
+      // Deduplicate lots by ID (in case of database duplicates)
+      const uniqueLots = Array.from(
+        new Map(activeLots.map(lot => [lot.id, lot])).values()
+      );
+
+      setLots(uniqueLots);
+
+      // Preload latest lab for each lot (for card previews)
+      const labsMap = {};
+      await Promise.all(
+        activeLots.map(async (lot) => {
+          try {
+            const { data: labData, error: labsError } = await listFermentationLogs(lot.id);
+            if (labsError) throw labsError;
+
+            const labs = (labData || []).filter(log =>
+              log.ph || log.ta || log.free_so2 || log.total_so2 || log.va || log.alcohol_pct
+            );
+            labs.sort((a, b) => new Date(b.log_date) - new Date(a.log_date));
+            labsMap[lot.id] = labs;
+          } catch (err) {
+            console.error(`Error loading labs for lot ${lot.id}:`, err);
+            labsMap[lot.id] = [];
+          }
+        })
+      );
+      setLotLabsMap(labsMap);
+
+      // STRICT FIX: URL param is ONLY source of truth for lot selection
+      const lotParam = searchParams.get('lot');
+
+      if (lotParam) {
+        // URL param exists - find and select that specific lot ONLY
+        // Lot IDs can be UUIDs (strings) or integers - compare as strings
+        const targetLot = activeLots.find(lot => String(lot.id) === String(lotParam));
+
+        if (targetLot) {
+          setSelectedLot(targetLot);
+        }
+        // IMPORTANT: Do NOT auto-select first lot when lotParam exists
+        return;
+      }
+
+      // No URL parameter - normal behavior: auto-select first lot
       if (activeLots.length > 0) {
         setSelectedLot(activeLots[0]);
       }
@@ -155,6 +240,8 @@ export function WineAnalysis() {
   // Handle clicking a lot - select it and optionally show history
   const handleSelectLot = async (lot) => {
     setSelectedLot(lot);
+    // Update URL parameter to keep selected lot in URL
+    setSearchParams({ lot: lot.id });
     // Load labs for this lot if not already loaded
     if (!lotLabsMap[lot.id]) {
       await loadLabsForLot(lot.id);
@@ -201,11 +288,22 @@ export function WineAnalysis() {
       const { error: createError } = await createFermentationLog(labData);
       if (createError) throw createError;
 
-      setSuccess('Lab results saved successfully');
+      // CRITICAL: Propagate alcohol_pct to parent lot if provided
+      if (labData.alcohol_pct) {
+        await updateLot(selectedLot.id, {
+          alcohol_pct: labData.alcohol_pct,
+          last_analysis_date: labData.log_date
+        });
+        setSuccess('Lab results saved successfully. Bottling readiness updated with new Alcohol %.');
+      } else {
+        setSuccess('Lab results saved successfully');
+      }
+
       resetForm();
       loadLabs(selectedLot.id);
+      loadData(); // Reload lots to refresh alcohol_pct
 
-      setTimeout(() => setSuccess(null), 3000);
+      setTimeout(() => setSuccess(null), 4000);
     } catch (err) {
       console.error('Error saving lab:', err);
       setError(err.message);
@@ -236,17 +334,28 @@ export function WineAnalysis() {
       const { error: updateError } = await updateFermentationLog(editingLab.id, updates);
       if (updateError) throw updateError;
 
-      setSuccess('Lab test updated successfully');
+      // CRITICAL: Propagate alcohol_pct to parent lot if provided
+      if (updates.alcohol_pct) {
+        await updateLot(selectedLot.id, {
+          alcohol_pct: updates.alcohol_pct,
+          last_analysis_date: editingLab.log_date
+        });
+        setSuccess('Lab test updated successfully. Bottling readiness updated with new Alcohol %.');
+      } else {
+        setSuccess('Lab test updated successfully');
+      }
 
       // Refresh the labs for the modal
       await loadLabsForLot(selectedLot.id);
       // Refresh the main labs view
       await loadLabs(selectedLot.id);
+      // Reload lots to refresh alcohol_pct
+      await loadData();
 
       setEditingLab(null);
       resetForm();
 
-      setTimeout(() => setSuccess(null), 3000);
+      setTimeout(() => setSuccess(null), 4000);
     } catch (err) {
       console.error('Error updating lab:', err);
       setError(err.message);
@@ -289,6 +398,14 @@ export function WineAnalysis() {
     });
     setShowForm(false);
     setEditingLab(null);
+
+    // Clear the lot parameter from URL and reset the ref
+    const currentLotParam = searchParams.get('lot');
+    if (currentLotParam) {
+      searchParams.delete('lot');
+      setSearchParams(searchParams);
+    }
+    openedForLotRef.current = null;
   };
 
   const getChartData = (metric) => {
@@ -404,10 +521,7 @@ export function WineAnalysis() {
         <div className="flex items-center gap-2">
           {selectedLot && (
             <button
-              onClick={() => {
-                setShowForm(true);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onClick={() => setShowForm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors shadow-sm font-medium"
             >
               <Plus className="w-4 h-4" />
@@ -417,23 +531,27 @@ export function WineAnalysis() {
         </div>
       </div>
 
-      {/* Lab Entry Form - MOVED TO TOP */}
-      {showForm && selectedLot && (
-        <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl border-2 border-gray-300 shadow-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">New Lab Analysis</h3>
-              <p className="text-gray-600 mt-1">{selectedLot.name} • {selectedLot.varietal} {selectedLot.vintage}</p>
+      {/* Lab Entry Modal */}
+      {showForm && selectedLot && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">New Lab Analysis</h3>
+                <p className="text-sm text-gray-600 mt-1">{selectedLot.name} • {selectedLot.varietal} {selectedLot.vintage}</p>
+              </div>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
             </div>
-            <button
-              onClick={() => setShowForm(false)}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-700" />
-            </button>
-          </div>
 
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 space-y-6">
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Core Panel */}
             <div>
               <div className="flex items-center gap-2 mb-4">
@@ -442,7 +560,20 @@ export function WineAnalysis() {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">pH</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                    <span>pH</span>
+                    <span className="relative group">
+                      <span className="inline-flex items-center px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded cursor-help">
+                        Bottling
+                      </span>
+                      <span className="invisible group-hover:visible group-focus-within:visible absolute left-0 top-full mt-1 w-64 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg z-10 pointer-events-none">
+                        Used to assess wine stability and sulfite effectiveness before bottling
+                      </span>
+                    </span>
+                  </label>
+                  {labs.length > 0 && labs[0].ph && (
+                    <p className="text-xs text-gray-500 mb-1">Last: {labs[0].ph}</p>
+                  )}
                   <input
                     type="number"
                     step="0.01"
@@ -451,10 +582,24 @@ export function WineAnalysis() {
                     placeholder="3.45"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
                   />
+                  {selectedLot?.wine_profile && formData.ph && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      {(() => {
+                        const profile = WINE_SPEC_PROFILES[selectedLot.wine_profile];
+                        const val = parseFloat(formData.ph);
+                        if (val < profile.ph.min) return `⬇ Below ideal (${profile.ph.ideal})`;
+                        if (val > profile.ph.max) return `⬆ Above ideal (${profile.ph.ideal})`;
+                        return `✓ In range (${profile.ph.ideal})`;
+                      })()}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">TA (g/L)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">TA (g/L)</label>
+                  {labs.length > 0 && labs[0].ta && (
+                    <p className="text-xs text-gray-500 mb-1">Last: {labs[0].ta}</p>
+                  )}
                   <input
                     type="number"
                     step="0.1"
@@ -463,10 +608,34 @@ export function WineAnalysis() {
                     placeholder="6.5"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
                   />
+                  {selectedLot?.wine_profile && formData.ta && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      {(() => {
+                        const profile = WINE_SPEC_PROFILES[selectedLot.wine_profile];
+                        const val = parseFloat(formData.ta);
+                        if (val < profile.ta.min) return `⬇ Below ideal (${profile.ta.ideal})`;
+                        if (val > profile.ta.max) return `⬆ Above ideal (${profile.ta.ideal})`;
+                        return `✓ In range (${profile.ta.ideal})`;
+                      })()}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Free SO₂ (ppm)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                    <span>Free SO₂ (ppm)</span>
+                    <span className="relative group">
+                      <span className="inline-flex items-center px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded cursor-help">
+                        Bottling
+                      </span>
+                      <span className="invisible group-hover:visible group-focus-within:visible absolute left-0 top-full mt-1 w-64 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg z-10 pointer-events-none">
+                        Required to ensure the wine is protected at bottling
+                      </span>
+                    </span>
+                  </label>
+                  {labs.length > 0 && labs[0].free_so2 && (
+                    <p className="text-xs text-gray-500 mb-1">Last: {labs[0].free_so2}</p>
+                  )}
                   <input
                     type="number"
                     step="1"
@@ -475,10 +644,24 @@ export function WineAnalysis() {
                     placeholder="28"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
                   />
+                  {selectedLot?.wine_profile && formData.free_so2 && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      {(() => {
+                        const profile = WINE_SPEC_PROFILES[selectedLot.wine_profile];
+                        const val = parseFloat(formData.free_so2);
+                        if (val < profile.free_so2.min) return `⬇ Below ideal (${profile.free_so2.ideal})`;
+                        if (val > profile.free_so2.max) return `⬆ Above ideal (${profile.free_so2.ideal})`;
+                        return `✓ In range (${profile.free_so2.ideal})`;
+                      })()}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Total SO₂ (ppm)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Total SO₂ (ppm)</label>
+                  {labs.length > 0 && labs[0].total_so2 && (
+                    <p className="text-xs text-gray-500 mb-1">Last: {labs[0].total_so2}</p>
+                  )}
                   <input
                     type="number"
                     step="1"
@@ -499,7 +682,10 @@ export function WineAnalysis() {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">VA (g/L)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">VA (g/L)</label>
+                  {labs.length > 0 && labs[0].va && (
+                    <p className="text-xs text-gray-500 mb-1">Last: {labs[0].va}</p>
+                  )}
                   <input
                     type="number"
                     step="0.01"
@@ -508,10 +694,33 @@ export function WineAnalysis() {
                     placeholder="0.45"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
                   />
+                  {selectedLot?.wine_profile && formData.va && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      {(() => {
+                        const profile = WINE_SPEC_PROFILES[selectedLot.wine_profile];
+                        const val = parseFloat(formData.va);
+                        if (val > profile.va.max) return `⬆ Above ideal (${profile.va.ideal})`;
+                        return `✓ In range (${profile.va.ideal})`;
+                      })()}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Alcohol %</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                    <span>Alcohol %</span>
+                    <span className="relative group">
+                      <span className="inline-flex items-center px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded cursor-help">
+                        Bottling
+                      </span>
+                      <span className="invisible group-hover:visible group-focus-within:visible absolute left-0 top-full mt-1 w-64 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg z-10 pointer-events-none">
+                        Legally required for wine labels and bottling compliance
+                      </span>
+                    </span>
+                  </label>
+                  {labs.length > 0 && labs[0].alcohol_pct && (
+                    <p className="text-xs text-gray-500 mb-1">Last: {labs[0].alcohol_pct}%</p>
+                  )}
                   <input
                     type="number"
                     step="0.1"
@@ -520,10 +729,24 @@ export function WineAnalysis() {
                     placeholder="13.5"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
                   />
+                  {selectedLot?.wine_profile && formData.alcohol_pct && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      {(() => {
+                        const profile = WINE_SPEC_PROFILES[selectedLot.wine_profile];
+                        const val = parseFloat(formData.alcohol_pct);
+                        if (val < profile.alcohol.min) return `⬇ Below ideal (${profile.alcohol.ideal})`;
+                        if (val > profile.alcohol.max) return `⬆ Above ideal (${profile.alcohol.ideal})`;
+                        return `✓ In range (${profile.alcohol.ideal})`;
+                      })()}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Residual Sugar (g/L)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Residual Sugar (g/L)</label>
+                  {labs.length > 0 && labs[0].residual_sugar && (
+                    <p className="text-xs text-gray-500 mb-1">Last: {labs[0].residual_sugar}</p>
+                  )}
                   <input
                     type="number"
                     step="0.1"
@@ -538,13 +761,19 @@ export function WineAnalysis() {
 
             {/* MLF Panel */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-1 h-6 bg-gradient-to-b from-amber-600 to-orange-600 rounded-full"></div>
-                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Malolactic Fermentation (Optional)</h4>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-6 bg-gradient-to-b from-amber-600 to-orange-600 rounded-full"></div>
+                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Malolactic Fermentation (Optional)</h4>
+                </div>
               </div>
+              <p className="text-xs text-gray-600 mb-4">Track malic → lactic acid conversion. Complete MLF typically shows malic &lt;0.3 g/L and lactic 2-4 g/L.</p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Malic Acid (g/L)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Malic Acid (g/L)</label>
+                  {labs.length > 0 && labs[0].malic_acid && (
+                    <p className="text-xs text-gray-500 mb-1">Last: {labs[0].malic_acid}</p>
+                  )}
                   <input
                     type="number"
                     step="0.01"
@@ -556,7 +785,10 @@ export function WineAnalysis() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Lactic Acid (g/L)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Lactic Acid (g/L)</label>
+                  {labs.length > 0 && labs[0].lactic_acid && (
+                    <p className="text-xs text-gray-500 mb-1">Last: {labs[0].lactic_acid}</p>
+                  )}
                   <input
                     type="number"
                     step="0.01"
@@ -598,7 +830,9 @@ export function WineAnalysis() {
               </button>
             </div>
           </form>
-        </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Alerts */}
@@ -643,21 +877,74 @@ export function WineAnalysis() {
           )}
         </div>
 
+        {/* Status Filter */}
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-4 h-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700">Status:</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                statusFilter === 'all'
+                  ? 'bg-[#7C203A] text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setStatusFilter('fermenting')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                statusFilter === 'fermenting'
+                  ? 'bg-[#7C203A] text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Fermenting
+            </button>
+            <button
+              onClick={() => setStatusFilter('aging')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                statusFilter === 'aging'
+                  ? 'bg-[#7C203A] text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Aging + Ready
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {lots.map((lot) => {
+          {lots
+            .filter((lot) => {
+              // Only show lots in barrels
+              if (!lot.container || lot.container.type !== 'barrel') return false;
+
+              // Apply status filter
+              if (statusFilter === 'all') return true;
+              if (statusFilter === 'fermenting') return lot.status === 'fermenting';
+              if (statusFilter === 'aging') return ['aging', 'blending', 'ready_to_bottle'].includes(lot.status);
+              return true;
+            })
+            .sort((a, b) => {
+              // Natural sort by name (handles "Barrel 1" vs "Barrel 10" correctly)
+              return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+            })
+            .map((lot) => {
             const isSelected = selectedLot?.id === lot.id;
             const lotLabs = lotLabsMap[lot.id] || [];
             const latestLab = lotLabs[0];
 
             return (
               <div key={lot.id} className="relative">
-                <button
-                  onClick={() => handleSelectLot(lot)}
-                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                <div
+                  className={`w-full p-4 rounded-xl border-2 transition-all cursor-pointer ${
                     isSelected
                       ? 'border-[#7C203A] bg-gradient-to-br from-rose-50 to-purple-50 shadow-lg'
                       : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
                   }`}
+                  onClick={() => handleSelectLot(lot)}
                 >
                   <div className="mb-2">
                     <div className="flex items-start justify-between gap-2 mb-1">
@@ -714,7 +1001,7 @@ export function WineAnalysis() {
                       View {lotLabs.length} Test{lotLabs.length !== 1 ? 's' : ''}
                     </button>
                   )}
-                </button>
+                </div>
               </div>
             );
           })}
@@ -1488,6 +1775,109 @@ export function WineAnalysis() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Wine Profile Modal */}
+      {showProfileModal && selectedLot && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Set Wine Profile</h3>
+                <p className="text-sm text-gray-600 mt-1">{selectedLot.name} • {selectedLot.varietal} {selectedLot.vintage}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-6">
+                Select a wine style to see target chemistry ranges for this lot. This helps provide context when entering lab results.
+              </p>
+
+              <div className="space-y-3">
+                {Object.entries(WINE_SPEC_PROFILES).map(([key, profile]) => (
+                  <button
+                    key={key}
+                    onClick={async () => {
+                      try {
+                        await updateLot(selectedLot.id, { wine_profile: key });
+                        setSuccess(`Wine profile set to "${profile.name}"`);
+                        setShowProfileModal(false);
+                        await loadData(); // Refresh lots to show new profile
+                        setTimeout(() => setSuccess(null), 3000);
+                      } catch (err) {
+                        console.error('Error setting wine profile:', err);
+                        setError(err.message);
+                      }
+                    }}
+                    className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                      selectedLot.wine_profile === key
+                        ? 'border-[#7C203A] bg-rose-50'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-gray-900">{profile.name}</h4>
+                          {selectedLot.wine_profile === key && (
+                            <CheckCircle2 className="w-5 h-5 text-[#7C203A]" />
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 text-xs text-gray-600">
+                          <div>
+                            <span className="font-medium">pH:</span> {profile.ph.ideal}
+                          </div>
+                          <div>
+                            <span className="font-medium">TA:</span> {profile.ta.ideal}
+                          </div>
+                          <div>
+                            <span className="font-medium">Free SO₂:</span> {profile.free_so2.ideal}
+                          </div>
+                          <div>
+                            <span className="font-medium">VA:</span> {profile.va.ideal}
+                          </div>
+                          <div>
+                            <span className="font-medium">Alcohol:</span> {profile.alcohol.ideal}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {selectedLot.wine_profile && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await updateLot(selectedLot.id, { wine_profile: null });
+                      setSuccess('Wine profile cleared');
+                      setShowProfileModal(false);
+                      await loadData();
+                      setTimeout(() => setSuccess(null), 3000);
+                    } catch (err) {
+                      console.error('Error clearing wine profile:', err);
+                      setError(err.message);
+                    }
+                  }}
+                  className="mt-4 w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Clear Profile
+                </button>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

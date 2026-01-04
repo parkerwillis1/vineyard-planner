@@ -5,10 +5,11 @@ import { supabase } from "@/shared/lib/supabaseClient";
 import { useSubscription } from "@/shared/hooks/useSubscription";
 import { MODULES } from "@/shared/config/modules";
 import * as Icons from "lucide-react";
-import { ChevronDown, BookOpen, DollarSign, HelpCircle, Mail, FileText, Lightbulb, Briefcase, BookMarked, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, BookOpen, DollarSign, HelpCircle, Mail, FileText, Lightbulb, Briefcase, BookMarked, ChevronLeft, ChevronRight, Calculator, MapPin, Wine } from "lucide-react";
+import { ProductsMegaMenu } from "@/shared/components/ProductsMegaMenu";
 
 export default function SiteLayout() {
-  const { user } = useAuth() || {};
+  const { user, loading: authLoading } = useAuth() || {};
   const subscription = useSubscription();
   const location = useLocation();
   const navigate = useNavigate();
@@ -124,11 +125,11 @@ export default function SiteLayout() {
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}
       >
-        <div className="max-w-[1920px] mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Brand */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
-              <img src="/VinePioneerLongV1.png" alt="Vine Pioneer" className="h-10" />
+              <img src="/Trellis_Logo/trellis_logo_black.png" alt="Trellis" className="h-10" />
             </Link>
 
             {/* Left nav - Desktop Only */}
@@ -146,14 +147,8 @@ export default function SiteLayout() {
                     Home
                   </NavLink>
 
-                  <NavLink
-                    to="/products"
-                    className={({isActive}) =>
-                      isActive ? "text-vine-green-500 font-semibold text-base" : "text-gray-700 hover:text-vine-green-500"
-                    }
-                  >
-                    Products
-                  </NavLink>
+                  {/* Products Dropdown */}
+                  <ProductsMegaMenu />
 
                   <NavLink
                     to="/pricing"
@@ -165,7 +160,12 @@ export default function SiteLayout() {
                   </NavLink>
 
                   {/* Resources Dropdown */}
-                  <div className="relative" ref={resourcesMenuRef}>
+                  <div
+                    className="relative"
+                    ref={resourcesMenuRef}
+                    onMouseEnter={() => setShowResourcesMenu(true)}
+                    onMouseLeave={() => setShowResourcesMenu(false)}
+                  >
                     <button
                       onClick={() => setShowResourcesMenu(!showResourcesMenu)}
                       className="flex items-center gap-1 text-base font-semibold text-gray-700 hover:text-vine-green-500 bg-transparent border-0 p-0"
@@ -175,7 +175,7 @@ export default function SiteLayout() {
                     </button>
 
                     {showResourcesMenu && (
-                      <div className="absolute left-0 top-full mt-2 w-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
+                      <div className="absolute left-0 top-full mt-0 w-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
                         <h3 className="text-base font-semibold text-gray-900 mb-3">Free resources for vineyard owners</h3>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -272,7 +272,12 @@ export default function SiteLayout() {
                   {/* AUTHENTICATED NAVIGATION: Tools, Documentation, Resources, About */}
 
                   {/* Tools Dropdown */}
-                  <div className="relative" ref={toolsMenuRef}>
+                  <div
+                    className="relative"
+                    ref={toolsMenuRef}
+                    onMouseEnter={() => setShowToolsMenu(true)}
+                    onMouseLeave={() => setShowToolsMenu(false)}
+                  >
                     <button
                       onClick={() => setShowToolsMenu(!showToolsMenu)}
                       className={`flex items-center gap-1 text-base font-semibold transition-colors bg-transparent border-0 p-0 ${
@@ -288,8 +293,8 @@ export default function SiteLayout() {
                     </button>
 
                     {showToolsMenu && (
-                      <div className="absolute left-0 top-full mt-2 w-[550px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
-                        <h3 className="text-base font-semibold text-gray-900 mb-3">Your Vine Pioneer tools</h3>
+                      <div className="absolute left-0 top-full mt-1 w-[550px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
+                        <h3 className="text-base font-semibold text-gray-900 mb-3">Your Trellis tools</h3>
 
                         <div className="grid grid-cols-2 gap-3">
                           {Object.values(MODULES).map(module => {
@@ -349,7 +354,12 @@ export default function SiteLayout() {
                   </NavLink>
 
                   {/* Resources Dropdown */}
-                  <div className="relative" ref={resourcesMenuRef}>
+                  <div
+                    className="relative"
+                    ref={resourcesMenuRef}
+                    onMouseEnter={() => setShowResourcesMenu(true)}
+                    onMouseLeave={() => setShowResourcesMenu(false)}
+                  >
                     <button
                       onClick={() => setShowResourcesMenu(!showResourcesMenu)}
                       className="flex items-center gap-1 text-base font-semibold text-gray-700 hover:text-vine-green-500 bg-transparent border-0 p-0"
@@ -359,7 +369,7 @@ export default function SiteLayout() {
                     </button>
 
                     {showResourcesMenu && (
-                      <div className="absolute left-0 top-full mt-2 w-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
+                      <div className="absolute left-0 top-full mt-0 w-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
                         <h3 className="text-base font-semibold text-gray-900 mb-3">Free resources for vineyard owners</h3>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -374,7 +384,7 @@ export default function SiteLayout() {
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900 mb-1">Documentation</div>
-                              <div className="text-sm text-gray-600">Learn how to use Vine Pioneer</div>
+                              <div className="text-sm text-gray-600">Learn how to use Trellis</div>
                             </div>
                           </Link>
 
@@ -458,7 +468,12 @@ export default function SiteLayout() {
                   </div>
 
                   {/* About Dropdown */}
-                  <div className="relative" ref={aboutMenuRef}>
+                  <div
+                    className="relative"
+                    ref={aboutMenuRef}
+                    onMouseEnter={() => setShowAboutMenu(true)}
+                    onMouseLeave={() => setShowAboutMenu(false)}
+                  >
                     <button
                       onClick={() => setShowAboutMenu(!showAboutMenu)}
                       className={`flex items-center gap-1 text-base font-semibold transition-colors bg-transparent border-0 p-0 ${
@@ -472,7 +487,7 @@ export default function SiteLayout() {
                     </button>
 
                     {showAboutMenu && (
-                      <div className="absolute left-0 top-full mt-2 w-[350px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
+                      <div className="absolute left-0 top-full mt-1 w-[350px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
                         <h3 className="text-base font-semibold text-gray-900 mb-3">Learn more about us</h3>
 
                         <div className="space-y-2">
@@ -500,7 +515,7 @@ export default function SiteLayout() {
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900 mb-1">Our Story</div>
-                              <div className="text-sm text-gray-600">How Vine Pioneer began</div>
+                              <div className="text-sm text-gray-600">How Trellis began</div>
                             </div>
                           </Link>
                         </div>
@@ -1059,9 +1074,9 @@ export default function SiteLayout() {
           <div className="pt-6 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center gap-3">
             {/* Logo and Copyright */}
             <div className="flex items-center gap-3">
-              <img src="/VinePioneerLongV1.png" alt="Vine Pioneer" className="h-6" />
+              <img src="/Trellis_Logo/trellis_logo_white.png" alt="Trellis" className="h-6" />
               <div className="text-xs text-gray-400">
-                © {new Date().getFullYear()} Vine Pioneer. All rights reserved.
+                © {new Date().getFullYear()} Trellis. All rights reserved.
               </div>
             </div>
 

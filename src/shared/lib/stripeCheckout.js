@@ -7,15 +7,16 @@ const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 /**
  * Creates a Stripe Checkout Session via Supabase Edge Function and redirects the browser.
  * @param {object} params
- * @param {string} params.priceId Stripe Price identifier for the selected subscription tier.
- * @param {string} params.tierId Internal tier identifier (free/starter/professional/enterprise).
+ * @param {string} params.tierId Internal tier identifier (professional/estate/enterprise).
  * @param {object} params.user Optional user object (if not provided, will fetch from Supabase)
+ *
+ * NOTE: Price IDs are determined SERVER-SIDE for security. Do NOT pass priceId from client.
  */
-export async function redirectToStripeCheckout({ priceId, tierId, user: providedUser }) {
-  console.log('[Stripe] Starting checkout...', { priceId, tierId, hasUser: !!providedUser });
+export async function redirectToStripeCheckout({ tierId, user: providedUser }) {
+  console.log('[Stripe] Starting checkout...', { tierId, hasUser: !!providedUser });
 
-  if (!priceId) {
-    throw new Error('Missing Stripe price id for tier');
+  if (!tierId) {
+    throw new Error('Missing tier identifier');
   }
 
   if (!publishableKey) {
@@ -60,7 +61,7 @@ export async function redirectToStripeCheckout({ priceId, tierId, user: provided
   console.log('[Stripe] User found:', user.email);
   console.log('[Stripe] Calling edge function...', {
     functionName: 'create-checkout-session',
-    payload: { priceId, tierId, userId: user.id, email: user.email }
+    payload: { tierId, userId: user.id, email: user.email }
   });
 
   let data, error;
@@ -69,8 +70,8 @@ export async function redirectToStripeCheckout({ priceId, tierId, user: provided
 
     // Call edge function directly with fetch (using anon key for auth)
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`;
+    // SECURITY: Only send tierId - server determines Price ID based on tier
     const payload = {
-      priceId,
       tierId,
       userId: user.id,
       email: user.email,

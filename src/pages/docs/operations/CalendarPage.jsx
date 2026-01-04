@@ -309,7 +309,7 @@ export default function CalendarPage() {
 
         <Subsection title="iCal Sync (Coming Soon)">
           <p>
-            Sync Vine Pioneer calendar with external calendar apps:
+            Sync Trellis calendar with external calendar apps:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
             <li>Generate iCal feed URL</li>

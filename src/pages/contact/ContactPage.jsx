@@ -267,7 +267,7 @@ export default function ContactPage() {
               Ready to Start Planning?
             </h2>
             <p className="text-lg text-white/90 mb-8">
-              Join hundreds of vineyard owners who trust Vine Pioneer for their planning needs.
+              Join hundreds of vineyard owners who trust Trellis for their planning needs.
             </p>
             <a
               href="/signup"

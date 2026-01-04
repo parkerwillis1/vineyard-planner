@@ -40,6 +40,7 @@ import { BlendingCalculator } from '../components/BlendingCalculator';
 import { BottlingManagement } from '../components/BottlingManagement';
 import { ArchivesPage } from './ArchivesPage';
 import { VesselDetail } from '../components/VesselDetail';
+import { Reports } from '../components/Reports';
 
 export function ProductionShell() {
   const { user } = useAuth();
@@ -167,7 +168,7 @@ export function ProductionShell() {
       case 'archives':
         return <ArchivesPage />;
       case 'reports':
-        return <div className="p-8 text-center text-gray-500">Reports view coming soon...</div>;
+        return <Reports />;
       default:
         return <ProductionDashboard />;
     }

@@ -42,8 +42,8 @@ export default function ForgotPassword() {
           {/* Logo */}
           <div className="text-center mb-8">
             <img
-              src="/VinePioneerLongV1.png"
-              alt="Vine Pioneer"
+              src="/Trellis_Logo/trellis_logo_black.png"
+              alt="Trellis"
               className="h-12 mx-auto mb-6"
             />
           </div>
@@ -81,8 +81,8 @@ export default function ForgotPassword() {
         {/* Logo */}
         <div className="text-center mb-8">
           <img
-            src="/VinePioneerLongV1.png"
-            alt="Vine Pioneer"
+            src="/Trellis_Logo/trellis_logo_black.png"
+            alt="Trellis"
             className="h-12 mx-auto mb-6"
           />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Reset your password</h1>

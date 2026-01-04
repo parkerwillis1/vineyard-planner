@@ -8,7 +8,7 @@ export default function DocsIndex() {
     {
       icon: <BookOpen className="w-6 h-6 text-vine-green-600" />,
       title: "Getting Started",
-      description: "Learn the basics and get up to speed quickly with Vine Pioneer's planning and operations tools.",
+      description: "Learn the basics and get up to speed quickly with Trellis's planning and operations tools.",
       link: "/docs/getting-started/quick-start",
     },
     {
@@ -46,7 +46,7 @@ export default function DocsIndex() {
   return (
     <DocsLayout>
       <DocsHeader
-        title="Vine Pioneer Documentation"
+        title="Trellis Documentation"
         subtitle="Everything you need to plan your vineyard, forecast financials, and manage daily operations."
       />
 
@@ -61,7 +61,7 @@ export default function DocsIndex() {
             <BookOpen className="w-6 h-6 text-vine-green-600" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">New to Vine Pioneer?</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">New to Trellis?</h3>
             <p className="text-gray-700 mb-4 leading-relaxed">
               Start with our Quick Start Guide to learn how to create your first vineyard financial plan in under 10 minutes.
             </p>

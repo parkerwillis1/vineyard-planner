@@ -6,7 +6,7 @@ export default function SupportPage() {
     <DocsLayout>
       <DocsHeader
         title="Support & Contact"
-        subtitle="Get help from the Vine Pioneer team, report bugs, request features, and connect with the vineyard community."
+        subtitle="Get help from the Trellis team, report bugs, request features, and connect with the vineyard community."
       />
 
       <Section title="How to Get Help">
@@ -89,11 +89,11 @@ export default function SupportPage() {
       <Section title="Support Resources">
         <Subsection title="Documentation">
           <p>
-            Comprehensive guides covering all Vine Pioneer features:
+            Comprehensive guides covering all Trellis features:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
             <li><strong>Getting Started:</strong> Quick start guide and core concepts</li>
-            <li><strong>Vineyard Planner:</strong> Design, financial inputs, projections</li>
+            <li><strong>Financial Planner:</strong> Design, financial inputs, projections</li>
             <li><strong>Operations:</strong> Blocks, irrigation, tasks, spray records, team management</li>
             <li><strong>Troubleshooting:</strong> Common issues and solutions</li>
             <li><strong>FAQ:</strong> Frequently asked questions</li>
@@ -118,7 +118,7 @@ export default function SupportPage() {
 
         <Subsection title="Community Forum (Planned)">
           <p>
-            Connect with other Vine Pioneer users and viticulturists:
+            Connect with other Trellis users and viticulturists:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
             <li>Share best practices and vineyard strategies</li>
@@ -171,7 +171,7 @@ export default function SupportPage() {
             <li><strong>Email to:</strong> support@vinepioneer.com with subject "BUG: [brief description]"</li>
           </ol>
           <Callout type="success" title="Bug Bounty Program">
-            We pay $25-$500 for verified bug reports that help us improve Vine Pioneer. Critical security bugs eligible for up to $2,000. All users who report bugs receive credit in release notes (with permission).
+            We pay $25-$500 for verified bug reports that help us improve Trellis. Critical security bugs eligible for up to $2,000. All users who report bugs receive credit in release notes (with permission).
           </Callout>
         </Subsection>
 
@@ -272,7 +272,7 @@ export default function SupportPage() {
             <li><strong>Viticulture Consulting:</strong> Irrigation design, variety selection, site analysis</li>
             <li><strong>Data Migration:</strong> Import from Excel, other software, or paper records</li>
             <li><strong>Custom Reporting:</strong> Build specialized reports for your business needs</li>
-            <li><strong>Integration Development:</strong> Connect Vine Pioneer to your existing systems</li>
+            <li><strong>Integration Development:</strong> Connect Trellis to your existing systems</li>
           </ul>
           <p className="text-sm text-gray-600 mt-3">
             Consulting rates: $150-$250/hour depending on service. Contact support@vinepioneer.com for quote.
@@ -286,7 +286,7 @@ export default function SupportPage() {
             Your vineyard data belongs to you:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
-            <li>You retain 100% ownership of all data entered into Vine Pioneer</li>
+            <li>You retain 100% ownership of all data entered into Trellis</li>
             <li>Export your data anytime (CSV, Excel, PDF formats)</li>
             <li>Data retained for 90 days after subscription cancellation</li>
             <li>Permanent deletion available on request</li>
@@ -324,13 +324,13 @@ export default function SupportPage() {
       <Section title="Feedback">
         <Subsection title="We Want to Hear From You">
           <p>
-            Vine Pioneer improves based on your feedback:
+            Trellis improves based on your feedback:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
             <li><strong>General feedback:</strong> support@vinepioneer.com</li>
             <li><strong>Feature requests:</strong> Submit via email (voting platform coming Q2)</li>
             <li><strong>Usability issues:</strong> Tell us what's confusing or hard to use</li>
-            <li><strong>Success stories:</strong> Share how Vine Pioneer helped your vineyard</li>
+            <li><strong>Success stories:</strong> Share how Trellis helped your vineyard</li>
           </ul>
         </Subsection>
 
@@ -348,7 +348,7 @@ export default function SupportPage() {
       </Section>
 
       <Callout type="success" title="We're Here to Help">
-        Vine Pioneer exists to support vineyard success. Whether you have a technical question, feature idea, or just want to share your experience, we're listening. Don't hesitate to reach out—your feedback makes the product better for everyone.
+        Trellis exists to support vineyard success. Whether you have a technical question, feature idea, or just want to share your experience, we're listening. Don't hesitate to reach out—your feedback makes the product better for everyone.
       </Callout>
 
       <NextSteps
@@ -365,7 +365,7 @@ export default function SupportPage() {
           },
           {
             title: "Getting Started",
-            description: "New to Vine Pioneer? Start here",
+            description: "New to Trellis? Start here",
             href: "/docs/getting-started/quick-start",
           },
         ]}

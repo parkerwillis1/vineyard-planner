@@ -1,6 +1,6 @@
 # Database Migrations
 
-This directory contains SQL migration files for the Vineyard Planner database.
+This directory contains SQL migration files for the Trellis database.
 
 ## Running Migrations
 

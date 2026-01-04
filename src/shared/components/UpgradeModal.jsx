@@ -4,29 +4,27 @@ import { X, Check, Clock } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { MODULES } from '../config/modules';
 import { PRICING_TIERS } from '../config/pricing';
-import { getPriceIdForTier } from '../config/stripePrices';
 import { redirectToStripeCheckout } from '../lib/stripeCheckout';
 
 export const UpgradeModal = ({ moduleId, onClose }) => {
   const module = MODULES[moduleId];
-  const requiredTier = module?.requiredTier || 'starter';
+  const requiredTier = module?.requiredTier || 'professional';
   const tierInfo = PRICING_TIERS[requiredTier];
   const Icon = module ? Icons[module.icon] : Icons.Package;
   const [processing, setProcessing] = useState(false);
 
   if (!module) return null;
 
-  const priceId = requiredTier !== 'free' ? getPriceIdForTier(requiredTier) : null;
-
   const handleUpgrade = async () => {
-    if (!priceId) {
-      alert('Stripe price ID is not configured for this plan.');
+    if (requiredTier === 'free') {
+      // Free tier doesn't need checkout
       return;
     }
 
     try {
       setProcessing(true);
-      await redirectToStripeCheckout({ priceId, tierId: requiredTier });
+      // SECURITY: Price ID determined server-side
+      await redirectToStripeCheckout({ tierId: requiredTier });
     } catch (error) {
       console.error('[Stripe] Upgrade checkout failed', error);
       alert('We could not start the checkout process. Please try again.');
@@ -108,15 +106,10 @@ export const UpgradeModal = ({ moduleId, onClose }) => {
                 <button
                   className="w-full py-3 bg-vine-green-600 text-white rounded-lg hover:bg-vine-green-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleUpgrade}
-                  disabled={processing || !priceId}
+                  disabled={processing}
                 >
                   {processing ? 'Redirecting…' : `Upgrade to ${tierInfo.name}`}
                 </button>
-                {!priceId && (
-                  <p className="text-xs text-red-600 mt-2 text-center">
-                    Stripe price ID not configured for {requiredTier} plan.
-                  </p>
-                )}
               </div>
               
               {/* Compare Plans Link */}

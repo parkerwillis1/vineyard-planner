@@ -6,7 +6,6 @@ import { useSubscription } from '@/shared/hooks/useSubscription';
 import { PRICING_TIERS } from '@/shared/config/pricing';
 import { supabase } from '@/shared/lib/supabaseClient';
 import { redirectToStripeCheckout } from '@/shared/lib/stripeCheckout';
-import { getPriceIdForTier } from '@/shared/config/stripePrices';
 
 export default function SelectPlanPage() {
   const { user } = useAuth();
@@ -42,13 +41,8 @@ export default function SelectPlanPage() {
         // Redirect to home
         navigate('/');
       } else {
-        const priceId = getPriceIdForTier(tierId);
-        if (!priceId) {
-          alert('Stripe price ID is not configured for this plan. Please contact support.');
-          return;
-        }
-
-        await redirectToStripeCheckout({ priceId, tierId });
+        // SECURITY: Price ID determined server-side
+        await redirectToStripeCheckout({ tierId });
       }
     } catch (error) {
       console.error('Error selecting plan:', error);
@@ -75,7 +69,7 @@ export default function SelectPlanPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Welcome to Vine Pioneer
+            Welcome to Trellis
           </h1>
           <p className="text-xl text-gray-600">
             Choose a plan to get started. You can always upgrade later.

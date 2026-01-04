@@ -2,7 +2,7 @@
 export const MODULES = {
   planner: {
     id: 'planner',
-    name: 'Vineyard Planner',
+    name: 'Financial Planner',
     description: 'Design your vineyard and project costs',
     icon: 'Calculator',
     requiredTier: 'free',
@@ -20,7 +20,7 @@ export const MODULES = {
     name: 'Vineyard Operations',
     description: 'Manage blocks, tasks, and harvest tracking',
     icon: 'MapPin',
-    requiredTier: 'starter',
+    requiredTier: 'professional',
     route: '/vineyard',
     tabs: [
       { id: 'blocks', label: 'Blocks & Mapping' },

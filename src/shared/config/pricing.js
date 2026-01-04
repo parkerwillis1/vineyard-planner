@@ -19,10 +19,10 @@ export const PRICING_TIERS = {
       pdfExportsPerMonth: 3
     }
   },
-  starter: {
-    id: 'starter',
+  professional: {
+    id: 'professional',
     name: 'Vineyard',
-    price: 29,
+    price: 49,
     billingPeriod: 'month',
     modules: ['planner', 'vineyard'],
     features: [
@@ -43,10 +43,10 @@ export const PRICING_TIERS = {
     },
     popular: false
   },
-  professional: {
-    id: 'professional',
+  estate: {
+    id: 'estate',
     name: 'Vineyard + Winery',
-    price: 99,
+    price: 109,
     billingPeriod: 'month',
     modules: ['planner', 'vineyard', 'production', 'inventory'],
     features: [
@@ -71,7 +71,7 @@ export const PRICING_TIERS = {
   },
   enterprise: {
     id: 'enterprise',
-    name: 'Complete Platform',
+    name: 'End-to-End Platform',
     price: 249,
     billingPeriod: 'month',
     modules: ['planner', 'vineyard', 'production', 'inventory', 'sales'],

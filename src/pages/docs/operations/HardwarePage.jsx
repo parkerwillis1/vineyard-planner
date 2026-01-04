@@ -15,7 +15,7 @@ export default function HardwarePage() {
 
       <Section title="Overview">
         <p>
-          Vine Pioneer will integrate with popular agricultural sensors and weather stations to automate data collection, reduce manual entry, and provide real-time alerts for critical conditions (frost, water stress, equipment failures).
+          Trellis will integrate with popular agricultural sensors and weather stations to automate data collection, reduce manual entry, and provide real-time alerts for critical conditions (frost, water stress, equipment failures).
         </p>
         <p>
           All supported devices communicate via standard protocols (WiFi, LoRaWAN, cellular) and sync data automatically to your vineyard dashboard. No manual downloads or data transfers required.
@@ -66,7 +66,7 @@ export default function HardwarePage() {
           <ul className="list-disc list-inside space-y-2 ml-4">
             <li><strong>Inline Flow Meters:</strong> Install on main irrigation line, measure gallons in real-time</li>
             <li><strong>Zone Meters:</strong> Separate meter per irrigation zone for block-level tracking</li>
-            <li><strong>Wireless Transmission:</strong> Cellular or WiFi upload to Vine Pioneer</li>
+            <li><strong>Wireless Transmission:</strong> Cellular or WiFi upload to Trellis</li>
             <li><strong>Leak Detection:</strong> Alerts when flow continues after valve close (pipe break)</li>
           </ul>
           <Table
@@ -119,12 +119,12 @@ export default function HardwarePage() {
       <Section title="Device Setup & Configuration">
         <Subsection title="Initial Pairing">
           <p>
-            Connect new devices to Vine Pioneer in 3 steps:
+            Connect new devices to Trellis in 3 steps:
           </p>
           <ol className="list-decimal list-inside space-y-2 ml-4">
             <li><strong>Physical Installation:</strong> Mount/bury sensor per manufacturer instructions</li>
             <li><strong>Network Connection:</strong> Connect device to WiFi, cellular, or LoRa gateway</li>
-            <li><strong>Vine Pioneer Pairing:</strong>
+            <li><strong>Trellis Pairing:</strong>
               <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
                 <li>Go to Settings → Hardware Integration</li>
                 <li>Click "Add Device"</li>
@@ -292,7 +292,7 @@ export default function HardwarePage() {
             <li>Galcon GSI (WiFi irrigation controller)</li>
             <li>Hunter Hydrawise Pro-HC (commercial irrigation)</li>
             <li>RainBird IQ4 (cellular controller)</li>
-            <li>Send irrigation schedules from Vine Pioneer to controller</li>
+            <li>Send irrigation schedules from Trellis to controller</li>
             <li>Receive run-time confirmations and flow data back</li>
           </ul>
         </Subsection>
@@ -342,7 +342,7 @@ export default function HardwarePage() {
             <li>Verify network connection (WiFi signal, cellular bars)</li>
             <li>Inspect for physical damage (animal chewing, weather exposure)</li>
             <li>Restart device (power cycle or reset button)</li>
-            <li>Re-pair in Vine Pioneer if still offline</li>
+            <li>Re-pair in Trellis if still offline</li>
           </ol>
         </Subsection>
 
@@ -370,7 +370,7 @@ export default function HardwarePage() {
       </Section>
 
       <Callout type="note" title="Beta Testing Program">
-        Vine Pioneer hardware integration launches in beta April 2025. Early adopters receive 50% discount on supported devices and free installation consulting. Limited to first 50 vineyards. Email support@vinepioneer.com with "Hardware Beta" subject line to apply.
+        Trellis hardware integration launches in beta April 2025. Early adopters receive 50% discount on supported devices and free installation consulting. Limited to first 50 vineyards. Email support@vinepioneer.com with "Hardware Beta" subject line to apply.
       </Callout>
 
       <NextSteps

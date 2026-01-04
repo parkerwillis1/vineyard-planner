@@ -843,7 +843,7 @@ const blogContent = {
       <div className="bg-gradient-to-r from-teal-50 to-green-50 border border-teal-200 rounded-lg p-6 my-8">
         <h3 className="text-lg font-bold text-teal-900 mb-3">Use Professional Planning Tools</h3>
         <p className="text-teal-800 mb-4">
-          The Vine Pioneer vineyard planner helps you model all the variables discussed in this guide—from site design and trellis costs to 10-year financial projections. Create multiple scenarios, test assumptions, and build investor-ready financial forecasts.
+          The Trellis vineyard planner helps you model all the variables discussed in this guide—from site design and trellis costs to 10-year financial projections. Create multiple scenarios, test assumptions, and build investor-ready financial forecasts.
         </p>
         <div className="flex gap-4">
           <a href="/planner" className="inline-block bg-teal-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-teal-700 transition-colors">

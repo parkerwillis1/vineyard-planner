@@ -46,17 +46,17 @@ export default function PlannerOverview() {
   return (
     <DocsLayout>
       <DocsHeader
-        title="Vineyard Planner"
+        title="Financial Planner"
         subtitle="Create professional 10-year financial projections for your vineyard with detailed cost modeling and revenue forecasting."
       />
 
       <Callout type="success" title="Free Forever">
-        The Vineyard Planner is 100% free with no credit card required. Save unlimited plans, create multiple scenarios, and export reports to PDF.
+        The Financial Planner is 100% free with no credit card required. Save unlimited plans, create multiple scenarios, and export reports to PDF.
       </Callout>
 
       <Section title="Overview">
         <p>
-          The Vineyard Planner helps you answer the fundamental question every vineyard investor needs to know: <strong>"What will this cost, and when will it become profitable?"</strong>
+          The Financial Planner helps you answer the fundamental question every vineyard investor needs to know: <strong>"What will this cost, and when will it become profitable?"</strong>
         </p>
         <p>
           Built on industry-standard data from USDA reports, university viticulture research, and real vineyard operations, the planner provides realistic financial projections that lenders trust and investors can act on.

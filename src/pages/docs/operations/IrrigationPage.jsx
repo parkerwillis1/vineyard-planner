@@ -41,7 +41,7 @@ export default function IrrigationPage() {
 
         <Subsection title="OpenET Integration">
           <p>
-            Vine Pioneer integrates with OpenET to provide satellite-based ET measurements using Landsat and Sentinel imagery. Data updates daily and represents actual field conditions from space—not estimates from distant weather stations.
+            Trellis integrates with OpenET to provide satellite-based ET measurements using Landsat and Sentinel imagery. Data updates daily and represents actual field conditions from space—not estimates from distant weather stations.
           </p>
           <p>
             ET data is automatically adjusted by crop coefficient (Kc) values specific to grape growth stages, giving you crop-specific water use (ETc) instead of generic reference ET (ETo).

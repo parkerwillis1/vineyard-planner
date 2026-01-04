@@ -3,15 +3,15 @@ export const docsNavigation = [
   {
     title: "Getting Started",
     items: [
-      { title: "Overview", href: "/docs", description: "Introduction to Vine Pioneer documentation", keywords: "overview introduction documentation getting started home welcome" },
-      { title: "Quick Start", href: "/docs/getting-started/quick-start", description: "Get started with Vine Pioneer in minutes", keywords: "quick start tutorial guide setup beginner onboarding" },
+      { title: "Overview", href: "/docs", description: "Introduction to Trellis documentation", keywords: "overview introduction documentation getting started home welcome" },
+      { title: "Quick Start", href: "/docs/getting-started/quick-start", description: "Get started with Trellis in minutes", keywords: "quick start tutorial guide setup beginner onboarding" },
       { title: "Core Concepts", href: "/docs/getting-started/concepts", description: "Understand key concepts and terminology", keywords: "concepts terminology definitions glossary basics fundamentals" },
     ],
   },
   {
-    title: "Vineyard Planner",
+    title: "Financial Planner",
     items: [
-      { title: "Overview", href: "/docs/planner", description: "Introduction to the Vineyard Planner tool", keywords: "planner financial vineyard planning tool beta v1.0 investment business model projections feasibility analysis ROI return design layout acres spacing variety trellis costs revenue expenses cash flow profitability" },
+      { title: "Overview", href: "/docs/planner", description: "Introduction to the Financial Planner tool", keywords: "planner financial vineyard planning tool beta v1.0 investment business model projections feasibility analysis ROI return design layout acres spacing variety trellis costs revenue expenses cash flow profitability" },
       { title: "Design Tab", href: "/docs/planner/design", description: "Design your vineyard layout and trellis system", keywords: "design layout trellis VSP vertical shoot positioning spacing rows acres materials wire posts anchors calculators plant density width length between plants vine cordon height gauge galvanized cable end intermediate line clips strainers brace assembly turnbuckles staples cost estimate feet linear quantity total price vineyard dimensions rectangle irregular shape map area measurement × multiply ÷ divide + add - subtract = equals ft ' feet \" inches", content: [
         "Design your vineyard layout and trellis system using VSP (Vertical Shoot Positioning) or other trellis configurations.",
         "Set row spacing (typically 6-12 feet), vine spacing (4-8 feet), and calculate total plant density per acre.",

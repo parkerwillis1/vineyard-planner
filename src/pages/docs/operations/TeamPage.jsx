@@ -48,7 +48,7 @@ export default function TeamPage() {
       <Section title="Team Roles">
         <Subsection title="Role-Based Permissions">
           <p>
-            Vine Pioneer uses three permission levels to control feature access:
+            Trellis uses three permission levels to control feature access:
           </p>
           <Table
             headers={["Role", "Icon", "Permissions"]}

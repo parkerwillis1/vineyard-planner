@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   Calculator,
   LayoutGrid,
@@ -28,7 +28,16 @@ import { useAuth } from "@/auth/AuthContext";
 
 export default function ProductsPage() {
   const { user } = useAuth();
+  const location = useLocation();
   const [selectedTool, setSelectedTool] = useState('planner'); // 'planner' or 'operations'
+
+  // Handle anchor links from mega menu (#planner, #operations, #production)
+  useEffect(() => {
+    const hash = location.hash.replace('#', '');
+    if (hash && ['planner', 'operations', 'production'].includes(hash)) {
+      setSelectedTool(hash);
+    }
+  }, [location]);
 
   // Theme colors based on selected tool
   const getThemeColor = (shade) => {
@@ -633,9 +642,9 @@ export default function ProductsPage() {
                       selectedTool === 'operations' ? 'text-[#141d30]' :
                       'text-[#81243f]'
                     }`}>
-                      {selectedTool === 'planner' ? 'Vineyard Planner' :
-                       selectedTool === 'operations' ? 'Vineyard Operations' :
-                       'Winery Production'}
+                      {selectedTool === 'planner' ? 'Trellis Planner' :
+                       selectedTool === 'operations' ? 'Trellis Operations' :
+                       'Trellis Production'}
                     </th>
                     <th className="py-4 px-6 text-center text-sm font-bold text-gray-500">
                       {selectedTool === 'planner' && 'Spreadsheets'}
@@ -1120,9 +1129,9 @@ function ReportDemo() {
         </div>
 
         <div className="pt-4 border-t border-gray-200">
-          <button className="w-full rounded-lg bg-gradient-to-r from-teal-600 to-vine-green-600 px-4 py-2.5 text-sm font-bold text-white hover:shadow-lg transition-shadow">
+          <div className="w-full rounded-lg bg-gradient-to-r from-teal-600 to-vine-green-600 px-4 py-2.5 text-sm font-bold text-white text-center pointer-events-none">
             Export as PDF
-          </button>
+          </div>
         </div>
       </div>
     </div>

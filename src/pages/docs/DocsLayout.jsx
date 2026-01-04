@@ -54,7 +54,7 @@ export default function DocsLayout({ children }) {
             </button>
 
             <Link to="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold text-vine-green-500">Vine Pioneer</span>
+              <span className="text-xl font-bold text-vine-green-500">Trellis</span>
             </Link>
             <span className="text-sm text-gray-400 hidden sm:inline">docs</span>
           </div>

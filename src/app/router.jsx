@@ -14,6 +14,7 @@ import HomePage           from "@/pages/home/HomePage.jsx";
 import SignIn             from "@/auth/SignIn.jsx";
 import SignUp             from "@/auth/SignUp.jsx";
 import { AcceptInvitationPage } from "@/pages/AcceptInvitationPage.jsx";
+import PricingPage        from "@/pages/pricing/PricingPage.jsx";
 
 // Documentation pages
 import DocsIndex from "@/pages/docs/DocsIndex.jsx";
@@ -48,6 +49,7 @@ export default function AppRouter() {
       <Route path="/signin" element={<SignIn />} />
       <Route path="/signup" element={<SignUp />} />
       <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
 
       {/* Documentation - Public access */}
       <Route path="/docs" element={<DocsIndex />} />

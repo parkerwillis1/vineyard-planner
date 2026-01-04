@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/shared/lib/supabaseClient.js';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Chrome } from 'lucide-react';
 
 export default function SignIn() {
@@ -9,13 +9,22 @@ export default function SignIn() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/planner';
+  const startTrial = searchParams.get('startTrial') === 'true';
+  const tier = searchParams.get('tier');
 
   async function handleGoogleSignIn() {
     setError(null);
+    let redirectUrl = redirect;
+    const params = new URLSearchParams();
+    if (startTrial) params.append('startTrial', 'true');
+    if (tier) params.append('tier', tier);
+    if (params.toString()) redirectUrl = `${redirect}?${params.toString()}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/products`,
+        redirectTo: `${window.location.origin}${redirectUrl}`,
         queryParams: {
           prompt: 'select_account'
         }
@@ -41,7 +50,12 @@ export default function SignIn() {
       setLoading(false);
       return;
     }
-    navigate('/products');
+    let redirectUrl = redirect;
+    const params = new URLSearchParams();
+    if (startTrial) params.append('startTrial', 'true');
+    if (tier) params.append('tier', tier);
+    if (params.toString()) redirectUrl = `${redirect}?${params.toString()}`;
+    navigate(redirectUrl);
   }
 
   return (
@@ -50,12 +64,12 @@ export default function SignIn() {
         {/* Logo */}
         <div className="text-center mb-8">
           <img
-            src="/VinePioneerLongV1.png"
-            alt="Vine Pioneer"
+            src="/Trellis_Logo/trellis_logo_black.png"
+            alt="Trellis"
             className="h-12 mx-auto mb-6"
           />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome back</h1>
-          <p className="text-gray-600">Sign in to Vine Pioneer to continue</p>
+          <p className="text-gray-600">Sign in to Trellis to continue</p>
         </div>
 
         {/* Card */}

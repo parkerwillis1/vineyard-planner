@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Check, Sparkles, Zap, Building2, Crown, Shield, Download, Users, Calendar } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Check, Sparkles, Zap, Building2, Crown, Shield, Download, Users, Calendar, Gift } from "lucide-react";
 import { PRICING_TIERS } from "@/shared/config/pricing";
 import { useAuth } from "@/auth/AuthContext";
 import { useSubscription } from "@/shared/hooks/useSubscription";
-import { getPriceIdForTier } from "@/shared/config/stripePrices";
 import { redirectToStripeCheckout } from "@/shared/lib/stripeCheckout";
 
 const currency = new Intl.NumberFormat(undefined, {
@@ -26,6 +25,11 @@ export default function PricingPage() {
   const subscription = useSubscription();
   const currentTier = subscription?.tier;
   const [processing, setProcessing] = useState(false);
+  const [searchParams] = useSearchParams();
+  const fromTrial = searchParams.get('trial') === 'true';
+
+  // Note: Trial activation for PAID tiers now happens via Stripe Checkout
+  // The fake trial activation API is removed in favor of real Stripe subscriptions
 
   const handleSelect = async (tierId) => {
     // Skip free tier
@@ -36,18 +40,13 @@ export default function PricingPage() {
       return;
     }
 
-    const priceId = getPriceIdForTier(tierId);
-
-    if (!priceId) {
-      alert('Stripe price ID is not configured for this plan.');
-      return;
-    }
+    // SECURITY: Price ID is determined SERVER-SIDE in Edge Function
+    // Client only sends tierId; server maps to correct Price ID
 
     try {
       setProcessing(true);
       await redirectToStripeCheckout({
-        priceId,
-        tierId,
+        tierId, // Server will map to correct Price ID
         user // Pass user directly from context
       });
     } catch (error) {
@@ -60,6 +59,43 @@ export default function PricingPage() {
   return (
     <div className="bg-gradient-to-br from-teal-50 via-vine-green-50/40 to-white py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        {/* Trial Welcome Banner */}
+        {user && currentTier === 'free' && (
+          <div className="mx-auto max-w-4xl mb-12">
+            <div className="rounded-2xl bg-gradient-to-r from-teal-600 to-vine-green-600 p-8 shadow-xl">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Gift className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    Welcome! Start Your 2-Week Free Trial
+                  </h2>
+                  <p className="text-teal-50 text-base mb-4">
+                    You're currently on the free Planner tier. Upgrade to unlock Vineyard Operations or Winery Production features with a 14-day free trial—no credit card required upfront.
+                  </p>
+                  <div className="flex flex-wrap gap-3 text-sm text-white">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4" />
+                      <span>14 days completely free</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4" />
+                      <span>Cancel anytime</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4" />
+                      <span>No credit card required</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <header className="mx-auto max-w-3xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-100 to-vine-green-100 px-4 py-1.5 mb-4">
@@ -184,7 +220,11 @@ export default function PricingPage() {
                 <div className="mt-8">
                   {!user ? (
                     <Link
-                      to="/signup"
+                      to={
+                        tier.id === 'free'
+                          ? "/signup"
+                          : `/signup?redirect=/pricing&tier=${tier.id}&startTrial=true`
+                      }
                       className={[
                         "block w-full rounded-xl px-4 py-3 text-center text-sm font-bold shadow-sm transition-all",
                         tier.popular
@@ -192,7 +232,7 @@ export default function PricingPage() {
                           : "bg-gray-100 text-gray-900 hover:bg-gray-200",
                       ].join(" ")}
                     >
-                      Get Started Free
+                      {tier.id === 'free' ? 'Get Started Free' : 'Start 2-Week Free Trial'}
                     </Link>
                   ) : isCurrent ? (
                     <button
@@ -214,7 +254,7 @@ export default function PricingPage() {
                         processing && "opacity-50 cursor-not-allowed"
                       ].join(" ")}
                     >
-                      {processing ? "Redirecting..." : (isUpgrade ? "Upgrade Now" : "Switch Plan")}
+                      {processing ? "Redirecting..." : (tier.id === 'free' ? 'Get Started Free' : (isUpgrade ? "Start 2-Week Free Trial" : "Start 2-Week Free Trial"))}
                     </button>
                   )}
                 </div>

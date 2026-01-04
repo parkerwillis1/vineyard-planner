@@ -251,27 +251,27 @@ export function ProductionDashboard() {
   const labTestsDue = [];
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="pt-4">
-        <h1 className="text-3xl font-bold text-gray-900">
+      <div className="pt-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
           Cellar Dashboard
         </h1>
-        <p className="text-gray-600 mt-1">Production overview and active operations</p>
+        <p className="text-gray-500">Production overview and active operations</p>
       </div>
 
       {/* Critical Alerts Banner */}
       {criticalAlerts.filter(a => a.severity === 'critical').length > 0 && (
-        <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded-lg shadow-sm">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-start gap-4">
+            <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-sm font-bold text-red-900 mb-2">Critical Alerts Require Attention</h3>
-              <div className="space-y-1">
+              <h3 className="text-base font-bold text-red-900 mb-3">Critical Alerts Require Attention</h3>
+              <div className="space-y-2">
                 {criticalAlerts.filter(a => a.severity === 'critical').map(alert => (
-                  <div key={alert.id} className="flex items-center justify-between text-sm">
-                    <span className="text-red-800">{alert.message}</span>
-                    <span className="text-red-600 text-xs">{alert.time}</span>
+                  <div key={alert.id} className="flex items-center justify-between text-sm bg-white/50 rounded-lg p-3">
+                    <span className="text-red-800 font-medium">{alert.message}</span>
+                    <span className="text-red-600 text-xs font-medium">{alert.time}</span>
                   </div>
                 ))}
               </div>
@@ -280,122 +280,103 @@ export function ProductionDashboard() {
         </div>
       )}
 
-      {/* Summary Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Summary Stats Grid - Minimal & Clean */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Lots */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Wine className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-600">Total Lots</span>
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all group">
+          <div className="flex items-center justify-between mb-4">
+            <Wine className="w-5 h-5 text-[#7C203A]" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Lots</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{totalLots}</p>
-          <p className="text-xs text-gray-500 mt-1">Active production lots</p>
+          <p className="text-4xl font-bold text-gray-900 mb-1">{totalLots}</p>
+          <p className="text-sm text-gray-500">Active in production</p>
         </div>
 
         {/* Total Volume */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Droplet className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-600">Total Volume</span>
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all group">
+          <div className="flex items-center justify-between mb-4">
+            <Droplet className="w-5 h-5 text-[#7C203A]" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Volume</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900">
+          <p className="text-4xl font-bold text-gray-900 mb-1">
             {totalVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-            <span className="text-lg text-gray-500 ml-1">gal</span>
           </p>
-          <p className="text-xs text-gray-500 mt-1">
-            {(totalVolume / 60).toFixed(1)} barrels equivalent
+          <p className="text-sm text-gray-500">
+            gallons ({(totalVolume / 60).toFixed(1)} barrels)
           </p>
         </div>
 
         {/* Container Utilization */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Package className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-600">Utilization</span>
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all group">
+          <div className="flex items-center justify-between mb-4">
+            <Package className="w-5 h-5 text-[#7C203A]" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Capacity</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900">
-            {utilizationPct.toFixed(0)}<span className="text-lg text-gray-500">%</span>
+          <p className="text-4xl font-bold text-gray-900 mb-1">
+            {utilizationPct.toFixed(0)}<span className="text-2xl text-gray-500">%</span>
           </p>
-          <div className="mt-2">
-            <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="space-y-2">
+            <div className="w-full bg-gray-100 rounded-full h-1.5">
               <div
-                className="bg-[#7C203A] h-2 rounded-full transition-all duration-500"
+                className="bg-[#7C203A] h-1.5 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(utilizationPct, 100)}%` }}
               ></div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">{emptyContainers} vessels empty</p>
+            <p className="text-sm text-gray-500">{emptyContainers} vessels empty</p>
           </div>
         </div>
 
         {/* Active Fermentations Count */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-sm font-medium text-gray-600">Fermenting</span>
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all group">
+          <div className="flex items-center justify-between mb-4">
+            <Sparkles className="w-5 h-5 text-[#7C203A]" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Fermenting</span>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{activeFermentations.length}</p>
-          <p className="text-xs text-gray-500 mt-1">Active fermentations</p>
+          <p className="text-4xl font-bold text-gray-900 mb-1">{activeFermentations.length}</p>
+          <p className="text-sm text-gray-500">Active now</p>
         </div>
       </div>
 
-      {/* Three Column Layout - Alerts, Activity, Tasks */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Temperature Alerts */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <IconLabelHeading
-            icon={Thermometer}
-            label="Temp Alerts"
-            headingLevel="h2"
-            className="mb-4"
-          />
+      {/* Alerts & Activity Row - Consolidated */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Temperature Alerts & Issues */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100">
+          <div className="flex items-center gap-3 mb-5">
+            <Thermometer className="w-5 h-5 text-[#7C203A]" />
+            <h2 className="text-lg font-bold text-gray-900">Temperature Monitoring</h2>
+          </div>
           {sensorAlerts.length === 0 ? (
-            <div className="text-center py-8">
-              <Thermometer className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No sensor alerts</p>
-              <p className="text-xs text-gray-400 mt-1">
-                <button
-                  onClick={() => navigate('/production?view=sensors')}
-                  className="text-[#7C203A] hover:underline"
-                >
-                  Add sensors
-                </button>
-              </p>
+            <div className="text-center py-12">
+              <Thermometer className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-400 mb-2">No sensors configured</p>
+              <button
+                onClick={() => navigate('/production?view=sensors')}
+                className="text-sm text-[#7C203A] hover:text-[#8B2E48] font-medium"
+              >
+                Add Sensors →
+              </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {sensorAlerts.slice(0, 4).map(alert => (
+            <div className="space-y-3">
+              {sensorAlerts.slice(0, 5).map(alert => (
                 <div
                   key={alert.id}
-                  className={`p-3 rounded-lg border ${
-                    alert.status === 'critical'
-                      ? 'bg-red-50 border-red-200'
-                      : alert.status === 'warning'
-                      ? 'bg-yellow-50 border-yellow-200'
-                      : 'bg-green-50 border-green-200'
-                  }`}
+                  className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">{alert.sensor}</p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        Current: <span className="font-medium">{alert.temp}</span> | Target: {alert.target}
-                      </p>
-                    </div>
-                    <Bell className={`w-4 h-4 ${
-                      alert.status === 'critical' ? 'text-red-600' :
-                      alert.status === 'warning' ? 'text-yellow-600' :
-                      'text-green-600'
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">{alert.sensor}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {alert.temp} <span className="text-gray-400">• Target: {alert.target}</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400">{alert.time}</span>
+                    <div className={`w-2 h-2 rounded-full ${
+                      alert.status === 'critical' ? 'bg-red-500' :
+                      alert.status === 'warning' ? 'bg-yellow-500' :
+                      'bg-green-500'
                     }`} />
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">{alert.time}</p>
                 </div>
               ))}
             </div>
@@ -403,79 +384,28 @@ export function ProductionDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <IconLabelHeading
-            icon={Activity}
-            label="Recent Activity"
-            headingLevel="h2"
-            className="mb-4"
-          />
+        <div className="bg-white p-6 rounded-2xl border border-gray-100">
+          <div className="flex items-center gap-3 mb-5">
+            <Activity className="w-5 h-5 text-[#7C203A]" />
+            <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
+          </div>
           {recentActivity.length === 0 ? (
-            <div className="text-center py-8">
-              <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No recent activity</p>
-              <p className="text-xs text-gray-400 mt-1">Start tracking lots to see activity</p>
+            <div className="text-center py-12">
+              <Activity className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-400">No recent activity</p>
             </div>
           ) : (
             <div className="space-y-3">
               {recentActivity.map(activity => (
-                <div key={activity.id} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0">
-                  <div className="w-2 h-2 bg-[#7C203A] rounded-full mt-2 flex-shrink-0"></div>
+                <div key={activity.id} className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-0">
+                  <div className="w-1.5 h-1.5 bg-[#7C203A] rounded-full mt-2 flex-shrink-0"></div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 font-medium">{activity.description}</p>
+                    <p className="text-sm text-gray-900">{activity.description}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-gray-500">{activity.time}</span>
-                      <span className="text-xs text-gray-400">•</span>
-                      <span className="text-xs text-gray-600">{activity.user}</span>
+                      <span className="text-xs text-gray-400">{activity.time}</span>
+                      <span className="text-xs text-gray-300">•</span>
+                      <span className="text-xs text-gray-500">{activity.user}</span>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Tasks Due */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <IconLabelHeading
-            icon={Calendar}
-            label="Tasks Due"
-            headingLevel="h2"
-            className="mb-4"
-          />
-          {tasksDue.length === 0 ? (
-            <div className="text-center py-8">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">All caught up!</p>
-              <p className="text-xs text-gray-400 mt-1">No tasks due today</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {tasksDue.map(task => (
-                <div
-                  key={task.id}
-                  className={`p-3 rounded-lg border ${
-                    task.priority === 'high'
-                      ? 'bg-red-50 border-red-200'
-                      : task.priority === 'medium'
-                      ? 'bg-yellow-50 border-yellow-200'
-                      : 'bg-gray-50 border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">{task.task}</p>
-                      <p className="text-xs text-gray-600 mt-1">{task.due}</p>
-                    </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${
-                      task.priority === 'high'
-                        ? 'bg-red-100 text-red-700'
-                        : task.priority === 'medium'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {task.priority}
-                    </span>
                   </div>
                 </div>
               ))}
@@ -484,127 +414,121 @@ export function ProductionDashboard() {
         </div>
       </div>
 
-      {/* Two Column Layout - Pipeline & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Production Pipeline - 2 cols */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <IconLabelHeading
-            icon={BarChart3}
-            label="Production Pipeline"
-            headingLevel="h2"
-            className="mb-6"
-          />
-
-          {totalLots === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Wine className="w-8 h-8 text-[#7C203A]" />
-              </div>
-              <p className="text-gray-500 mb-4">No active lots in production</p>
-              <button
-                onClick={() => navigate('/production?view=harvest')}
-                className="px-6 py-2.5 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors shadow-sm font-medium"
-              >
-                Create Harvest Intake
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {Object.entries(statusConfig).map(([status, config]) => {
-                const count = lotsByStatus[status] || 0;
-                if (count === 0) return null;
-
-                const StatusIcon = config.icon;
-                return (
-                  <div
-                    key={status}
-                    className={`bg-gradient-to-br ${config.gradient} p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer`}
-                    onClick={() => navigate(`/production?view=dashboard&filter=${status}`)}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <StatusIcon className={`w-4 h-4 text-${config.text}`} />
-                      <span className={`text-xs font-semibold text-${config.text} uppercase tracking-wide`}>
-                        {config.label}
-                      </span>
-                    </div>
-                    <p className="text-3xl font-bold text-gray-900">{count}</p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {count === 1 ? 'lot' : 'lots'}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+      {/* Production Pipeline - Full Width, Prominent */}
+      <div className="bg-white p-8 rounded-2xl border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="w-6 h-6 text-[#7C203A]" />
+            <h2 className="text-2xl font-bold text-gray-900">Production Pipeline</h2>
+          </div>
+          {totalLots > 0 && (
+            <span className="text-sm text-gray-400">{totalLots} total lots</span>
           )}
         </div>
 
-        {/* Quick Actions - 1 col */}
-        <div className="bg-white px-6 pt-1.5 pb-6 rounded-xl border border-gray-200 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-900 mb-5">Quick Actions</h2>
-
-          <div className="space-y-2">
-            <IconLabelButton
-              icon={Grape}
-              label="New Harvest"
-              subtitle="Record incoming fruit"
-              onClick={() => navigate('/production?view=harvest')}
-            />
-
-            <IconLabelButton
-              icon={Sparkles}
-              label="Log Fermentation"
-              subtitle="Update daily readings"
-              onClick={() => navigate('/production?view=fermentation')}
-            />
-
-            <IconLabelButton
-              icon={Barrel}
-              label="Manage Vessels"
-              subtitle="Tanks, barrels, totes"
-              onClick={() => navigate('/production?view=containers')}
-            />
-
-            <IconLabelButton
-              icon={FlaskConical}
-              label="Lab Work"
-              subtitle="Chemistry & analysis"
-              onClick={() => navigate('/production?view=lab')}
-            />
-
+        {totalLots === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Wine className="w-8 h-8 text-gray-300" />
+            </div>
+            <p className="text-gray-400 mb-6">No active lots in production</p>
             <button
-              onClick={() => navigate('/production?view=blending')}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-rose-50 to-purple-50 hover:from-rose-100 hover:to-purple-100 border-2 border-rose-200 rounded-lg transition-all group"
+              onClick={() => navigate('/production?view=harvest')}
+              className="px-6 py-3 bg-[#7C203A] text-white rounded-xl hover:bg-[#8B2E48] transition-colors font-medium"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-rose-500 to-purple-600 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
-                <Layers className="w-4 h-4 text-white" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-semibold text-gray-900 text-sm">Create Blend</p>
-                <p className="text-xs text-gray-600">Combine aging lots</p>
-              </div>
+              Create Harvest Intake
             </button>
           </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {Object.entries(statusConfig).map(([status, config]) => {
+              const count = lotsByStatus[status] || 0;
+              if (count === 0) return null;
+
+              const StatusIcon = config.icon;
+              return (
+                <div
+                  key={status}
+                  className="group bg-white p-5 rounded-xl border border-gray-100 hover:border-[#7C203A] hover:shadow-lg transition-all cursor-pointer"
+                  onClick={() => navigate(`/production?view=dashboard&filter=${status}`)}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <StatusIcon className={`w-4 h-4 text-gray-400 group-hover:text-[#7C203A] transition-colors`} />
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide group-hover:text-[#7C203A] transition-colors">
+                      {config.label}
+                    </span>
+                  </div>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">{count}</p>
+                  <p className="text-xs text-gray-400">
+                    {count === 1 ? 'lot' : 'lots'}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Quick Actions - Minimal, Bottom of Page */}
+      <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <button
+            onClick={() => navigate('/production?view=harvest')}
+            className="flex items-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all text-left"
+          >
+            <Grape className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-700">New Harvest</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/production?view=fermentation')}
+            className="flex items-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all text-left"
+          >
+            <Sparkles className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-700">Log Fermentation</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/production?view=containers')}
+            className="flex items-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all text-left"
+          >
+            <Barrel className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-700">Manage Vessels</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/production?view=lab')}
+            className="flex items-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all text-left"
+          >
+            <FlaskConical className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-700">Lab Work</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/production?view=blending')}
+            className="flex items-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all text-left"
+          >
+            <Layers className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-700">Create Blend</span>
+          </button>
         </div>
       </div>
 
-      {/* Blend Overview Widget */}
+      {/* Blend Overview Widget - Cleaner */}
       {blends.length > 0 && (
-        <div className="bg-gradient-to-br from-rose-50 via-purple-50 to-pink-50 p-6 rounded-xl border-2 border-rose-200 shadow-md">
+        <div className="bg-white p-6 rounded-2xl border border-gray-100">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-rose-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <Layers className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Active Blends</h2>
-                <p className="text-sm text-gray-600">{blends.length} blend{blends.length !== 1 ? 's' : ''} in production</p>
-              </div>
+              <Layers className="w-5 h-5 text-[#7C203A]" />
+              <h2 className="text-lg font-bold text-gray-900">Active Blends</h2>
+              <span className="text-sm text-gray-400">({blends.length})</span>
             </div>
             <button
               onClick={() => navigate('/production?view=blending')}
-              className="px-4 py-2 bg-gradient-to-r from-rose-600 to-purple-600 text-white rounded-lg hover:from-rose-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg text-sm font-medium"
+              className="text-sm text-[#7C203A] hover:text-[#8B2E48] font-medium"
             >
-              View All
+              View All →
             </button>
           </div>
 
@@ -617,30 +541,27 @@ export function ProductionDashboard() {
                 <div
                   key={blend.id}
                   onClick={() => navigate('/production?view=blending')}
-                  className="bg-white p-4 rounded-xl border-2 border-rose-200 hover:border-rose-400 hover:shadow-lg transition-all cursor-pointer"
+                  className="bg-white p-4 rounded-xl border border-gray-100 hover:border-[#7C203A] hover:shadow-md transition-all cursor-pointer"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Wine className="w-4 h-4 text-rose-600 flex-shrink-0" />
-                        <p className="font-bold text-gray-900 truncate">{blend.name}</p>
-                      </div>
-                      <p className="text-xs text-gray-500">{blend.varietal} • {blend.vintage}</p>
+                      <p className="font-bold text-gray-900 truncate mb-1">{blend.name}</p>
+                      <p className="text-xs text-gray-400">{blend.varietal} • {blend.vintage}</p>
                     </div>
-                    <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold whitespace-nowrap">
+                    <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium whitespace-nowrap">
                       {componentCount} lots
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-purple-50 rounded-lg p-2">
-                      <p className="text-xs text-gray-600">Volume</p>
-                      <p className="text-sm font-bold text-purple-700">{totalVolume.toFixed(0)} gal</p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400 text-xs">Volume:</span>
+                      <span className="text-gray-900 font-semibold ml-1">{totalVolume.toFixed(0)} gal</span>
                     </div>
                     {blend.current_ph && (
-                      <div className="bg-blue-50 rounded-lg p-2">
-                        <p className="text-xs text-gray-600">pH</p>
-                        <p className="text-sm font-bold text-blue-700">{blend.current_ph.toFixed(2)}</p>
+                      <div>
+                        <span className="text-gray-400 text-xs">pH:</span>
+                        <span className="text-gray-900 font-semibold ml-1">{blend.current_ph.toFixed(2)}</span>
                       </div>
                     )}
                   </div>
@@ -648,154 +569,78 @@ export function ProductionDashboard() {
               );
             })}
           </div>
-
-          {blends.length > 6 && (
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => navigate('/production?view=blending')}
-                className="text-sm text-rose-700 hover:text-rose-800 font-medium"
-              >
-                + {blends.length - 6} more blend{blends.length - 6 !== 1 ? 's' : ''}
-              </button>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Two Column - Vintage Comparison & Lab Tests Due */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Vintage Overview */}
-        {vintageComparison && (
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-[#7C203A] rounded-lg flex items-center justify-center">
-                <PieChart className="w-5 h-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Vintage Comparison</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-fuchsia-50 rounded-lg border border-purple-100">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Current Vintage ({vintageComparison.current.year})</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {vintageComparison.current.volume.toLocaleString()} gal
-                  </p>
-                  <p className="text-sm text-gray-500">{vintageComparison.current.lots} lots</p>
-                </div>
-                <Wine className="w-12 h-12 text-purple-600" />
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Previous Vintage ({vintageComparison.previous.year})</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {vintageComparison.previous.volume.toLocaleString()} gal
-                  </p>
-                  <p className="text-sm text-gray-500">{vintageComparison.previous.lots} lots</p>
-                </div>
-              </div>
-
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm font-medium text-gray-700 mb-2">Year-over-Year Change</p>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    {parseFloat(vintageComparison.change.volume) >= 0 ? (
-                      <TrendingUp className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5 text-red-600" />
-                    )}
-                    <span className={`text-lg font-bold ${
-                      parseFloat(vintageComparison.change.volume) >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {vintageComparison.change.volume}%
-                    </span>
-                    <span className="text-sm text-gray-600">volume</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {vintageComparison.change.lots >= 0 ? (
-                      <TrendingUp className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5 text-red-600" />
-                    )}
-                    <span className={`text-lg font-bold ${
-                      vintageComparison.change.lots >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {vintageComparison.change.lots > 0 ? '+' : ''}{vintageComparison.change.lots}
-                    </span>
-                    <span className="text-sm text-gray-600">lots</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Lab Tests Due */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 bg-[#7C203A] rounded-lg flex items-center justify-center">
-              <Beaker className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900">Lab Tests Due</h2>
+      {/* Vintage Comparison - Simplified */}
+      {vintageComparison && (
+        <div className="bg-white p-6 rounded-2xl border border-gray-100">
+          <div className="flex items-center gap-3 mb-6">
+            <PieChart className="w-5 h-5 text-[#7C203A]" />
+            <h2 className="text-lg font-bold text-gray-900">Vintage Comparison</h2>
           </div>
 
-          {labTestsDue.length === 0 ? (
-            <div className="text-center py-8">
-              <FlaskConical className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No lab tests scheduled</p>
-              <p className="text-xs text-gray-400 mt-1">Schedule tests in Lab section</p>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                {vintageComparison.current.year} (Current)
+              </p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">
+                {vintageComparison.current.volume.toLocaleString()}
+              </p>
+              <p className="text-sm text-gray-500">gallons • {vintageComparison.current.lots} lots</p>
             </div>
-          ) : (
-            <>
-              <div className="space-y-3">
-                {labTestsDue.map(test => (
-                  <div
-                    key={test.id}
-                    className={`p-4 rounded-lg border ${
-                      test.status === 'overdue'
-                        ? 'bg-red-50 border-red-200'
-                        : test.status === 'upcoming'
-                        ? 'bg-yellow-50 border-yellow-200'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900 text-sm">{test.lot}</p>
-                        <p className="text-sm text-gray-600 mt-1">{test.test}</p>
-                        <p className="text-xs text-gray-500 mt-2">Due: {test.due}</p>
-                      </div>
-                      <span className={`px-2 py-1 text-xs font-medium rounded ${
-                        test.status === 'overdue'
-                          ? 'bg-red-100 text-red-700'
-                          : test.status === 'upcoming'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {test.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
 
-              <button
-                onClick={() => navigate('/production?view=lab')}
-                className="w-full mt-4 px-4 py-2 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors font-medium text-sm"
-              >
-                View All Lab Work
-              </button>
-            </>
-          )}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                {vintageComparison.previous.year} (Previous)
+              </p>
+              <p className="text-3xl font-bold text-gray-400 mb-1">
+                {vintageComparison.previous.volume.toLocaleString()}
+              </p>
+              <p className="text-sm text-gray-400">gallons • {vintageComparison.previous.lots} lots</p>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-gray-100 flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              {parseFloat(vintageComparison.change.volume) >= 0 ? (
+                <TrendingUp className="w-4 h-4 text-green-600" />
+              ) : (
+                <TrendingDown className="w-4 h-4 text-red-600" />
+              )}
+              <span className={`text-xl font-bold ${
+                parseFloat(vintageComparison.change.volume) >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {vintageComparison.change.volume}%
+              </span>
+              <span className="text-sm text-gray-500">volume change</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {vintageComparison.change.lots >= 0 ? (
+                <TrendingUp className="w-4 h-4 text-green-600" />
+              ) : (
+                <TrendingDown className="w-4 h-4 text-red-600" />
+              )}
+              <span className={`text-xl font-bold ${
+                vintageComparison.change.lots >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {vintageComparison.change.lots > 0 ? '+' : ''}{vintageComparison.change.lots}
+              </span>
+              <span className="text-sm text-gray-500">lots</span>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Active Fermentations Table */}
+      {/* Active Fermentations Table - Cleaner */}
       {activeFermentations.length > 0 && (
-        <div className="bg-white px-6 pt-1.5 pb-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-bold text-gray-900">Active Fermentations</h2>
+        <div className="bg-white p-6 rounded-2xl border border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-[#7C203A]" />
+              <h2 className="text-lg font-bold text-gray-900">Active Fermentations</h2>
+            </div>
             <button
               onClick={() => navigate('/production?view=fermentation')}
               className="text-sm text-[#7C203A] hover:text-[#8B2E48] font-medium"
@@ -807,13 +652,13 @@ export function ProductionDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Lot Name</th>
-                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Varietal</th>
-                  <th className="text-center py-3 px-4 text-sm font-bold text-gray-700">Days</th>
-                  <th className="text-center py-3 px-4 text-sm font-bold text-gray-700">Brix</th>
-                  <th className="text-center py-3 px-4 text-sm font-bold text-gray-700">Temp</th>
-                  <th className="text-right py-3 px-4 text-sm font-bold text-gray-700">Volume</th>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Lot</th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Varietal</th>
+                  <th className="text-center py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Days</th>
+                  <th className="text-center py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Brix</th>
+                  <th className="text-center py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Temp</th>
+                  <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Volume</th>
                 </tr>
               </thead>
               <tbody>
@@ -825,28 +670,26 @@ export function ProductionDashboard() {
                   return (
                     <tr
                       key={lot.id}
-                      className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-fuchsia-50/50 transition-colors cursor-pointer"
+                      className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
                       onClick={() => navigate(`/production?view=fermentation&lot=${lot.id}`)}
                     >
                       <td className="py-4 px-4">
-                        <p className="font-semibold text-gray-900">{lot.name}</p>
-                        <p className="text-xs text-gray-500">{lot.vintage}</p>
+                        <p className="font-semibold text-gray-900 text-sm">{lot.name}</p>
+                        <p className="text-xs text-gray-400">{lot.vintage}</p>
                       </td>
-                      <td className="py-4 px-4 text-sm text-gray-700">{lot.varietal}</td>
+                      <td className="py-4 px-4 text-sm text-gray-600">{lot.varietal}</td>
                       <td className="py-4 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                          <Clock className="w-3 h-3" />
+                        <span className="text-sm font-semibold text-gray-900">
                           {daysFermenting}d
                         </span>
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <span className="font-semibold text-gray-900">
+                        <span className="text-sm font-semibold text-gray-900">
                           {lot.current_brix?.toFixed(1) || '—'}°
                         </span>
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-sm text-gray-700">
-                          <Thermometer className="w-3 h-3" />
+                        <span className="text-sm text-gray-600">
                           {lot.current_temp_f?.toFixed(0) || '—'}°F
                         </span>
                       </td>

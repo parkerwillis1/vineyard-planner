@@ -100,7 +100,7 @@ export default function FAQPage() {
     <DocsLayout>
       <DocsHeader
         title="Frequently Asked Questions"
-        subtitle="Quick answers to common questions about Vine Pioneer."
+        subtitle="Quick answers to common questions about Trellis."
       />
 
       <Callout type="tip" title="Still have questions?">

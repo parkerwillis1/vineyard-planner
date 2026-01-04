@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/shared/lib/supabaseClient.js';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Chrome } from 'lucide-react';
 
 export default function SignUp() {
@@ -9,13 +9,22 @@ export default function SignUp() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/planner';
+  const startTrial = searchParams.get('startTrial') === 'true';
+  const tier = searchParams.get('tier');
 
   async function handleGoogleSignUp() {
     setError(null);
+    let redirectUrl = redirect;
+    const params = new URLSearchParams();
+    if (startTrial) params.append('startTrial', 'true');
+    if (tier) params.append('tier', tier);
+    if (params.toString()) redirectUrl = `${redirect}?${params.toString()}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/select-plan`,
+        redirectTo: `${window.location.origin}${redirectUrl}`,
         queryParams: {
           prompt: 'select_account'
         }
@@ -41,8 +50,13 @@ export default function SignUp() {
       setLoading(false);
       return;
     }
-    // If email confirmations are ON, direct user to sign-in page
-    navigate('/signin');
+    // After successful signup, redirect to the intended page with trial and tier parameters
+    let redirectUrl = redirect;
+    const params = new URLSearchParams();
+    if (startTrial) params.append('startTrial', 'true');
+    if (tier) params.append('tier', tier);
+    if (params.toString()) redirectUrl = `${redirect}?${params.toString()}`;
+    navigate(redirectUrl);
   }
 
   return (
@@ -51,8 +65,8 @@ export default function SignUp() {
         {/* Logo */}
         <div className="text-center mb-8">
           <img
-            src="/VinePioneerLongV1.png"
-            alt="Vine Pioneer"
+            src="/Trellis_Logo/trellis_logo_black.png"
+            alt="Trellis"
             className="h-12 mx-auto mb-6"
           />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Create your account</h1>
@@ -142,7 +156,16 @@ export default function SignUp() {
         {/* Sign In Link */}
         <p className="text-center text-sm text-gray-600 mt-6">
           Already have an account?{' '}
-          <Link to="/signin" className="text-teal-600 hover:text-teal-700 font-semibold">
+          <Link
+            to={(() => {
+              const params = new URLSearchParams();
+              if (redirect) params.append('redirect', redirect);
+              if (startTrial) params.append('startTrial', 'true');
+              if (tier) params.append('tier', tier);
+              return `/signin${params.toString() ? `?${params.toString()}` : ''}`;
+            })()}
+            className="text-teal-600 hover:text-teal-700 font-semibold"
+          >
             Sign in
           </Link>
         </p>

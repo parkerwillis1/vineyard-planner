@@ -5,6 +5,9 @@ import SiteLayout from "./app/layout/SiteLayout.jsx";
 
 import HomePage           from "./pages/home/HomePage.jsx";
 import ProductsPage       from "./pages/products/ProductsPage.jsx";
+import FinancialPlannerPage from "./pages/products/FinancialPlannerPage.jsx";
+import VineyardOperationsPage from "./pages/products/VineyardOperationsPage.jsx";
+import WineryProductionPage from "./pages/products/WineryProductionPage.jsx";
 import VineyardsPage      from "./pages/vineyards/VineyardsPage.jsx";
 import PlansPage          from "./shared/components/PlansPage.jsx";
 import AboutPage from "./pages/about/AboutPage.jsx";
@@ -138,6 +141,9 @@ export default function App() {
           {/* Public routes */}
           <Route index element={<HomePage />} />
           <Route path="products" element={<ProductsPage />} />
+          <Route path="products/planner" element={<FinancialPlannerPage />} />
+          <Route path="products/operations" element={<VineyardOperationsPage />} />
+          <Route path="products/production" element={<WineryProductionPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="pricing" element={<PricingPage />} />

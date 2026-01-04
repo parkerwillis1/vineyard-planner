@@ -96,22 +96,49 @@ serve(async (req) => {
         }
 
         const modules = ['planner'];
-        if (tierId === 'starter') modules.push('vineyard');
-        if (tierId === 'professional') modules.push('vineyard', 'production', 'inventory');
+        if (tierId === 'professional') modules.push('vineyard');
+        if (tierId === 'estate') modules.push('vineyard', 'production', 'inventory');
         if (tierId === 'enterprise') modules.push('vineyard', 'production', 'inventory', 'sales');
 
-        console.log('[Webhook] Updating subscription:', { userId, tierId, modules });
+        // Fetch the subscription to check trial status
+        let subscriptionStatus = 'active';
+        let trialEnd = null;
+
+        if (session.subscription) {
+          try {
+            const stripeSubscription = await stripe.subscriptions.retrieve(session.subscription.toString());
+            subscriptionStatus = stripeSubscription.status; // Will be 'trialing' if trial is active
+            if (stripeSubscription.trial_end) {
+              trialEnd = new Date(stripeSubscription.trial_end * 1000).toISOString();
+            }
+            console.log('[Webhook] Subscription details:', {
+              status: subscriptionStatus,
+              trial_end: stripeSubscription.trial_end,
+              trialEnd
+            });
+          } catch (err) {
+            console.error('[Webhook] Failed to fetch subscription:', err);
+          }
+        }
+
+        console.log('[Webhook] Updating subscription:', { userId, tierId, modules, subscriptionStatus, trialEnd });
+
+        const updateData: any = {
+          tier: tierId,
+          status: subscriptionStatus,
+          modules,
+          stripe_customer_id: session.customer?.toString() ?? null,
+          stripe_subscription_id: session.subscription?.toString() ?? null,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (trialEnd) {
+          updateData.trial_ends_at = trialEnd;
+        }
 
         const { data, error } = await supabase
           .from('subscriptions')
-          .update({
-            tier: tierId,
-            status: 'active',
-            modules,
-            stripe_customer_id: session.customer?.toString() ?? null,
-            stripe_subscription_id: session.subscription?.toString() ?? null,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('user_id', userId)
           .select();
 
@@ -127,12 +154,30 @@ serve(async (req) => {
       case 'customer.subscription.created': {
         console.log('[Webhook] Processing', event.type);
         const subscription = event.data.object as Stripe.Subscription;
+
+        const updateData: any = {
+          status: subscription.status,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Update trial_ends_at if trial is active or just ended
+        if (subscription.trial_end) {
+          updateData.trial_ends_at = new Date(subscription.trial_end * 1000).toISOString();
+        } else if (subscription.status === 'active' && event.type === 'customer.subscription.updated') {
+          // Trial ended and subscription became active - clear trial_ends_at
+          updateData.trial_ends_at = null;
+        }
+
+        console.log('[Webhook] Updating subscription:', {
+          subscription_id: subscription.id,
+          status: subscription.status,
+          trial_end: subscription.trial_end,
+          updateData,
+        });
+
         const { error } = await supabase
           .from('subscriptions')
-          .update({
-            status: subscription.status,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('stripe_subscription_id', subscription.id);
 
         if (error) {
