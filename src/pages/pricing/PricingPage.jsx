@@ -32,25 +32,37 @@ export default function PricingPage() {
   // The fake trial activation API is removed in favor of real Stripe subscriptions
 
   const handleSelect = async (tierId) => {
+    console.log('[DEBUG] handleSelect called with tierId:', tierId);
+    console.log('[DEBUG] user:', user);
+
     // Skip free tier
-    if (tierId === 'free') return;
+    if (tierId === 'free') {
+      console.log('[DEBUG] Free tier selected, skipping');
+      return;
+    }
 
     if (!user) {
+      console.log('[DEBUG] No user found');
       alert('You must be signed in to upgrade.');
       return;
     }
+
+    console.log('[DEBUG] Starting checkout process...');
 
     // SECURITY: Price ID is determined SERVER-SIDE in Edge Function
     // Client only sends tierId; server maps to correct Price ID
 
     try {
       setProcessing(true);
+      console.log('[DEBUG] Processing set to true, calling redirectToStripeCheckout...');
       await redirectToStripeCheckout({
         tierId, // Server will map to correct Price ID
         user // Pass user directly from context
       });
+      console.log('[DEBUG] redirectToStripeCheckout completed');
     } catch (error) {
       console.error('[Stripe] Upgrade checkout failed', error);
+      console.error('[DEBUG] Full error object:', JSON.stringify(error, null, 2));
       alert('We could not start the checkout process. Please try again.');
       setProcessing(false);
     }
