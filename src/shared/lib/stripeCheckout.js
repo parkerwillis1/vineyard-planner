@@ -66,15 +66,25 @@ export async function redirectToStripeCheckout({ tierId, user: providedUser }) {
 
   let data, error;
   try {
-    console.log('[Stripe] About to call edge function directly...');
+    console.log('[Stripe] About to call edge function...');
 
-    // Call edge function directly with fetch (using anon key for auth)
+    // Get user's access token for server-side verification
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.access_token) {
+      console.error('[Stripe] Failed to get session token', sessionError);
+      throw new Error('Authentication required. Please sign in again.');
+    }
+
+    const accessToken = session.access_token;
+    console.log('[Stripe] Got access token');
+
+    // Call edge function with user's JWT token
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`;
-    // SECURITY: Only send tierId - server determines Price ID based on tier
+
+    // SECURITY: Only send tierId - server derives userId/email from JWT
     const payload = {
       tierId,
-      userId: user.id,
-      email: user.email,
     };
 
     console.log('[Stripe] Calling:', url);
@@ -85,8 +95,8 @@ export async function redirectToStripeCheckout({ tierId, user: providedUser }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${accessToken}`,  // User's JWT token
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,  // Still needed for Edge Function access
         },
         body: JSON.stringify(payload),
       }),

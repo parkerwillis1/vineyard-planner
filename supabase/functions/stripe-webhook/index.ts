@@ -27,6 +27,13 @@ const supabase = (supabaseUrl && supabaseServiceRoleKey) ? createClient(supabase
   },
 }) : null;
 
+// SECURITY: Known price IDs for validation
+const VALID_PRICE_IDS = [
+  Deno.env.get('STRIPE_PRICE_PROFESSIONAL'),
+  Deno.env.get('STRIPE_PRICE_ESTATE'),
+  Deno.env.get('STRIPE_PRICE_ENTERPRISE'),
+].filter(Boolean); // Remove undefined values
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'stripe-signature, content-type',
@@ -85,6 +92,13 @@ serve(async (req) => {
       case 'checkout.session.completed': {
         console.log('[Webhook] Processing checkout.session.completed');
         const session = event.data.object as Stripe.Checkout.Session;
+
+        // SECURITY: Verify session mode is subscription
+        if (session.mode !== 'subscription') {
+          console.error('[Webhook] Invalid session mode:', session.mode, '(expected: subscription)');
+          break;
+        }
+
         const userId = session.metadata?.userId;
         const tierId = session.metadata?.tierId;
 
@@ -100,13 +114,27 @@ serve(async (req) => {
         if (tierId === 'estate') modules.push('vineyard', 'production', 'inventory');
         if (tierId === 'enterprise') modules.push('vineyard', 'production', 'inventory', 'sales');
 
-        // Fetch the subscription to check trial status
+        // Fetch the subscription to check trial status and validate price
         let subscriptionStatus = 'active';
         let trialEnd = null;
 
         if (session.subscription) {
           try {
             const stripeSubscription = await stripe.subscriptions.retrieve(session.subscription.toString());
+
+            // SECURITY: Validate subscription contains one of our known price IDs
+            const subscriptionPriceIds = stripeSubscription.items.data.map(item => item.price.id);
+            const hasValidPrice = subscriptionPriceIds.some(priceId => VALID_PRICE_IDS.includes(priceId));
+
+            if (!hasValidPrice) {
+              console.error('[Webhook] Subscription contains invalid price IDs:', subscriptionPriceIds);
+              console.error('[Webhook] Valid price IDs:', VALID_PRICE_IDS);
+              console.error('[Webhook] Rejecting subscription update for security');
+              break;
+            }
+
+            console.log('[Webhook] Price validation passed:', subscriptionPriceIds);
+
             subscriptionStatus = stripeSubscription.status; // Will be 'trialing' if trial is active
             if (stripeSubscription.trial_end) {
               trialEnd = new Date(stripeSubscription.trial_end * 1000).toISOString();
@@ -118,6 +146,7 @@ serve(async (req) => {
             });
           } catch (err) {
             console.error('[Webhook] Failed to fetch subscription:', err);
+            break;
           }
         }
 

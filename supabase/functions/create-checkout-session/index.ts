@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import Stripe from 'https://esm.sh/stripe@16.6.0?target=deno';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY');
 
@@ -21,22 +22,91 @@ const PRICE_ID_MAP: Record<string, string | undefined> = {
   enterprise: Deno.env.get('STRIPE_PRICE_ENTERPRISE'),     // $249/month Enterprise
 };
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// CORS allowlist for production security
+const ALLOWED_ORIGINS = [
+  'https://trellisag.com',
+  'https://www.trellisag.com',
+  'http://localhost:5173',
+  'http://localhost:5176',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  // Check if origin is in allowlist
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: { ...corsHeaders, 'Access-Control-Allow-Methods': 'POST, OPTIONS' } });
   }
 
   try {
-    const { tierId, userId, email } = await req.json();
-
-    if (!tierId || !userId || !email) {
+    // SECURITY: Verify JWT token from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('[Stripe] Missing or invalid Authorization header');
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: tierId, userId, email' }),
+        JSON.stringify({ error: 'Unauthorized: Missing authentication token' }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create Supabase client for auth verification
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Verify user from JWT token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('[Stripe] Auth verification failed:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Invalid or expired token' }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      );
+    }
+
+    // SECURITY: Derive userId and email from verified JWT (don't trust client)
+    const userId = user.id;
+    const email = user.email;
+
+    if (!email) {
+      console.error('[Stripe] User has no email address');
+      return new Response(
+        JSON.stringify({ error: 'User email is required for checkout' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      );
+    }
+
+    console.log('[Stripe] Authenticated user:', user.id);
+
+    const { tierId } = await req.json();
+
+    // Validate tierId
+    if (!tierId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required field: tierId' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      );
+    }
+
+    // SECURITY: Validate tierId is in our allowlist
+    if (!PRICE_ID_MAP.hasOwnProperty(tierId)) {
+      console.error(`[Stripe] Invalid tier requested: ${tierId}`);
+      console.error('[Stripe] Valid tiers:', Object.keys(PRICE_ID_MAP));
+      return new Response(
+        JSON.stringify({ error: `Invalid tier: ${tierId}. Must be one of: ${Object.keys(PRICE_ID_MAP).join(', ')}` }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
       );
     }
@@ -47,10 +117,9 @@ serve(async (req) => {
     if (!priceId) {
       console.error(`[Stripe] No Price ID configured for tier: ${tierId}`);
       console.error('[Stripe] Available tiers:', Object.keys(PRICE_ID_MAP));
-      console.error('[Stripe] Configured Price IDs:', PRICE_ID_MAP);
       return new Response(
-        JSON.stringify({ error: `Invalid tier: ${tierId}. Price ID not configured.` }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+        JSON.stringify({ error: `Price ID not configured for tier: ${tierId}` }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
       );
     }
 
