@@ -62,9 +62,29 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
 
     // Create Supabase client for auth verification
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    // Use service role key OR create client that can verify JWTs
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('[Stripe] Missing Supabase URL or Service Role Key');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      );
+    }
+
+    // Use service role key to verify the JWT
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        persistSession: false,
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
 
     // Verify user from JWT token
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
