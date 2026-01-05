@@ -119,8 +119,9 @@ export async function redirectToStripeCheckout({ tierId, user: providedUser }) {
       throw error;
     }
 
-    if (!data?.sessionId) {
-      console.error('[Stripe] No sessionId in response:', data);
+    // Validate we have either url or sessionId
+    if (!data?.url && !data?.sessionId) {
+      console.error('[Stripe] No url or sessionId in response:', data);
       throw new Error('Stripe checkout session was not returned.');
     }
   } catch (err) {
@@ -133,13 +134,30 @@ export async function redirectToStripeCheckout({ tierId, user: providedUser }) {
     throw err;
   }
 
-  console.log('[Stripe] Checkout session created, url:', data.url);
-
-  if (!data.url) {
-    throw new Error('No checkout URL returned from server');
+  // Prefer modern URL redirect approach
+  if (data.url) {
+    console.log('[Stripe] Checkout session created, url:', data.url);
+    console.log('[Stripe] Redirecting to Stripe checkout via URL...');
+    window.location.assign(data.url);
+    return;
   }
 
-  console.log('[Stripe] Redirecting to Stripe checkout...');
-  // Modern approach: Direct redirect to checkout URL
-  window.location.href = data.url;
+  // Fallback to sessionId approach (backwards compatibility)
+  if (data.sessionId) {
+    console.log('[Stripe] Checkout session created, sessionId:', data.sessionId);
+    const stripe = await stripePromise;
+    if (!stripe) {
+      throw new Error('Stripe failed to initialise.');
+    }
+
+    console.log('[Stripe] Redirecting to Stripe checkout via sessionId...');
+    const { error: redirectError } = await stripe.redirectToCheckout({
+      sessionId: data.sessionId,
+    });
+
+    if (redirectError) {
+      console.error('[Stripe] Redirect failed', redirectError);
+      throw redirectError;
+    }
+  }
 }
