@@ -133,19 +133,13 @@ export async function redirectToStripeCheckout({ tierId, user: providedUser }) {
     throw err;
   }
 
-  console.log('[Stripe] Checkout session created, sessionId:', data.sessionId);
-  const stripe = await stripePromise;
-  if (!stripe) {
-    throw new Error('Stripe failed to initialise.');
+  console.log('[Stripe] Checkout session created, url:', data.url);
+
+  if (!data.url) {
+    throw new Error('No checkout URL returned from server');
   }
 
   console.log('[Stripe] Redirecting to Stripe checkout...');
-  const { error: redirectError } = await stripe.redirectToCheckout({
-    sessionId: data.sessionId,
-  });
-
-  if (redirectError) {
-    console.error('[Stripe] Redirect failed', redirectError);
-    throw redirectError;
-  }
+  // Modern approach: Direct redirect to checkout URL
+  window.location.href = data.url;
 }

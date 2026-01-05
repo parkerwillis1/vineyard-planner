@@ -132,8 +132,9 @@ serve(async (req) => {
       console.log('[Stripe] Subscription will be created when customer completes checkout');
     }
 
+    // Return the checkout URL for direct redirect (modern approach)
     return new Response(
-      JSON.stringify({ sessionId: session.id }),
+      JSON.stringify({ url: session.url }),
       { headers: { 'Content-Type': 'application/json', ...corsHeaders } },
     );
   } catch (error) {
