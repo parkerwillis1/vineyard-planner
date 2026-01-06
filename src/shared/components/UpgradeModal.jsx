@@ -34,7 +34,7 @@ export const UpgradeModal = ({ moduleId, onClose }) => {
   
   return createPortal(
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-3xl w-full shadow-2xl">
+      <div className="bg-white rounded-lg max-w-3xl w-full shadow-2xl relative">
         {/* Close Button */}
         <button
           onClick={onClose}

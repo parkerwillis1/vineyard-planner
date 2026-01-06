@@ -50,6 +50,7 @@ import { Card, CardContent } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
+import { PlanNameModal } from "@/shared/components/PlanNameModal";
 
 // Remove the unused Table imports
 import {
@@ -652,6 +653,7 @@ export default function PlannerShell({ embedded = false }) {
   const [plans, setPlans] = useState([]);
   const [currentPlanName, setCurrentPlanName] = useState('');
   const [upgradeDialog, setUpgradeDialog] = useState({ isOpen: false, message: '' });
+  const [showPlanNameModal, setShowPlanNameModal] = useState(false);
 
   const toggleSection = (sectionTitle) => {
     setSectionsState(prev => ({
@@ -1053,9 +1055,14 @@ const handlePlanChange = (nextId) => {
       return;
     }
 
-    const planName = window.prompt('Enter plan name:');
-    if (!planName) return;
+    // Open the custom modal
+    setShowPlanNameModal(true);
+  };
 
+  // Handle plan creation after name is entered
+  const handleCreatePlanWithName = async (planName) => {
+    setShowPlanNameModal(false);
+    
     console.log('📝 Creating new plan:', planName);
 
     try {
@@ -4493,6 +4500,14 @@ const EstablishmentProgressTracker = ({
         confirmText="Go to Pricing"
         cancelText="Cancel"
         variant="warning"
+      />
+
+      {/* Plan Name Modal */}
+      <PlanNameModal
+        isOpen={showPlanNameModal}
+        onClose={() => setShowPlanNameModal(false)}
+        onConfirm={handleCreatePlanWithName}
+        title="Create New Plan"
       />
     </div>
   );

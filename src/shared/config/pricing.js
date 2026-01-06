@@ -2,14 +2,15 @@
 export const PRICING_TIERS = {
   free: {
     id: 'free',
-    name: 'Planner',
+    name: 'Starter',
     price: 0,
     billingPeriod: 'forever',
     modules: ['planner'],
     features: [
       '1 vineyard plan',
       'Up to 10 acres',
-      'Basic financial projections',
+      'Supplies needed',
+      'Financial projections',
       '3 PDF exports per month'
     ],
     limits: {
@@ -21,7 +22,7 @@ export const PRICING_TIERS = {
   },
   professional: {
     id: 'professional',
-    name: 'Vineyard',
+    name: 'Professional',
     price: 49,
     billingPeriod: 'month',
     modules: ['planner', 'vineyard'],
@@ -31,21 +32,20 @@ export const PRICING_TIERS = {
       'Unlimited PDF exports',
       'Block mapping',
       'Task management',
-      'Mobile app access',
-      '2 team members'
+      '3 team members'
     ],
     limits: {
       plans: -1, // unlimited
       acres: 50,
       blocks: 20,
-      users: 2,
+      users: 3,
       pdfExportsPerMonth: -1 // unlimited
     },
     popular: false
   },
   estate: {
     id: 'estate',
-    name: 'Vineyard + Winery',
+    name: 'Estate',
     price: 109,
     billingPeriod: 'month',
     modules: ['planner', 'vineyard', 'production', 'inventory'],
@@ -71,7 +71,7 @@ export const PRICING_TIERS = {
   },
   enterprise: {
     id: 'enterprise',
-    name: 'End-to-End Platform',
+    name: 'Enterprise',
     price: 249,
     billingPeriod: 'month',
     modules: ['planner', 'vineyard', 'production', 'inventory', 'sales'],
