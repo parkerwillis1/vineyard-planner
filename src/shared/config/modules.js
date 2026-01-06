@@ -34,7 +34,7 @@ export const MODULES = {
     name: 'Winery Production',
     description: 'Track lots from crush to bottle',
     icon: 'Wine',
-    requiredTier: 'professional',
+    requiredTier: 'estate', // Estate tier ($109) includes winery production
     route: '/production',
     tabs: [
       { id: 'dashboard', label: 'Dashboard' },
@@ -49,7 +49,7 @@ export const MODULES = {
     name: 'Inventory',
     description: 'Manage grape, wine, and bottle inventory',
     icon: 'Package',
-    requiredTier: 'professional',
+    requiredTier: 'estate', // Estate tier ($109) includes inventory
     comingSoon: true,
     expectedLaunch: 'Q4 2025',
     route: '/inventory',

@@ -61,9 +61,14 @@ export const SubscriptionProvider = ({ children }) => {
 
         if (data) {
           const tier = data.tier || 'free';
+          console.log('[Subscription] Loaded from DB:', {
+            tier,
+            modules: data.modules,
+            status: data.status
+          });
           setSubscription({
             tier: tier,
-            modules: getModulesForTier(tier),
+            modules: data.modules || ['planner'], // Use actual modules from database
             status: data.status,
             trialEndsAt: data.trial_ends_at,
             cancelAt: data.cancel_at,
@@ -104,7 +109,7 @@ export const SubscriptionProvider = ({ children }) => {
             const tier = payload.new.tier || 'free';
             setSubscription({
               tier: tier,
-              modules: getModulesForTier(tier),
+              modules: payload.new.modules || ['planner'], // Use actual modules from database
               status: payload.new.status,
               trialEndsAt: payload.new.trial_ends_at,
               cancelAt: payload.new.cancel_at,

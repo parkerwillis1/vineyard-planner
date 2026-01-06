@@ -33,95 +33,102 @@ export const UpgradeModal = ({ moduleId, onClose }) => {
   };
   
   return createPortal(
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Unlock {module.name}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-700 hover:text-gray-900"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-3xl w-full shadow-2xl">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
         {/* Content */}
-        <div className="p-6">
+        <div className="p-10">
           {module.comingSoon ? (
             // Coming Soon View
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-blue-600" />
+            <div className="text-center py-6">
+              <div className="w-24 h-24 rounded-lg flex items-center justify-center mx-auto mb-8" style={{ backgroundColor: '#117753' }}>
+                <Icon className="w-12 h-12 text-white" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Coming Soon!</h3>
-              <p className="text-gray-600 mb-6">
+              <h2 className="text-3xl font-bold mb-3 text-gray-900">{module.name}</h2>
+              <p className="text-gray-600 text-lg mb-8">
                 {module.description}
               </p>
-              <p className="text-sm text-gray-500 mb-6">
+              <p className="text-sm text-gray-500 mb-10">
                 Expected launch: {module.expectedLaunch}
               </p>
-              <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <button className="px-10 py-4 rounded-lg text-white text-lg font-semibold hover:opacity-90 transition-opacity" style={{ backgroundColor: '#117753' }}>
                 Join Waitlist
               </button>
             </div>
           ) : (
             // Upgrade Required View
-            <>
-              <div className="bg-gradient-to-br from-vine-green-50 to-vine-green-100 rounded-xl p-6 mb-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                    <Icon className="w-6 h-6 text-vine-green-600" />
+            <div className="grid grid-cols-2 gap-12">
+              {/* Left Column - Info */}
+              <div>
+                {/* Icon and Title */}
+                <div className="mb-8">
+                  <div className="w-16 h-16 rounded-lg flex items-center justify-center mb-5" style={{ backgroundColor: '#117753' }}>
+                    <Icon className="w-8 h-8 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-vine-green-900 mb-2">
-                      {module.name}
-                    </h3>
-                    <p className="text-vine-green-700">
-                      {module.description}
-                    </p>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                    Upgrade to {tierInfo.name}
+                  </h2>
+                  <p className="text-gray-600 text-base">
+                    Unlock {module.name} and more
+                  </p>
+                </div>
+
+                {/* Pricing */}
+                <div className="mb-8">
+                  <div className="mb-4">
+                    <span className="text-5xl font-bold text-gray-900">
+                      ${tierInfo.price}
+                    </span>
+                    <span className="text-xl text-gray-500">
+                      /{tierInfo.billingPeriod}
+                    </span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2.5 rounded-full text-sm font-medium">
+                    <Clock className="w-4 h-4" />
+                    14-day free trial
                   </div>
                 </div>
-              </div>
-              
-              {/* Pricing Card */}
-              <div className="border-2 border-vine-green-500 rounded-xl p-6 mb-6">
-                <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-4xl font-bold text-gray-900">
-                    ${tierInfo.price}
-                  </span>
-                  <span className="text-gray-600">/{tierInfo.billingPeriod}</span>
-                </div>
-                <h4 className="text-xl font-semibold mb-4">{tierInfo.name}</h4>
-                <ul className="space-y-3 mb-6">
-                  {tierInfo.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <Check className="w-5 h-5 text-vine-green-600 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+
+                {/* CTA Button */}
                 <button
-                  className="w-full py-3 bg-vine-green-600 text-white rounded-lg hover:bg-vine-green-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-4 rounded-lg text-white text-lg font-bold transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mb-4"
+                  style={{ backgroundColor: '#117753' }}
                   onClick={handleUpgrade}
                   disabled={processing}
                 >
-                  {processing ? 'Redirecting…' : `Upgrade to ${tierInfo.name}`}
+                  {processing ? 'Starting your trial...' : 'Start 14-Day Free Trial'}
                 </button>
+
+                {/* Fine print */}
+                <p className="text-center text-sm text-gray-500">
+                  No credit card required • Cancel anytime
+                </p>
               </div>
-              
-              {/* Compare Plans Link */}
-              <div className="text-center">
-                <button 
-                  onClick={() => window.location.href = '/pricing'}
-                  className="text-sm text-vine-green-600 hover:text-vine-green-700"
-                >
-                  Compare all plans →
-                </button>
+
+              {/* Right Column - Features */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-5">
+                  What's Included
+                </h3>
+                <ul className="space-y-3">
+                  {tierInfo.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-3">
+                      <div className="shrink-0 mt-0.5">
+                        <Check className="w-5 h-5" style={{ color: '#117753' }} strokeWidth={2.5} />
+                      </div>
+                      <span className="text-gray-700 text-base">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

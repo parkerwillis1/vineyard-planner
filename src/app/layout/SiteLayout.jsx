@@ -93,14 +93,13 @@ export default function SiteLayout() {
   const handleModuleClick = (module) => {
     console.log('🔍 handleModuleClick called for:', module.id, module);
 
-    // TEMPORARILY DISABLED FOR TESTING: Allow vineyard access
-    const hasAccess = subscription.modules.includes(module.id) || module.id === 'vineyard';
+    const hasAccess = subscription.modules.includes(module.id);
     console.log('🔑 hasAccess:', hasAccess, 'subscription.modules:', subscription.modules);
 
     setShowToolsMenu(false); // Close dropdown
 
-    // Skip navigation for coming soon modules (except vineyard)
-    if (module.comingSoon && module.id !== 'vineyard') {
+    // Skip navigation for coming soon modules
+    if (module.comingSoon) {
       console.log('⏭️ Skipping - coming soon module');
       return;
     }
@@ -168,10 +167,10 @@ export default function SiteLayout() {
                   >
                     <button
                       onClick={() => setShowResourcesMenu(!showResourcesMenu)}
-                      className="flex items-center gap-1 text-base font-semibold text-gray-700 hover:text-vine-green-500 bg-transparent border-0 p-0"
+                      className="flex items-center gap-1 text-base font-semibold text-gray-700 hover:text-vine-green-500 bg-transparent border-0 p-0 leading-none"
                     >
-                      Resources
-                      <ChevronDown className={`w-4 h-4 transition-transform ${showResourcesMenu ? 'rotate-180' : ''}`} />
+                      <span className="leading-none">Resources</span>
+                      <ChevronDown className="w-4 h-4 block shrink-0 transition-transform" style={{ transform: showResourcesMenu ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                     </button>
 
                     {showResourcesMenu && (
@@ -280,7 +279,7 @@ export default function SiteLayout() {
                   >
                     <button
                       onClick={() => setShowToolsMenu(!showToolsMenu)}
-                      className={`flex items-center gap-1 text-base font-semibold transition-colors bg-transparent border-0 p-0 ${
+                      className={`flex items-center gap-1 text-base font-semibold transition-colors bg-transparent border-0 p-0 leading-none ${
                         ['/planner', '/vineyard', '/production', '/inventory', '/sales'].some(path =>
                           location.pathname.startsWith(path)
                         )
@@ -288,12 +287,12 @@ export default function SiteLayout() {
                           : "text-gray-700 hover:text-vine-green-500"
                       }`}
                     >
-                      Tools
-                      <ChevronDown className={`w-4 h-4 transition-transform ${showToolsMenu ? 'rotate-180' : ''}`} />
+                      <span className="leading-none">Tools</span>
+                      <ChevronDown className="w-4 h-4 block shrink-0 transition-transform" style={{ transform: showToolsMenu ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                     </button>
 
                     {showToolsMenu && (
-                      <div className="absolute left-0 top-full mt-1 w-[550px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
+                      <div className="absolute left-0 top-full mt-0 w-[550px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
                         <h3 className="text-base font-semibold text-gray-900 mb-3">Your Trellis tools</h3>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -362,10 +361,10 @@ export default function SiteLayout() {
                   >
                     <button
                       onClick={() => setShowResourcesMenu(!showResourcesMenu)}
-                      className="flex items-center gap-1 text-base font-semibold text-gray-700 hover:text-vine-green-500 bg-transparent border-0 p-0"
+                      className="flex items-center gap-1 text-base font-semibold text-gray-700 hover:text-vine-green-500 bg-transparent border-0 p-0 leading-none"
                     >
-                      Resources
-                      <ChevronDown className={`w-4 h-4 transition-transform ${showResourcesMenu ? 'rotate-180' : ''}`} />
+                      <span className="leading-none">Resources</span>
+                      <ChevronDown className="w-4 h-4 block shrink-0 transition-transform" style={{ transform: showResourcesMenu ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                     </button>
 
                     {showResourcesMenu && (
@@ -476,18 +475,18 @@ export default function SiteLayout() {
                   >
                     <button
                       onClick={() => setShowAboutMenu(!showAboutMenu)}
-                      className={`flex items-center gap-1 text-base font-semibold transition-colors bg-transparent border-0 p-0 ${
+                      className={`flex items-center gap-1 text-base font-semibold transition-colors bg-transparent border-0 p-0 leading-none ${
                         ['/products', '/about'].includes(location.pathname)
                           ? "text-vine-green-500"
                           : "text-gray-700 hover:text-vine-green-500"
                       }`}
                     >
-                      About
-                      <ChevronDown className={`w-4 h-4 transition-transform ${showAboutMenu ? 'rotate-180' : ''}`} />
+                      <span className="leading-none">About</span>
+                      <ChevronDown className="w-4 h-4 block shrink-0 transition-transform" style={{ transform: showAboutMenu ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                     </button>
 
                     {showAboutMenu && (
-                      <div className="absolute left-0 top-full mt-1 w-[350px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
+                      <div className="absolute left-0 top-full mt-0 w-[350px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
                         <h3 className="text-base font-semibold text-gray-900 mb-3">Learn more about us</h3>
 
                         <div className="space-y-2">
@@ -700,7 +699,7 @@ export default function SiteLayout() {
                         className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700"
                       >
                         Resources
-                        <ChevronDown className={`w-4 h-4 transition-transform ${mobileResourcesExpanded ? 'rotate-180' : ''}`} />
+                        <ChevronDown className="w-4 h-4 block shrink-0 transition-transform" style={{ transform: mobileResourcesExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                       </button>
                       {mobileResourcesExpanded && (
                         <>
@@ -766,7 +765,7 @@ export default function SiteLayout() {
                         className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700"
                       >
                         Tools
-                        <ChevronDown className={`w-4 h-4 transition-transform ${mobileToolsExpanded ? 'rotate-180' : ''}`} />
+                        <ChevronDown className="w-4 h-4 block shrink-0 transition-transform" style={{ transform: mobileToolsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                       </button>
                       {mobileToolsExpanded && (
                         <>
@@ -813,7 +812,7 @@ export default function SiteLayout() {
                         className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700"
                       >
                         Resources
-                        <ChevronDown className={`w-4 h-4 transition-transform ${mobileResourcesExpanded ? 'rotate-180' : ''}`} />
+                        <ChevronDown className="w-4 h-4 block shrink-0 transition-transform" style={{ transform: mobileResourcesExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                       </button>
                       {mobileResourcesExpanded && (
                         <>
@@ -863,7 +862,7 @@ export default function SiteLayout() {
                         className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-gray-500 uppercase hover:text-gray-700"
                       >
                         About
-                        <ChevronDown className={`w-4 h-4 transition-transform ${mobileAboutExpanded ? 'rotate-180' : ''}`} />
+                        <ChevronDown className="w-4 h-4 block shrink-0 transition-transform" style={{ transform: mobileAboutExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                       </button>
                       {mobileAboutExpanded && (
                         <>

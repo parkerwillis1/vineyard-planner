@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 
 // Use @ if your alias is working. If not, see the relative-path version below.
 import { useAuth }        from "@/auth/AuthContext.jsx";
+import { useModuleAccess } from "@/shared/hooks/useModuleAccess.js";
 import PlannerShell       from "@/features/planning/pages/PlannerShell.jsx";
 import { OperationsShell } from "@/features/vineyard/pages/OperationsShell.jsx";
 import { FieldDetailPage } from "@/features/vineyard/pages/FieldDetailPage.jsx";
@@ -41,6 +42,43 @@ function ProtectedRoute({ children }) {
   return children ? children : <Outlet />;
 }
 
+/* Guard for routes that require specific module access */
+function ModuleProtectedRoute({ moduleId, children }) {
+  const { user, loading: authLoading } = useAuth() || {};
+  const { hasAccess, loading: moduleLoading, locked, reason } = useModuleAccess(moduleId);
+
+  console.log('[ModuleProtectedRoute]', {
+    moduleId,
+    hasAccess,
+    locked,
+    reason,
+    authLoading,
+    moduleLoading
+  });
+
+  if (authLoading || moduleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading…
+      </div>
+    );
+  }
+
+  if (!user) {
+    console.log('[ModuleProtectedRoute] No user, redirecting to signin');
+    return <Navigate to="/signin" replace />;
+  }
+
+  // If user doesn't have access, redirect to pricing page
+  if (!hasAccess) {
+    console.log('[ModuleProtectedRoute] No access, redirecting to pricing');
+    return <Navigate to="/pricing" replace />;
+  }
+
+  console.log('[ModuleProtectedRoute] Access granted');
+  return children ? children : <Outlet />;
+}
+
 export default function AppRouter() {
   return (
     <Routes>
@@ -64,14 +102,22 @@ export default function AppRouter() {
 
       {/* Auth-protected area */}
       <Route element={<ProtectedRoute />}>
-        {/* Main editor/dashboard shell */}
+        {/* Planner - Free tier (everyone has access) */}
         <Route path="/planner" element={<PlannerShell />} />
         <Route path="/planner/:id" element={<PlannerShell />} />
+        <Route path="/plans" element={<PlansPage />} />
+      </Route>
+
+      {/* Vineyard Operations - Requires 'vineyard' module (professional tier+) */}
+      <Route element={<ModuleProtectedRoute moduleId="vineyard" />}>
         <Route path="/vineyard" element={<OperationsShell />} />
         <Route path="/vineyard/field/:id" element={<FieldDetailPage />} />
+      </Route>
+
+      {/* Winery Production - Requires 'production' module (professional tier+) */}
+      <Route element={<ModuleProtectedRoute moduleId="production" />}>
         <Route path="/production" element={<ProductionShell />} />
         <Route path="/production/vessel/:id" element={<VesselDetail />} />
-        <Route path="/plans" element={<PlansPage />} />
       </Route>
 
       {/* Fallback */}

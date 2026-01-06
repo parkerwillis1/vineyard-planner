@@ -29,15 +29,20 @@ function Dropdown({ trigger, items }) {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`${linkBase} ${idle} flex items-center gap-1`}
+        type="button"
+        onClick={() => setIsOpen((v) => !v)}
+        className={`${linkBase} ${idle} flex items-center gap-0.5`}
       >
         {trigger}
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${
+            isOpen ? "rotate-180" : "rotate-0"
+          }`}
+        />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-48 rounded-lg bg-white shadow-lg border border-gray-200 py-1 z-50">
+        <div className="absolute top-full left-0 w-48 rounded-lg bg-white shadow-lg border border-gray-200 py-1 z-50">
           {items.map((item, idx) => (
             item.divider ? (
               <div key={idx} className="my-1 border-t border-gray-200" />
