@@ -41,7 +41,8 @@ export const useUsageLimits = () => {
         .eq('year', currentYear)
         .maybeSingle();
 
-      if (usageError && usageError.code !== 'PGRST116') {
+      // Ignore errors: PGRST116 = no rows, 42P01 = table doesn't exist
+      if (usageError && usageError.code !== 'PGRST116' && usageError.code !== '42P01') {
         console.error('Error fetching usage:', usageError);
       }
 
@@ -121,7 +122,8 @@ export const useUsageLimits = () => {
           onConflict: 'user_id,month,year'
         });
 
-      if (error) {
+      // Ignore if table doesn't exist (42P01), but still update local state
+      if (error && error.code !== '42P01') {
         console.error('Error tracking PDF export:', error);
         return false;
       }

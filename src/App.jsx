@@ -19,6 +19,8 @@ import SelectPlanPage from "./pages/onboarding/SelectPlanPage.jsx";
 // Documentation pages
 import DocsIndex from "./pages/docs/DocsIndex.jsx";
 import QuickStartPage from "./pages/docs/getting-started/QuickStartPage.jsx";
+import OperationsQuickStartPage from "./pages/docs/getting-started/OperationsQuickStartPage.jsx";
+import ProductionQuickStartPage from "./pages/docs/getting-started/ProductionQuickStartPage.jsx";
 import ConceptsPage from "./pages/docs/getting-started/ConceptsPage.jsx";
 
 // Planner docs
@@ -33,19 +35,37 @@ import BestPracticesPage from "./pages/docs/planner/BestPracticesPage.jsx";
 
 // Operations docs
 import OperationsOverview from "./pages/docs/operations/OperationsOverview.jsx";
+import OpsDashboardPage from "./pages/docs/operations/DashboardPage.jsx";
 import BlocksPage from "./pages/docs/operations/BlocksPage.jsx";
 import IrrigationPage from "./pages/docs/operations/IrrigationPage.jsx";
+import OpsWeatherPage from "./pages/docs/operations/WeatherPage.jsx";
 import TasksPage from "./pages/docs/operations/TasksPage.jsx";
 import TaskPermissionsPage from "./pages/docs/operations/TaskPermissionsPage.jsx";
+import OpsHarvestPage from "./pages/docs/operations/HarvestPage.jsx";
 import TeamPage from "./pages/docs/operations/TeamPage.jsx";
+import OpsLaborPage from "./pages/docs/operations/LaborPage.jsx";
+import OpsEquipmentPage from "./pages/docs/operations/EquipmentPage.jsx";
+import OpsInventoryPage from "./pages/docs/operations/InventoryPage.jsx";
 import SprayPage from "./pages/docs/operations/SprayPage.jsx";
 import CalendarPage from "./pages/docs/operations/CalendarPage.jsx";
 import AnalyticsPage from "./pages/docs/operations/AnalyticsPage.jsx";
 import HardwarePage from "./pages/docs/operations/HardwarePage.jsx";
+import OpsArchivedPage from "./pages/docs/operations/ArchivedPage.jsx";
 
 // Production docs
 import { ProductionOverview } from "./pages/docs/production/ProductionOverview.jsx";
+import { DashboardPage as ProductionDashboardPage } from "./pages/docs/production/DashboardPage.jsx";
+import { HarvestPage as ProductionHarvestPage } from "./pages/docs/production/HarvestPage.jsx";
+import { FermentationPage } from "./pages/docs/production/FermentationPage.jsx";
+import { VesselsPage } from "./pages/docs/production/VesselsPage.jsx";
+import { BlendingPage } from "./pages/docs/production/BlendingPage.jsx";
+import { AgingPage } from "./pages/docs/production/AgingPage.jsx";
+import { LabPage } from "./pages/docs/production/LabPage.jsx";
+import { BottlingPage } from "./pages/docs/production/BottlingPage.jsx";
+import { AnalyticsPage as ProductionAnalyticsPage } from "./pages/docs/production/AnalyticsPage.jsx";
+import { ReportsPage as ProductionReportsPage } from "./pages/docs/production/ReportsPage.jsx";
 import { SensorsPage } from "./pages/docs/production/SensorsPage.jsx";
+import { ArchivesPage as ProductionArchivesPage } from "./pages/docs/production/ArchivesPage.jsx";
 
 // Resources docs
 import FAQPage from "./pages/docs/FAQPage.jsx";
@@ -104,6 +124,8 @@ export default function App() {
 
         {/* Getting Started */}
         <Route path="/docs/getting-started/quick-start" element={<QuickStartPage />} />
+        <Route path="/docs/getting-started/operations-quick-start" element={<OperationsQuickStartPage />} />
+        <Route path="/docs/getting-started/production-quick-start" element={<ProductionQuickStartPage />} />
         <Route path="/docs/getting-started/concepts" element={<ConceptsPage />} />
 
         {/* Vineyard Planner */}
@@ -118,19 +140,37 @@ export default function App() {
 
         {/* Vineyard Operations */}
         <Route path="/docs/operations" element={<OperationsOverview />} />
+        <Route path="/docs/operations/dashboard" element={<OpsDashboardPage />} />
         <Route path="/docs/operations/blocks" element={<BlocksPage />} />
         <Route path="/docs/operations/irrigation" element={<IrrigationPage />} />
+        <Route path="/docs/operations/weather" element={<OpsWeatherPage />} />
         <Route path="/docs/operations/tasks" element={<TasksPage />} />
         <Route path="/docs/operations/task-permissions" element={<TaskPermissionsPage />} />
+        <Route path="/docs/operations/harvest" element={<OpsHarvestPage />} />
         <Route path="/docs/operations/team" element={<TeamPage />} />
+        <Route path="/docs/operations/labor" element={<OpsLaborPage />} />
+        <Route path="/docs/operations/equipment" element={<OpsEquipmentPage />} />
+        <Route path="/docs/operations/inventory" element={<OpsInventoryPage />} />
         <Route path="/docs/operations/spray" element={<SprayPage />} />
         <Route path="/docs/operations/calendar" element={<CalendarPage />} />
         <Route path="/docs/operations/analytics" element={<AnalyticsPage />} />
         <Route path="/docs/operations/hardware" element={<HardwarePage />} />
+        <Route path="/docs/operations/archived" element={<OpsArchivedPage />} />
 
-        {/* Winery Production */}
+        {/* Wine Production */}
         <Route path="/docs/production" element={<ProductionOverview />} />
+        <Route path="/docs/production/dashboard" element={<ProductionDashboardPage />} />
+        <Route path="/docs/production/harvest" element={<ProductionHarvestPage />} />
+        <Route path="/docs/production/fermentation" element={<FermentationPage />} />
+        <Route path="/docs/production/vessels" element={<VesselsPage />} />
+        <Route path="/docs/production/blending" element={<BlendingPage />} />
+        <Route path="/docs/production/aging" element={<AgingPage />} />
+        <Route path="/docs/production/lab" element={<LabPage />} />
+        <Route path="/docs/production/bottling" element={<BottlingPage />} />
+        <Route path="/docs/production/analytics" element={<ProductionAnalyticsPage />} />
+        <Route path="/docs/production/reports" element={<ProductionReportsPage />} />
         <Route path="/docs/production/sensors" element={<SensorsPage />} />
+        <Route path="/docs/production/archives" element={<ProductionArchivesPage />} />
 
         {/* Resources */}
         <Route path="/docs/faq" element={<FAQPage />} />

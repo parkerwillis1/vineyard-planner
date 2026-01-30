@@ -119,7 +119,7 @@ export default function NavBar() {
   const productsItems = [
     { to: "/products/planner", label: "Financial Planner", icon: <Calculator className="w-4 h-4" /> },
     { to: "/products/operations", label: "Vineyard Operations", icon: <MapPin className="w-4 h-4" /> },
-    { to: "/products/production", label: "Winery Production", icon: <Wine className="w-4 h-4" /> },
+    { to: "/products/production", label: "Wine Production", icon: <Wine className="w-4 h-4" /> },
   ];
 
   // Tools dropdown items (for authenticated users)
@@ -169,10 +169,7 @@ export default function NavBar() {
         <nav className="ml-6 hidden lg:flex items-center gap-1">
           {!user ? (
             <>
-              {/* Guest Navigation: Home, Products, Pricing, Resources, About */}
-              <NavLink to="/" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
-                Home
-              </NavLink>
+              {/* Guest Navigation: Products, Pricing, Resources, About */}
               <Dropdown trigger="Products" items={productsItems} />
               <NavLink to="/pricing" className={({isActive})=>`${linkBase} ${isActive?active:idle}`}>
                 Pricing
@@ -260,13 +257,6 @@ export default function NavBar() {
               {!user ? (
                 <>
                   {/* Guest Navigation */}
-                  <NavLink
-                    to="/"
-                    className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Home
-                  </NavLink>
                   <NavLink
                     to="/products"
                     className={({isActive})=>`block ${linkBase} ${isActive?active:idle}`}

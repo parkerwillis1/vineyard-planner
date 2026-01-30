@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CloudRain, Plus, Edit, Trash2, RefreshCw, MapPin, Wifi, WifiOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/card';
+import { LoadingSpinner } from './LoadingSpinner';
 import {
   listRainGauges,
   createRainGauge,
@@ -18,6 +19,7 @@ import {
   autoSyncRainfallFromAPI,
   getRecommendedWeatherAPI
 } from '@/shared/lib/weatherApiIntegrations';
+import { sortByName } from '@/shared/lib/sortUtils';
 
 export default function RainGaugeManagement({ vineyardBlocks = [] }) {
   const [gauges, setGauges] = useState([]);
@@ -89,11 +91,7 @@ export default function RainGaugeManagement({ vineyardBlocks = [] }) {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
+    return <LoadingSpinner message="Loading rain gauges..." />;
   }
 
   return (
@@ -491,7 +489,7 @@ function RainGaugeModal({ gauge, vineyardBlocks, onClose, onSave }) {
               {vineyardBlocks.length === 0 ? (
                 <p className="text-sm text-gray-500">No vineyard blocks available</p>
               ) : (
-                vineyardBlocks.map(block => (
+                sortByName(vineyardBlocks).map(block => (
                   <label key={block.id} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"

@@ -267,8 +267,8 @@ export default function SprayPage() {
       <NextSteps
         links={[
           {
-            title: "Block Management",
-            description: "Set up blocks with PHI/REI lock tracking",
+            title: "Field Management",
+            description: "Set up fields with PHI/REI lock tracking",
             href: "/docs/operations/blocks",
           },
           {

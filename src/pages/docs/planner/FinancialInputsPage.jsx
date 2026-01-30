@@ -173,7 +173,7 @@ export default function FinancialInputsPage() {
           </p>
         </Subsection>
 
-        <Subsection title="Winery Production Costs">
+        <Subsection title="Wine Production Costs">
           <p>
             If bottling wine, add production expenses:
           </p>

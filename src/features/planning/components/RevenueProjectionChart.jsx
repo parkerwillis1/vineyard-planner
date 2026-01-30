@@ -40,7 +40,7 @@ export function RevenueProjectionChart({ projection, breakEven, totalYears = 10 
   const maxRevenue = Math.max(...phaseData.map(p => p.avgRevenue), 1);
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-white p-8 shadow-xl border-2 border-gray-200">
+    <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-white p-8 border border-gray-200">
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-4 border-b border-gray-200">
           <span className="text-sm font-semibold text-gray-700">{totalYears}-Year Revenue Projection</span>

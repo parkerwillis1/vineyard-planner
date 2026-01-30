@@ -318,7 +318,7 @@ export default function CalendarPage() {
             <li>Updates automatically as tasks change</li>
           </ul>
           <Callout type="note" title="Roadmap">
-            iCal sync is planned for Q2 2025. Email support@vinepioneer.com to join the beta test list.
+            iCal sync is planned for Q2 2025. Email support@trellisag.com to join the beta test list.
           </Callout>
         </Subsection>
       </Section>
@@ -357,7 +357,7 @@ export default function CalendarPage() {
             <li><strong>Task Management:</strong> All assigned tasks</li>
             <li><strong>Irrigation Management:</strong> Scheduled and completed irrigation events</li>
             <li><strong>Spray Records:</strong> Application dates, PHI/REI periods</li>
-            <li><strong>Block Management:</strong> Harvest sample dates</li>
+            <li><strong>Field Management:</strong> Harvest sample dates</li>
           </ul>
         </Subsection>
 

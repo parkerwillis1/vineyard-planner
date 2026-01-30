@@ -12,7 +12,15 @@ import {
   Satellite,
   Calendar,
   LayoutGrid,
-  Users
+  Users,
+  CloudRain,
+  Droplets,
+  Bug,
+  Grape,
+  Wifi,
+  DollarSign,
+  Tractor,
+  FileText
 } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 
@@ -39,7 +47,7 @@ export default function VineyardOperationsPage() {
               Streamline your vineyard operations
             </h1>
             <p className="mt-6 text-xl leading-8 text-white/90">
-              Manage blocks, track tasks, monitor spray programs, and optimize your vineyard operations from one central platform.
+              Manage blocks, track spray programs, monitor weather and irrigation, connect IoT sensors, and optimize every aspect of your vineyard.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
@@ -58,18 +66,22 @@ export default function VineyardOperationsPage() {
             </div>
 
             {/* Quick stats */}
-            <div className="mt-16 grid grid-cols-3 gap-8 text-center">
+            <div className="mt-16 grid grid-cols-4 gap-6 text-center">
               <div>
-                <div className="text-3xl font-bold text-white">Real-time</div>
-                <div className="text-sm text-white/80 mt-1">Block monitoring</div>
+                <div className="text-3xl font-bold text-white">Satellite</div>
+                <div className="text-sm text-white/80 mt-1">NDVI & ET data</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-white">Unlimited</div>
-                <div className="text-sm text-white/80 mt-1">Task tracking</div>
+                <div className="text-3xl font-bold text-white">Weather</div>
+                <div className="text-sm text-white/80 mt-1">Forecasts & alerts</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-white">360°</div>
-                <div className="text-sm text-white/80 mt-1">Vineyard insights</div>
+                <div className="text-3xl font-bold text-white">IoT</div>
+                <div className="text-sm text-white/80 mt-1">Sensor integrations</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-white">Complete</div>
+                <div className="text-sm text-white/80 mt-1">Spray compliance</div>
               </div>
             </div>
           </div>
@@ -101,8 +113,8 @@ export default function VineyardOperationsPage() {
             <BenefitCard
               icon={Shield}
               iconColor="navy"
-              title="Cloud Backup"
-              description="Never lose critical vineyard records to weather, fire, or hardware failure. Always accessible."
+              title="Spray Compliant"
+              description="PHI and REI tracking built-in. Generate compliance reports for audits with one click."
             />
           </div>
         </div>
@@ -113,10 +125,10 @@ export default function VineyardOperationsPage() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="mx-auto max-w-2xl text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Comprehensive vineyard operations management
+              Everything you need to run your vineyard
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              Track activities, monitor health, and optimize your vineyard performance
+              From satellite monitoring to spray compliance, with weather forecasts and IoT sensors built in
             </p>
           </div>
 
@@ -204,6 +216,132 @@ export default function VineyardOperationsPage() {
               ctaText="View Analytics Features"
               ctaLink={user ? "/vineyard" : "/signup"}
             />
+
+            {/* Feature 5: Weather Monitoring */}
+            <FeatureShowcase
+              reverse={false}
+              icon={CloudRain}
+              iconColor="navy"
+              eyebrow="Weather"
+              title="Real-time weather monitoring"
+              description="Stay ahead of weather with hyperlocal forecasts, frost alerts, and spray window recommendations. Integrate your own rain gauges and weather stations for precise on-site data."
+              features={[
+                "Hyperlocal 7-day forecasts",
+                "Frost and heat alerts",
+                "Spray window recommendations",
+                "Rain gauge integration",
+                "Growing degree day tracking",
+                "Historical weather data"
+              ]}
+              demoComponent={<WeatherDemo />}
+              ctaText="Monitor Weather"
+              ctaLink={user ? "/vineyard" : "/signup"}
+            />
+
+            {/* Feature 6: Irrigation Management */}
+            <FeatureShowcase
+              reverse={true}
+              icon={Droplets}
+              iconColor="navy"
+              eyebrow="Irrigation"
+              title="Smart irrigation scheduling"
+              description="Optimize water usage with ET-based irrigation recommendations. Track water applications, monitor soil moisture, and connect flow meters for automated logging."
+              features={[
+                "ET-based irrigation scheduling",
+                "Water balance tracking",
+                "Flow meter integration",
+                "Real-time usage monitoring",
+                "Irrigation history by block",
+                "Cost per acre-inch tracking"
+              ]}
+              demoComponent={<IrrigationDemo />}
+              ctaText="Manage Irrigation"
+              ctaLink={user ? "/vineyard" : "/signup"}
+            />
+
+            {/* Feature 7: Spray Records */}
+            <FeatureShowcase
+              reverse={false}
+              icon={Bug}
+              iconColor="navy"
+              eyebrow="Spray Compliance"
+              title="Complete spray record keeping"
+              description="Maintain compliant spray records with pre-harvest interval tracking, REI monitoring, and exportable reports. Never miss a spray window or compliance deadline."
+              features={[
+                "Quick spray logging from mobile",
+                "Pre-harvest interval (PHI) tracking",
+                "Restricted entry interval (REI) alerts",
+                "Product inventory management",
+                "Compliance report generation",
+                "Weather-based spray windows"
+              ]}
+              demoComponent={<SprayDemo />}
+              ctaText="Track Sprays"
+              ctaLink={user ? "/vineyard" : "/signup"}
+            />
+
+            {/* Feature 8: Hardware Integration */}
+            <FeatureShowcase
+              reverse={true}
+              icon={Wifi}
+              iconColor="navy"
+              eyebrow="IoT Sensors"
+              title="Connect your vineyard sensors"
+              description="Integrate soil moisture sensors, weather stations, flow meters, and irrigation controllers. Get real-time data from the field with automatic alerts and logging."
+              features={[
+                "Soil moisture sensor support",
+                "Weather station integration",
+                "Flow meter connectivity",
+                "Irrigation controller APIs",
+                "Custom webhook support",
+                "Real-time alerting"
+              ]}
+              demoComponent={<HardwareDemo />}
+              ctaText="Connect Devices"
+              ctaLink={user ? "/vineyard" : "/signup"}
+            />
+
+            {/* Feature 9: Harvest Tracking */}
+            <FeatureShowcase
+              reverse={false}
+              icon={Grape}
+              iconColor="navy"
+              eyebrow="Harvest"
+              title="Track harvest from field to crush pad"
+              description="Log harvest batches, track quality metrics, and manage grape deliveries. Connect seamlessly with your winery production system for complete traceability."
+              features={[
+                "Harvest batch logging",
+                "Brix, pH, and TA tracking",
+                "Tonnage calculations",
+                "Picker assignment and tracking",
+                "Block-by-block yield history",
+                "Export to winery system"
+              ]}
+              demoComponent={<HarvestDemo />}
+              ctaText="Track Harvest"
+              ctaLink={user ? "/vineyard" : "/signup"}
+            />
+
+            {/* Feature 10: Cost Analysis */}
+            <FeatureShowcase
+              reverse={true}
+              icon={DollarSign}
+              iconColor="navy"
+              eyebrow="Costs & Reports"
+              title="Track costs and generate reports"
+              description="Monitor labor costs, input expenses, and per-acre economics. Generate professional reports for management review, compliance audits, or buyer due diligence."
+              features={[
+                "Cost tracking by block and activity",
+                "Labor hour logging",
+                "Input cost management",
+                "Per-acre cost analysis",
+                "Yield vs cost comparisons",
+                "Exportable PDF reports"
+              ]}
+              demoComponent={<CostAnalysisDemo />}
+              ctaText="Track Costs"
+              ctaLink={user ? "/vineyard" : "/signup"}
+            />
           </div>
         </div>
       </section>
@@ -246,9 +384,19 @@ export default function VineyardOperationsPage() {
                     them="Weeks of training"
                   />
                   <ComparisonRow
-                    feature="User interface"
-                    us="Modern & intuitive"
-                    them="Complex & outdated"
+                    feature="Satellite NDVI"
+                    us="Built-in (no add-on)"
+                    them="Expensive add-on or none"
+                  />
+                  <ComparisonRow
+                    feature="IoT sensor integration"
+                    us="Open webhook API"
+                    them="Proprietary or none"
+                  />
+                  <ComparisonRow
+                    feature="Weather forecasts"
+                    us="Hyperlocal, built-in"
+                    them="Basic or separate system"
                   />
                   <ComparisonRow
                     feature="Mobile experience"
@@ -256,14 +404,14 @@ export default function VineyardOperationsPage() {
                     them="Desktop-only or clunky mobile"
                   />
                   <ComparisonRow
+                    feature="Spray compliance"
+                    us="PHI/REI tracking built-in"
+                    them="Manual tracking"
+                  />
+                  <ComparisonRow
                     feature="Feature bloat"
                     us="Vineyard-focused tools"
                     them="One-size-fits-all agriculture"
-                  />
-                  <ComparisonRow
-                    feature="Updates & features"
-                    us="Frequent improvements"
-                    them="Slow development cycles"
                   />
                   <ComparisonRow
                     feature="Customer support"
@@ -604,6 +752,395 @@ function AnalyticsDemo() {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div className="bg-gradient-to-r from-teal-500 to-cyan-500 h-2 rounded-full" style={{ width: '82%' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WeatherDemo() {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-900">7-Day Forecast</span>
+          <CloudRain className="w-5 h-5 text-[#141d30]" />
+        </div>
+
+        {/* Current Conditions */}
+        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-blue-700 mb-1">Current Conditions</div>
+              <div className="text-4xl font-bold text-gray-900">72°F</div>
+              <div className="text-sm text-gray-600 mt-1">Partly Cloudy</div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-gray-600">Wind: 8 mph NW</div>
+              <div className="text-sm text-gray-600">Humidity: 45%</div>
+              <div className="text-sm text-gray-600">ET: 0.18 in/day</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Forecast Row */}
+        <div className="grid grid-cols-5 gap-2">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day, i) => (
+            <div key={day} className="text-center p-2 bg-gray-50 rounded-lg">
+              <div className="text-xs text-gray-500">{day}</div>
+              <div className="text-lg font-bold text-gray-900">{[74, 78, 82, 76, 71][i]}°</div>
+              <div className="text-xs text-gray-500">{[52, 54, 58, 55, 50][i]}°</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Alerts */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-amber-800">Heat Advisory</div>
+              <div className="text-xs text-amber-600">Wed: High of 82°F expected</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-green-800">Good Spray Window</div>
+              <div className="text-xs text-green-600">Tomorrow 6-10am: Low wind, no rain</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IrrigationDemo() {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-900">Irrigation Management</span>
+          <Droplets className="w-5 h-5 text-[#141d30]" />
+        </div>
+
+        {/* Water Balance */}
+        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
+          <div className="text-sm font-semibold text-blue-800 mb-3">Water Balance - Block A</div>
+          <div className="flex items-end justify-between h-24 gap-2 mb-2">
+            <div className="flex flex-col items-center flex-1">
+              <div className="text-xs text-gray-500 mb-1">ET Loss</div>
+              <div className="w-full bg-red-400 rounded-t" style={{ height: '60px' }}></div>
+            </div>
+            <div className="flex flex-col items-center flex-1">
+              <div className="text-xs text-gray-500 mb-1">Rain</div>
+              <div className="w-full bg-blue-400 rounded-t" style={{ height: '20px' }}></div>
+            </div>
+            <div className="flex flex-col items-center flex-1">
+              <div className="text-xs text-gray-500 mb-1">Irrigation</div>
+              <div className="w-full bg-green-400 rounded-t" style={{ height: '45px' }}></div>
+            </div>
+            <div className="flex flex-col items-center flex-1">
+              <div className="text-xs text-gray-500 mb-1">Balance</div>
+              <div className="w-full bg-amber-400 rounded-t" style={{ height: '15px' }}></div>
+            </div>
+          </div>
+          <div className="text-xs text-blue-700 text-center">Deficit: 0.3 inches (schedule irrigation)</div>
+        </div>
+
+        {/* Recent Events */}
+        <div className="space-y-2">
+          <div className="text-sm font-semibold text-gray-700 mb-2">Recent Irrigation</div>
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <div className="text-sm font-medium text-gray-900">Block A - Zone 1</div>
+              <div className="text-xs text-gray-500">Today, 6:00 AM</div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-bold text-gray-900">4.2 hrs</div>
+              <div className="text-xs text-gray-500">2,450 gal</div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <div className="text-sm font-medium text-gray-900">Block C - Zone 2</div>
+              <div className="text-xs text-gray-500">Yesterday, 5:30 AM</div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-bold text-gray-900">3.8 hrs</div>
+              <div className="text-xs text-gray-500">2,180 gal</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SprayDemo() {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-900">Spray Records</span>
+          <Bug className="w-5 h-5 text-[#141d30]" />
+        </div>
+
+        {/* PHI Alert */}
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-amber-200 rounded-full flex items-center justify-center flex-shrink-0">
+              <Clock className="w-4 h-4 text-amber-700" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-amber-800">Pre-Harvest Interval Alert</div>
+              <div className="text-xs text-amber-700 mt-1">Block B: PHI expires in 14 days (Sept 15)</div>
+              <div className="text-xs text-amber-600 mt-1">Product: Rally 40WSP - Last applied Aug 18</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Sprays */}
+        <div className="space-y-3">
+          <div className="text-sm font-semibold text-gray-700">Recent Applications</div>
+          <div className="border border-gray-200 rounded-lg divide-y divide-gray-200">
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-900">Rally 40WSP</span>
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Compliant</span>
+              </div>
+              <div className="text-xs text-gray-500">Block A, B • Aug 18 • 2.5 oz/acre</div>
+            </div>
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-900">Stylet Oil</span>
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Compliant</span>
+              </div>
+              <div className="text-xs text-gray-500">All Blocks • Aug 10 • 1.5 gal/acre</div>
+            </div>
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-900">Sulfur DF</span>
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Compliant</span>
+              </div>
+              <div className="text-xs text-gray-500">Block C • Aug 5 • 4 lb/acre</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HardwareDemo() {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-900">Connected Devices</span>
+          <Wifi className="w-5 h-5 text-[#141d30]" />
+        </div>
+
+        {/* Device List */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-white rounded-lg border border-green-200">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div>
+                <div className="text-sm font-medium text-gray-900">Flow Meter - Zone 1</div>
+                <div className="text-xs text-gray-500">Last reading: 2 min ago</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-bold text-gray-900">12.4 GPM</div>
+              <div className="text-xs text-green-600">Online</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-white rounded-lg border border-green-200">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div>
+                <div className="text-sm font-medium text-gray-900">Soil Sensor - Block A</div>
+                <div className="text-xs text-gray-500">Last reading: 5 min ago</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-bold text-gray-900">24% VWC</div>
+              <div className="text-xs text-green-600">Online</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-white rounded-lg border border-green-200">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div>
+                <div className="text-sm font-medium text-gray-900">Weather Station</div>
+                <div className="text-xs text-gray-500">Last reading: 1 min ago</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-bold text-gray-900">72°F / 45%</div>
+              <div className="text-xs text-green-600">Online</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-white rounded-lg border border-amber-200">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+              <div>
+                <div className="text-sm font-medium text-gray-900">Rain Gauge - South</div>
+                <div className="text-xs text-gray-500">Last reading: 2 hrs ago</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-bold text-gray-900">0.12 in</div>
+              <div className="text-xs text-amber-600">Low Battery</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HarvestDemo() {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-900">Harvest Tracking</span>
+          <Grape className="w-5 h-5 text-[#141d30]" />
+        </div>
+
+        {/* Today's Summary */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+            <div className="text-xs text-purple-700 mb-1">Today's Harvest</div>
+            <div className="text-2xl font-bold text-gray-900">8.4 tons</div>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+            <div className="text-xs text-purple-700 mb-1">Season Total</div>
+            <div className="text-2xl font-bold text-gray-900">42.6 tons</div>
+          </div>
+        </div>
+
+        {/* Recent Batches */}
+        <div className="space-y-2">
+          <div className="text-sm font-semibold text-gray-700">Today's Batches</div>
+          <div className="border border-gray-200 rounded-lg divide-y divide-gray-200">
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-900">Cab Sauv - Block A</span>
+                <span className="text-sm font-bold text-gray-900">4.2 tons</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="bg-gray-50 rounded p-1.5 text-center">
+                  <div className="text-gray-500">Brix</div>
+                  <div className="font-semibold text-gray-900">24.5°</div>
+                </div>
+                <div className="bg-gray-50 rounded p-1.5 text-center">
+                  <div className="text-gray-500">pH</div>
+                  <div className="font-semibold text-gray-900">3.58</div>
+                </div>
+                <div className="bg-gray-50 rounded p-1.5 text-center">
+                  <div className="text-gray-500">TA</div>
+                  <div className="font-semibold text-gray-900">6.2</div>
+                </div>
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-900">Chardonnay - Block C</span>
+                <span className="text-sm font-bold text-gray-900">4.2 tons</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="bg-gray-50 rounded p-1.5 text-center">
+                  <div className="text-gray-500">Brix</div>
+                  <div className="font-semibold text-gray-900">23.8°</div>
+                </div>
+                <div className="bg-gray-50 rounded p-1.5 text-center">
+                  <div className="text-gray-500">pH</div>
+                  <div className="font-semibold text-gray-900">3.42</div>
+                </div>
+                <div className="bg-gray-50 rounded p-1.5 text-center">
+                  <div className="text-gray-500">TA</div>
+                  <div className="font-semibold text-gray-900">7.1</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CostAnalysisDemo() {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-900">Cost Analysis</span>
+          <DollarSign className="w-5 h-5 text-[#141d30]" />
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="text-xs text-gray-600 mb-1">YTD Expenses</div>
+            <div className="text-2xl font-bold text-gray-900">$45,280</div>
+            <div className="text-xs text-gray-500 mt-1">$4,528/acre</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="text-xs text-gray-600 mb-1">Cost per Ton</div>
+            <div className="text-2xl font-bold text-gray-900">$1,063</div>
+            <div className="text-xs text-green-600 mt-1">↓ 8% vs last year</div>
+          </div>
+        </div>
+
+        {/* Cost Breakdown */}
+        <div className="space-y-3">
+          <div className="text-sm font-semibold text-gray-700">Expense Breakdown</div>
+          <div className="space-y-2">
+            <div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-600">Labor</span>
+                <span className="font-semibold text-gray-900">$18,500 (41%)</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-[#141d30] h-2 rounded-full" style={{ width: '41%' }}></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-600">Spray Materials</span>
+                <span className="font-semibold text-gray-900">$12,340 (27%)</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-[#1a2844] h-2 rounded-full" style={{ width: '27%' }}></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-600">Irrigation</span>
+                <span className="font-semibold text-gray-900">$8,200 (18%)</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-[#2d3a52] h-2 rounded-full" style={{ width: '18%' }}></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-600">Equipment</span>
+                <span className="font-semibold text-gray-900">$6,240 (14%)</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-[#404d65] h-2 rounded-full" style={{ width: '14%' }}></div>
               </div>
             </div>
           </div>

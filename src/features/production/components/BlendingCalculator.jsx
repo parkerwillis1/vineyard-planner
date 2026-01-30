@@ -21,6 +21,7 @@ import {
   History,
   BarChart3
 } from 'lucide-react';
+import { DocLink } from '@/shared/components/DocLink';
 import {
   listLots,
   executeBlend,
@@ -295,8 +296,8 @@ export function BlendingCalculator() {
     <div className="space-y-6 pb-8">
       {/* Header */}
       <div className="pt-4">
-        <h2 className="text-2xl font-bold text-gray-900">Blending Calculator</h2>
-        <p className="text-gray-600 mt-0.5">Create custom blends and manage your cellar compositions</p>
+        <h1 className="text-2xl font-bold text-gray-900">Blending Calculator</h1>
+        <p className="text-sm text-gray-500 mt-1">Create custom blends and manage your cellar compositions. <DocLink docId="production/blending" /></p>
       </div>
 
       {/* View Tabs */}

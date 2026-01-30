@@ -261,21 +261,22 @@ export function FieldDetailPage({ id: propId, onBack }) {
   ];
 
   // Calculate key metrics
+  const isMapped = field.geom && field.geom.coordinates;
   const vinesPerAcre = field.row_spacing_ft && field.vine_spacing_ft
     ? Math.round(43560 / (field.row_spacing_ft * field.vine_spacing_ft))
     : null;
-  const totalVines = vinesPerAcre && field.acres
+  const totalVines = isMapped && vinesPerAcre && field.acres
     ? Math.round(vinesPerAcre * field.acres)
-    : field.vine_count_reported || null;
+    : null;
   const fieldAge = field.year_planted ? new Date().getFullYear() - field.year_planted : null;
 
   return (
     <div className="space-y-6">
-      {/* Header with Back Button */}
-      <div className="flex items-center gap-3">
+      {/* Header with Back Button - h-16 to align with sidebar logo */}
+      <div className="h-16 flex items-center gap-3">
         <Button
           variant="outline"
-          onClick={onBack || (() => navigate('/vineyard'))}
+          onClick={onBack || (() => navigate('/vineyard?view=blocks'))}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -348,9 +349,13 @@ export function FieldDetailPage({ id: propId, onBack }) {
               <div className="text-sm font-medium text-gray-600">Size</div>
               <MapPin className="w-5 h-5 text-gray-400" />
             </div>
-            <div className="text-2xl font-bold text-gray-900">
-              {field.acres} <span className="text-lg font-normal text-gray-600">acres</span>
-            </div>
+            {isMapped ? (
+              <div className="text-2xl font-bold text-gray-900">
+                {field.acres} <span className="text-lg font-normal text-gray-600">acres</span>
+              </div>
+            ) : (
+              <div className="text-sm text-amber-600 font-medium">Map field first</div>
+            )}
           </CardContent>
         </Card>
         <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
@@ -373,9 +378,15 @@ export function FieldDetailPage({ id: propId, onBack }) {
               <div className="text-sm font-medium text-gray-600">Total Vines</div>
               <Info className="w-5 h-5 text-gray-400" />
             </div>
-            <div className="text-2xl font-bold text-gray-900">{totalVines ? totalVines.toLocaleString() : '-'}</div>
-            {vinesPerAcre && (
-              <div className="text-xs text-gray-500 mt-1">{vinesPerAcre.toLocaleString()}/acre</div>
+            {isMapped ? (
+              <>
+                <div className="text-2xl font-bold text-gray-900">{totalVines ? totalVines.toLocaleString() : '-'}</div>
+                {vinesPerAcre && (
+                  <div className="text-xs text-gray-500 mt-1">{vinesPerAcre.toLocaleString()}/acre</div>
+                )}
+              </>
+            ) : (
+              <div className="text-sm text-amber-600 font-medium">Map field first</div>
             )}
           </CardContent>
         </Card>
@@ -396,28 +407,30 @@ export function FieldDetailPage({ id: propId, onBack }) {
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="flex gap-8">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                  ${activeTab === tab.id
-                    ? 'border-vine-green-500 text-vine-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }
-                `}
-              >
-                <Icon className="w-5 h-5" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
+      <div className="bg-gray-100 rounded-xl p-1.5 inline-flex gap-1">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                border: 'none',
+                color: activeTab === tab.id ? '#117753' : undefined
+              }}
+              className={`
+                flex items-center gap-2 py-2 px-4 font-medium text-sm rounded-lg transition-all
+                ${activeTab === tab.id
+                  ? 'bg-white shadow-sm'
+                  : 'bg-transparent text-gray-500 hover:text-gray-700'
+                }
+              `}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab Content */}
@@ -841,20 +854,20 @@ export function FieldDetailPage({ id: propId, onBack }) {
       {showSampleModal && createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar">
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-gray-100 border-b border-gray-200 px-6 py-4 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Beaker className="w-6 h-6" />
-                  {editingSample ? 'Edit' : 'Add'} Field Sample - {field.name}
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Beaker className="w-6 h-6 text-blue-600" />
+                  {editingSample ? 'Edit' : 'Add'} Field Sample
                 </h2>
-                <p className="text-blue-50 text-sm mt-1">Record berry quality metrics</p>
+                <p className="text-gray-500 text-sm mt-1">{field.name} - Record berry quality metrics</p>
               </div>
               <button
                 onClick={() => {
                   setShowSampleModal(false);
                   setEditingSample(null);
                 }}
-                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                className="bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 rounded-lg p-2 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

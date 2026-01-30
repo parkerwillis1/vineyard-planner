@@ -369,8 +369,8 @@ export default function AnalyticsPage() {
       <NextSteps
         links={[
           {
-            title: "Block Management",
-            description: "Track block-level yield and quality data",
+            title: "Field Management",
+            description: "Track field-level yield and quality data",
             href: "/docs/operations/blocks",
           },
           {

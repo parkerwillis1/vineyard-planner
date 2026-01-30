@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Cpu, Plus, Edit, Trash2, RefreshCw, MapPin, CheckCircle, AlertCircle, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/card';
+import { LoadingSpinner } from './LoadingSpinner';
 import {
   listControllers,
   createController,
@@ -15,6 +16,7 @@ import {
   listZoneMappings,
   createZoneMapping
 } from '@/shared/lib/controllerIntegrations';
+import { sortByName } from '@/shared/lib/sortUtils';
 
 export default function ControllerManagement({ vineyardBlocks = [] }) {
   const [controllers, setControllers] = useState([]);
@@ -128,11 +130,7 @@ export default function ControllerManagement({ vineyardBlocks = [] }) {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
+    return <LoadingSpinner message="Loading controllers..." />;
   }
 
   return (
@@ -662,7 +660,7 @@ function ZoneMappingModal({ controller, vineyardBlocks, onClose }) {
                   required
                 >
                   <option value="">Select a block...</option>
-                  {vineyardBlocks.map(block => (
+                  {sortByName(vineyardBlocks).map(block => (
                     <option key={block.id} value={block.id}>
                       {block.name} {block.variety && `(${block.variety})`}
                     </option>

@@ -245,8 +245,8 @@ export default function TeamPage() {
             href: "/docs/operations/tasks",
           },
           {
-            title: "Block Management",
-            description: "Set up vineyard blocks and GPS boundaries",
+            title: "Field Management",
+            description: "Set up vineyard fields and GPS boundaries",
             href: "/docs/operations/blocks",
           },
           {

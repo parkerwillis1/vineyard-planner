@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Zap, Plus, Minus } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { sortByName } from '@/shared/lib/sortUtils';
 
 export function QuickSpray({
   blocks,
@@ -161,7 +162,7 @@ export function QuickSpray({
                 Blocks ({selectedBlocks.length} selected)
               </label>
               <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                {blocks.map(block => (
+                {sortByName(blocks).map(block => (
                   <label
                     key={block.id}
                     className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${

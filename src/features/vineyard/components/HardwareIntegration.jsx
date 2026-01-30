@@ -13,10 +13,23 @@ import {
   Power,
   PowerOff,
   BookOpen,
-  ChevronLeft
+  ChevronLeft,
+  Droplets,
+  Waves,
+  Gauge,
+  Webhook
 } from 'lucide-react';
+
+// Map icon names to Lucide components
+const DEVICE_ICONS = {
+  Droplets,
+  Waves,
+  Gauge,
+  Webhook
+};
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { useAuth } from '@/auth/AuthContext';
+import { DocLink } from '@/shared/components/DocLink';
 import {
   listIrrigationDevices,
   createIrrigationDevice,
@@ -26,6 +39,7 @@ import {
   generateWebhookUrl
 } from '@/shared/lib/hardwareApi';
 import { HardwareIntegrationDocs } from './HardwareIntegrationDocs';
+import { LoadingSpinner } from './LoadingSpinner';
 
 export function HardwareIntegration() {
   const { user } = useAuth();
@@ -142,18 +156,14 @@ export function HardwareIntegration() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader className="w-12 h-12 animate-spin text-blue-500" />
-      </div>
-    );
+    return <LoadingSpinner message="Loading devices..." />;
   }
 
   // If showing documentation, render it instead of devices
   if (showDocs) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 pt-4">
           <button
             onClick={() => setShowDocs(false)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -161,8 +171,8 @@ export function HardwareIntegration() {
             <ChevronLeft className="w-6 h-6 text-gray-600" />
           </button>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Documentation & Setup Guides</h2>
-            <p className="text-gray-600">Complete guide for connecting irrigation hardware</p>
+            <h1 className="text-2xl font-bold text-gray-900">Documentation & Setup Guides</h1>
+            <p className="text-sm text-gray-500 mt-1">Complete guide for connecting irrigation hardware</p>
           </div>
         </div>
         <HardwareIntegrationDocs />
@@ -173,14 +183,11 @@ export function HardwareIntegration() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <Zap className="w-8 h-8 text-blue-600" />
-            Hardware Integration
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Connect irrigation controllers and flow meters to automatically log irrigation events
+          <h1 className="text-2xl font-bold text-gray-900">Devices</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Connect irrigation controllers and flow meters to automatically log irrigation events. <DocLink docId="operations/devices" />
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -222,39 +229,60 @@ export function HardwareIntegration() {
               <div>
                 <p className="text-sm text-gray-600 mb-4">Select your irrigation controller or flow meter type:</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Object.entries(DEVICE_TYPES).map(([key, type]) => (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        setSelectedDeviceType(key);
-                        setNewDevice({ ...newDevice, device_type: key });
-                      }}
-                      className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left group"
-                    >
-                      <div className="text-4xl mb-3">{type.icon}</div>
-                      <div className="font-bold text-gray-900 mb-1">{type.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {type.supportsWebhook && '✓ Webhook'}
-                        {type.supportsApi && type.supportsWebhook && ' • '}
-                        {type.supportsApi && '✓ API'}
-                      </div>
-                    </button>
-                  ))}
+                  {Object.entries(DEVICE_TYPES).map(([key, type]) => {
+                    const IconComponent = DEVICE_ICONS[type.iconName];
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setSelectedDeviceType(key);
+                          setNewDevice({ ...newDevice, device_type: key });
+                        }}
+                        className="p-6 border-2 border-gray-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition-all text-left group"
+                      >
+                        <div className={`w-14 h-14 rounded-xl ${type.bgColor} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                          {IconComponent ? (
+                            <IconComponent className={`w-7 h-7 ${type.iconColor}`} />
+                          ) : (
+                            <Webhook className="w-7 h-7 text-gray-500" />
+                          )}
+                        </div>
+                        <div className="font-bold text-gray-900 mb-1">{type.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {type.supportsWebhook && '✓ Webhook'}
+                          {type.supportsApi && type.supportsWebhook && ' • '}
+                          {type.supportsApi && '✓ API'}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-start gap-3">
-                    <div className="text-3xl">{DEVICE_TYPES[selectedDeviceType].icon}</div>
-                    <div>
-                      <h4 className="font-bold text-gray-900 mb-1">{DEVICE_TYPES[selectedDeviceType].name}</h4>
-                      <p className="text-sm text-gray-600">
-                        {DEVICE_TYPES[selectedDeviceType].setupInstructions}
-                      </p>
+                {(() => {
+                  const selectedType = DEVICE_TYPES[selectedDeviceType];
+                  const IconComponent = DEVICE_ICONS[selectedType.iconName];
+                  return (
+                    <div className={`p-4 ${selectedType.bgColor} rounded-lg border ${selectedType.iconColor.replace('text-', 'border-')}`}>
+                      <div className="flex items-start gap-3">
+                        <div className={`w-12 h-12 rounded-xl bg-white/60 flex items-center justify-center`}>
+                          {IconComponent ? (
+                            <IconComponent className={`w-6 h-6 ${selectedType.iconColor}`} />
+                          ) : (
+                            <Webhook className="w-6 h-6 text-gray-500" />
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-gray-900 mb-1">{selectedType.name}</h4>
+                          <p className="text-sm text-gray-600">
+                            {selectedType.setupInstructions}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Device Name *</label>
@@ -347,7 +375,16 @@ export function HardwareIntegration() {
                   {/* Device Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-3">
-                      <div className="text-4xl">{deviceType?.icon || '🔌'}</div>
+                      <div className={`w-12 h-12 rounded-xl ${deviceType?.bgColor || 'bg-gray-100'} flex items-center justify-center`}>
+                        {(() => {
+                          const IconComponent = DEVICE_ICONS[deviceType?.iconName];
+                          return IconComponent ? (
+                            <IconComponent className={`w-6 h-6 ${deviceType?.iconColor || 'text-gray-500'}`} />
+                          ) : (
+                            <Webhook className="w-6 h-6 text-gray-500" />
+                          );
+                        })()}
+                      </div>
                       <div>
                         <h3 className="font-bold text-gray-900 text-lg">{device.device_name}</h3>
                         <p className="text-sm text-gray-600">{deviceType?.name || device.device_type}</p>

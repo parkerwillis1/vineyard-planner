@@ -7,31 +7,41 @@ import { supabase } from "@/shared/lib/supabaseClient";
 import DocsSearch from "./DocsSearch";
 import { useSearchHighlight } from "./useSearchHighlight";
 
+// Store scroll position outside component to persist across re-renders
+const SIDEBAR_SCROLL_KEY = 'docs-sidebar-scroll';
+
 export default function DocsLayout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const breadcrumbs = getBreadcrumbs(location.pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
-  const scrollPositionRef = useRef(0);
   const contentRef = useRef(null);
   const { user } = useAuth() || {};
 
   // Enable search term highlighting
   useSearchHighlight(contentRef);
 
-  // Save scroll position when scrolling
+  // Save scroll position when scrolling - persist to sessionStorage
   const handleScroll = () => {
     if (sidebarRef.current) {
-      scrollPositionRef.current = sidebarRef.current.scrollTop;
+      sessionStorage.setItem(SIDEBAR_SCROLL_KEY, sidebarRef.current.scrollTop.toString());
     }
   };
 
-  // Restore scroll position after route changes
+  // Restore scroll position after component mounts and on route changes
   useEffect(() => {
-    if (sidebarRef.current) {
-      sidebarRef.current.scrollTop = scrollPositionRef.current;
-    }
+    const restoreScroll = () => {
+      if (sidebarRef.current) {
+        const savedPosition = sessionStorage.getItem(SIDEBAR_SCROLL_KEY);
+        if (savedPosition) {
+          sidebarRef.current.scrollTop = parseInt(savedPosition, 10);
+        }
+      }
+    };
+
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(restoreScroll);
   }, [location.pathname]);
 
   const handleSignOut = async () => {

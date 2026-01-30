@@ -18,6 +18,7 @@ import {
   Loader
 } from 'lucide-react';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { DocLink } from '@/shared/components/DocLink';
 import { supabase } from '@/shared/lib/supabaseClient';
 import {
   fetchFieldRainfall,
@@ -25,6 +26,8 @@ import {
   getFieldWeatherSummary
 } from '@/shared/lib/fieldWeatherService';
 import { listVineyardBlocks } from '@/shared/lib/vineyardApi';
+import { sortByName } from '@/shared/lib/sortUtils';
+import { LoadingSpinner } from './LoadingSpinner';
 
 export function WeatherDashboard() {
   const [blocks, setBlocks] = useState([]);
@@ -186,15 +189,95 @@ export function WeatherDashboard() {
     </Card>
   );
 
-  if (loading) {
+  // Get static color classes for insights (Tailwind needs explicit classes, not dynamic interpolation)
+  const getInsightStyles = (color) => {
+    const styles = {
+      red: {
+        bg: 'bg-danger-50',
+        border: 'border-danger-200',
+        iconBg: 'bg-danger-100',
+        iconText: 'text-danger-500',
+        badge: 'bg-danger-500 text-white',
+        text: 'text-danger-600'
+      },
+      green: {
+        bg: 'bg-green-50',
+        border: 'border-green-200',
+        iconBg: 'bg-green-100',
+        iconText: 'text-green-600',
+        badge: 'bg-green-600 text-white',
+        text: 'text-green-700'
+      },
+      yellow: {
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+        iconBg: 'bg-amber-100',
+        iconText: 'text-amber-600',
+        badge: 'bg-amber-500 text-white',
+        text: 'text-amber-700'
+      },
+      amber: {
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+        iconBg: 'bg-amber-100',
+        iconText: 'text-amber-600',
+        badge: 'bg-amber-500 text-white',
+        text: 'text-amber-700'
+      },
+      blue: {
+        bg: 'bg-blue-50',
+        border: 'border-blue-200',
+        iconBg: 'bg-blue-100',
+        iconText: 'text-blue-600',
+        badge: 'bg-blue-600 text-white',
+        text: 'text-blue-700'
+      },
+      emerald: {
+        bg: 'bg-emerald-50',
+        border: 'border-emerald-200',
+        iconBg: 'bg-emerald-100',
+        iconText: 'text-emerald-600',
+        badge: 'bg-emerald-600 text-white',
+        text: 'text-emerald-700'
+      },
+      gray: {
+        bg: 'bg-gray-50',
+        border: 'border-gray-200',
+        iconBg: 'bg-gray-100',
+        iconText: 'text-gray-600',
+        badge: 'bg-gray-500 text-white',
+        text: 'text-gray-600'
+      }
+    };
+    return styles[color] || styles.gray;
+  };
+
+  const InsightCard = ({ icon: Icon, title, status, color, message }) => {
+    const styles = getInsightStyles(color);
     return (
-      <div className="flex items-center justify-center p-12">
-        <div className="text-center">
-          <Loader className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading vineyard fields...</p>
+      <div className={`p-4 rounded-lg border ${styles.border} ${styles.bg}`}>
+        <div className="flex items-start gap-3">
+          <div className={`w-10 h-10 rounded-lg ${styles.iconBg} flex items-center justify-center flex-shrink-0`}>
+            <Icon className={`w-5 h-5 ${styles.iconText}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h4 className="font-semibold text-gray-900">{title}</h4>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded ${styles.badge}`}>
+                {status}
+              </span>
+            </div>
+            <p className={`text-sm ${styles.text}`}>
+              {message}
+            </p>
+          </div>
         </div>
       </div>
     );
+  };
+
+  if (loading) {
+    return <LoadingSpinner message="Loading vineyard fields..." />;
   }
 
   if (blocks.length === 0) {
@@ -429,15 +512,13 @@ export function WeatherDashboard() {
   const harvestInsight = calculateHarvestWindow();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Weather Dashboard</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Real-time weather data and forecasts for your vineyard fields
-          </p>
-        </div>
+      <div className="pt-2 sm:pt-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Weather Dashboard</h1>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
+          Real-time weather data and forecasts for your vineyard fields. <DocLink docId="operations/weather" />
+        </p>
       </div>
 
       {/* Field Selector */}
@@ -459,7 +540,7 @@ export function WeatherDashboard() {
                 }}
                 className="w-full max-w-2xl px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                {blocks.map(block => (
+                {sortByName(blocks).map(block => (
                   <option key={block.id} value={block.id}>
                     {block.name} {block.variety ? `(${block.variety})` : ''} • {block.acres} acres
                   </option>
@@ -585,77 +666,45 @@ export function WeatherDashboard() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {forecast.periods.slice(0, 14).map((period, idx) => {
                 const isDay = !period.name.toLowerCase().includes('night');
                 return (
                   <div
                     key={idx}
-                    className={`relative p-5 rounded-xl border-2 transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                      isDay
-                        ? 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200 hover:border-blue-400'
-                        : 'bg-gradient-to-br from-indigo-50 to-slate-100 border-indigo-200 hover:border-indigo-400'
+                    className={`p-4 rounded-lg border ${
+                      isDay ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200'
                     }`}
                   >
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className="font-bold text-gray-900 text-sm">{period.name}</p>
-                        <p className="text-xs text-gray-500 font-medium">
+                        <p className="font-semibold text-gray-900 text-sm">{period.name}</p>
+                        <p className="text-xs text-gray-500">
                           {new Date(period.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </p>
                       </div>
                       {period.temperature && (
-                        <div className={`text-right ${isDay ? 'text-orange-600' : 'text-blue-600'}`}>
-                          <p className="text-3xl font-black">{period.temperature}°</p>
-                          <p className="text-xs font-semibold">F</p>
-                        </div>
+                        <p className={`text-2xl font-bold ${isDay ? 'text-orange-600' : 'text-blue-600'}`}>
+                          {period.temperature}°
+                        </p>
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <p className="text-sm text-gray-700 font-medium leading-snug">{period.shortForecast}</p>
+                    <p className="text-sm text-gray-600 mb-2">{period.shortForecast}</p>
 
-                      <div className="space-y-1">
-                        {period.precipitationProbability > 0 && (
-                          <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                            period.precipitationProbability > 50
-                              ? 'bg-blue-100 border border-blue-300'
-                              : 'bg-blue-50 border border-blue-200'
-                          }`}>
-                            <Droplet className={`w-4 h-4 ${
-                              period.precipitationProbability > 50 ? 'text-blue-700' : 'text-blue-600'
-                            }`} />
-                            <div className="flex-1">
-                              <span className={`text-sm font-bold ${
-                                period.precipitationProbability > 50 ? 'text-blue-900' : 'text-blue-700'
-                              }`}>
-                                {period.precipitationProbability}%
-                              </span>
-                              {period.estimatedRainfallMm > 0 && (
-                                <span className="text-xs text-gray-600 ml-1">
-                                  (~{(period.estimatedRainfallMm / 25.4).toFixed(2)}")
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {period.windSpeed && (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-200">
-                            <Wind className="w-4 h-4 text-gray-600" />
-                            <div className="flex-1">
-                              <span className="text-sm font-medium text-gray-700">
-                                {period.windSpeed}
-                              </span>
-                              {period.windDirection && (
-                                <span className="text-xs text-gray-500 ml-1">
-                                  {period.windDirection}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      {period.precipitationProbability > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Droplet className="w-3 h-3 text-blue-500" />
+                          {period.precipitationProbability}%
+                        </span>
+                      )}
+                      {period.windSpeed && (
+                        <span className="flex items-center gap-1">
+                          <Wind className="w-3 h-3 text-gray-400" />
+                          {period.windSpeed}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -666,100 +715,64 @@ export function WeatherDashboard() {
       )}
 
       {/* Vineyard Insights */}
-      <Card className="border-0 shadow-xl">
+      <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-md">
-              <AlertTriangle className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-gray-700" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900">Vineyard Weather Insights</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Vineyard Weather Insights</h3>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Spray Conditions */}
-            <div className={`flex items-start gap-4 p-5 rounded-xl bg-${sprayInsight.color}-50 border-2 border-${sprayInsight.color}-200 shadow-md hover:shadow-lg transition-shadow`}>
-              <div className={`w-14 h-14 rounded-xl bg-gradient-to-br from-${sprayInsight.color}-400 to-${sprayInsight.color}-600 flex items-center justify-center flex-shrink-0 shadow-lg`}>
-                <CloudRain className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className={`font-bold text-${sprayInsight.color}-900 text-lg`}>Spray Conditions</h4>
-                  <span className={`text-xs font-bold text-white bg-gradient-to-r from-${sprayInsight.color}-500 to-${sprayInsight.color}-600 px-3 py-1.5 rounded-full shadow-sm uppercase tracking-wide`}>
-                    {sprayInsight.status}
-                  </span>
-                </div>
-                <p className={`text-sm text-${sprayInsight.color}-800 leading-relaxed font-medium`}>
-                  {sprayInsight.message}
-                </p>
-              </div>
-            </div>
+            <InsightCard
+              icon={CloudRain}
+              title="Spray Conditions"
+              status={sprayInsight.status}
+              color={sprayInsight.color}
+              message={sprayInsight.message}
+            />
 
             {/* Irrigation Recommendation */}
-            <div className={`flex items-start gap-4 p-5 rounded-xl bg-${irrigationInsight.color}-50 border-2 border-${irrigationInsight.color}-200 shadow-md hover:shadow-lg transition-shadow`}>
-              <div className={`w-14 h-14 rounded-xl bg-gradient-to-br from-${irrigationInsight.color}-400 to-${irrigationInsight.color}-600 flex items-center justify-center flex-shrink-0 shadow-lg`}>
-                <Droplet className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className={`font-bold text-${irrigationInsight.color}-900 text-lg`}>Irrigation</h4>
-                  <span className={`text-xs font-bold text-white bg-gradient-to-r from-${irrigationInsight.color}-500 to-${irrigationInsight.color}-600 px-3 py-1.5 rounded-full shadow-sm uppercase tracking-wide`}>
-                    {irrigationInsight.status}
-                  </span>
-                </div>
-                <p className={`text-sm text-${irrigationInsight.color}-800 leading-relaxed font-medium`}>
-                  {irrigationInsight.message}
-                </p>
-              </div>
-            </div>
+            <InsightCard
+              icon={Droplet}
+              title="Irrigation"
+              status={irrigationInsight.status}
+              color={irrigationInsight.color}
+              message={irrigationInsight.message}
+            />
 
             {/* Disease Pressure */}
-            <div className={`flex items-start gap-4 p-5 rounded-xl bg-${diseaseInsight.color}-50 border-2 border-${diseaseInsight.color}-200 shadow-md hover:shadow-lg transition-shadow`}>
-              <div className={`w-14 h-14 rounded-xl bg-gradient-to-br from-${diseaseInsight.color}-400 to-${diseaseInsight.color}-600 flex items-center justify-center flex-shrink-0 shadow-lg`}>
-                <AlertTriangle className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className={`font-bold text-${diseaseInsight.color}-900 text-lg`}>Disease Pressure</h4>
-                  <span className={`text-xs font-bold text-white bg-gradient-to-r from-${diseaseInsight.color}-500 to-${diseaseInsight.color}-600 px-3 py-1.5 rounded-full shadow-sm uppercase tracking-wide`}>
-                    {diseaseInsight.status}
-                  </span>
-                </div>
-                <p className={`text-sm text-${diseaseInsight.color}-800 leading-relaxed font-medium`}>
-                  {diseaseInsight.message}
-                </p>
-              </div>
-            </div>
+            <InsightCard
+              icon={AlertTriangle}
+              title="Disease Pressure"
+              status={diseaseInsight.status}
+              color={diseaseInsight.color}
+              message={diseaseInsight.message}
+            />
 
             {/* Harvest Conditions */}
-            <div className={`flex items-start gap-4 p-5 rounded-xl bg-${harvestInsight.color}-50 border-2 border-${harvestInsight.color}-200 shadow-md hover:shadow-lg transition-shadow`}>
-              <div className={`w-14 h-14 rounded-xl bg-gradient-to-br from-${harvestInsight.color}-400 to-${harvestInsight.color}-600 flex items-center justify-center flex-shrink-0 shadow-lg`}>
-                <Sun className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className={`font-bold text-${harvestInsight.color}-900 text-lg`}>Harvest Window</h4>
-                  <span className={`text-xs font-bold text-white bg-gradient-to-r from-${harvestInsight.color}-500 to-${harvestInsight.color}-600 px-3 py-1.5 rounded-full shadow-sm uppercase tracking-wide`}>
-                    {harvestInsight.status}
-                  </span>
-                </div>
-                <p className={`text-sm text-${harvestInsight.color}-800 leading-relaxed font-medium`}>
-                  {harvestInsight.message}
-                </p>
-              </div>
-            </div>
+            <InsightCard
+              icon={Sun}
+              title="Harvest Window"
+              status={harvestInsight.status}
+              color={harvestInsight.color}
+              message={harvestInsight.message}
+            />
           </div>
         </CardContent>
       </Card>
 
       {/* Historical Rainfall Data */}
       {rainfall && rainfall.dailyRainfall && Object.keys(rainfall.dailyRainfall).length > 0 && (
-        <Card className="border-0 shadow-xl">
+        <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
-                <CloudRain className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                <CloudRain className="w-5 h-5 text-gray-700" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">Daily Rainfall (Last 7 Days)</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Daily Rainfall (Last 7 Days)</h3>
             </div>
 
             <div className="space-y-3">
@@ -805,27 +818,15 @@ export function WeatherDashboard() {
       )}
 
       {/* Data Source Notice */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl shadow-xl p-6 text-white">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24"></div>
-        <div className="relative z-10">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-              <CloudRain className="w-6 h-6 text-white" />
-            </div>
-            <p className="font-bold text-xl">Real-Time Weather Data</p>
-          </div>
-          <p className="text-blue-50 text-center text-sm mb-3">
-            Weather data provided by the <strong className="text-white">National Weather Service (NWS)</strong>
-          </p>
-          {rainfall?.stationName && (
-            <div className="flex justify-center">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20 text-center">
-                <p className="text-xs text-blue-100 mb-1">NWS Station</p>
-                <p className="font-semibold text-white text-sm">{rainfall.stationName}</p>
-              </div>
-            </div>
-          )}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <div className="flex items-center justify-center gap-3 text-sm text-gray-600">
+          <CloudRain className="w-4 h-4 text-gray-500" />
+          <span>
+            Weather data provided by the <strong className="text-gray-900">National Weather Service (NWS)</strong>
+            {rainfall?.stationName && (
+              <span className="text-gray-500"> via {rainfall.stationName}</span>
+            )}
+          </span>
         </div>
       </div>
     </div>

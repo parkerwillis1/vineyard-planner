@@ -86,7 +86,7 @@ export default function PricingPage() {
                     Welcome! Start Your 2-Week Free Trial
                   </h2>
                   <p className="text-teal-50 text-base mb-4">
-                    You're currently on the free Planner tier. Upgrade to unlock Vineyard Operations or Winery Production features with a 14-day free trial—no credit card required upfront.
+                    You're currently on the free Planner tier. Upgrade to unlock Vineyard Operations or Wine Production features with a 14-day free trial—no credit card required upfront.
                   </p>
                   <div className="flex flex-wrap gap-3 text-sm text-white">
                     <div className="flex items-center gap-2">

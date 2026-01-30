@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/auth/AuthContext';
+import { DocLink } from '@/shared/components/DocLink';
+import { LoadingSpinner } from './LoadingSpinner';
 import {
   Users,
   Plus,
@@ -35,6 +37,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { listOrganizationMembers } from '@/shared/lib/vineyardApi';
 import { listVineyardBlocks } from '@/shared/lib/vineyardApi';
+import { sortByName } from '@/shared/lib/sortUtils';
 import {
   listTimeEntries,
   createTimeEntry,
@@ -561,24 +564,17 @@ export function LaborManagement() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading labor data...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading labor data..." />;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Labor Management</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Track hours, payroll, and productivity for your team
+          <h1 className="text-2xl font-bold text-gray-900">Labor Management</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Track hours, payroll, and productivity for your team. <DocLink docId="operations/labor" />
           </p>
         </div>
       </div>
@@ -1024,7 +1020,7 @@ export function LaborManagement() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       >
                         <option value="">Select field...</option>
-                        {blocks.map(block => (
+                        {sortByName(blocks).map(block => (
                           <option key={block.id} value={block.id}>{block.name}</option>
                         ))}
                       </select>

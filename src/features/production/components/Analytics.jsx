@@ -143,9 +143,9 @@ export function Analytics() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="pt-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Production Analytics</h1>
-        <p className="text-gray-500">Key insights and production trends</p>
+      <div className="pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">Production Analytics</h1>
+        <p className="text-sm text-gray-500 mt-1">Key insights and production trends</p>
       </div>
 
       {/* Key Metrics Row 1 - Capacity & Volume */}
@@ -282,7 +282,7 @@ export function Analytics() {
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
                     <div
-                      className="bg-[#7C203A] h-2 rounded-full transition-all duration-500"
+                      className="bg-[#404E63] h-2 rounded-full transition-all duration-500"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
@@ -343,32 +343,35 @@ export function Analytics() {
           ) : (
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={vintageData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" vertical={false} />
+                <BarChart data={vintageData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <XAxis
                     dataKey="vintage"
-                    tick={{ fontSize: 13, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#e5e7eb' }}
+                    tick={{ fontSize: 12, fill: '#9ca3af' }}
+                    axisLine={false}
+                    tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 13, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#e5e7eb' }}
+                    tick={{ fontSize: 12, fill: '#9ca3af' }}
+                    axisLine={false}
+                    tickLine={false}
                     tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                   />
                   <Tooltip
+                    cursor={{ fill: 'transparent' }}
                     contentStyle={{
                       backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      padding: '12px'
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      padding: '10px 14px'
                     }}
                     formatter={(value) => [`${value.toLocaleString()} gallons`, 'Volume']}
                   />
                   <Bar
                     dataKey="volume"
-                    fill="#7C203A"
-                    radius={[8, 8, 0, 0]}
-                    maxBarSize={60}
+                    fill="#404E63"
+                    radius={[4, 4, 4, 4]}
+                    maxBarSize={50}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -388,32 +391,35 @@ export function Analytics() {
           ) : (
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={productionVelocity}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" vertical={false} />
+                <BarChart data={productionVelocity} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <XAxis
                     dataKey="month"
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#e5e7eb' }}
+                    tick={{ fontSize: 12, fill: '#9ca3af' }}
+                    axisLine={false}
+                    tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 13, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#e5e7eb' }}
+                    tick={{ fontSize: 12, fill: '#9ca3af' }}
+                    axisLine={false}
+                    tickLine={false}
                     allowDecimals={false}
                   />
                   <Tooltip
+                    cursor={{ fill: 'transparent' }}
                     contentStyle={{
                       backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      padding: '12px'
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      padding: '10px 14px'
                     }}
                     formatter={(value) => [`${value} lots`, 'Created']}
                   />
                   <Bar
                     dataKey="count"
-                    fill="#7C203A"
-                    radius={[8, 8, 0, 0]}
-                    maxBarSize={60}
+                    fill="#404E63"
+                    radius={[4, 4, 4, 4]}
+                    maxBarSize={50}
                   />
                 </BarChart>
               </ResponsiveContainer>

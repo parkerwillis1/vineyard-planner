@@ -11,7 +11,12 @@ import {
   Thermometer,
   Droplets,
   Wine,
-  Barrel
+  Barrel,
+  FileText,
+  ClipboardList,
+  Activity,
+  FlaskConical,
+  Wifi
 } from "lucide-react";
 import { useAuth } from "@/auth/AuthContext";
 
@@ -31,14 +36,14 @@ export default function WineryProductionPage() {
             <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 mb-6">
               <Sparkles className="w-4 h-4 text-white" />
               <span className="text-sm font-semibold text-white">
-                Winery Production Management
+                Wine Production Management
               </span>
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">
               Professional winery production tracking
             </h1>
             <p className="mt-6 text-xl leading-8 text-white/90">
-              Track harvest, manage fermentation, create blends, and monitor inventory across your entire winery operation.
+              Track harvest, manage fermentation, create blends, monitor with IoT sensors, and stay compliant with automatic TTB reporting.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
@@ -57,7 +62,7 @@ export default function WineryProductionPage() {
             </div>
 
             {/* Quick stats */}
-            <div className="mt-16 grid grid-cols-3 gap-8 text-center">
+            <div className="mt-16 grid grid-cols-4 gap-6 text-center">
               <div>
                 <div className="text-3xl font-bold text-white">Full</div>
                 <div className="text-sm text-white/80 mt-1">Cellar visibility</div>
@@ -67,8 +72,12 @@ export default function WineryProductionPage() {
                 <div className="text-sm text-white/80 mt-1">Blend calculator</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-white">Complete</div>
-                <div className="text-sm text-white/80 mt-1">Inventory control</div>
+                <div className="text-3xl font-bold text-white">TTB</div>
+                <div className="text-sm text-white/80 mt-1">Compliance built-in</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-white">IoT</div>
+                <div className="text-sm text-white/80 mt-1">Sensor monitoring</div>
               </div>
             </div>
           </div>
@@ -100,8 +109,8 @@ export default function WineryProductionPage() {
             <BenefitCard
               icon={Shield}
               iconColor="burgundy"
-              title="Data Security"
-              description="Your fermentation logs, chemistry, and blend trials are encrypted and backed up automatically."
+              title="TTB Compliant"
+              description="Automatic Form 5120.17 generation with transaction logging. Stay audit-ready without the paperwork."
             />
           </div>
         </div>
@@ -112,10 +121,10 @@ export default function WineryProductionPage() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="mx-auto max-w-2xl text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Comprehensive vineyard operations management
+              Everything you need to run your winery
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              Track activities, monitor health, and optimize your vineyard performance
+              From harvest intake to bottling, with TTB compliance and real-time monitoring built in
             </p>
           </div>
 
@@ -214,6 +223,63 @@ export default function WineryProductionPage() {
               ctaText="Optimize Bottling"
               ctaLink={user ? "/production" : "/signup"}
             />
+
+            {/* Feature 6: TTB Compliance */}
+            <FeatureShowcase
+              reverse={true}
+              eyebrow="Compliance"
+              title="TTB reporting made simple"
+              description="Stay compliant with automatic TTB Form 5120.17 generation. Track all reportable transactions, maintain accurate records, and generate monthly, quarterly, or annual reports with one click."
+              features={[
+                "Automatic Form 5120.17 report generation",
+                "Complete transaction logging by tax class",
+                "Bulk and bottled wine tracking",
+                "Transfers, removals, and losses documentation",
+                "Winery registration management",
+                "Export reports for filing"
+              ]}
+              demoComponent={<TTBComplianceDemo />}
+              ctaText="Simplify Compliance"
+              ctaLink={user ? "/production" : "/signup"}
+            />
+
+            {/* Feature 7: IoT Sensors */}
+            <FeatureShowcase
+              reverse={false}
+              eyebrow="Smart Monitoring"
+              title="Real-time fermentation monitoring"
+              description="Connect IoT temperature sensors to monitor fermentation around the clock. Get alerts for temperature excursions, track readings over time, and never miss a critical moment."
+              features={[
+                "WiFi and Bluetooth sensor support",
+                "Real-time temperature tracking",
+                "Automatic fermentation logging",
+                "Customizable alert thresholds",
+                "Historical temperature charts",
+                "Multiple sensor types supported"
+              ]}
+              demoComponent={<SensorDemo />}
+              ctaText="Connect Sensors"
+              ctaLink={user ? "/production" : "/signup"}
+            />
+
+            {/* Feature 8: Lab Analysis */}
+            <FeatureShowcase
+              reverse={true}
+              eyebrow="Lab & Analysis"
+              title="Track wine chemistry and analytics"
+              description="Record lab results, track chemistry over time, and make data-driven decisions about your wine. From pH and TA to free SO2 and volatile acidity, keep all your analysis in one place."
+              features={[
+                "Complete chemistry tracking",
+                "pH, TA, SO2, and VA logging",
+                "Analysis history by lot",
+                "Chemistry trend visualization",
+                "Production analytics dashboard",
+                "Export lab reports"
+              ]}
+              demoComponent={<LabAnalysisDemo />}
+              ctaText="Track Chemistry"
+              ctaLink={user ? "/production" : "/signup"}
+            />
           </div>
         </div>
       </section>
@@ -256,9 +322,19 @@ export default function WineryProductionPage() {
                     them="Months of setup & consulting"
                   />
                   <ComparisonRow
+                    feature="TTB compliance"
+                    us="Automatic Form 5120.17"
+                    them="Manual export & formatting"
+                  />
+                  <ComparisonRow
                     feature="Mobile cellar access"
                     us="QR code barrel scanning"
                     them="Desktop-dependent"
+                  />
+                  <ComparisonRow
+                    feature="IoT sensors"
+                    us="Built-in fermentation monitoring"
+                    them="Separate system/add-on"
                   />
                   <ComparisonRow
                     feature="User experience"
@@ -795,6 +871,231 @@ function BottlingDemo() {
                 <span className="font-medium text-gray-900">359 units</span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TTBComplianceDemo() {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-900">TTB Form 5120.17</span>
+          <FileText className="w-5 h-5 text-[#81243f]" />
+        </div>
+
+        <div>
+          <span className="text-lg font-semibold text-gray-900">Report of Wine Premises Operations</span>
+          <div className="text-sm text-gray-500 mt-1">January 2025 • Monthly Report</div>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="text-sm text-gray-500 mb-1">Bulk Produced</div>
+            <div className="text-2xl font-bold text-gray-900">2,450 gal</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="text-sm text-gray-500 mb-1">Bulk On Hand</div>
+            <div className="text-2xl font-bold text-gray-900">8,720 gal</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="text-sm text-gray-500 mb-1">Bottled Produced</div>
+            <div className="text-2xl font-bold text-gray-900">1,280 gal</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="text-sm text-gray-500 mb-1">Bottled On Hand</div>
+            <div className="text-2xl font-bold text-gray-900">3,450 gal</div>
+          </div>
+        </div>
+
+        {/* Tax Class Breakdown */}
+        <div className="pt-3 border-t border-gray-200">
+          <div className="text-sm font-semibold text-gray-700 mb-3">By Tax Class</div>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Table Wine (Still)</span>
+              <span className="font-medium text-gray-900">6,820 gal</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Sparkling Wine</span>
+              <span className="font-medium text-gray-900">420 gal</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-gray-600">Dessert Wine</span>
+              <span className="font-medium text-gray-900">180 gal</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Status Badge */}
+        <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+          <span className="text-xs text-gray-500">42 transactions logged</span>
+          <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Ready to File</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SensorDemo() {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-900">Temperature Sensors</span>
+          <Wifi className="w-5 h-5 text-[#81243f]" />
+        </div>
+
+        <div>
+          <span className="text-lg font-semibold text-gray-900">Active Fermentation Monitoring</span>
+          <div className="text-sm text-gray-500 mt-1">4 sensors online</div>
+        </div>
+
+        {/* Sensor Cards */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-white rounded-lg border border-green-200">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div>
+                <div className="text-sm font-medium text-gray-900">Tank 1 - Cab Sauv</div>
+                <div className="text-xs text-gray-500">Updated 2 min ago</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xl font-bold text-gray-900">72°F</div>
+              <div className="text-xs text-green-600">In range</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-white rounded-lg border border-amber-200">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+              <div>
+                <div className="text-sm font-medium text-gray-900">Tank 2 - Pinot Noir</div>
+                <div className="text-xs text-gray-500">Updated 5 min ago</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xl font-bold text-amber-600">78°F</div>
+              <div className="text-xs text-amber-600">High temp alert</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-white rounded-lg border border-green-200">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div>
+                <div className="text-sm font-medium text-gray-900">Tank 3 - Chardonnay</div>
+                <div className="text-xs text-gray-500">Updated 1 min ago</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xl font-bold text-gray-900">58°F</div>
+              <div className="text-xs text-green-600">In range</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mini Chart */}
+        <div className="pt-3 border-t border-gray-200">
+          <div className="text-sm font-semibold text-gray-700 mb-3">Tank 1 - Last 24 Hours</div>
+          <div className="relative h-16 bg-gray-50 rounded-lg overflow-hidden">
+            <svg className="w-full h-full" preserveAspectRatio="none">
+              <path
+                d="M 0,40 Q 10,38 20,35 Q 30,30 40,28 Q 50,25 60,24 Q 70,22 80,24 Q 90,26 100,28"
+                fill="none"
+                stroke="#81243f"
+                strokeWidth="2"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+            <div className="absolute inset-x-0 bottom-0 flex justify-between text-xs text-gray-400 px-2">
+              <span>12am</span>
+              <span>6am</span>
+              <span>12pm</span>
+              <span>6pm</span>
+              <span>Now</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LabAnalysisDemo() {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-xl border-2 border-gray-200">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-900">Wine Analysis</span>
+          <FlaskConical className="w-5 h-5 text-[#81243f]" />
+        </div>
+
+        <div>
+          <span className="text-lg font-semibold text-gray-900">2024 Estate Cab - Lab Results</span>
+          <div className="text-sm text-gray-500 mt-1">Analysis from Jan 15, 2025</div>
+        </div>
+
+        {/* Chemistry Grid */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+            <div className="text-sm text-gray-500 mb-1">pH</div>
+            <div className="text-2xl font-bold text-gray-900">3.62</div>
+            <div className="text-xs text-green-600 mt-1">Normal</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+            <div className="text-sm text-gray-500 mb-1">TA</div>
+            <div className="text-2xl font-bold text-gray-900">6.4</div>
+            <div className="text-xs text-gray-500 mt-1">g/L</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+            <div className="text-sm text-gray-500 mb-1">ABV</div>
+            <div className="text-2xl font-bold text-gray-900">14.2%</div>
+            <div className="text-xs text-gray-500 mt-1">vol</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+            <div className="text-sm text-gray-500 mb-1">Free SO₂</div>
+            <div className="text-2xl font-bold text-gray-900">28</div>
+            <div className="text-xs text-green-600 mt-1">ppm</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+            <div className="text-sm text-gray-500 mb-1">Total SO₂</div>
+            <div className="text-2xl font-bold text-gray-900">85</div>
+            <div className="text-xs text-gray-500 mt-1">ppm</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+            <div className="text-sm text-gray-500 mb-1">VA</div>
+            <div className="text-2xl font-bold text-gray-900">0.42</div>
+            <div className="text-xs text-green-600 mt-1">g/L</div>
+          </div>
+        </div>
+
+        {/* Analysis History */}
+        <div className="pt-3 border-t border-gray-200">
+          <div className="text-sm font-semibold text-gray-700 mb-3">pH Trend (Last 6 Analyses)</div>
+          <div className="flex items-end justify-between h-12 gap-2">
+            <div className="flex-1 bg-[#81243f]/20 rounded-t" style={{ height: '60%' }}></div>
+            <div className="flex-1 bg-[#81243f]/30 rounded-t" style={{ height: '65%' }}></div>
+            <div className="flex-1 bg-[#81243f]/40 rounded-t" style={{ height: '70%' }}></div>
+            <div className="flex-1 bg-[#81243f]/50 rounded-t" style={{ height: '68%' }}></div>
+            <div className="flex-1 bg-[#81243f]/60 rounded-t" style={{ height: '72%' }}></div>
+            <div className="flex-1 bg-[#81243f] rounded-t" style={{ height: '75%' }}></div>
+          </div>
+          <div className="flex justify-between text-xs text-gray-400 mt-2">
+            <span>Oct</span>
+            <span>Nov</span>
+            <span>Dec</span>
+            <span>Jan</span>
+            <span>Feb</span>
+            <span>Mar</span>
           </div>
         </div>
       </div>

@@ -107,7 +107,7 @@ export default function ProductsPage() {
                   : 'border-black text-gray-900 hover:bg-gray-100'
               }`}
             >
-              Winery Production
+              Wine Production
             </button>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function ProductsPage() {
                   ? 'Professional Vineyard Planning Tools'
                   : selectedTool === 'operations'
                   ? 'Vineyard Operations Management'
-                  : 'Winery Production Management'}
+                  : 'Wine Production Management'}
               </span>
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Archive, Filter, Calendar, Wine } from 'lucide-react';
 import { supabase } from '@/shared/lib/supabaseClient';
+import { DocLink } from '@/shared/components/DocLink';
 
 export function ArchivedLots() {
   const [archivedLots, setArchivedLots] = useState([]);
@@ -56,8 +57,8 @@ export function ArchivedLots() {
   return (
     <div className="space-y-6 pb-8">
       <div className="pt-4">
-        <h2 className="text-2xl font-bold text-gray-900">Archived Lots</h2>
-        <p className="text-gray-600 mt-1">Historical records and vintage summaries</p>
+        <h1 className="text-2xl font-bold text-gray-900">Archived Lots</h1>
+        <p className="text-sm text-gray-500 mt-1">Historical records and vintage summaries. <DocLink docId="production/archives" /></p>
       </div>
 
       {/* Filters */}

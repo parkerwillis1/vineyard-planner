@@ -105,8 +105,8 @@ export default function FAQPage() {
 
       <Callout type="tip" title="Still have questions?">
         Can't find what you're looking for? Email us at{" "}
-        <a href="mailto:support@vinepioneer.com" className="text-vine-green-600 underline">
-          support@vinepioneer.com
+        <a href="mailto:support@trellisag.com" className="text-vine-green-600 underline">
+          support@trellisag.com
         </a>{" "}
         or use the in-app chat.
       </Callout>

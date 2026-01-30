@@ -1,23 +1,16 @@
 import React from 'react';
-import { Thermometer, Wifi, Activity, Bell, Settings, Zap, Database, Lock } from 'lucide-react';
-import { Section, Subsection, Callout, CodeBlock } from '../DocsComponents';
+import { Activity, Bell, Wifi, Zap, Database, Lock, Settings } from 'lucide-react';
+import { DocsHeader, Section, Subsection, Callout, CodeBlock } from '../DocsComponents';
 import DocsLayout from '../DocsLayout';
 
 export function SensorsPage() {
   return (
     <DocsLayout>
     <div className="max-w-4xl">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center">
-            <Thermometer className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900">IoT Sensors</h1>
-            <p className="text-lg text-gray-600 mt-1">Real-time temperature monitoring</p>
-          </div>
-        </div>
-      </div>
+      <DocsHeader
+        title="IoT Sensors"
+        subtitle="Real-time temperature monitoring"
+      />
 
       <Callout type="success" title="Hardware-Agnostic System">
         Connect unlimited sensors of any type. Supports field sensors (weather, soil) and cellar sensors (tanks, barrels) with clear categorization.

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/auth/AuthContext';
+import { DocLink } from '@/shared/components/DocLink';
+import { LoadingSpinner } from './LoadingSpinner';
 import {
   Wrench,
   Plus,
@@ -54,6 +56,7 @@ import {
   getEquipmentSummary
 } from '@/shared/lib/equipmentApi';
 import { listOrganizationMembers, listVineyardBlocks } from '@/shared/lib/vineyardApi';
+import { sortByName } from '@/shared/lib/sortUtils';
 import {
   BarChart as RechartsBarChart,
   Bar,
@@ -718,26 +721,17 @@ export function EquipmentManagement() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading equipment data...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading equipment data..." />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Equipment Management</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Track equipment, maintenance, usage, and costs
-          </p>
-        </div>
+      <div className="pt-2 sm:pt-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Equipment Management</h1>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
+          Track equipment, maintenance, usage, and costs. <DocLink docId="operations/equipment" />
+        </p>
       </div>
 
       {/* Notification */}
@@ -764,7 +758,7 @@ export function EquipmentManagement() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
@@ -1492,7 +1486,7 @@ export function EquipmentManagement() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Field</label>
                       <select value={usageForm.block_id} onChange={(e) => setUsageForm({ ...usageForm, block_id: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
                         <option value="">Select field...</option>
-                        {blocks.map(block => <option key={block.id} value={block.id}>{block.name}</option>)}
+                        {sortByName(blocks).map(block => <option key={block.id} value={block.id}>{block.name}</option>)}
                       </select>
                     </div>
                     <div>

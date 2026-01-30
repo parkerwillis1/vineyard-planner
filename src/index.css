@@ -7,7 +7,7 @@
    Global Light Theme (no auto dark inversion)
 -------------------------------------------------- */
 html {
-  background-color: #ffffff; /* Solid white background for html */
+  background-color: #F5F6F7; /* Match app background */
 }
 
 :root {
@@ -15,7 +15,7 @@ html {
   line-height: 1.5;
   font-weight: 400;
   color: #1e293b;            /* slate-800 */
-  background-color: #ffffff; /* white background */
+  background-color: #F5F6F7; /* Match app background */
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -27,7 +27,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #ffffff; /* Solid white background */
+  background-color: #F5F6F7; /* Match app background */
   /* Let your app / Tailwind containers handle layout */
 }
 
@@ -55,14 +55,23 @@ article h3 {
   margin: 1.5rem 0 0.5rem;
 }
 
-/* Links */
+/* Links - only apply default styling to plain text links, not button-styled links */
 a {
-  font-weight: 500;
-  color: #1d4ed8;             /* blue-700 */
   text-decoration: none;
   transition: color .18s;
 }
-a:hover { color: #1e40af; }   /* blue-800 */
+/* Only apply blue color to links inside prose/content areas, not globally */
+.prose a,
+article a,
+p a {
+  font-weight: 500;
+  color: #1d4ed8;             /* blue-700 */
+}
+.prose a:hover,
+article a:hover,
+p a:hover {
+  color: #1e40af;             /* blue-800 */
+}
 
 /* Buttons (base look – Tailwind utility classes can override) */
 button {

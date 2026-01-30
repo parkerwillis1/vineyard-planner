@@ -25,6 +25,8 @@ import {
   restoreTask,
   permanentlyDeleteTask
 } from '@/shared/lib/vineyardApi';
+import { DocLink } from '@/shared/components/DocLink';
+import { LoadingSpinner } from './LoadingSpinner';
 
 export function ArchivedItems() {
   const { user } = useAuth();
@@ -167,29 +169,17 @@ export function ArchivedItems() {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Loading archived items...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading archived items..." />;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3 mt-4">
-            <Archive className="w-8 h-8 text-slate-600" />
-            Archived Items
-          </h1>
-          <p className="text-gray-600 mt-2">
-            View and manage archived field samples, photos, tasks, and more
-          </p>
-        </div>
+      <div className="pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">Archived Items</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          View and manage archived field samples, photos, tasks, and more. <DocLink docId="operations/archived" />
+        </p>
       </div>
 
       {/* Archived Sections */}

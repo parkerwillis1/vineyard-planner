@@ -253,11 +253,9 @@ export function ProductionDashboard() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="pt-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Cellar Dashboard
-        </h1>
-        <p className="text-gray-500">Production overview and active operations</p>
+      <div className="pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">Cellar Dashboard</h1>
+        <p className="text-sm text-gray-500 mt-1">Production overview and active operations</p>
       </div>
 
       {/* Critical Alerts Banner */}

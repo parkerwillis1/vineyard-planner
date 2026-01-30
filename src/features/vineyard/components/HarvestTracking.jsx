@@ -19,7 +19,10 @@ import {
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { DocLink } from '@/shared/components/DocLink';
+import { LoadingSpinner } from './LoadingSpinner';
 import { Input } from '@/shared/components/ui/input';
+import { sortByName } from '@/shared/lib/sortUtils';
 import { useToast } from '@/shared/components/Toast';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import {
@@ -487,42 +490,36 @@ export function HarvestTracking() {
   const seasons = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vine-green-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Loading harvest data...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading harvest data..." />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 sm:pt-4 gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Harvest Management</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Track harvest planning, loads, and yield data
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Harvest Management</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
+            Track harvest planning, loads, and yield data. <DocLink docId="operations/harvest" />
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <select
             value={selectedSeason}
             onChange={(e) => setSelectedSeason(parseInt(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
+            className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
           >
             {seasons.map(year => (
-              <option key={year} value={year}>{year} Season</option>
+              <option key={year} value={year}>{year}</option>
             ))}
           </select>
           <Button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-vine-green-500 hover:bg-vine-green-600"
+            className="flex items-center gap-1.5 sm:gap-2 bg-vine-green-500 hover:bg-vine-green-600 text-xs sm:text-sm px-2.5 sm:px-4 py-1.5 sm:py-2"
           >
-            <Plus className="w-4 h-4" />
-            Add Block to Harvest
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Add Block to Harvest</span>
+            <span className="sm:hidden">Add Block</span>
           </Button>
         </div>
       </div>
@@ -812,7 +809,7 @@ export function HarvestTracking() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vine-green-500"
                 >
                   <option value="">Choose a block...</option>
-                  {blocks.map(block => (
+                  {sortByName(blocks).map(block => (
                     <option key={block.id} value={block.id}>
                       {block.name} - {block.variety} ({block.acres} acres)
                     </option>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Barrel, Calendar, Plus, Droplet, AlertTriangle, Clock, TrendingUp, CheckCircle2, ArrowRight, Wine, Zap, ExternalLink, Layers
 } from 'lucide-react';
+import { DocLink } from '@/shared/components/DocLink';
 import { listLots, listContainers, updateContainer, updateLot, logLotAssignment, createLot, createFermentationLog } from '@/shared/lib/productionApi';
 
 export function AgingManagement() {
@@ -177,6 +178,72 @@ export function AgingManagement() {
     }
   };
 
+  // Fix lot names to match their actual container names
+  // This fixes lots that were created with index-based names like "Barrel 1" instead of actual barrel names
+  const fixLotNames = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Find lots where the name contains "Barrel X" but they're in a different barrel
+      const lotsToFix = lots.filter(lot => {
+        if (!lot.container_id) return false;
+        const container = barrels.find(b => b.id === lot.container_id);
+        if (!container) return false;
+
+        // Check if lot name contains a barrel reference that doesn't match container
+        const lotBarrelMatch = lot.name.match(/Barrel \d+/);
+        if (!lotBarrelMatch) return false;
+
+        const lotBarrelName = lotBarrelMatch[0];
+        return lotBarrelName !== container.name;
+      });
+
+      if (lotsToFix.length === 0) {
+        setSuccess('All lot names match their containers!');
+        setTimeout(() => setSuccess(null), 3000);
+        setLoading(false);
+        return;
+      }
+
+      let fixedCount = 0;
+      for (const lot of lotsToFix) {
+        const container = barrels.find(b => b.id === lot.container_id);
+        if (!container) continue;
+
+        // Replace the barrel reference in the name with the actual container name
+        const newName = lot.name.replace(/Barrel \d+/, container.name);
+
+        await updateLot(lot.id, { name: newName });
+        fixedCount++;
+      }
+
+      setSuccess(`Fixed ${fixedCount} lot name${fixedCount !== 1 ? 's' : ''} to match their containers!`);
+      loadData();
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      console.error('Error fixing lot names:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Detect lots with mismatched names (lot name says "Barrel X" but in different barrel)
+  const mismatchedLotNames = React.useMemo(() => {
+    return lots.filter(lot => {
+      if (!lot.container_id) return false;
+      const container = barrels.find(b => b.id === lot.container_id);
+      if (!container) return false;
+
+      // Check if lot name contains "Barrel X" anywhere (not just at end)
+      const lotBarrelMatch = lot.name.match(/Barrel \d+/);
+      if (!lotBarrelMatch) return false;
+
+      const lotBarrelName = lotBarrelMatch[0];
+      return lotBarrelName !== container.name;
+    });
+  }, [lots, barrels]);
+
   // Assign pressed wine to barrel
   const assignToBarrel = async (lotId, barrelId) => {
     try {
@@ -265,9 +332,16 @@ export function AgingManagement() {
       for (let i = 0; i < allocations.length; i++) {
         const { barrel, volume } = allocations[i];
 
-        // Create child lot
+        // Check if this barrel already has a lot assigned (prevent duplicates)
+        const existingLotForBarrel = lots.find(l => l.container_id === barrel.id && !l.archived_at);
+        if (existingLotForBarrel) {
+          console.log(`Barrel ${barrel.name} already has lot assigned, skipping`);
+          continue;
+        }
+
+        // Create child lot with barrel name instead of just number
         const childLot = await createLot({
-          name: `${lot.name} - Barrel ${i + 1}`,
+          name: `${lot.name} - ${barrel.name}`,
           vintage: lot.vintage,
           varietal: lot.varietal,
           appellation: lot.appellation,
@@ -504,18 +578,49 @@ export function AgingManagement() {
       {/* Header */}
       <div className="pt-4 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Aging Management</h2>
-          <p className="text-gray-600 mt-1">Barrel rotation, topping schedules, and aging timeline</p>
+          <h1 className="text-2xl font-bold text-gray-900">Aging Management</h1>
+          <p className="text-sm text-gray-500 mt-1">Barrel rotation, topping schedules, and aging timeline. <DocLink docId="production/aging" /></p>
         </div>
-        {duplicateBarrelNames.length > 0 && (
-          <button
-            onClick={fixDuplicateBarrelNames}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
-          >
-            <AlertTriangle className="w-5 h-5" />
-            Fix {duplicateBarrelNames.length} Duplicate Barrel Name{duplicateBarrelNames.length > 1 ? 's' : ''}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {mismatchedLotNames.length > 0 && (
+            <div className="relative group">
+              <button
+                onClick={fixLotNames}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
+              >
+                <AlertTriangle className="w-5 h-5" />
+                Fix {mismatchedLotNames.length} Lot Name{mismatchedLotNames.length > 1 ? 's' : ''}
+              </button>
+              {/* Tooltip showing which lots will be fixed */}
+              <div className="absolute right-0 top-full mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-xl p-4 hidden group-hover:block z-50">
+                <p className="text-sm font-semibold text-gray-900 mb-2">Lots with mismatched names:</p>
+                <div className="max-h-60 overflow-y-auto space-y-2">
+                  {mismatchedLotNames.map(lot => {
+                    const container = barrels.find(b => b.id === lot.container_id);
+                    return (
+                      <div key={lot.id} className="text-xs p-2 bg-orange-50 rounded border border-orange-200">
+                        <p className="font-medium text-gray-800 truncate">{lot.name}</p>
+                        <p className="text-orange-700 mt-1">
+                          Actually in: <span className="font-semibold">{container?.name}</span>
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-500 mt-2 italic">Click to rename all lots to match their actual barrels</p>
+              </div>
+            </div>
+          )}
+          {duplicateBarrelNames.length > 0 && (
+            <button
+              onClick={fixDuplicateBarrelNames}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+            >
+              <AlertTriangle className="w-5 h-5" />
+              Fix {duplicateBarrelNames.length} Duplicate Barrel Name{duplicateBarrelNames.length > 1 ? 's' : ''}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Alerts */}

@@ -4,7 +4,9 @@ export const docsNavigation = [
     title: "Getting Started",
     items: [
       { title: "Overview", href: "/docs", description: "Introduction to Trellis documentation", keywords: "overview introduction documentation getting started home welcome" },
-      { title: "Quick Start", href: "/docs/getting-started/quick-start", description: "Get started with Trellis in minutes", keywords: "quick start tutorial guide setup beginner onboarding" },
+      { title: "Quick Start", href: "/docs/getting-started/quick-start", description: "Get started with the Financial Planner", keywords: "quick start tutorial guide setup beginner onboarding planner financial" },
+      { title: "Operations Quick Start", href: "/docs/getting-started/operations-quick-start", description: "Get started with Vineyard Operations", keywords: "quick start vineyard operations blocks tasks team spray weather irrigation" },
+      { title: "Production Quick Start", href: "/docs/getting-started/production-quick-start", description: "Get started with Wine Production", keywords: "quick start wine production lots fermentation vessels cellar winery" },
       { title: "Core Concepts", href: "/docs/getting-started/concepts", description: "Understand key concepts and terminology", keywords: "concepts terminology definitions glossary basics fundamentals" },
     ],
   },
@@ -40,7 +42,8 @@ export const docsNavigation = [
     title: "Vineyard Operations",
     items: [
       { title: "Overview", href: "/docs/operations", description: "Introduction to Vineyard Operations tool", keywords: "operations management vineyard blocks irrigation tasks team spray records" },
-      { title: "Block Management", href: "/docs/operations/blocks", description: "Create and manage vineyard blocks", keywords: "blocks fields parcels acres hectares variety cultivar clone rootstock spacing rows vines plants map location GPS coordinates latitude longitude soil type texture pH organic matter drainage elevation slope aspect exposure custom attributes notes archive delete edit create add name number designation AVA appellation region vineyard section price", content: [
+      { title: "Dashboard", href: "/docs/operations/dashboard", description: "Operations dashboard overview and quick stats", keywords: "dashboard overview stats metrics summary active tasks weather alerts upcoming deadlines team activity quick actions vineyard status" },
+      { title: "Field Management", href: "/docs/operations/blocks", description: "Create and manage vineyard fields", keywords: "blocks fields parcels acres hectares variety cultivar clone rootstock spacing rows vines plants map location GPS coordinates latitude longitude soil type texture pH organic matter drainage elevation slope aspect exposure custom attributes notes archive delete edit create add name number designation AVA appellation region vineyard section price", content: [
         "Create and manage vineyard blocks with variety, rootstock, spacing, and planting date information.",
         "Track block-specific data including acres, GPS coordinates, soil type, and custom field attributes.",
         "View all blocks on an interactive map with color-coding by variety, vintage, or custom criteria.",
@@ -53,20 +56,37 @@ export const docsNavigation = [
         "View cumulative water balance showing soil moisture deficit and irrigation recommendations.",
         "NDVI satellite imagery shows vegetation health zones to enable precision irrigation management."
       ] },
+      { title: "Weather Dashboard", href: "/docs/operations/weather", description: "Monitor weather conditions and growing degree days", keywords: "weather forecast temperature humidity wind rain precipitation GDD growing degree days spray conditions frost alerts historical data seasonal trends base temperature heat accumulation phenology timing budbreak bloom veraison harvest dormancy" },
       { title: "Task Management", href: "/docs/operations/tasks", description: "Create and track vineyard tasks", keywords: "tasks work orders jobs activities pruning dormant summer hedging topping suckering shoot thinning leaf removal canopy management mowing weed control spraying pesticide fungicide fertilizer application harvest picking sorting crushing destemming labor crew workers assignments assign delegate status pending in-progress completed priority high medium low urgent deadline due date notes photos attachments materials equipment tractor implements tools supplies cost price hours time tracking billing payroll efficiency productivity" },
       { title: "Task Permissions & Hierarchy", href: "/docs/operations/task-permissions", description: "Understand task visibility and role-based access control", keywords: "permissions hierarchy roles RBAC access control visibility admin manager member team reports supervise owner who can see tasks assigned created private security RLS row level policy view edit delete reassign costs privileges rights scope organizational structure reporting manager-member relationship subordinates direct reports supervisor oversee oversight permissions comparison table grant revoke restrict limit filter" },
       { title: "Spray Records", href: "/docs/operations/spray", description: "Track chemical applications and compliance", keywords: "spray spraying chemical pesticide insecticide fungicide herbicide miticide bactericide application records compliance regulations REI re-entry interval PHI pre-harvest interval EPA registration label FIFRA tank mix compatibility rate dose concentration volume carrier water adjuvant surfactant spreader sticker buffer pH weather conditions wind speed direction temperature humidity inversion atmospheric stability drift nozzle type pressure boom height swath width calibration applicator license certified operator supervisor witness signature date time start finish location block field map GPS area treated gallons acres cost price inventory stock batch lot expiration MSDS SDS safety PPE protective equipment gloves mask respirator suit" },
+      { title: "Harvest Tracking", href: "/docs/operations/harvest", description: "Plan harvests and record yields", keywords: "harvest tracking picking schedule yield tons per acre brix pH TA sampling ripeness maturity planning crew contractor weight gross tare net bins quality metrics destination winery buyer records" },
       { title: "Team Management", href: "/docs/operations/team", description: "Manage team members and permissions", keywords: "team members users staff employees crew workers contractors roles permissions access control rights privileges admin manager supervisor foreman lead worker viewer editor owner invite add remove delete deactivate email phone contact information skills certifications licenses training qualifications hourly salary wage pay rate cost price schedule availability calendar time-off vacation sick leave" },
+      { title: "Labor Tracking", href: "/docs/operations/labor", description: "Track hours, costs, and productivity", keywords: "labor time tracking hours wages payroll costs productivity task-based entry crew time pay rates overtime piece rate reports cost per acre activity analysis seasonal planning staffing" },
+      { title: "Equipment Management", href: "/docs/operations/equipment", description: "Track machinery and maintenance", keywords: "equipment machinery tractor sprayer mower ATV implements maintenance service schedule hours usage fuel cost repair history warranty alerts reminders parts oil filter calibration winterization" },
+      { title: "Inventory Management", href: "/docs/operations/inventory", description: "Track supplies, chemicals, and materials", keywords: "inventory supplies chemicals fertilizers fuel parts safety equipment stock levels reorder alerts lot numbers EPA registration compliance receiving usage adjustments physical count valuation reporting" },
       { title: "Calendar View", href: "/docs/operations/calendar", description: "View tasks and events in calendar format", keywords: "calendar schedule planner timeline agenda events tasks activities appointments meetings deadlines milestones dates day week month year view filter sort color-code category recurring repeat daily weekly monthly seasonal phenology stages budbreak bloom veraison harvest dormancy frost risk growing degree days GDD" },
       { title: "Analytics Dashboard", href: "/docs/operations/analytics", description: "Track metrics and performance data", keywords: "analytics dashboard metrics KPI key performance indicators reports charts graphs tables statistics insights trends analysis data visualization export PDF Excel CSV labor productivity efficiency utilization costs expenses revenue yield quality tonnage price comparisons benchmarks historical actual vs planned variance alerts notifications thresholds targets goals objectives ROI return investment profitability margin" },
       { title: "Hardware Integration", href: "/docs/operations/hardware", description: "Connect sensors and IoT devices", keywords: "hardware sensors IoT internet things devices equipment weather station meteorological rain gauge anemometer wind temperature humidity solar radiation pyranometer barometer pressure soil moisture tension tensiometer watermark probes TDR capacitance EC salinity pH redox dendrometer sap flow stem trunk diameter fruit growth pressure bomb leaf water potential datalogger telemetry wireless cellular LoRa satellite connectivity cloud API webhook integration real-time alerts threshold notifications battery solar powered installation calibration maintenance troubleshooting firmware updates configuration settings price cost" },
+      { title: "Archived Items", href: "/docs/operations/archived", description: "View and restore archived records", keywords: "archive archived items restore permanent delete compliance retention historical records blocks tasks equipment team members spray records harvest records best practices" },
     ],
   },
   {
-    title: "Winery Production",
+    title: "Wine Production",
     items: [
-      { title: "Overview", href: "/docs/production", description: "Introduction to Winery Production module", keywords: "production winery cellar crush fermentation aging bottling blending barrel tank vessel lot chemistry professional tier wine making red white rose sparkling" },
+      { title: "Overview", href: "/docs/production", description: "Introduction to Wine Production module", keywords: "production winery cellar crush fermentation aging bottling blending barrel tank vessel lot chemistry professional tier wine making red white rose sparkling" },
+      { title: "Dashboard", href: "/docs/production/dashboard", description: "Production dashboard overview and quick stats", keywords: "dashboard overview stats metrics cellar summary active fermentations temperature alerts production pipeline vintage comparison quick actions" },
+      { title: "Harvest Intake", href: "/docs/production/harvest", description: "Record incoming fruit and create production lots", keywords: "harvest intake fruit grapes receiving crush pad weight brix pH TA MOG rot mildew quality lot creation block source import" },
+      { title: "Fermentation Tracking", href: "/docs/production/fermentation", description: "Monitor active fermentations and daily logs", keywords: "fermentation tracker brix temperature pH log punchdown pumpover yeast strain SO2 nutrient profile cool warm red white carbonic cap management" },
+      { title: "Vessel Management", href: "/docs/production/vessels", description: "Manage tanks, barrels, and containers", keywords: "vessel container tank barrel tote stainless oak french american capacity QR code CIP cleaning location cooperage toast level bulk create duplicate" },
+      { title: "Blending Calculator", href: "/docs/production/blending", description: "Create and manage blend trials", keywords: "blending blend trial percentage component chemistry prediction varietal composition execute blend lot assembly wine making" },
+      { title: "Aging Management", href: "/docs/production/aging", description: "Track barrel aging and topping schedules", keywords: "aging barrel oak topping racking fill count replacement schedule assignment lot pressed wine aging program" },
+      { title: "Wine Analysis", href: "/docs/production/lab", description: "Lab chemistry tracking and wine specs", keywords: "lab analysis chemistry pH TA SO2 VA alcohol malic lactic acid residual sugar wine specs profile dry sweet red white sparkling testing trends" },
+      { title: "Bottling", href: "/docs/production/bottling", description: "Manage bottling runs and packaging", keywords: "bottling run bottle packaging closure cork screw cap label lot code QC checkpoint case pallet inventory wizard run setup execute complete" },
+      { title: "Analytics", href: "/docs/production/analytics", description: "Production metrics and trend analysis", keywords: "analytics metrics trends vintage breakdown varietal volume capacity utilization loss fermentation time production velocity charts" },
+      { title: "Reports", href: "/docs/production/reports", description: "Generate and export production reports", keywords: "reports export PDF Excel CSV inventory fermentation logs production timeline yield analysis vintage comparison compliance TTB label information audit trail" },
       { title: "IoT Sensors", href: "/docs/production/sensors", description: "Connect temperature sensors for real-time monitoring", keywords: "sensors IoT temperature monitoring fermentation tank barrel probe thermometer tilt plaato inkbird raspberry pi esp32 arduino hardware webhook API alert notification real-time live data cellar field vineyard weather soil moisture flow meter dendrometer davis vantage atmos tempest integration bluetooth wifi wireless" },
+      { title: "Archives", href: "/docs/production/archives", description: "View and restore archived lots", keywords: "archives archived lots vintage summaries restore historical records compliance retention filter varietal year" },
     ],
   },
   {
@@ -91,29 +111,47 @@ export function getAllPages() {
 
 // Breadcrumb helper
 export function getBreadcrumbs(pathname) {
-  const parts = pathname.split('/').filter(Boolean);
   const breadcrumbs = [{ title: 'Docs', href: '/docs' }];
 
-  let currentPath = '';
-  for (let i = 1; i < parts.length; i++) {
-    currentPath += '/' + parts[i];
-    const fullPath = '/docs' + currentPath;
+  // Find the current page and its section in navigation
+  let foundSection = null;
+  let foundItem = null;
 
-    // Find the title from navigation
-    let title = parts[i].split('-').map(word =>
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
+  for (const section of docsNavigation) {
+    const item = section.items.find(item => item.href === pathname);
+    if (item) {
+      foundSection = section;
+      foundItem = item;
+      break;
+    }
+  }
 
-    // Try to find exact match in navigation
-    for (const section of docsNavigation) {
-      const item = section.items.find(item => item.href === fullPath);
-      if (item) {
-        title = item.title;
-        break;
-      }
+  // If we found the page, add section and page to breadcrumbs
+  if (foundSection && foundItem) {
+    // Add section (skip for Getting Started and Resources as they're meta-sections)
+    if (foundSection.title !== 'Getting Started' && foundSection.title !== 'Resources') {
+      // Find the overview page for this section to link to
+      const overviewItem = foundSection.items.find(item => item.title === 'Overview');
+      const sectionHref = overviewItem ? overviewItem.href : pathname;
+      breadcrumbs.push({ title: foundSection.title, href: sectionHref });
     }
 
-    breadcrumbs.push({ title, href: fullPath });
+    // Add the current page (unless it's the section overview)
+    if (foundItem.title !== 'Overview' || foundSection.title === 'Getting Started' || foundSection.title === 'Resources') {
+      breadcrumbs.push({ title: foundItem.title, href: pathname });
+    }
+  } else {
+    // Fallback: parse from pathname if not found in navigation
+    const parts = pathname.split('/').filter(Boolean);
+    let currentPath = '';
+    for (let i = 1; i < parts.length; i++) {
+      currentPath += '/' + parts[i];
+      const fullPath = '/docs' + currentPath;
+      let title = parts[i].split('-').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+      breadcrumbs.push({ title, href: fullPath });
+    }
   }
 
   return breadcrumbs;

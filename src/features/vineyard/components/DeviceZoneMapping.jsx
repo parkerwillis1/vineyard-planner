@@ -11,8 +11,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { LoadingSpinner } from './LoadingSpinner';
 import { useAuth } from '@/auth/AuthContext';
 import { listVineyardBlocks } from '@/shared/lib/vineyardApi';
+import { sortByName } from '@/shared/lib/sortUtils';
 import {
   getIrrigationDevice,
   listDeviceZoneMappings,
@@ -161,11 +163,7 @@ export function DeviceZoneMapping({ deviceId, onBack }) {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader className="w-12 h-12 animate-spin text-blue-500" />
-      </div>
-    );
+    return <LoadingSpinner message="Loading zone mappings..." />;
   }
 
   if (!device) {
@@ -256,7 +254,7 @@ export function DeviceZoneMapping({ deviceId, onBack }) {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select a field</option>
-                  {blocks.map(block => (
+                  {sortByName(blocks).map(block => (
                     <option key={block.id} value={block.id}>
                       {block.name} {block.variety ? `(${block.variety})` : ''} - {block.acres} ac
                     </option>

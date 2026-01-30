@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings, CloudRain, Cpu } from 'lucide-react';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
+import { LoadingSpinner } from './LoadingSpinner';
 import RainGaugeManagement from './RainGaugeManagement';
 import ControllerManagement from './ControllerManagement';
 import { supabase } from '@/shared/lib/supabaseClient';
@@ -47,29 +48,17 @@ export function HardwareIntegrations() {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading hardware integrations...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading hardware integrations..." />;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center">
-          <Settings className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900">Hardware Integrations</h2>
-          <p className="text-gray-600 mt-1">
-            Connect rain gauges and irrigation controllers for automated data collection
-          </p>
-        </div>
+      <div className="pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">Hardware Integrations</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Connect rain gauges and irrigation controllers for automated data collection
+        </p>
       </div>
 
       {/* Integration Overview Banner */}

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/auth/AuthContext';
+import { DocLink } from '@/shared/components/DocLink';
+import { LoadingSpinner } from './LoadingSpinner';
 import {
   Package,
   Plus,
@@ -376,19 +378,17 @@ export function InventoryManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Inventory Management</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Track supplies, chemicals, and materials for your vineyard
-          </p>
-        </div>
+      <div className="pt-2 sm:pt-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory Management</h1>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
+          Track supplies, chemicals, and materials for your vineyard. <DocLink docId="operations/inventory" />
+        </p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-6">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
@@ -928,12 +928,7 @@ export function InventoryManagement() {
       {/* Items List */}
       <div className="grid grid-cols-1 gap-4">
         {loading ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-vine-green-500"></div>
-              <p className="text-gray-600 mt-4">Loading inventory...</p>
-            </CardContent>
-          </Card>
+          <LoadingSpinner message="Loading inventory..." />
         ) : filteredItems.length === 0 ? (
           <Card className="border-2 border-dashed border-gray-300">
             <CardContent className="py-12 text-center">

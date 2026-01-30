@@ -1,0 +1,4 @@
+# Disable JWT verification for Stripe webhooks
+# Stripe sends its own signature for authentication (stripe-signature header)
+# which is verified in the function code using STRIPE_WEBHOOK_SECRET
+verify_jwt = false

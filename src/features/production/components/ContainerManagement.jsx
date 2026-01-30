@@ -6,6 +6,7 @@ import {
   Package, Clock, TrendingUp, Grid, List, Filter, Map, Layers, Sparkles, Copy, Users, X, QrCode, Printer, Grape
 } from 'lucide-react';
 import QRCode from 'react-qr-code';
+import { DocLink } from '@/shared/components/DocLink';
 import {
   listContainers,
   createContainer,
@@ -752,6 +753,20 @@ export function ContainerManagement() {
     }
   };
 
+  // Get lot status color for display on vessel cards
+  const getLotStatusColor = (status) => {
+    switch (status) {
+      case 'fermenting': return 'bg-orange-100 text-orange-700';
+      case 'pressed': return 'bg-purple-100 text-purple-700';
+      case 'aging': return 'bg-amber-100 text-amber-700';
+      case 'blending': return 'bg-indigo-100 text-indigo-700';
+      case 'ready_to_bottle': return 'bg-green-100 text-green-700';
+      case 'bottled': return 'bg-emerald-100 text-emerald-700';
+      case 'filtering': return 'bg-blue-100 text-blue-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
   // Get status display and color for map view
   const getStatusIndicator = (status) => {
     switch (status) {
@@ -784,8 +799,8 @@ export function ContainerManagement() {
       {/* Header */}
       <div className="flex items-center justify-between pt-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Vessel Management</h2>
-          <p className="text-gray-600 mt-1">Track tanks, barrels, and container inventory</p>
+          <h1 className="text-2xl font-bold text-gray-900">Vessel Management</h1>
+          <p className="text-sm text-gray-500 mt-1">Track tanks, barrels, and container inventory. <DocLink docId="production/vessels" /></p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -1365,9 +1380,16 @@ export function ContainerManagement() {
                       <p className="text-xs text-gray-500 capitalize">{container.type}</p>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(container.status)}`}>
-                    {container.status.replace('_', ' ')}
-                  </span>
+                  {/* Show lot status if there's a lot, otherwise container status */}
+                  {lot ? (
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getLotStatusColor(lot.status)}`}>
+                      {lot.status.replace(/_/g, ' ')}
+                    </span>
+                  ) : (
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(container.status)}`}>
+                      {container.status.replace(/_/g, ' ')}
+                    </span>
+                  )}
                 </div>
 
                 {lot && (
@@ -1497,9 +1519,16 @@ export function ContainerManagement() {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(container.status)}`}>
-                        {container.status.replace('_', ' ')}
-                      </span>
+                      {/* Show lot status if there's a lot, otherwise container status */}
+                      {lot ? (
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getLotStatusColor(lot.status)}`}>
+                          {lot.status.replace(/_/g, ' ')}
+                        </span>
+                      ) : (
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(container.status)}`}>
+                          {container.status.replace(/_/g, ' ')}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700">{container.location || '—'}</td>
                     <td className="py-3 px-4">

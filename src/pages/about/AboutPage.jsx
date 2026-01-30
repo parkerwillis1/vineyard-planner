@@ -124,7 +124,7 @@ export default function AboutPage() {
                 </p>
               </div>
               <div>
-                <h3 className="font-bold text-black mb-2">Winery Production (In Development)</h3>
+                <h3 className="font-bold text-black mb-2">Wine Production (In Development)</h3>
                 <p>
                   Complete production tracking from crush to bottle. Monitor fermentation temperatures, track barrel aging, log additives and adjustments, and maintain detailed batch records for compliance and quality control.
                 </p>

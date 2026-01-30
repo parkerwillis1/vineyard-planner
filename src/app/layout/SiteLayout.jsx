@@ -35,6 +35,9 @@ export default function SiteLayout() {
   // Hide footer on tool pages to give users more workspace
   const showFooter = !location.pathname.startsWith('/vineyard') && !location.pathname.startsWith('/planner') && !location.pathname.startsWith('/production');
 
+  // Hide header on tool pages (they have their own sidebar header)
+  const isToolPage = location.pathname.startsWith('/planner') || location.pathname.startsWith('/vineyard') || location.pathname.startsWith('/production');
+
   // Auto-hide navbar on scroll down, show on scroll up
   useEffect(() => {
     const handleScroll = () => {
@@ -118,7 +121,8 @@ export default function SiteLayout() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Main Header */}
+      {/* Main Header - Hidden on tool pages */}
+      {!isToolPage && (
       <header
         className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 transition-transform duration-300 print:hidden ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
@@ -135,17 +139,7 @@ export default function SiteLayout() {
             <nav className="hidden lg:flex items-center gap-8 ml-12">
               {!user ? (
                 <>
-                  {/* GUEST NAVIGATION: Home, Products, Pricing, Resources, About */}
-                  <NavLink
-                    to="/"
-                    end
-                    className={({isActive}) =>
-                      isActive ? "text-vine-green-500 font-semibold text-base" : "text-gray-700 hover:text-vine-green-500"
-                    }
-                  >
-                    Home
-                  </NavLink>
-
+                  {/* GUEST NAVIGATION: Products, Pricing, Resources, About */}
                   {/* Products Dropdown */}
                   <ProductsMegaMenu />
 
@@ -476,7 +470,7 @@ export default function SiteLayout() {
                     <button
                       onClick={() => setShowAboutMenu(!showAboutMenu)}
                       className={`flex items-center gap-1 text-base font-semibold transition-colors bg-transparent border-0 p-0 leading-none ${
-                        ['/products', '/about'].includes(location.pathname)
+                        ['/products', '/about'].includes(location.pathname) || location.pathname.startsWith('/products/')
                           ? "text-vine-green-500"
                           : "text-gray-700 hover:text-vine-green-500"
                       }`}
@@ -486,24 +480,49 @@ export default function SiteLayout() {
                     </button>
 
                     {showAboutMenu && (
-                      <div className="absolute left-0 top-full mt-0 w-[350px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
-                        <h3 className="text-base font-semibold text-gray-900 mb-3">Learn more about us</h3>
-
-                        <div className="space-y-2">
+                      <div className="absolute left-0 top-full mt-0 w-[550px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 z-50">
+                        {/* Products Section */}
+                        <h3 className="text-base font-semibold text-gray-900 mb-3">Our Products</h3>
+                        <div className="grid grid-cols-3 gap-3 mb-4">
                           <Link
-                            to="/products"
+                            to="/products/planner"
                             onClick={() => setShowAboutMenu(false)}
-                            className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group"
+                            className="group p-3 rounded-xl hover:bg-teal-50 transition-colors border border-gray-200 hover:border-teal-200"
                           >
-                            <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0 group-hover:bg-teal-100 transition-colors">
-                              <Briefcase className="w-5 h-5 text-teal-600" />
+                            <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center mb-2 group-hover:bg-teal-200 transition-colors">
+                              <Calculator className="w-4 h-4 text-teal-700" />
                             </div>
-                            <div>
-                              <div className="font-semibold text-gray-900 mb-1">Products</div>
-                              <div className="text-sm text-gray-600">See what we offer</div>
-                            </div>
+                            <div className="font-semibold text-gray-900 text-sm mb-0.5 group-hover:text-teal-700">Financial Planner</div>
+                            <div className="text-xs text-gray-500">Planning & projections</div>
                           </Link>
 
+                          <Link
+                            to="/products/operations"
+                            onClick={() => setShowAboutMenu(false)}
+                            className="group p-3 rounded-xl hover:bg-blue-50 transition-colors border border-gray-200 hover:border-blue-200"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mb-2 group-hover:bg-blue-200 transition-colors">
+                              <MapPin className="w-4 h-4 text-blue-700" />
+                            </div>
+                            <div className="font-semibold text-gray-900 text-sm mb-0.5 group-hover:text-blue-700">Vineyard Operations</div>
+                            <div className="text-xs text-gray-500">Management & tracking</div>
+                          </Link>
+
+                          <Link
+                            to="/products/production"
+                            onClick={() => setShowAboutMenu(false)}
+                            className="group p-3 rounded-xl hover:bg-purple-50 transition-colors border border-gray-200 hover:border-purple-200"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center mb-2 group-hover:bg-purple-200 transition-colors">
+                              <Wine className="w-4 h-4 text-purple-700" />
+                            </div>
+                            <div className="font-semibold text-gray-900 text-sm mb-0.5 group-hover:text-purple-700">Wine Production</div>
+                            <div className="text-xs text-gray-500">Winery management</div>
+                          </Link>
+                        </div>
+
+                        {/* Company Section */}
+                        <div className="pt-4 border-t border-gray-200">
                           <Link
                             to="/about"
                             onClick={() => setShowAboutMenu(false)}
@@ -513,8 +532,8 @@ export default function SiteLayout() {
                               <BookMarked className="w-5 h-5 text-teal-600" />
                             </div>
                             <div>
-                              <div className="font-semibold text-gray-900 mb-1">Our Story</div>
-                              <div className="text-sm text-gray-600">How Trellis began</div>
+                              <div className="font-semibold text-gray-900 mb-0.5">Our Story</div>
+                              <div className="text-xs text-gray-500">How Trellis began</div>
                             </div>
                           </Link>
                         </div>
@@ -649,9 +668,10 @@ export default function SiteLayout() {
           </div>
         </div>
       </header>
+      )}
 
-      {/* Mobile Slide-out Menu - OUTSIDE HEADER */}
-      {mobileMenuOpen && (
+      {/* Mobile Slide-out Menu - OUTSIDE HEADER - Hidden on tool pages */}
+      {!isToolPage && mobileMenuOpen && (
         <>
           {/* Backdrop */}
           <div
@@ -668,15 +688,7 @@ export default function SiteLayout() {
               <nav className="p-4 space-y-1">
                 {!user ? (
                   <>
-                    {/* Guest Navigation - Matches desktop: Home, Products, Pricing, Resources, About */}
-                    <NavLink
-                      to="/"
-                      end
-                      className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Home
-                    </NavLink>
+                    {/* Guest Navigation - Matches desktop: Products, Pricing, Resources, About */}
                     <NavLink
                       to="/products"
                       className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
@@ -866,13 +878,32 @@ export default function SiteLayout() {
                       </button>
                       {mobileAboutExpanded && (
                         <>
+                          <div className="px-3 py-1 text-xs text-gray-400 uppercase">Products</div>
                           <NavLink
-                            to="/products"
-                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
+                            to="/products/planner"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'} flex items-center gap-2`}
                             onClick={() => setMobileMenuOpen(false)}
                           >
-                            Products
+                            <Calculator className="w-4 h-4" />
+                            Financial Planner
                           </NavLink>
+                          <NavLink
+                            to="/products/operations"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'} flex items-center gap-2`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <MapPin className="w-4 h-4" />
+                            Vineyard Operations
+                          </NavLink>
+                          <NavLink
+                            to="/products/production"
+                            className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'} flex items-center gap-2`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Wine className="w-4 h-4" />
+                            Wine Production
+                          </NavLink>
+                          <div className="px-3 py-1 mt-2 text-xs text-gray-400 uppercase">Company</div>
                           <NavLink
                             to="/about"
                             className={({isActive})=>`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-700 hover:bg-teal-50/50'}`}
@@ -933,7 +964,7 @@ export default function SiteLayout() {
         )}
 
       {/* Main Content */}
-      <main className={needsPadding ? "max-w-screen-2xl mx-auto px-6 py-10 mt-16" : "mt-16"}>
+      <main className={isToolPage ? "" : (needsPadding ? "max-w-screen-2xl mx-auto px-6 py-10 mt-16" : "mt-16")}>
         <Outlet key={location.pathname} />
       </main>
 
@@ -1082,7 +1113,7 @@ export default function SiteLayout() {
             {/* Social Links */}
             <div className="flex items-center gap-4">
               <a
-                href="mailto:support@vinepioneer.com"
+                href="mailto:support@trellisag.com"
                 className="text-gray-400 hover:text-teal-400 transition-colors"
                 aria-label="Email"
               >

@@ -6,7 +6,8 @@ import {
   Droplets, Activity, CheckCircle2, Filter, ListTodo, Target,
   BarChart3, FlaskConical, ChevronDown, X, Sparkles, Pencil
 } from 'lucide-react';
-import { listLots, createFermentationLog, listFermentationLogs, updateFermentationLog, updateLot } from '@/shared/lib/productionApi';
+import { listLots, listContainers, createFermentationLog, listFermentationLogs, updateFermentationLog, updateLot } from '@/shared/lib/productionApi';
+import { DocLink } from '@/shared/components/DocLink';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 // Wine style spec ranges
@@ -66,6 +67,7 @@ export function WineAnalysis() {
   const navigate = useNavigate();
 
   const [lots, setLots] = useState([]);
+  const [containers, setContainers] = useState({}); // Map of container_id -> container
   const [selectedLot, setSelectedLot] = useState(null);
   const [labs, setLabs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -139,12 +141,24 @@ export function WineAnalysis() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const { data, error: lotsError } = await listLots();
-      if (lotsError) throw lotsError;
+      // Load lots and containers in parallel
+      const [lotsResult, containersResult] = await Promise.all([
+        listLots(),
+        listContainers()
+      ]);
 
-      const activeLots = (data || []).filter(lot =>
-        !lot.archived_at && ['fermenting', 'aging', 'pressed', 'blending', 'filtering'].includes(lot.status)
+      if (lotsResult.error) throw lotsResult.error;
+
+      const activeLots = (lotsResult.data || []).filter(lot =>
+        !lot.archived_at && ['fermenting', 'aging', 'pressed', 'blending', 'filtering', 'ready_to_bottle'].includes(lot.status)
       );
+
+      // Create container lookup map
+      const containerMap = {};
+      (containersResult.data || []).forEach(c => {
+        containerMap[c.id] = c;
+      });
+      setContainers(containerMap);
 
       // Deduplicate lots by ID (in case of database duplicates)
       const uniqueLots = Array.from(
@@ -288,13 +302,25 @@ export function WineAnalysis() {
       const { error: createError } = await createFermentationLog(labData);
       if (createError) throw createError;
 
-      // CRITICAL: Propagate alcohol_pct to parent lot if provided
-      if (labData.alcohol_pct) {
-        await updateLot(selectedLot.id, {
-          alcohol_pct: labData.alcohol_pct,
-          last_analysis_date: labData.log_date
-        });
-        setSuccess('Lab results saved successfully. Bottling readiness updated with new Alcohol %.');
+      // CRITICAL: Propagate core chemistry values to lot record for bottling readiness checks
+      const lotUpdates = {};
+      if (labData.ph) lotUpdates.current_ph = labData.ph;
+      if (labData.ta) lotUpdates.current_ta = labData.ta;
+      if (labData.alcohol_pct) lotUpdates.current_alcohol_pct = labData.alcohol_pct;
+
+      if (Object.keys(lotUpdates).length > 0) {
+        const { error: lotUpdateError } = await updateLot(selectedLot.id, lotUpdates);
+
+        if (lotUpdateError) {
+          console.error('Error updating lot chemistry:', lotUpdateError);
+          setSuccess('Lab results saved, but failed to update lot record');
+        } else {
+          const updatedFields = [];
+          if (lotUpdates.current_ph) updatedFields.push('pH');
+          if (lotUpdates.current_ta) updatedFields.push('TA');
+          if (lotUpdates.current_alcohol_pct) updatedFields.push('ABV');
+          setSuccess(`Lab results saved. Updated lot chemistry: ${updatedFields.join(', ')}`);
+        }
       } else {
         setSuccess('Lab results saved successfully');
       }
@@ -334,13 +360,25 @@ export function WineAnalysis() {
       const { error: updateError } = await updateFermentationLog(editingLab.id, updates);
       if (updateError) throw updateError;
 
-      // CRITICAL: Propagate alcohol_pct to parent lot if provided
-      if (updates.alcohol_pct) {
-        await updateLot(selectedLot.id, {
-          alcohol_pct: updates.alcohol_pct,
-          last_analysis_date: editingLab.log_date
-        });
-        setSuccess('Lab test updated successfully. Bottling readiness updated with new Alcohol %.');
+      // CRITICAL: Propagate core chemistry values to lot record for bottling readiness checks
+      const lotUpdates = {};
+      if (updates.ph) lotUpdates.current_ph = updates.ph;
+      if (updates.ta) lotUpdates.current_ta = updates.ta;
+      if (updates.alcohol_pct) lotUpdates.current_alcohol_pct = updates.alcohol_pct;
+
+      if (Object.keys(lotUpdates).length > 0) {
+        const { error: lotUpdateError } = await updateLot(selectedLot.id, lotUpdates);
+
+        if (lotUpdateError) {
+          console.error('Error updating lot chemistry:', lotUpdateError);
+          setSuccess('Lab test updated, but failed to update lot record');
+        } else {
+          const updatedFields = [];
+          if (lotUpdates.current_ph) updatedFields.push('pH');
+          if (lotUpdates.current_ta) updatedFields.push('TA');
+          if (lotUpdates.current_alcohol_pct) updatedFields.push('ABV');
+          setSuccess(`Lab test updated. Updated lot chemistry: ${updatedFields.join(', ')}`);
+        }
       } else {
         setSuccess('Lab test updated successfully');
       }
@@ -497,9 +535,10 @@ export function WineAnalysis() {
 
   if (lots.length === 0) {
     return (
-      <div className="pt-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Wine Analysis</h2>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+      <div className="pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">Wine Analysis</h1>
+        <p className="text-sm text-gray-500 mt-1">Track chemistry and lab results for your lots. <DocLink docId="production/lab" /></p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center mt-6">
           <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Beaker className="w-8 h-8 text-[#7C203A]" />
           </div>
@@ -513,22 +552,20 @@ export function WineAnalysis() {
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
-      <div className="flex items-center justify-between pt-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 px-4 sm:px-0">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Wine Analysis</h2>
-          <p className="text-gray-600 mt-1">Track chemistry and lab results for your lots</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Wine Analysis</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">Track chemistry and lab results for your lots. <DocLink docId="production/lab" /></p>
         </div>
-        <div className="flex items-center gap-2">
-          {selectedLot && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors shadow-sm font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              New Lab Test
-            </button>
-          )}
-        </div>
+        {selectedLot && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors shadow-sm font-medium text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            New Lab Test
+          </button>
+        )}
       </div>
 
       {/* Lab Entry Modal */}
@@ -855,36 +892,38 @@ export function WineAnalysis() {
       )}
 
       {/* Lot Selector */}
-      <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border-2 border-gray-300 shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border-2 border-gray-300 shadow-lg p-4 sm:p-6 mx-4 sm:mx-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg">
-              <Activity className="w-5 h-5 text-white" />
+            <div className="p-2 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg flex-shrink-0">
+              <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Select a Lot to Analyze</h3>
-              <p className="text-xs text-gray-600">Click a lot, then add lab tests or set wine profile</p>
+              <h3 className="text-base sm:text-lg font-bold text-gray-900">Select a Lot</h3>
+              <p className="text-xs text-gray-600 hidden sm:block">Click a lot, then add lab tests or set wine profile</p>
             </div>
           </div>
           {selectedLot && (
             <button
               onClick={() => setShowProfileModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md font-medium"
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md font-medium text-sm"
             >
               <Target className="w-4 h-4" />
-              {selectedLot.wine_profile ? `Profile: ${WINE_SPEC_PROFILES[selectedLot.wine_profile].name}` : 'Set Wine Profile'}
+              <span className="truncate">{selectedLot.wine_profile ? WINE_SPEC_PROFILES[selectedLot.wine_profile].name : 'Set Profile'}</span>
             </button>
           )}
         </div>
 
         {/* Status Filter */}
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700">Status:</span>
-          <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex items-center gap-1.5">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-xs sm:text-sm font-medium text-gray-700">Status:</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                 statusFilter === 'all'
                   ? 'bg-[#7C203A] text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -894,7 +933,7 @@ export function WineAnalysis() {
             </button>
             <button
               onClick={() => setStatusFilter('fermenting')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                 statusFilter === 'fermenting'
                   ? 'bg-[#7C203A] text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -904,22 +943,23 @@ export function WineAnalysis() {
             </button>
             <button
               onClick={() => setStatusFilter('aging')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                 statusFilter === 'aging'
                   ? 'bg-[#7C203A] text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Aging + Ready
+              Aging
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {lots
             .filter((lot) => {
-              // Only show lots in barrels
-              if (!lot.container || lot.container.type !== 'barrel') return false;
+              // Only show lots in barrels (use containers map, not lot.container)
+              const container = containers[lot.container_id];
+              if (!container || container.type !== 'barrel') return false;
 
               // Apply status filter
               if (statusFilter === 'all') return true;
@@ -928,7 +968,13 @@ export function WineAnalysis() {
               return true;
             })
             .sort((a, b) => {
-              // Natural sort by name (handles "Barrel 1" vs "Barrel 10" correctly)
+              // Sort by barrel number (container name) for aging lots
+              const aContainer = containers[a.container_id];
+              const bContainer = containers[b.container_id];
+              if (aContainer && bContainer) {
+                return aContainer.name.localeCompare(bContainer.name, undefined, { numeric: true, sensitivity: 'base' });
+              }
+              // Fall back to lot name
               return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
             })
             .map((lot) => {
@@ -948,12 +994,23 @@ export function WineAnalysis() {
                 >
                   <div className="mb-2">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <p className="font-bold text-sm text-gray-900 leading-snug flex-1">{lot.name}</p>
+                      {/* Show barrel name as title for aging lots, lot name for others */}
+                      {lot.container_id && containers[lot.container_id] ? (
+                        <p className="font-bold text-base text-gray-900 leading-snug flex-1">
+                          {containers[lot.container_id].name}
+                        </p>
+                      ) : (
+                        <p className="font-bold text-sm text-gray-900 leading-snug flex-1">{lot.name}</p>
+                      )}
                       <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium capitalize flex-shrink-0">
-                        {lot.status}
+                        {lot.status.replace(/_/g, ' ')}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600">{lot.varietal} • {lot.vintage}</p>
+                    {/* Show full lot name as subtitle when container is shown as title */}
+                    {lot.container_id && containers[lot.container_id] && (
+                      <p className="text-xs text-gray-700 mb-1 leading-snug">{lot.name}</p>
+                    )}
+                    <p className="text-xs text-gray-500">{lot.varietal} • {lot.vintage}</p>
                     {lot.wine_profile && (
                       <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 bg-[#7C203A] text-white rounded text-xs font-medium">
                         <Sparkles className="w-3 h-3" />

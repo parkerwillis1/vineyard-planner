@@ -32,7 +32,7 @@ export default function SupportPage() {
           </p>
           <div className="bg-vine-green-50 border border-vine-green-200 rounded-lg p-4 my-4">
             <div className="font-semibold text-vine-green-900 mb-1">Email</div>
-            <div className="text-vine-green-700">support@vinepioneer.com</div>
+            <div className="text-vine-green-700">support@trellisag.com</div>
           </div>
           <p className="text-sm text-gray-600 mt-3">
             <strong>Response time:</strong> We aim to respond to all emails within 24 hours during business days (Monday-Friday). Urgent issues marked with "URGENT" in subject line receive priority response within 4 hours.
@@ -127,7 +127,7 @@ export default function SupportPage() {
             <li>Beta test new features</li>
           </ul>
           <p className="text-sm text-gray-600 mt-3">
-            Forum launching Q2 2025. Email support@vinepioneer.com to join early access list.
+            Forum launching Q2 2025. Email support@trellisag.com to join early access list.
           </p>
         </Subsection>
 
@@ -137,7 +137,7 @@ export default function SupportPage() {
           </p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
             <div className="font-semibold text-blue-900 mb-1">System Status</div>
-            <div className="text-blue-700">status.vinepioneer.com</div>
+            <div className="text-blue-700">status.trellisag.com</div>
             <div className="text-sm text-blue-600 mt-2">Subscribe to status updates for outage notifications</div>
           </div>
           <p>
@@ -168,7 +168,7 @@ export default function SupportPage() {
                 <li>Network log if data not saving (F12 → Network → screenshot failed requests)</li>
               </ul>
             </li>
-            <li><strong>Email to:</strong> support@vinepioneer.com with subject "BUG: [brief description]"</li>
+            <li><strong>Email to:</strong> support@trellisag.com with subject "BUG: [brief description]"</li>
           </ol>
           <Callout type="success" title="Bug Bounty Program">
             We pay $25-$500 for verified bug reports that help us improve Trellis. Critical security bugs eligible for up to $2,000. All users who report bugs receive credit in release notes (with permission).
@@ -197,7 +197,7 @@ export default function SupportPage() {
             We prioritize features based on user demand. Share your ideas:
           </p>
           <ol className="list-decimal list-inside space-y-2 ml-4">
-            <li><strong>Email:</strong> support@vinepioneer.com with subject "FEATURE REQUEST: [idea]"</li>
+            <li><strong>Email:</strong> support@trellisag.com with subject "FEATURE REQUEST: [idea]"</li>
             <li><strong>Describe the need:</strong> What problem does this solve? What workflow improves?</li>
             <li><strong>Provide context:</strong> How often would you use this? Critical or nice-to-have?</li>
             <li><strong>Examples:</strong> Link to similar features in other tools (if applicable)</li>
@@ -248,7 +248,7 @@ export default function SupportPage() {
             <li><strong>Q&A session:</strong> Get answers to your specific questions</li>
           </ul>
           <p className="text-sm text-gray-600 mt-3">
-            Schedule onboarding call: support@vinepioneer.com or Account Settings → Schedule Onboarding
+            Schedule onboarding call: support@trellisag.com or Account Settings → Schedule Onboarding
           </p>
         </Subsection>
 
@@ -275,7 +275,7 @@ export default function SupportPage() {
             <li><strong>Integration Development:</strong> Connect Trellis to your existing systems</li>
           </ul>
           <p className="text-sm text-gray-600 mt-3">
-            Consulting rates: $150-$250/hour depending on service. Contact support@vinepioneer.com for quote.
+            Consulting rates: $150-$250/hour depending on service. Contact support@trellisag.com for quote.
           </p>
         </Subsection>
       </Section>
@@ -312,7 +312,7 @@ export default function SupportPage() {
           </p>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 my-4">
             <div className="font-semibold text-red-900 mb-1">Security Email</div>
-            <div className="text-red-700">security@vinepioneer.com</div>
+            <div className="text-red-700">security@trellisag.com</div>
             <div className="text-sm text-red-600 mt-2">Do NOT post security issues publicly. We respond to security reports within 4 hours.</div>
           </div>
           <p>
@@ -327,7 +327,7 @@ export default function SupportPage() {
             Trellis improves based on your feedback:
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
-            <li><strong>General feedback:</strong> support@vinepioneer.com</li>
+            <li><strong>General feedback:</strong> support@trellisag.com</li>
             <li><strong>Feature requests:</strong> Submit via email (voting platform coming Q2)</li>
             <li><strong>Usability issues:</strong> Tell us what's confusing or hard to use</li>
             <li><strong>Success stories:</strong> Share how Trellis helped your vineyard</li>
@@ -342,7 +342,7 @@ export default function SupportPage() {
             <li>30-minute video call to discuss your workflow</li>
             <li>$50 Amazon gift card for participation</li>
             <li>Early access to features you help design</li>
-            <li>Email support@vinepioneer.com with "User Interview" subject to volunteer</li>
+            <li>Email support@trellisag.com with "User Interview" subject to volunteer</li>
           </ul>
         </Subsection>
       </Section>

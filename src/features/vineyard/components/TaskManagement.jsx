@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { DocLink } from '@/shared/components/DocLink';
+import { LoadingSpinner } from './LoadingSpinner';
 import {
   listTasks,
   getTaskStatistics,
@@ -36,6 +38,7 @@ import {
   createTask,
   listOrganizationMembers
 } from '@/shared/lib/vineyardApi';
+import { sortByName } from '@/shared/lib/sortUtils';
 import { TaskDrawer } from './TaskDrawer';
 
 const TASK_TYPES = [
@@ -283,13 +286,13 @@ export function TaskManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 sm:pt-4 gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Tasks</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Plan, assign, and track all vineyard work
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Tasks</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
+            Plan, assign, and track all vineyard work. <DocLink docId="operations/tasks" />
             {filters.currentSeasonOnly && currentSeason && (
               <span className="ml-2 text-blue-600 font-medium">
                 • Showing {currentSeason.name} only
@@ -297,46 +300,48 @@ export function TaskManagement() {
             )}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           {/* View Toggle */}
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-1 flex gap-1">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-0.5 sm:p-1 flex gap-0.5 sm:gap-1">
             <button
               onClick={() => setViewMode('list')}
-              className={`px-3 py-2 rounded flex items-center gap-2 text-sm font-medium transition-colors ${
+              className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium transition-colors ${
                 viewMode === 'list'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <ListTodo className="w-4 h-4" />
+              <ListTodo className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               List
             </button>
             <button
               onClick={() => setViewMode('kanban')}
-              className={`px-3 py-2 rounded flex items-center gap-2 text-sm font-medium transition-colors ${
+              className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium transition-colors ${
                 viewMode === 'kanban'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <LayoutGrid className="w-4 h-4" />
-              Kanban
+              <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Kanban</span>
+              <span className="sm:hidden">Board</span>
             </button>
           </div>
 
           <Button
             onClick={() => setShowNewTaskModal(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            className="flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-2.5 sm:px-4 py-1.5 sm:py-2"
           >
-            <Plus className="w-4 h-4" />
-            New Task
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">New Task</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>
 
       {/* Statistics Cards */}
       {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -377,12 +382,12 @@ export function TaskManagement() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total Cost</p>
+                  <p className="text-sm text-gray-600">Completed</p>
                   <p className="text-2xl font-bold text-green-600">
-                    ${statistics.totalCost.toLocaleString()}
+                    {statistics.completed || 0}
                   </p>
                 </div>
-                <TrendingUp className="w-8 h-8 text-green-600" />
+                <CheckCircle2 className="w-8 h-8 text-green-600" />
               </div>
             </CardContent>
           </Card>
@@ -517,12 +522,7 @@ export function TaskManagement() {
 
       {/* Tasks Display */}
       {loading ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="text-gray-600 mt-4">Loading tasks...</p>
-          </CardContent>
-        </Card>
+        <LoadingSpinner message="Loading tasks..." />
       ) : filteredTasks.length === 0 ? (
         <Card className="border-2 border-dashed border-gray-300">
           <CardContent className="py-12 text-center">
@@ -1058,7 +1058,7 @@ function NewTaskModal({ seasons, blocks, onClose, onCreated }) {
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
             >
-              {blocks.map(block => (
+              {sortByName(blocks).map(block => (
                 <option key={block.id} value={block.id}>
                   {block.name} ({block.acres} acres)
                 </option>

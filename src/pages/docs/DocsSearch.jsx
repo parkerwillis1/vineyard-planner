@@ -177,7 +177,7 @@ export default function DocsSearch() {
   const suggested = [
     { title: "Quick Start", href: "/docs/getting-started/quick-start" },
     { title: "Financial Inputs", href: "/docs/planner/financial-inputs" },
-    { title: "Block Management", href: "/docs/operations/blocks" },
+    { title: "Field Management", href: "/docs/operations/blocks" },
     { title: "Irrigation System", href: "/docs/operations/irrigation" },
   ];
 

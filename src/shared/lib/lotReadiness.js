@@ -101,7 +101,7 @@ export function computeReadiness(lot) {
   }
 
   // ABV check
-  if (!lot.alcohol_pct || lot.alcohol_pct <= 0) {
+  if (!lot.current_alcohol_pct || lot.current_alcohol_pct <= 0) {
     score -= 20; // Missing ABV is critical
   } else {
     score += 10;
@@ -116,14 +116,10 @@ export function computeReadiness(lot) {
     score += 5;
   }
 
-  // Recent lab analysis
-  if (lot.last_analysis_date) {
-    const daysSinceAnalysis = (new Date() - new Date(lot.last_analysis_date)) / (1000 * 60 * 60 * 24);
-    if (daysSinceAnalysis < 30) {
-      score += 10;
-    } else if (daysSinceAnalysis < 90) {
-      score += 5;
-    }
+  // Recent lab analysis - check if chemistry values are present
+  const hasLabData = lot.current_ph || lot.current_ta || lot.current_alcohol_pct;
+  if (hasLabData) {
+    score += 10;
   } else {
     score -= 10; // No lab data
   }
@@ -156,7 +152,7 @@ export function getLotBlockers(lot) {
     });
   }
 
-  if (!lot.alcohol_pct || lot.alcohol_pct <= 0) {
+  if (!lot.current_alcohol_pct || lot.current_alcohol_pct <= 0) {
     blockers.push({
       message: 'ABV not measured (required for labels)',
       type: 'abv',
@@ -199,9 +195,11 @@ export function getLotBlockers(lot) {
     });
   }
 
-  if (!lot.last_analysis_date) {
+  // Check if any chemistry values are present (indicates lab analysis has been done)
+  const hasLabData = lot.current_ph || lot.current_ta || lot.current_alcohol_pct;
+  if (!hasLabData) {
     blockers.push({
-      message: 'No recent lab analysis',
+      message: 'No lab analysis recorded',
       type: 'lab',
       action: {
         label: 'Add Lab Test',
@@ -220,7 +218,7 @@ export function getLotBlockers(lot) {
 export function isLotEligible(lot) {
   return (
     (lot.current_volume_gallons || 0) >= MIN_BOTTLING_VOLUME_GAL &&
-    (lot.alcohol_pct || 0) > 0 &&
+    (lot.current_alcohol_pct || 0) > 0 &&
     lot.name &&
     STRICT_ELIGIBLE_STATUSES.includes(lot.status)
   );
@@ -232,7 +230,7 @@ export function isLotEligible(lot) {
 export function isLotNearlyReady(lot) {
   return (
     (lot.current_volume_gallons || 0) >= MIN_BOTTLING_VOLUME_GAL &&
-    (lot.alcohol_pct || 0) > 0 &&
+    (lot.current_alcohol_pct || 0) > 0 &&
     lot.name &&
     NEARLY_READY_STATUSES.includes(lot.status)
   );
@@ -259,8 +257,8 @@ export function getReadinessExplanation(lot) {
   }
 
   // ABV
-  if (lot.alcohol_pct > 0) {
-    explanation.breakdown.push(`✓ ABV measured: ${lot.alcohol_pct.toFixed(1)}%`);
+  if (lot.current_alcohol_pct > 0) {
+    explanation.breakdown.push(`✓ ABV measured: ${lot.current_alcohol_pct.toFixed(1)}%`);
   } else {
     explanation.breakdown.push(`✗ ABV not measured`);
   }
@@ -274,10 +272,14 @@ export function getReadinessExplanation(lot) {
     explanation.breakdown.push(`✗ Status: ${lot.status}`);
   }
 
-  // Lab data
-  if (lot.last_analysis_date) {
-    const daysSinceAnalysis = Math.floor((new Date() - new Date(lot.last_analysis_date)) / (1000 * 60 * 60 * 24));
-    explanation.breakdown.push(`✓ Lab data: ${daysSinceAnalysis} days ago`);
+  // Lab data - check if any chemistry values are present
+  const hasLabData = lot.current_ph || lot.current_ta || lot.current_alcohol_pct;
+  if (hasLabData) {
+    const labValues = [];
+    if (lot.current_ph) labValues.push(`pH: ${lot.current_ph}`);
+    if (lot.current_ta) labValues.push(`TA: ${lot.current_ta}`);
+    if (lot.current_alcohol_pct) labValues.push(`ABV: ${lot.current_alcohol_pct}%`);
+    explanation.breakdown.push(`✓ Lab data: ${labValues.join(', ')}`);
   } else {
     explanation.breakdown.push(`○ No lab analysis recorded`);
   }

@@ -14,7 +14,7 @@ export default function QuickStartPage() {
     },
     {
       title: "Input Core Financial Parameters",
-      description: "Enter your acreage, land cost per acre, building/winery construction costs. Choose your sales strategy: bottled wine (direct-to-consumer or wholesale) or bulk grape sales to other wineries. Each strategy has different revenue models and capital requirements.",
+      description: "Enter your acreage (happens automatically after mapping), land cost per acre, building/winery construction costs. Choose your sales strategy: bottled wine (direct-to-consumer or wholesale) or bulk grape sales to other wineries. Each strategy has different revenue models and capital requirements.",
     },
     {
       title: "Configure Establishment Costs",

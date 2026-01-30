@@ -5,6 +5,7 @@ import { MaterialCostsVisualizer } from "@/features/planning/components/Material
 import { ChevronDown, MapPin, Trash2, Edit3, Plus, Eye, EyeOff, RotateCw, Settings, X, Grid, Check } from "lucide-react";
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+import { sortByName } from '@/shared/lib/sortUtils';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAEwV8iVPfyCuZDYaX8rstuSUMK8ZOF6V8';
 const LIBRARIES = ['drawing', 'geometry', 'places'];
@@ -869,7 +870,7 @@ export const VineyardLayoutVisualizer = ({
               {/* Field List */}
               <div className="px-3 py-2">
                 <div className="space-y-2">
-                  {fields.map((field) => (
+                  {sortByName(fields).map((field) => (
                     <div
                       key={field.id}
                       className={`p-3 rounded border ${
@@ -1838,7 +1839,7 @@ export const VineyardLayoutConfig = ({ acres, onLayoutChange, currentLayout, onA
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">Materials by Field</h4>
                   <div className="space-y-3">
-                    {fields.map(field => {
+                    {sortByName(fields).map(field => {
                       const layout = fieldLayouts[field.id];
                       if (!layout) return null;
 

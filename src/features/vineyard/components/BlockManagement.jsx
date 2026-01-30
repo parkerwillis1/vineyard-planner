@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
@@ -22,11 +22,20 @@ import {
   BarChart3,
   Printer,
   Beaker,
-  X
+  X,
+  FileText,
+  Save
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuItem
+} from '@/shared/components/ui/dropdown-menu';
+import { DocLink } from '@/shared/components/DocLink';
 import { Input } from '@/shared/components/ui/input';
+import { LoadingSpinner } from './LoadingSpinner';
 import { ImportPlanModal } from './ImportPlanModal';
 import { BlockMap } from './BlockMap';
 import { FieldPhotos } from './FieldPhotos';
@@ -60,12 +69,18 @@ export function BlockManagement() {
   const [showPhotos, setShowPhotos] = useState(false);
   const [showYieldHistory, setShowYieldHistory] = useState(false);
   const [selectedField, setSelectedField] = useState(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [showCustomFields, setShowCustomFields] = useState(false);
   const [newCustomFieldKey, setNewCustomFieldKey] = useState('');
   const [newCustomFieldValue, setNewCustomFieldValue] = useState('');
   const [showSampleModal, setShowSampleModal] = useState(false);
   const [selectedBlockForSample, setSelectedBlockForSample] = useState(null);
   const [savingSample, setSavingSample] = useState(false);
+  const [showDrawingMap, setShowDrawingMap] = useState(false);
+  const [drawnPolygon, setDrawnPolygon] = useState(null); // Temporary polygon before saving
+  const [clearTrigger, setClearTrigger] = useState(0); // Increment to clear drawing state (preserves map camera)
+  const [drawingProgress, setDrawingProgress] = useState(null); // Track drawing progress from BlockMap
+  const [drawingEditMode, setDrawingEditMode] = useState(false); // Edit mode for moving/adding nodes after completing polygon
   const [sampleFormData, setSampleFormData] = useState({
     brix: '',
     ta: '',
@@ -142,7 +157,16 @@ export function BlockManagement() {
     ]);
 
     if (!blocksRes.error && blocksRes.data) {
-      setBlocks(blocksRes.data);
+      // Sort blocks by name with natural number ordering (Field 1, Field 2, ... Field 10)
+      const sortedBlocks = [...blocksRes.data].sort((a, b) => {
+        const aMatch = a.name.match(/(\d+)/);
+        const bMatch = b.name.match(/(\d+)/);
+        if (aMatch && bMatch) {
+          return parseInt(aMatch[1], 10) - parseInt(bMatch[1], 10);
+        }
+        return a.name.localeCompare(b.name);
+      });
+      setBlocks(sortedBlocks);
     }
     if (!phiRes.error && phiRes.data) {
       setPhiLocks(phiRes.data);
@@ -188,7 +212,7 @@ export function BlockManagement() {
 
     return {
       vinesPerAcre,
-      estimatedVines: data.vine_count_reported || estimatedVines,
+      estimatedVines,  // Always calculate based on field's actual acreage
       estimatedRows,
       estimatedPosts,
       estimatedWireFt: Math.round(totalWireLengthFt)
@@ -199,6 +223,12 @@ export function BlockManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Require mapping for new fields (editing existing fields can keep their geometry)
+    if (!editingBlock && (!formData.geom || !formData.geom.coordinates)) {
+      alert('Please draw the field boundary on the map first.\n\nSwitch to Map view and draw the field outline to set the acreage and location.');
+      return;
+    }
 
     // Convert empty strings to null for numeric fields
     const blockData = { ...formData };
@@ -419,10 +449,71 @@ export function BlockManagement() {
   };
 
   const handleDrawFieldOnMap = () => {
-    // Close the form and open map mode with drawing enabled
-    setIsAddingBlock(false);
-    setViewMode('map');
-    setAutoStartDrawing(true);
+    // Show the inline drawing map modal (keeps form open)
+    setDrawnPolygon(null);
+    setDrawingProgress(null);
+    setShowDrawingMap(true);
+  };
+
+  const handlePolygonDrawn = (blockData) => {
+    // Store the drawn polygon (called when polygon is completed via onBlockCreate)
+    setDrawnPolygon(blockData);
+    setDrawingProgress(null); // Clear progress since we now have the final polygon
+  };
+
+  const handleDrawingProgress = useCallback((progress) => {
+    // Track drawing progress from BlockMap
+    // State machine: DRAWING → CLOSED (isComplete=true) → EDITING
+    setDrawingProgress(prev => {
+      // Only update if values changed to prevent unnecessary re-renders
+      // IMPORTANT: Also check isComplete to detect when polygon is closed
+      if (!prev || prev.points !== progress.points || prev.acres !== progress.acres || prev.isComplete !== progress.isComplete) {
+        return progress;
+      }
+      return prev;
+    });
+  }, []);
+
+  const handleDrawingMapSave = () => {
+    // Save the drawn polygon to form data and close modal
+    if (drawnPolygon) {
+      setFormData({
+        ...formData,
+        acres: drawnPolygon.acres || '',
+        geom: drawnPolygon.geom
+      });
+    } else if (drawingProgress && drawingProgress.isComplete) {
+      // Save from drawing progress if polygon wasn't formally "saved" in BlockMap
+      const geom = {
+        type: 'Polygon',
+        coordinates: [drawingProgress.path.map(p => [p.lng, p.lat]).concat([[drawingProgress.path[0].lng, drawingProgress.path[0].lat]])]
+      };
+      setFormData({
+        ...formData,
+        acres: drawingProgress.acres || '',
+        geom: geom
+      });
+    }
+    setDrawnPolygon(null);
+    setDrawingProgress(null);
+    setDrawingEditMode(false);
+    setShowDrawingMap(false);
+  };
+
+  const handleDrawingMapClear = () => {
+    // Clear the drawn polygon and restart drawing
+    // Uses clearTrigger to reset BlockMap's internal state WITHOUT remounting (preserves map camera)
+    setDrawnPolygon(null);
+    setDrawingProgress(null);
+    setDrawingEditMode(false);
+    setClearTrigger(t => t + 1);
+  };
+
+  const handleDrawingMapClose = () => {
+    setDrawnPolygon(null);
+    setDrawingProgress(null);
+    setDrawingEditMode(false);
+    setShowDrawingMap(false);
   };
 
   const handleExportCSV = () => {
@@ -469,7 +560,7 @@ export function BlockManagement() {
     ];
 
     // Convert blocks to CSV rows
-    const rows = blocks.map(block => {
+    const rows = sortByName(blocks).map(block => {
       const metrics = calculateMetrics({
         acres: block.acres,
         row_spacing_ft: block.row_spacing_ft,
@@ -663,7 +754,7 @@ export function BlockManagement() {
           <h1>Vineyard Fields Report</h1>
           <div class="report-date">Generated on ${new Date().toLocaleString()}</div>
 
-          ${blocks.map(block => {
+          ${sortByName(blocks).map(block => {
             const metrics = calculateMetrics({
               acres: block.acres,
               row_spacing_ft: block.row_spacing_ft,
@@ -981,72 +1072,91 @@ export function BlockManagement() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Vineyard Fields</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage fields with viticulture data and auto-calculated metrics
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 sm:pt-4 gap-3 sm:gap-4">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Vineyard Fields</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
+            Manage fields with viticulture data and auto-calculated metrics.
+            <span className="block"><DocLink docId="operations/fields" /></span>
           </p>
         </div>
         {!isAddingBlock && (
-          <div className="flex gap-3">
-            {/* View Toggle */}
-            <div className="bg-white rounded-lg shadow border border-gray-200 p-1 flex gap-1">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap sm:flex-nowrap">
+            {/* View Toggle - Primary */}
+            <div className="bg-white rounded-lg shadow border border-gray-200 p-0.5 sm:p-1 flex gap-0.5 sm:gap-1">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-3 py-2 rounded flex items-center gap-2 text-sm font-medium transition-colors ${
+                className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium transition-colors ${
                   viewMode === 'list'
                     ? 'bg-emerald-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <List className="w-4 h-4" />
+                <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 List
               </button>
               <button
                 onClick={() => setViewMode('map')}
-                className={`px-3 py-2 rounded flex items-center gap-2 text-sm font-medium transition-colors ${
+                className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium transition-colors ${
                   viewMode === 'map'
                     ? 'bg-emerald-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <MapIcon className="w-4 h-4" />
+                <MapIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Map
               </button>
             </div>
 
-            <Button
-              onClick={handleExportCSV}
-              className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white"
-              disabled={blocks.length === 0}
+            {/* Export Dropdown */}
+            <DropdownMenu
+              trigger={
+                <DropdownMenuTrigger
+                  disabled={blocks.length === 0}
+                  className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-1.5 border border-gray-200"
+                >
+                  <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Export</span>
+                  <ChevronDown className="w-3 h-3" />
+                </DropdownMenuTrigger>
+              }
             >
-              <Download className="w-4 h-4" />
-              Export CSV
-            </Button>
-            <Button
-              onClick={handlePrintPDF}
-              className="flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white"
-              disabled={blocks.length === 0}
-            >
-              <Printer className="w-4 h-4" />
-              Print / PDF
-            </Button>
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="w-4 h-4 mr-2" />
+                Export as CSV
+                <span className="ml-auto text-xs text-gray-400">Field data</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setViewMode('map');
+                setTimeout(() => setShowPrintModal(true), 100);
+              }}>
+                <Printer className="w-4 h-4 mr-2" />
+                Export as PDF
+                <span className="ml-auto text-xs text-gray-400">Field maps</span>
+              </DropdownMenuItem>
+            </DropdownMenu>
+
+            {/* Separator - hidden on mobile */}
+            <div className="hidden sm:block h-8 w-px bg-gray-200" />
+
+            {/* Primary Actions */}
             <Button
               onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white"
+              className="flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-2.5 sm:px-4 py-1.5 sm:py-2"
             >
-              <Download className="w-4 h-4" />
-              Import from Planner
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Import from Planner</span>
+              <span className="sm:hidden">Import</span>
             </Button>
             <Button
               onClick={() => setIsAddingBlock(true)}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="flex items-center gap-1.5 sm:gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm px-2.5 sm:px-4 py-1.5 sm:py-2"
             >
-              <Plus className="w-4 h-4" />
-              Add Field
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Add Field</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
         )}
@@ -1081,12 +1191,12 @@ export function BlockManagement() {
                     {editingBlock ? 'Edit Field' : 'New Vineyard Field'}
                   </h3>
                   <p className="text-emerald-50 text-sm mt-1">
-                    Enter viticulture details - vine counts and metrics are calculated automatically
+                    {editingBlock ? 'Update field details and viticulture information' : 'Draw boundary on map, then enter field details'}
                   </p>
                 </div>
                 <button
                   onClick={resetForm}
-                  className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                  className="bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 rounded-lg p-2 transition-colors shadow-sm"
                   type="button"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1098,13 +1208,56 @@ export function BlockManagement() {
 
             <CardContent className="p-6" onClick={(e) => e.stopPropagation()}>
               <form onSubmit={handleSubmit} className="space-y-8" onClick={(e) => e.stopPropagation()}>
+
+              {/* Step 1: Map Your Field (for new fields only) */}
+              {!editingBlock && (
+                <div className={`rounded-xl p-5 border-2 ${formData.geom && formData.geom.coordinates
+                  ? 'bg-emerald-50 border-emerald-200'
+                  : 'bg-slate-50 border-slate-200'}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                        formData.geom && formData.geom.coordinates
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-300 text-slate-600'
+                      }`}>
+                        {formData.geom && formData.geom.coordinates ? '✓' : '1'}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {formData.geom && formData.geom.coordinates ? 'Field Boundary Set' : 'Draw Field Boundary'}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {formData.geom && formData.geom.coordinates
+                            ? `${formData.acres} acres • ${metrics.estimatedVines.toLocaleString()} vines estimated`
+                            : 'Required to calculate acreage and vine counts'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDrawFieldOnMap}
+                      className={`px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm ${
+                        formData.geom && formData.geom.coordinates
+                          ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      }`}
+                    >
+                      <MapIcon className="w-4 h-4" />
+                      {formData.geom && formData.geom.coordinates ? 'Redraw' : 'Draw Boundary'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Basic Information */}
               <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-emerald-600" />
                   Field Identity
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Field Name <span className="text-red-500">*</span>
@@ -1117,32 +1270,6 @@ export function BlockManagement() {
                       placeholder="e.g., Field A1"
                       className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Acres
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.acres}
-                        onChange={(e) => setFormData({ ...formData, acres: e.target.value })}
-                        placeholder="Draw on map or enter manually"
-                        className="flex-1 px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleDrawFieldOnMap}
-                        className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                        title="Draw field boundary on map to calculate acres"
-                      >
-                        <MapIcon className="w-4 h-4" />
-                        Draw on Map
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-600 mt-1">Draw field boundary on map for accurate acreage</p>
                   </div>
 
                   <div>
@@ -1173,14 +1300,99 @@ export function BlockManagement() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Variety <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <select
                       required
-                      type="text"
                       value={formData.variety}
                       onChange={(e) => setFormData({ ...formData, variety: e.target.value })}
-                      placeholder="e.g., Cabernet Sauvignon"
                       className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                    />
+                    >
+                      <option value="">Select a variety...</option>
+                      <optgroup label="Red Varieties">
+                        <option value="Cabernet Sauvignon">Cabernet Sauvignon</option>
+                        <option value="Merlot">Merlot</option>
+                        <option value="Pinot Noir">Pinot Noir</option>
+                        <option value="Syrah">Syrah</option>
+                        <option value="Zinfandel">Zinfandel</option>
+                        <option value="Malbec">Malbec</option>
+                        <option value="Cabernet Franc">Cabernet Franc</option>
+                        <option value="Petit Verdot">Petit Verdot</option>
+                        <option value="Tempranillo">Tempranillo</option>
+                        <option value="Sangiovese">Sangiovese</option>
+                        <option value="Nebbiolo">Nebbiolo</option>
+                        <option value="Barbera">Barbera</option>
+                        <option value="Grenache">Grenache</option>
+                        <option value="Mourvèdre">Mourvèdre</option>
+                        <option value="Petite Sirah">Petite Sirah</option>
+                        <option value="Carménère">Carménère</option>
+                        <option value="Tannat">Tannat</option>
+                        <option value="Aglianico">Aglianico</option>
+                        <option value="Montepulciano">Montepulciano</option>
+                        <option value="Primitivo">Primitivo</option>
+                        <option value="Touriga Nacional">Touriga Nacional</option>
+                        <option value="Pinotage">Pinotage</option>
+                        <option value="Nero d'Avola">Nero d'Avola</option>
+                        <option value="Dolcetto">Dolcetto</option>
+                        <option value="Gamay">Gamay</option>
+                      </optgroup>
+                      <optgroup label="White Varieties">
+                        <option value="Chardonnay">Chardonnay</option>
+                        <option value="Sauvignon Blanc">Sauvignon Blanc</option>
+                        <option value="Riesling">Riesling</option>
+                        <option value="Pinot Grigio">Pinot Grigio</option>
+                        <option value="Pinot Gris">Pinot Gris</option>
+                        <option value="Gewürztraminer">Gewürztraminer</option>
+                        <option value="Viognier">Viognier</option>
+                        <option value="Chenin Blanc">Chenin Blanc</option>
+                        <option value="Sémillon">Sémillon</option>
+                        <option value="Moscato">Moscato</option>
+                        <option value="Muscat">Muscat</option>
+                        <option value="Albariño">Albariño</option>
+                        <option value="Grüner Veltliner">Grüner Veltliner</option>
+                        <option value="Verdejo">Verdejo</option>
+                        <option value="Torrontés">Torrontés</option>
+                        <option value="Marsanne">Marsanne</option>
+                        <option value="Roussanne">Roussanne</option>
+                        <option value="Vermentino">Vermentino</option>
+                        <option value="Trebbiano">Trebbiano</option>
+                        <option value="Pinot Blanc">Pinot Blanc</option>
+                        <option value="Müller-Thurgau">Müller-Thurgau</option>
+                        <option value="Colombard">Colombard</option>
+                        <option value="Melon de Bourgogne">Melon de Bourgogne</option>
+                        <option value="Fiano">Fiano</option>
+                        <option value="Garganega">Garganega</option>
+                      </optgroup>
+                      <optgroup label="Rosé / Blush">
+                        <option value="White Zinfandel">White Zinfandel</option>
+                        <option value="Grenache Rosé">Grenache Rosé</option>
+                        <option value="Provence Rosé Blend">Provence Rosé Blend</option>
+                      </optgroup>
+                      <optgroup label="Sparkling">
+                        <option value="Champagne Blend">Champagne Blend</option>
+                        <option value="Prosecco (Glera)">Prosecco (Glera)</option>
+                        <option value="Cava Blend">Cava Blend</option>
+                      </optgroup>
+                      <optgroup label="Dessert / Fortified">
+                        <option value="Port Blend">Port Blend</option>
+                        <option value="Sherry Blend">Sherry Blend</option>
+                        <option value="Madeira Blend">Madeira Blend</option>
+                        <option value="Ice Wine Variety">Ice Wine Variety</option>
+                      </optgroup>
+                      <optgroup label="Hybrid / Other">
+                        <option value="Chambourcin">Chambourcin</option>
+                        <option value="Vidal Blanc">Vidal Blanc</option>
+                        <option value="Seyval Blanc">Seyval Blanc</option>
+                        <option value="Norton">Norton</option>
+                        <option value="Marquette">Marquette</option>
+                        <option value="Frontenac">Frontenac</option>
+                        <option value="La Crescent">La Crescent</option>
+                        <option value="Traminette">Traminette</option>
+                        <option value="Cayuga White">Cayuga White</option>
+                        <option value="Concord">Concord</option>
+                        <option value="Niagara">Niagara</option>
+                        <option value="Muscadine">Muscadine</option>
+                        <option value="Other">Other</option>
+                      </optgroup>
+                    </select>
                   </div>
 
                   <div>
@@ -1615,21 +1827,33 @@ export function BlockManagement() {
               </div>
 
               {/* Form Actions */}
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button
-                  type="submit"
-                  className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
-                >
-                  <Grape className="w-5 h-5" />
-                  {editingBlock ? 'Update Field' : 'Add Field'}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-all duration-200"
-                >
-                  Cancel
-                </button>
+              <div className="pt-4 border-t border-gray-200">
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={!editingBlock && !(formData.geom && formData.geom.coordinates)}
+                    className={`flex-1 font-semibold py-3 px-6 rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                      !editingBlock && !(formData.geom && formData.geom.coordinates)
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white hover:shadow-xl'
+                    }`}
+                  >
+                    <Grape className="w-5 h-5" />
+                    {editingBlock ? 'Update Field' : 'Create Field'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {!editingBlock && !(formData.geom && formData.geom.coordinates) && (
+                  <p className="text-center text-sm text-gray-500 mt-3">
+                    Draw the field boundary on the map to enable field creation
+                  </p>
+                )}
               </div>
             </form>
           </CardContent>
@@ -1639,14 +1863,198 @@ export function BlockManagement() {
         document.body
       )}
 
+      {/* Inline Drawing Map Modal */}
+      {showDrawingMap && createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-3"
+          onClick={handleDrawingMapClose}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[95vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-3 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-6">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <MapIcon className="w-5 h-5" />
+                    Draw Field Boundary
+                  </h3>
+                </div>
+                <div className="hidden sm:block h-8 w-px bg-white/30" />
+                <p className="hidden sm:block text-emerald-50 text-sm">
+                  {drawnPolygon
+                    ? `${drawnPolygon.acres} acres mapped`
+                    : drawingEditMode
+                      ? 'Drag corners to move • Right-click edge to add point'
+                      : drawingProgress?.isComplete
+                        ? 'Click Edit to adjust boundary points'
+                        : 'Click to add points, then click near first point to complete'}
+                </p>
+              </div>
+              <button
+                onClick={handleDrawingMapClose}
+                className="bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 rounded-lg p-2 transition-colors shadow-sm"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Map Container */}
+            <div className="flex-1 relative">
+              <BlockMap
+                blocks={drawnPolygon ? [{
+                  id: 'temp-drawing',
+                  name: formData.name || 'New Field',
+                  geom: drawnPolygon.geom,
+                  acres: drawnPolygon.acres,
+                  variety: formData.variety
+                }] : []}
+                onBlockCreate={(blockData) => {
+                  handlePolygonDrawn(blockData);
+                }}
+                onBlockUpdate={(blockId, blockData) => {
+                  // Update the drawn polygon when edited
+                  if (blockId === 'temp-drawing' && blockData.geom) {
+                    setDrawnPolygon({
+                      ...drawnPolygon,
+                      geom: blockData.geom,
+                      acres: blockData.acres
+                    });
+                  }
+                }}
+                selectedBlockId={drawnPolygon ? 'temp-drawing' : null}
+                onBlockSelect={() => {}}
+                autoStartDrawing={!drawnPolygon}
+                onDrawingModeChange={() => {}}
+                showAddressSearch={true}
+                isDrawingModal={true}
+                onDrawingProgress={handleDrawingProgress}
+                editModeEnabled={drawingEditMode}
+                clearTrigger={clearTrigger}
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 flex items-center justify-between flex-shrink-0">
+              {drawnPolygon ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {drawnPolygon.acres} acres
+                    </div>
+                    <span className="text-sm text-gray-500">Click on field to edit boundary points</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDrawingMapClear}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Clear
+                    </button>
+                    <button
+                      onClick={handleDrawingMapSave}
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      Save Boundary
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    {drawingEditMode ? (
+                      <span className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-medium">
+                        <Edit2 className="w-4 h-4" />
+                        Editing • {drawingProgress?.acres || 0} acres
+                      </span>
+                    ) : drawingProgress?.isComplete ? (
+                      <span className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-full font-medium">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {drawingProgress.acres} acres
+                      </span>
+                    ) : drawingProgress?.points >= 3 ? (
+                      <>
+                        <span className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-800 rounded-full font-medium">
+                          {drawingProgress.points} points
+                        </span>
+                        <span className="text-gray-500">
+                          Click near first point to complete the boundary
+                        </span>
+                      </>
+                    ) : drawingProgress?.points > 0 ? (
+                      <>
+                        <span className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full font-medium">
+                          {drawingProgress.points} point{drawingProgress.points !== 1 ? 's' : ''}
+                        </span>
+                        <span className="text-gray-500">
+                          Need {3 - drawingProgress.points} more point{3 - drawingProgress.points !== 1 ? 's' : ''}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-gray-500">
+                        Click on map to add points, then click near first point to complete
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDrawingMapClear}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Clear
+                    </button>
+                    {drawingProgress?.isComplete && (
+                      <>
+                        <button
+                          onClick={() => setDrawingEditMode(!drawingEditMode)}
+                          className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                            drawingEditMode
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
+                              : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                          }`}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          {drawingEditMode ? 'Done Editing' : 'Edit'}
+                        </button>
+                        <button
+                          onClick={handleDrawingMapSave}
+                          className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                        >
+                          <Save className="w-4 h-4" />
+                          Save Boundary
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={handleDrawingMapClose}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Blocks Display - Map or List */}
       {loading ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-            <p className="text-gray-600 mt-4">Loading fields...</p>
-          </CardContent>
-        </Card>
+        <LoadingSpinner message="Loading fields..." />
       ) : blocks.length === 0 ? (
         <Card className="border-2 border-dashed border-gray-300">
           <CardContent className="py-12 text-center">
@@ -1658,7 +2066,7 @@ export function BlockManagement() {
           </CardContent>
         </Card>
       ) : viewMode === 'map' ? (
-        <div className="h-[600px] rounded-lg overflow-hidden shadow-lg border border-gray-200">
+        <div className="h-[calc(100vh-120px)] min-h-[500px] rounded-lg overflow-hidden shadow-lg border border-gray-200">
           <BlockMap
             blocks={blocks}
             onBlockCreate={async (blockData) => {
@@ -1700,11 +2108,21 @@ export function BlockManagement() {
                 setAutoStartDrawing(false);
               }
             }}
+            printModalOpen={showPrintModal}
+            onPrintModalClose={() => setShowPrintModal(false)}
           />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {blocks.map((block) => {
+          {[...blocks].sort((a, b) => {
+            // Natural sort: extract numbers from names and compare numerically
+            const aMatch = a.name.match(/(\d+)/);
+            const bMatch = b.name.match(/(\d+)/);
+            if (aMatch && bMatch) {
+              return parseInt(aMatch[1], 10) - parseInt(bMatch[1], 10);
+            }
+            return a.name.localeCompare(b.name);
+          }).map((block) => {
             const blockMetrics = calculateMetrics({
               acres: block.acres,
               row_spacing_ft: block.row_spacing_ft,
@@ -1859,11 +2277,17 @@ export function BlockManagement() {
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="bg-gray-50 rounded p-2">
                         <span className="text-gray-600 block text-xs">Acres</span>
-                        <span className="font-semibold text-gray-900">{block.acres}</span>
+                        <span className="font-semibold text-gray-900">
+                          {block.geom && block.geom.coordinates ? block.acres : '-'}
+                        </span>
                       </div>
                       <div className="bg-gray-50 rounded p-2">
                         <span className="text-gray-600 block text-xs">Vines</span>
-                        <span className="font-semibold text-gray-900">{blockMetrics.estimatedVines.toLocaleString()}</span>
+                        {block.geom && block.geom.coordinates ? (
+                          <span className="font-semibold text-gray-900">{blockMetrics.estimatedVines.toLocaleString()}</span>
+                        ) : (
+                          <span className="text-xs text-amber-600 font-medium">Map field first</span>
+                        )}
                       </div>
                     </div>
 
@@ -1884,10 +2308,12 @@ export function BlockManagement() {
                           <span className="font-medium text-gray-900">{block.year_planted}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>{blockMetrics.vinesPerAcre.toLocaleString()} vines/ac</span>
-                        <span>{blockMetrics.estimatedRows} rows est.</span>
-                      </div>
+                      {block.geom && block.geom.coordinates && (
+                        <div className="flex justify-between text-xs text-gray-500 mt-2">
+                          <span>{blockMetrics.vinesPerAcre.toLocaleString()} vines/ac</span>
+                          <span>{blockMetrics.estimatedRows} rows est.</span>
+                        </div>
+                      )}
                     </div>
 
                     {block.custom_fields && Object.keys(block.custom_fields).length > 0 && (

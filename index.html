@@ -2,19 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/faviconmain.png" />
+    <link rel="icon" type="image/png" href="/Trellis_Logo/logo_symbol .png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Trellis - Vineyard management software for planning, operations, and winery production" />
 
-    <!-- Content Security Policy: Allow Stripe scripts and Supabase WebSockets -->
+    <!-- Content Security Policy: Allow Stripe, Google Maps, Weather API, and Supabase -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com;
-      style-src 'self' 'unsafe-inline';
-      img-src 'self' data: https:;
-      font-src 'self' data:;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://js.stripe.com https://checkout.stripe.com;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com https://maps.googleapis.com https://*.googleapis.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      img-src 'self' data: https: blob:;
+      font-src 'self' data: https://fonts.gstatic.com;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://js.stripe.com https://checkout.stripe.com https://maps.googleapis.com https://*.googleapis.com https://api.weather.gov https://api.open-meteo.com https://archive-api.open-meteo.com https://*.arcgisonline.com;
       frame-src https://js.stripe.com https://checkout.stripe.com;
+      worker-src 'self' blob:;
     ">
 
     <title>Trellis - Vineyard Management Software</title>

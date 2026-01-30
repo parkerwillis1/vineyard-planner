@@ -18,6 +18,8 @@ import {
   Wind
 } from 'lucide-react';
 import { supabase } from '@/shared/lib/supabaseClient';
+import { DocLink } from '@/shared/components/DocLink';
+import { LoadingSpinner } from './LoadingSpinner';
 
 export function VineyardDashboard() {
   const { user } = useAuth();
@@ -160,52 +162,47 @@ export function VineyardDashboard() {
     };
   }
 
-  const StatCard = ({ icon: Icon, label, value, change, trend, color = 'emerald', iconBg, onClick }) => (
+  const StatCard = ({ icon: Icon, label, value, change, trend, color = 'emerald', onClick }) => (
     <div
       onClick={onClick}
-      className={`group bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-300 hover:-translate-y-0.5 ${
-        onClick ? 'cursor-pointer hover:shadow-lg hover:border-gray-300' : ''
+      className={`group bg-white rounded-xl border border-gray-200 p-5 transition-all duration-200 ${
+        onClick ? 'cursor-pointer hover:border-gray-300' : ''
       }`}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-14 h-14 rounded-xl ${iconBg || 'bg-gradient-to-br from-emerald-50 to-emerald-100'} flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
-          <Icon className={`w-7 h-7 ${color === 'emerald' ? 'text-[#10b981]' : color === 'teal' ? 'text-[#008080]' : color === 'navy' ? 'text-[#1f2937]' : color === 'blue' ? 'text-blue-600' : color === 'cyan' ? 'text-cyan-600' : color === 'purple' ? 'text-purple-600' : 'text-amber-600'}`} />
-        </div>
+      <div className="flex items-center justify-between mb-3">
+        <Icon className={`w-5 h-5 ${color === 'emerald' ? 'text-emerald-500' : color === 'teal' ? 'text-teal-500' : color === 'navy' ? 'text-gray-400' : color === 'blue' ? 'text-blue-500' : color === 'cyan' ? 'text-cyan-500' : color === 'purple' ? 'text-purple-500' : color === 'amber' ? 'text-amber-500' : 'text-gray-400'}`} />
         {change && (
-          <div className={`flex items-center gap-1.5 text-sm font-semibold ${trend === 'up' ? 'text-[#10b981]' : 'text-red-600'}`}>
-            {trend === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+          <div className={`flex items-center gap-1 text-xs font-medium ${trend === 'up' ? 'text-emerald-600' : 'text-red-500'}`}>
+            {trend === 'up' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
             <span>{change}</span>
           </div>
         )}
       </div>
-      <div className="text-3xl font-bold text-[#1f2937] mb-2">{value}</div>
-      <div className="text-sm font-medium text-[#4b5563]">{label}</div>
+      <div className="text-2xl font-semibold text-gray-900 mb-1">{value}</div>
+      <div className="text-sm text-gray-500">{label}</div>
     </div>
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading dashboard..." />;
   }
 
   return (
     <div className="space-y-8">
+      {/* Page Header */}
+      <div className="pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-sm text-gray-500 mt-1">Overview of your vineyard operations and key metrics. <DocLink docId="operations/dashboard" /></p>
+      </div>
+
       {/* Key Metrics Grid */}
       <div>
-        <h3 className="text-lg font-bold text-[#1f2937] mb-4">Key Operational Metrics</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={MapPin}
             label="Total Acreage"
             value={stats.totalAcres}
             color="emerald"
-            iconBg="bg-gradient-to-br from-emerald-50 to-emerald-100"
             onClick={() => navigate('/vineyard?view=blocks')}
           />
           <StatCard
@@ -213,7 +210,6 @@ export function VineyardDashboard() {
             label="Active Blocks"
             value={stats.totalBlocks}
             color="teal"
-            iconBg="bg-gradient-to-br from-teal-50 to-teal-100"
             onClick={() => navigate('/vineyard?view=blocks')}
           />
           <StatCard
@@ -223,7 +219,6 @@ export function VineyardDashboard() {
             change={stats.overdueTasks > 0 ? `${stats.overdueTasks} overdue` : null}
             trend={stats.overdueTasks > 0 ? 'down' : null}
             color="navy"
-            iconBg="bg-gradient-to-br from-gray-50 to-gray-100"
             onClick={() => navigate('/vineyard?view=tasks')}
           />
           <StatCard
@@ -231,7 +226,6 @@ export function VineyardDashboard() {
             label="Current Season Yield"
             value={`${stats.currentSeasonYield} tons`}
             color="emerald"
-            iconBg="bg-gradient-to-br from-emerald-50 to-emerald-100"
             onClick={() => navigate('/vineyard?view=harvest')}
           />
         </div>
@@ -239,14 +233,13 @@ export function VineyardDashboard() {
 
       {/* Irrigation & Water Stats */}
       <div>
-        <h3 className="text-lg font-bold text-[#1f2937] mb-4">Irrigation & Water Management</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Irrigation & Water Management</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={Droplet}
             label="Recent Irrigation"
             value={stats.recentIrrigationEvents}
             color="blue"
-            iconBg="bg-gradient-to-br from-blue-50 to-blue-100"
             onClick={() => navigate('/vineyard?view=irrigation')}
           />
           <StatCard
@@ -254,7 +247,6 @@ export function VineyardDashboard() {
             label="Water Used (7d)"
             value={`${stats.totalWaterUsed}k gal`}
             color="cyan"
-            iconBg="bg-gradient-to-br from-cyan-50 to-cyan-100"
             onClick={() => navigate('/vineyard?view=irrigation&tab=water-budget')}
           />
           <StatCard
@@ -262,29 +254,20 @@ export function VineyardDashboard() {
             label="Active Devices"
             value={stats.activeDevices}
             color="purple"
-            iconBg="bg-gradient-to-br from-purple-50 to-purple-100"
             onClick={() => navigate('/vineyard?view=hardware')}
           />
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-gray-300 transition-all duration-300 hover:-translate-y-0.5">
-            <div className="flex items-center gap-4 mb-3">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                waterBalance?.status === 'good'
-                  ? 'bg-gradient-to-br from-emerald-50 to-emerald-100'
-                  : 'bg-gradient-to-br from-yellow-50 to-yellow-100'
-              }`}>
-                {waterBalance?.status === 'good' ? (
-                  <CheckCircle className="w-6 h-6 text-[#10b981]" />
-                ) : (
-                  <AlertTriangle className="w-6 h-6 text-yellow-600" />
-                )}
-              </div>
-              <div>
-                <div className="text-lg font-bold text-[#1f2937]">
-                  {waterBalance?.status === 'good' ? 'Good' : 'Check'}
-                </div>
-                <div className="text-sm font-medium text-[#4b5563]">Water Balance</div>
-              </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-5 transition-all duration-200 hover:border-gray-300">
+            <div className="flex items-center justify-between mb-3">
+              {waterBalance?.status === 'good' ? (
+                <CheckCircle className="w-5 h-5 text-emerald-500" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+              )}
             </div>
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
+              {waterBalance?.status === 'good' ? 'Good' : 'Check'}
+            </div>
+            <div className="text-sm text-gray-500">Water Balance</div>
           </div>
         </div>
       </div>
@@ -292,33 +275,31 @@ export function VineyardDashboard() {
       {/* Recent Activity & Quality */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-bold text-[#1f2937] mb-4 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-teal-600" />
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Activity className="w-4 h-4 text-gray-400" />
             Recent Irrigation Activity
           </h3>
           {recentActivity.length === 0 ? (
             <div className="text-center py-8">
-              <Droplet className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm mb-2">No recent irrigation events</p>
+              <Droplet className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm mb-1">No recent irrigation events</p>
               <p className="text-xs text-gray-400">
                 Log irrigation or connect hardware devices
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-1">
               {recentActivity.map((activity) => (
                 <div key={activity.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                      <Droplet className="w-5 h-5 text-blue-600" />
-                    </div>
+                    <Droplet className="w-4 h-4 text-blue-400 flex-shrink-0" />
                     <div className="min-w-0">
                       <p className="font-medium text-gray-900 text-sm truncate">{activity.blockName}</p>
                       <p className="text-xs text-gray-500">
                         {new Date(activity.date).toLocaleDateString()} • {activity.duration?.toFixed(1)}h
                         {activity.source === 'webhook' && (
-                          <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                          <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
                             Auto
                           </span>
                         )}
@@ -326,8 +307,7 @@ export function VineyardDashboard() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="font-bold text-gray-900 text-sm">{activity.amount}k</p>
-                    <p className="text-xs text-gray-500">gal</p>
+                    <p className="font-semibold text-gray-900 text-sm">{activity.amount}k gal</p>
                   </div>
                 </div>
               ))}
@@ -336,44 +316,34 @@ export function VineyardDashboard() {
         </div>
 
         {/* Quality Metrics */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-bold text-[#1f2937] mb-4">Quality & Operations</h3>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 p-4 bg-amber-50 rounded-lg border border-amber-100">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center flex-shrink-0">
-                <ThermometerSun className="w-6 h-6 text-amber-600" />
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quality & Operations</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-3 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <ThermometerSun className="w-4 h-4 text-amber-500" />
+                <span className="text-sm text-gray-600">Average Brix</span>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-[#1f2937]">{stats.avgBrix}°</div>
-                <div className="text-sm font-medium text-[#4b5563]">Average Brix</div>
-              </div>
+              <span className="text-lg font-semibold text-gray-900">{stats.avgBrix}°</span>
             </div>
 
-            <div className="flex items-center gap-4 p-4 bg-teal-50 rounded-lg border border-teal-100">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center flex-shrink-0">
-                <Droplet className="w-6 h-6 text-[#008080]" />
+            <div className="flex items-center justify-between py-3 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <Droplet className="w-4 h-4 text-teal-500" />
+                <span className="text-sm text-gray-600">Sprays (30 Days)</span>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-[#1f2937]">{stats.recentSprays}</div>
-                <div className="text-sm font-medium text-[#4b5563]">Sprays (Last 30 Days)</div>
-              </div>
+              <span className="text-lg font-semibold text-gray-900">{stats.recentSprays}</span>
             </div>
 
             {/* Weather placeholder */}
-            <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
-                <CloudRain className="w-6 h-6 text-blue-600" />
+            <div className="flex items-center justify-between py-3">
+              <div className="flex items-center gap-3">
+                <CloudRain className="w-4 h-4 text-blue-500" />
+                <span className="text-sm text-gray-600">Weather</span>
               </div>
-              <div className="flex-1">
-                <div className="text-2xl font-bold text-[#1f2937]">72°F</div>
-                <div className="text-sm font-medium text-[#4b5563]">Partly Cloudy</div>
-              </div>
-              <div className="text-right text-xs text-gray-400">
-                <div className="flex items-center gap-1 mb-1">
-                  <Wind className="w-3 h-3" />
-                  <span>5 mph</span>
-                </div>
-                <div>20% rain</div>
+              <div className="flex items-center gap-3">
+                <span className="text-lg font-semibold text-gray-900">72°F</span>
+                <span className="text-xs text-gray-400">Partly Cloudy</span>
               </div>
             </div>
           </div>
@@ -381,60 +351,55 @@ export function VineyardDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-gradient-to-br from-gray-50 via-white to-gray-50 rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-bold text-[#1f2937] mb-5 flex items-center gap-2">
-          <Activity className="w-5 h-5 text-[#10b981]" />
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <button
             onClick={() => navigate('/vineyard?view=blocks')}
-            className="group bg-white hover:bg-gray-50 rounded-xl p-5 text-center transition-all duration-300 border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1"
+            className="flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
           >
-            <Plus className="w-7 h-7 text-[#10b981] mx-auto mb-3 transition-colors" />
-            <div className="text-sm font-bold text-[#1f2937] transition-colors">Add Block</div>
+            <Plus className="w-4 h-4 text-emerald-500" />
+            <span className="text-sm font-medium text-gray-700">Add Block</span>
           </button>
           <button
             onClick={() => navigate('/vineyard?view=tasks')}
-            className="group bg-white hover:bg-gray-50 rounded-xl p-5 text-center transition-all duration-300 border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1"
+            className="flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
           >
-            <Calendar className="w-7 h-7 text-[#008080] mx-auto mb-3 transition-colors" />
-            <div className="text-sm font-bold text-[#1f2937] transition-colors">Schedule Task</div>
+            <Calendar className="w-4 h-4 text-teal-500" />
+            <span className="text-sm font-medium text-gray-700">Schedule Task</span>
           </button>
           <button
             onClick={() => navigate('/vineyard?view=harvest')}
-            className="group bg-white hover:bg-gray-50 rounded-xl p-5 text-center transition-all duration-300 border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1"
+            className="flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
           >
-            <TrendingUp className="w-7 h-7 text-[#10b981] mx-auto mb-3 transition-colors" />
-            <div className="text-sm font-bold text-[#1f2937] transition-colors">Log Harvest</div>
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <span className="text-sm font-medium text-gray-700">Log Harvest</span>
           </button>
           <button
             onClick={() => navigate('/vineyard?view=irrigation')}
-            className="group bg-white hover:bg-gray-50 rounded-xl p-5 text-center transition-all duration-300 border border-gray-200 hover:border-gray-300 hover:shadow-lg hover:-translate-y-1"
+            className="flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
           >
-            <Droplet className="w-7 h-7 text-blue-600 mx-auto mb-3 transition-colors" />
-            <div className="text-sm font-bold text-[#1f2937] transition-colors">Log Irrigation</div>
+            <Droplet className="w-4 h-4 text-blue-500" />
+            <span className="text-sm font-medium text-gray-700">Log Irrigation</span>
           </button>
         </div>
       </div>
 
       {/* Empty State - No Blocks */}
       {stats.totalBlocks === 0 && (
-        <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-50 mb-4">
-            <MapPin className="w-8 h-8 text-teal-600" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2">
+        <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
+          <MapPin className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+          <h3 className="text-base font-semibold text-gray-900 mb-1">
             Get started with your vineyard
           </h3>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+          <p className="text-sm text-gray-500 mb-4 max-w-sm mx-auto">
             Add your vineyard blocks to start tracking irrigation, monitoring water balance, and managing operations.
           </p>
           <button
             onClick={() => navigate('/vineyard?view=blocks')}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-vine-green-600 text-white rounded-lg hover:from-teal-500 hover:to-vine-green-500 transition-all font-medium shadow-sm hover:shadow-md"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             Add Your First Block
           </button>
         </div>

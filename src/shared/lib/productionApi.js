@@ -316,9 +316,10 @@ export async function getLatestFermentationLog(lotId) {
     .from('fermentation_logs')
     .select('*')
     .eq('lot_id', lotId)
+    .is('archived_at', null)
     .order('log_date', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 }
 
 // =====================================================
@@ -1298,6 +1299,34 @@ export async function getDraftRunForLot(lotId) {
 }
 
 /**
+ * Get all draft runs for current user (for showing resume buttons)
+ * @returns {Promise<{data: Object, error: Error|null}>} - Map of lot_id -> draft run
+ */
+export async function getAllDraftRuns() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: {}, error: null };
+
+  const { data, error } = await supabase
+    .from('bottling_runs')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('status', 'draft')
+    .order('updated_at', { ascending: false });
+
+  if (error) return { data: {}, error };
+
+  // Convert to map of lot_id -> draft run (most recent per lot)
+  const draftsByLot = {};
+  for (const draft of data || []) {
+    if (!draftsByLot[draft.lot_id]) {
+      draftsByLot[draft.lot_id] = draft;
+    }
+  }
+
+  return { data: draftsByLot, error: null };
+}
+
+/**
  * Create a new bottling run (save draft)
  * @param {Object} runData - Run configuration
  */
@@ -1352,11 +1381,19 @@ export async function startBottlingRun(runId) {
 
 /**
  * Complete a bottling run (atomic operation via RPC)
+ * Also logs TTB transactions for the bottling
  * @param {string} runId - Run UUID
  * @param {number} actualBottles - Actual bottles filled
  * @param {number} actualCases - Actual cases packed
  */
 export async function completeBottlingRun(runId, actualBottles, actualCases) {
+  // First get the run details for TTB logging
+  const { data: runData } = await supabase
+    .from('bottling_runs')
+    .select('*, production_lots:lot_id(ttb_tax_class, wine_type)')
+    .eq('id', runId)
+    .single();
+
   const { data, error } = await supabase.rpc('complete_bottling_run', {
     p_run_id: runId,
     p_actual_bottles: actualBottles,
@@ -1366,6 +1403,23 @@ export async function completeBottlingRun(runId, actualBottles, actualCases) {
   if (error) {
     console.error('Complete bottling run error:', error);
     return { data: null, error };
+  }
+
+  // Log TTB transactions (non-blocking - don't fail if this fails)
+  if (runData && data?.volume_deducted_gal) {
+    try {
+      const { logBottlingComplete } = await import('./productionApi.js');
+      const run = {
+        ...runData,
+        ttb_tax_class: runData.production_lots?.ttb_tax_class || 'table_wine_16',
+        completed_at: new Date().toISOString(),
+        actual_bottles: actualBottles
+      };
+      await logBottlingComplete(run, data.volume_deducted_gal);
+    } catch (ttbErr) {
+      console.error('Error logging TTB transaction for bottling:', ttbErr);
+      // Don't fail the operation
+    }
   }
 
   return { data, error: null };
@@ -1546,4 +1600,329 @@ export async function updateInventoryStatus(inventoryId, status) {
     .eq('id', inventoryId)
     .select()
     .single();
+}
+
+// =====================================================
+// FERMENTATION EVENTS
+// Tracks nutrients, deviations, interventions, and sensory flags
+// =====================================================
+
+/**
+ * List fermentation events for a lot
+ * @param {string} lotId - Lot ID
+ * @param {object} filters - Optional filters (event_type, resolved, etc.)
+ */
+export async function listFermentationEvents(lotId, filters = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('fermentation_events')
+    .select('*')
+    .eq('lot_id', lotId)
+    .eq('user_id', user.id)
+    .order('event_date', { ascending: false });
+
+  if (filters.event_type) {
+    query = query.eq('event_type', filters.event_type);
+  }
+  if (filters.resolved !== undefined) {
+    query = query.eq('resolved', filters.resolved);
+  }
+  if (filters.severity) {
+    query = query.eq('severity', filters.severity);
+  }
+
+  return query;
+}
+
+/**
+ * Get unresolved deviations across all active fermentations
+ */
+export async function getUnresolvedDeviations() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  return supabase
+    .from('fermentation_events')
+    .select(`
+      *,
+      lots:lot_id (id, name, varietal, current_brix, current_temp_f)
+    `)
+    .eq('user_id', user.id)
+    .eq('event_type', 'deviation')
+    .eq('resolved', false)
+    .order('event_date', { ascending: false });
+}
+
+/**
+ * Create a fermentation event
+ * @param {object} event - Event data
+ */
+export async function createFermentationEvent(event) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: new Error('No user logged in') };
+
+  return supabase
+    .from('fermentation_events')
+    .insert({ ...event, user_id: user.id })
+    .select()
+    .single();
+}
+
+/**
+ * Update a fermentation event
+ * @param {string} eventId - Event ID
+ * @param {object} updates - Fields to update
+ */
+export async function updateFermentationEvent(eventId, updates) {
+  return supabase
+    .from('fermentation_events')
+    .update(updates)
+    .eq('id', eventId)
+    .select()
+    .single();
+}
+
+/**
+ * Resolve a deviation/incident
+ * @param {string} eventId - Event ID
+ * @param {string} resolutionNotes - Notes on how it was resolved
+ * @param {number} effectivenessRating - Optional 1-5 rating
+ */
+export async function resolveFermentationEvent(eventId, resolutionNotes, effectivenessRating = null) {
+  const updates = {
+    resolved: true,
+    resolved_at: new Date().toISOString(),
+    resolution_notes: resolutionNotes
+  };
+
+  if (effectivenessRating) {
+    updates.effectiveness_rating = effectivenessRating;
+  }
+
+  return supabase
+    .from('fermentation_events')
+    .update(updates)
+    .eq('id', eventId)
+    .select()
+    .single();
+}
+
+/**
+ * Delete a fermentation event
+ * @param {string} eventId - Event ID
+ */
+export async function deleteFermentationEvent(eventId) {
+  return supabase
+    .from('fermentation_events')
+    .delete()
+    .eq('id', eventId);
+}
+
+/**
+ * Get event history for learning/comparison across lots
+ * @param {object} filters - Filters like event_type, category, varietal
+ */
+export async function getFermentationEventHistory(filters = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  let query = supabase
+    .from('fermentation_events')
+    .select(`
+      *,
+      lots:lot_id (id, name, varietal, vintage, yeast_strain)
+    `)
+    .eq('user_id', user.id)
+    .order('event_date', { ascending: false });
+
+  if (filters.event_type) {
+    query = query.eq('event_type', filters.event_type);
+  }
+  if (filters.category) {
+    query = query.eq('category', filters.category);
+  }
+  if (filters.vintage) {
+    query = query.eq('lots.vintage', filters.vintage);
+  }
+  if (filters.limit) {
+    query = query.limit(filters.limit);
+  }
+
+  return query;
+}
+
+/**
+ * Get nutrient additions summary for a lot
+ * @param {string} lotId - Lot ID
+ */
+export async function getLotNutrientHistory(lotId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: null };
+
+  return supabase
+    .from('fermentation_events')
+    .select('*')
+    .eq('lot_id', lotId)
+    .eq('user_id', user.id)
+    .eq('event_type', 'nutrient')
+    .order('event_date', { ascending: true });
+}
+
+// =====================================================
+// TTB AUTO-LOGGING HELPERS
+// These functions create TTB transaction records automatically
+// when certain production events occur.
+// =====================================================
+
+/**
+ * Log a TTB transaction for a production event
+ * Uses source_event_type and source_event_id to prevent duplicates
+ * @param {object} params
+ */
+export async function logTTBProductionEvent({
+  sourceEventType,
+  sourceEventId,
+  transactionType,
+  taxClass,
+  volumeGallons,
+  lotId = null,
+  bottlingRunId = null,
+  containerId = null,
+  transactionDate = null,
+  notes = null
+}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: new Error('No user logged in') };
+
+  // Don't log if volume is 0 or negative
+  if (!volumeGallons || volumeGallons <= 0) {
+    return { data: null, error: null };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('ttb_transactions')
+      .insert({
+        user_id: user.id,
+        created_by: user.id,
+        source_event_type: sourceEventType,
+        source_event_id: sourceEventId,
+        transaction_type: transactionType,
+        tax_class: taxClass,
+        volume_gallons: volumeGallons,
+        lot_id: lotId,
+        bottling_run_id: bottlingRunId,
+        container_id: containerId,
+        transaction_date: transactionDate || new Date().toISOString().split('T')[0],
+        notes
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Ignore unique constraint violations (duplicate logging)
+      if (error.code === '23505') {
+        console.log('TTB transaction already logged for this event');
+        return { data: null, error: null };
+      }
+      throw error;
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    console.error('Error logging TTB transaction:', err);
+    // Don't fail the main operation if TTB logging fails
+    return { data: null, error: err };
+  }
+}
+
+/**
+ * Log fermentation production when lot status changes to pressed/aging
+ * Call this when a lot completes fermentation
+ * @param {object} lot - The lot that completed fermentation
+ */
+export async function logFermentationComplete(lot) {
+  if (!lot?.id || !lot?.current_volume_gallons) return;
+
+  const taxClass = lot.ttb_tax_class || 'table_wine_16';
+
+  return logTTBProductionEvent({
+    sourceEventType: 'lot_fermentation_complete',
+    sourceEventId: lot.id,
+    transactionType: 'produced_fermentation',
+    taxClass,
+    volumeGallons: lot.current_volume_gallons,
+    lotId: lot.id,
+    containerId: lot.container_id,
+    notes: `Fermentation complete: ${lot.name}`
+  });
+}
+
+/**
+ * Log bottling transaction when bottling run completes
+ * Creates both bulk_bottled (removal from bulk) and bottled_produced (addition to bottled)
+ * @param {object} run - The completed bottling run
+ * @param {number} volumeGallons - Volume in gallons that was bottled
+ */
+export async function logBottlingComplete(run, volumeGallons) {
+  if (!run?.id || !volumeGallons) return;
+
+  const taxClass = run.ttb_tax_class || 'table_wine_16';
+
+  // Log bulk removal (bulk_bottled)
+  await logTTBProductionEvent({
+    sourceEventType: 'bottling_complete_bulk',
+    sourceEventId: run.id,
+    transactionType: 'bulk_bottled',
+    taxClass,
+    volumeGallons,
+    lotId: run.lot_id,
+    bottlingRunId: run.id,
+    transactionDate: run.completed_at?.split('T')[0],
+    notes: `Bottled: ${run.label_name} ${run.vintage} - ${run.actual_bottles} bottles`
+  });
+
+  // Log bottled addition (bottled_produced)
+  await logTTBProductionEvent({
+    sourceEventType: 'bottling_complete_bottled',
+    sourceEventId: run.id,
+    transactionType: 'bottled_produced',
+    taxClass,
+    volumeGallons,
+    lotId: run.lot_id,
+    bottlingRunId: run.id,
+    transactionDate: run.completed_at?.split('T')[0],
+    notes: `Bottled inventory created: ${run.sku}`
+  });
+}
+
+/**
+ * Log cross-tax-class blending
+ * Only logs when blending wines of different tax classes
+ * @param {object} blendLot - The resulting blend lot
+ * @param {Array} components - Array of {lot, percentage, volume_gallons}
+ */
+export async function logBlendingIfCrossTaxClass(blendLot, components) {
+  if (!blendLot?.id || !components?.length) return;
+
+  // Get unique tax classes from components
+  const taxClasses = [...new Set(components.map(c => c.lot?.ttb_tax_class || 'table_wine_16'))];
+
+  // Only log if cross-tax-class blending occurred
+  if (taxClasses.length <= 1) return;
+
+  const blendTaxClass = blendLot.ttb_tax_class || 'table_wine_16';
+
+  return logTTBProductionEvent({
+    sourceEventType: 'blend_cross_tax_class',
+    sourceEventId: blendLot.id,
+    transactionType: 'produced_blending',
+    taxClass: blendTaxClass,
+    volumeGallons: blendLot.current_volume_gallons,
+    lotId: blendLot.id,
+    containerId: blendLot.container_id,
+    notes: `Cross-tax-class blend from ${taxClasses.length} different tax classes`
+  });
 }

@@ -9,6 +9,7 @@ import {
   Check
 } from 'lucide-react';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { LoadingSpinner } from './LoadingSpinner';
 import { listIrrigationDevices, listDeviceZoneMappings } from '@/shared/lib/hardwareApi';
 
 export function WebhookTester() {
@@ -147,11 +148,7 @@ export function WebhookTester() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader className="w-12 h-12 animate-spin text-blue-500" />
-      </div>
-    );
+    return <LoadingSpinner message="Loading devices..." />;
   }
 
   if (devices.length === 0) {
@@ -172,14 +169,10 @@ export function WebhookTester() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3 mb-2">
-          <Code className="w-8 h-8 text-blue-600" />
-          Webhook Tester
-        </h2>
-        <p className="text-gray-600">
-          Test your irrigation hardware webhook integration before connecting real devices
-        </p>
+      {/* Page Header */}
+      <div className="pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">Webhook Tester</h1>
+        <p className="text-sm text-gray-500 mt-1">Test your irrigation hardware webhook integration before connecting real devices</p>
       </div>
 
       {/* Device Selection */}

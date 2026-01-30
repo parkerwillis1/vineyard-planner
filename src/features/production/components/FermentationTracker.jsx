@@ -4,8 +4,10 @@ import { useLocation } from 'react-router-dom';
 import {
   Sparkles, Plus, TrendingDown, AlertTriangle, Clock,
   Thermometer, Activity, CheckCircle2, Circle, Droplets,
-  Copy, Zap, Target, Calendar, FlaskConical, X, Play, ChevronDown, Archive
+  Copy, Zap, Target, Calendar, FlaskConical, X, Play, ChevronDown, Archive,
+  Beaker, AlertOctagon, Pill, Wind, FileWarning, CheckCheck, Lightbulb
 } from 'lucide-react';
+import { DocLink } from '@/shared/components/DocLink';
 import {
   getActiveFermentations,
   createFermentationLog,
@@ -18,7 +20,11 @@ import {
   listSensors,
   getLotReadings,
   logLotAssignment,
-  archiveFermentationLog
+  archiveFermentationLog,
+  listFermentationEvents,
+  createFermentationEvent,
+  updateFermentationEvent,
+  resolveFermentationEvent
 } from '@/shared/lib/productionApi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
@@ -110,25 +116,14 @@ export function FermentationTracker() {
   const [selectedLot, setSelectedLot] = useState(null);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showLogForm, setShowLogForm] = useState(false);
-
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (showLogForm) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [showLogForm]);
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [showVesselDropdown, setShowVesselDropdown] = useState(false);
   const [showProfileSelector, setShowProfileSelector] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [recordingAction, setRecordingAction] = useState(null); // 'punchdown' | 'pumpover' | null
+  const [recordedAction, setRecordedAction] = useState(null); // Shows checkmark briefly after recording
   const [showStartFermentationModal, setShowStartFermentationModal] = useState(false);
   const [containers, setContainers] = useState([]);
   const [sensors, setSensors] = useState([]);
@@ -154,23 +149,6 @@ export function FermentationTracker() {
     onConfirm: null
   });
 
-  const [formData, setFormData] = useState({
-    log_date: new Date().toISOString().split('T')[0], // Default to today
-    brix: '',
-    temp_f: '',
-    ph: '',
-    ta: '',
-    free_so2: '',
-    total_so2: '',
-    va: '',
-    work_performed: [],
-    addition_type: '',
-    addition_name: '',
-    addition_amount: '',
-    addition_unit: 'g/hL',
-    notes: ''
-  });
-
   const [quickLogData, setQuickLogData] = useState({
     brix: '',
     temp_f: '',
@@ -185,14 +163,23 @@ export function FermentationTracker() {
     notes: ''
   });
 
-  const cellarWorkOptions = [
-    { value: 'punchdown', label: 'Punchdown', icon: Activity },
-    { value: 'pumpover', label: 'Pumpover', icon: Droplets },
-    { value: 'rack', label: 'Rack', icon: TrendingDown },
-    { value: 'add_nutrient', label: 'Add Nutrient', icon: Plus },
-    { value: 'add_so2', label: 'Add SO₂', icon: Circle },
-    { value: 'taste', label: 'Taste', icon: CheckCircle2 },
-  ];
+  // Fermentation Events state
+  const [events, setEvents] = useState([]);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [eventModalType, setEventModalType] = useState('nutrient'); // 'nutrient' | 'deviation' | 'intervention' | 'oxygen'
+  const [eventFormData, setEventFormData] = useState({
+    event_type: 'nutrient',
+    category: '',
+    dosage: '',
+    dosage_unit: 'g',
+    yan_reading: '',
+    severity: 'medium',
+    intensity: 'moderate',
+    extraction_goal: 'general',
+    brix_at_event: '',
+    temp_at_event: '',
+    notes: ''
+  });
 
   useEffect(() => {
     loadData();
@@ -259,9 +246,20 @@ export function FermentationTracker() {
     }
   };
 
+  const loadEvents = async (lotId) => {
+    try {
+      const { data, error: eventsError } = await listFermentationEvents(lotId);
+      if (eventsError) throw eventsError;
+      setEvents(data || []);
+    } catch (err) {
+      console.error('Error loading events:', err);
+    }
+  };
+
   useEffect(() => {
     if (selectedLot) {
       loadLogs(selectedLot.id);
+      loadEvents(selectedLot.id);
 
       // Find sensor for this lot
       const sensor = sensors.find(s => s.lot_id === selectedLot.id);
@@ -291,19 +289,9 @@ export function FermentationTracker() {
     setShowQuickLog(true);
   };
 
-  // Quick action: Record sample (pH, TA, temp)
-  const handleQuickSample = () => {
-    setShowLogForm(true);
-    setFormData(prev => ({
-      ...prev,
-      work_performed: prev.work_performed.includes('taste')
-        ? prev.work_performed
-        : [...prev.work_performed, 'taste']
-    }));
-  };
-
   // Quick action: Record punchdown
   const handleQuickPunchdown = async () => {
+    setRecordingAction('punchdown');
     try {
       const logData = {
         lot_id: selectedLot.id,
@@ -311,16 +299,19 @@ export function FermentationTracker() {
         notes: 'Quick punchdown entry'
       };
       await createFermentationLog(logData);
-      setSuccess('Punchdown recorded');
+      setRecordingAction(null);
+      setRecordedAction('punchdown');
       loadLogs(selectedLot.id);
-      setTimeout(() => setSuccess(null), 3000);
+      setTimeout(() => setRecordedAction(null), 2000);
     } catch (err) {
+      setRecordingAction(null);
       setError(err.message);
     }
   };
 
   // Quick action: Record pumpover
   const handleQuickPumpover = async () => {
+    setRecordingAction('pumpover');
     try {
       const logData = {
         lot_id: selectedLot.id,
@@ -328,10 +319,12 @@ export function FermentationTracker() {
         notes: 'Quick pumpover entry'
       };
       await createFermentationLog(logData);
-      setSuccess('Pumpover recorded');
+      setRecordingAction(null);
+      setRecordedAction('pumpover');
       loadLogs(selectedLot.id);
-      setTimeout(() => setSuccess(null), 3000);
+      setTimeout(() => setRecordedAction(null), 2000);
     } catch (err) {
+      setRecordingAction(null);
       setError(err.message);
     }
   };
@@ -340,16 +333,152 @@ export function FermentationTracker() {
   const handleCopyYesterday = () => {
     if (logs.length > 0) {
       const yesterday = logs[0];
-      setFormData(prev => ({
+      setQuickLogData(prev => ({
         ...prev,
+        brix: yesterday.brix || selectedLot?.current_brix || '',
+        temp_f: yesterday.temp_f || selectedLot?.current_temp_f || '',
+        ph: yesterday.ph || '',
+        ta: yesterday.ta || '',
         work_performed: yesterday.work_performed || []
       }));
-      setShowLogForm(true);
-      setSuccess('Copied yesterday\'s cellar work - modify as needed');
+      setShowQuickLog(true);
+      setSuccess('Copied yesterday\'s data - modify as needed');
       setTimeout(() => setSuccess(null), 3000);
     }
   };
 
+  // Event handling functions
+  const handleOpenEventModal = (type) => {
+    setEventModalType(type);
+    setEventFormData({
+      event_type: type,
+      category: '',
+      dosage: '',
+      dosage_unit: 'g',
+      yan_reading: '',
+      severity: 'medium',
+      intensity: 'moderate',
+      extraction_goal: 'general',
+      brix_at_event: selectedLot?.current_brix || '',
+      temp_at_event: selectedLot?.current_temp_f || '',
+      notes: ''
+    });
+    setShowEventModal(true);
+  };
+
+  const handleSubmitEvent = async (e) => {
+    e.preventDefault();
+    try {
+      const eventData = {
+        lot_id: selectedLot.id,
+        event_type: eventFormData.event_type,
+        category: eventFormData.category || null,
+        dosage: eventFormData.dosage ? parseFloat(eventFormData.dosage) : null,
+        dosage_unit: eventFormData.dosage ? eventFormData.dosage_unit : null,
+        yan_reading: eventFormData.yan_reading ? parseFloat(eventFormData.yan_reading) : null,
+        severity: eventFormData.event_type === 'deviation' ? eventFormData.severity : null,
+        intensity: eventFormData.event_type === 'oxygen' ? eventFormData.intensity : null,
+        extraction_goal: eventFormData.event_type === 'oxygen' ? eventFormData.extraction_goal : null,
+        brix_at_event: eventFormData.brix_at_event ? parseFloat(eventFormData.brix_at_event) : null,
+        temp_at_event: eventFormData.temp_at_event ? parseFloat(eventFormData.temp_at_event) : null,
+        notes: eventFormData.notes || null
+      };
+
+      const { error } = await createFermentationEvent(eventData);
+      if (error) throw error;
+
+      setShowEventModal(false);
+      setSuccess(`${eventFormData.event_type.charAt(0).toUpperCase() + eventFormData.event_type.slice(1)} recorded`);
+      loadEvents(selectedLot.id);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleResolveEvent = async (eventId) => {
+    const resolution = prompt('Enter resolution notes:');
+    if (resolution === null) return;
+
+    try {
+      const { error } = await resolveFermentationEvent(eventId, resolution);
+      if (error) throw error;
+
+      setSuccess('Event resolved');
+      loadEvents(selectedLot.id);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // Event type configurations
+  const EVENT_TYPES = {
+    nutrient: {
+      label: 'Nutrient Addition',
+      icon: Pill,
+      color: 'emerald',
+      categories: [
+        { value: 'dap', label: 'DAP (Diammonium Phosphate)' },
+        { value: 'fermaid_k', label: 'Fermaid K' },
+        { value: 'fermaid_o', label: 'Fermaid O (Organic)' },
+        { value: 'goferm', label: 'Go-Ferm' },
+        { value: 'nutristart', label: 'Nutristart' },
+        { value: 'other', label: 'Other Nutrient' }
+      ]
+    },
+    deviation: {
+      label: 'Issue / Deviation',
+      icon: AlertOctagon,
+      color: 'red',
+      categories: [
+        { value: 'stuck_ferment', label: 'Stuck Fermentation' },
+        { value: 'h2s', label: 'H₂S (Rotten Egg)' },
+        { value: 'va', label: 'High VA (Volatile Acidity)' },
+        { value: 'temp_spike', label: 'Temperature Spike' },
+        { value: 'temp_drop', label: 'Temperature Drop' },
+        { value: 'slow_start', label: 'Slow Start' },
+        { value: 'foam_over', label: 'Foam Over' },
+        { value: 'off_odor', label: 'Off Odor' },
+        { value: 'other', label: 'Other Issue' }
+      ]
+    },
+    intervention: {
+      label: 'Intervention',
+      icon: Zap,
+      color: 'amber',
+      categories: [
+        { value: 'yeast_reinoc', label: 'Yeast Re-inoculation' },
+        { value: 'temp_adjust', label: 'Temperature Adjustment' },
+        { value: 'acid_adjust', label: 'Acid Adjustment' },
+        { value: 'so2_addition', label: 'SO₂ Addition' },
+        { value: 'copper_treatment', label: 'Copper Treatment (H₂S)' },
+        { value: 'stirring', label: 'Lees Stirring' },
+        { value: 'other', label: 'Other Intervention' }
+      ]
+    },
+    oxygen: {
+      label: 'Oxygen / Extraction',
+      icon: Wind,
+      color: 'blue',
+      categories: [
+        { value: 'delestage', label: 'Délestage (Rack & Return)' },
+        { value: 'rack_return', label: 'Rack and Return' },
+        { value: 'micro_ox', label: 'Micro-oxygenation' },
+        { value: 'splash_rack', label: 'Splash Racking' },
+        { value: 'extended_maceration', label: 'Extended Maceration' },
+        { value: 'other', label: 'Other' }
+      ]
+    }
+  };
+
+  // Get unresolved deviations count
+  const unresolvedDeviations = events.filter(e => e.event_type === 'deviation' && !e.resolved);
+
+  // =====================================================
+  // ACTION RECOMMENDATIONS ENGINE
+  // Analyzes fermentation data and provides actionable suggestions
+  // =====================================================
   // Apply fermentation profile
   const handleApplyProfile = (profileKey) => {
     setSelectedProfile(profileKey);
@@ -403,84 +532,6 @@ export function FermentationTracker() {
       console.error('Error saving quick log:', err);
       setError(err.message);
     }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Convert empty strings to null for numeric fields
-      // Add current time to the date to avoid timezone issues
-      const logDateTime = new Date(formData.log_date + 'T' + new Date().toTimeString().slice(0, 8));
-
-      const logData = {
-        lot_id: selectedLot.id,
-        log_date: logDateTime.toISOString(),
-        brix: formData.brix ? parseFloat(formData.brix) : null,
-        temp_f: formData.temp_f ? parseFloat(formData.temp_f) : null,
-        ph: formData.ph ? parseFloat(formData.ph) : null,
-        ta: formData.ta ? parseFloat(formData.ta) : null,
-        free_so2: formData.free_so2 ? parseFloat(formData.free_so2) : null,
-        total_so2: formData.total_so2 ? parseFloat(formData.total_so2) : null,
-        va: formData.va ? parseFloat(formData.va) : null,
-        work_performed: formData.work_performed.length > 0 ? formData.work_performed : null,
-        addition_type: formData.addition_type || null,
-        addition_name: formData.addition_name || null,
-        addition_amount: formData.addition_amount ? parseFloat(formData.addition_amount) : null,
-        addition_unit: formData.addition_unit || null,
-        notes: formData.notes || null,
-      };
-
-      const { error: createError } = await createFermentationLog(logData);
-      if (createError) throw createError;
-
-      // Update lot's current readings
-      await updateLot(selectedLot.id, {
-        current_brix: formData.brix ? parseFloat(formData.brix) : selectedLot.current_brix,
-        current_temp_f: formData.temp_f ? parseFloat(formData.temp_f) : selectedLot.current_temp_f,
-        current_ph: formData.ph ? parseFloat(formData.ph) : selectedLot.current_ph,
-        current_ta: formData.ta ? parseFloat(formData.ta) : selectedLot.current_ta,
-      });
-
-      setSuccess('Fermentation log saved successfully');
-      resetForm();
-      loadData();
-      loadLogs(selectedLot.id);
-    } catch (err) {
-      console.error('Error saving log:', err);
-      setError(err.message);
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      log_date: new Date().toISOString().split('T')[0],
-      brix: '',
-      temp_f: '',
-      ph: '',
-      ta: '',
-      free_so2: '',
-      total_so2: '',
-      va: '',
-      work_performed: [],
-      addition_type: '',
-      addition_name: '',
-      addition_amount: '',
-      addition_unit: 'g/hL',
-      notes: ''
-    });
-    setShowLogForm(false);
-  };
-
-  const toggleWork = (workValue) => {
-    setFormData(prev => ({
-      ...prev,
-      work_performed: prev.work_performed.includes(workValue)
-        ? prev.work_performed.filter(w => w !== workValue)
-        : [...prev.work_performed, workValue]
-    }));
   };
 
   const handleArchiveLog = (logId) => {
@@ -701,6 +752,280 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
       isComplete: daysRemaining <= 0
     };
   };
+
+  // Generate AI recommendations based on current fermentation state
+  const generateRecommendations = (lot, lotLogs, lotEvents) => {
+    if (!lot) return [];
+
+    const recommendations = [];
+    const days = getDaysFermenting(lot);
+    const brix = lot.current_brix;
+    const temp = lot.current_temp_f;
+    const profile = selectedProfile ? FERMENTATION_PROFILES[selectedProfile] : null;
+
+    // Get recent logs for trend analysis
+    const recentLogs = lotLogs.slice(0, 5);
+    const lastLog = recentLogs[0];
+    const prevLog = recentLogs[1];
+
+    // Get nutrient events
+    const nutrientEvents = lotEvents.filter(e => e.event_type === 'nutrient');
+    const lastNutrientDay = nutrientEvents.length > 0
+      ? Math.floor((Date.now() - new Date(nutrientEvents[0].event_date).getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    // 1. STUCK FERMENTATION DETECTION
+    // Check based on Brix vs time (doesn't require logs)
+    if (brix > 5 && days > 14) {
+      recommendations.push({
+        type: 'warning',
+        priority: 'high',
+        title: 'Stuck Fermentation',
+        message: `Brix still at ${brix}° after ${days} days. Fermentation appears stuck.`,
+        suggestions: [
+          'Check temperature - ensure it\'s in yeast\'s active range (65-85°F for most)',
+          'Add yeast nutrients (DAP + Fermaid K)',
+          'Gently stir lees to resuspend yeast',
+          'Check for H₂S (rotten egg smell) - indicates yeast stress',
+          'Consider re-inoculating with fresh, active yeast starter',
+          'Warm the must if temperature is too low'
+        ],
+        action: 'log',
+        actionLabel: 'Log Current Reading'
+      });
+    }
+
+    // More severe: barely any Brix drop from initial
+    if (lot.initial_brix && brix > 5) {
+      const brixDrop = lot.initial_brix - brix;
+      if (brixDrop < 3 && days > 7) {
+        recommendations.push({
+          type: 'warning',
+          priority: 'high',
+          title: 'Critical: Fermentation Not Starting',
+          message: `Only ${brixDrop.toFixed(1)}° Brix drop in ${days} days (started at ${lot.initial_brix}°). Fermentation may have never started.`,
+          suggestions: [
+            'Verify yeast was properly rehydrated and pitched',
+            'Check if SO₂ level was too high (inhibits yeast)',
+            'Temperature may be too cold for yeast activity',
+            'Re-inoculate with a fresh yeast starter immediately',
+            'Consider using a stronger yeast strain (EC-1118)'
+          ],
+          action: 'log',
+          actionLabel: 'Log Current Reading'
+        });
+      }
+    }
+
+    // Also check based on log trends if available
+    if (brix > 2 && days > 3 && recentLogs.length >= 2) {
+      const brixChange = prevLog?.brix && lastLog?.brix
+        ? prevLog.brix - lastLog.brix
+        : 0;
+
+      if (brixChange < 0.5 && brix > 5) {
+        // Only add if not already flagged above
+        if (days <= 14) {
+          recommendations.push({
+            type: 'warning',
+            priority: 'high',
+            title: 'Fermentation Slowing',
+            message: `Brix dropped only ${brixChange.toFixed(1)}° since last reading. Current: ${brix}°`,
+            suggestions: [
+              'Check temperature - ensure it\'s in yeast\'s active range',
+              'Consider nutrient addition (DAP or Fermaid)',
+              'Gently stir lees to resuspend yeast',
+              'Check for H₂S (rotten egg smell)',
+              'May need to re-inoculate with fresh yeast'
+            ],
+            action: 'log',
+            actionLabel: 'Log Current Reading'
+          });
+        }
+      }
+    }
+
+    // 2. TEMPERATURE ALERTS
+    if (temp && profile) {
+      if (temp > profile.tempRange.max) {
+        recommendations.push({
+          type: 'warning',
+          priority: 'high',
+          title: 'Temperature Too High',
+          message: `Current ${temp}°F exceeds ${profile.name} max of ${profile.tempRange.max}°F`,
+          suggestions: [
+            'Reduce punchdown/pumpover frequency',
+            'Cool the tank if possible',
+            'Move to cooler location',
+            'Consider adding dry ice (emergency)'
+          ],
+          action: 'log',
+          actionLabel: 'Log Current Reading'
+        });
+      } else if (temp < profile.tempRange.min) {
+        recommendations.push({
+          type: 'warning',
+          priority: 'medium',
+          title: 'Temperature Too Low',
+          message: `Current ${temp}°F is below ${profile.name} min of ${profile.tempRange.min}°F`,
+          suggestions: [
+            'Fermentation may be sluggish',
+            'Move to warmer location',
+            'Increase punchdown frequency to generate heat',
+            'Use fermentation wrap/blanket'
+          ],
+          action: 'log',
+          actionLabel: 'Log Current Reading'
+        });
+      }
+    } else if (temp) {
+      // General temp alerts without profile
+      if (temp > 90) {
+        recommendations.push({
+          type: 'warning',
+          priority: 'high',
+          title: 'High Temperature Alert',
+          message: `${temp}°F is getting dangerously high. Yeast stress likely.`,
+          suggestions: [
+            'Cool immediately to prevent yeast death',
+            'Reduce pumpovers/punchdowns',
+            'May cause off-flavors if not addressed'
+          ],
+          action: 'log',
+          actionLabel: 'Log Current Reading'
+        });
+      }
+    }
+
+    // 3. NUTRIENT TIMING RECOMMENDATIONS
+    if (brix && brix > 5) {
+      const brixDropPercent = lot.initial_brix
+        ? ((lot.initial_brix - brix) / lot.initial_brix) * 100
+        : 0;
+
+      // First nutrient at 1/3 sugar depletion (~33%)
+      if (brixDropPercent >= 25 && brixDropPercent < 40 && nutrientEvents.length === 0) {
+        recommendations.push({
+          type: 'info',
+          priority: 'medium',
+          title: 'Nutrient Addition Recommended',
+          message: `At ~${Math.round(brixDropPercent)}% sugar depletion. First nutrient addition typically at 1/3 depletion.`,
+          suggestions: [
+            'Add Fermaid K or Fermaid O',
+            'Typical dose: 1g/gal or 25g/hL',
+            'Helps prevent H₂S formation',
+            'Supports healthy yeast activity'
+          ],
+          action: 'nutrient',
+          actionLabel: 'Add Nutrient'
+        });
+      }
+
+      // Second nutrient at 2/3 sugar depletion (~66%)
+      if (brixDropPercent >= 55 && brixDropPercent < 70 && nutrientEvents.length === 1) {
+        recommendations.push({
+          type: 'info',
+          priority: 'medium',
+          title: 'Second Nutrient Addition',
+          message: `At ~${Math.round(brixDropPercent)}% sugar depletion. Second nutrient typically at 2/3 depletion.`,
+          suggestions: [
+            'Add second dose of Fermaid K/O',
+            'Last chance for effective nutrient uptake',
+            'DAP alone is less effective this late'
+          ],
+          action: 'nutrient',
+          actionLabel: 'Add Nutrient'
+        });
+      }
+    }
+
+    // 4. MISSING LOG ALERT
+    if (lastLog) {
+      const hoursSinceLog = (Date.now() - new Date(lastLog.log_date).getTime()) / (1000 * 60 * 60);
+      const daysSinceLog = Math.floor(hoursSinceLog / 24);
+      if (daysSinceLog >= 2) {
+        recommendations.push({
+          type: 'warning',
+          priority: 'medium',
+          title: 'Log Reminder',
+          message: `No log in ${daysSinceLog} days. Regular monitoring is important during fermentation.`,
+          suggestions: [
+            'Check Brix to track fermentation progress',
+            'Record temperature',
+            'Note any sensory changes (smell, appearance)',
+            'Perform punchdown/pumpover if needed for reds'
+          ],
+          action: 'log',
+          actionLabel: 'Quick Log'
+        });
+      }
+    } else if (days > 0) {
+      // No logs at all for an active fermentation
+      recommendations.push({
+        type: 'warning',
+        priority: 'medium',
+        title: 'No Logs Recorded',
+        message: `This lot has been fermenting for ${days} days with no logged readings.`,
+        suggestions: [
+          'Start logging daily Brix readings',
+          'Record temperature to ensure healthy fermentation',
+          'Document any cellar work performed'
+        ],
+        action: 'log',
+        actionLabel: 'Quick Log'
+      });
+    }
+
+    // 5. PRESS READINESS
+    if (brix !== null && brix <= 2 && brix > -2) {
+      const daysSinceDry = recentLogs.filter(l => l.brix && l.brix <= 2).length;
+
+      recommendations.push({
+        type: 'success',
+        priority: 'medium',
+        title: 'Approaching Press Readiness',
+        message: `Brix at ${brix}°. Fermentation appears ${brix <= 0 ? 'complete (dry)' : 'nearly complete'}.`,
+        suggestions: [
+          'Taste daily to assess tannin extraction',
+          'Consider extended maceration for reds',
+          'Watch for VA development if leaving on skins',
+          'Press window typically 1-5 days after going dry'
+        ],
+        action: null,
+        actionLabel: null
+      });
+    }
+
+    // 6. H2S WARNING (from sensory notes)
+    const recentH2SNote = lotLogs.slice(0, 3).find(l =>
+      l.notes?.toLowerCase().includes('h2s') ||
+      l.notes?.toLowerCase().includes('rotten egg') ||
+      l.notes?.toLowerCase().includes('sulfur')
+    );
+    if (recentH2SNote) {
+      recommendations.push({
+        type: 'warning',
+        priority: 'high',
+        title: 'H₂S Detected in Recent Notes',
+        message: 'Sulfur/rotten egg smell was noted. Action needed to prevent permanent fault.',
+        suggestions: [
+          'Splash rack to aerate',
+          'Add copper sulfate (0.5 ppm max)',
+          'Add nutrient if fermentation still active',
+          'Increase punchdown frequency'
+        ],
+        action: 'log',
+        actionLabel: 'Log Current Reading'
+      });
+    }
+
+    // Sort by priority
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    return recommendations.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  };
+
+  // Generate recommendations for selected lot
+  const recommendations = selectedLot ? generateRecommendations(selectedLot, logs, events) : [];
 
   // Handle pressing wine (fermenting → pressed)
   const handlePressWine = () => {
@@ -946,8 +1271,9 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
   if (lots.length === 0 && lotsReadyToStart.length === 0) {
     return (
       <div className="pt-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Fermentation Tracker</h2>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+        <h1 className="text-2xl font-bold text-gray-900">Fermentation Tracker</h1>
+        <p className="text-sm text-gray-500 mt-1">Monitor active fermentations and daily cellar work. <DocLink docId="production/fermentation" /></p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center mt-6">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8 text-gray-400" />
           </div>
@@ -960,14 +1286,66 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
 
   const chartData = getChartData();
   const fermentStatus = selectedLot ? getFermentationStatus(selectedLot) : null;
+
+  // Generate alerts for ALL fermenting lots, not just selected
+  const allLotsAlerts = lots.filter(lot => lot.status === 'fermenting').flatMap(lot => {
+    const lotAlerts = [];
+    const days = getDaysFermenting(lot);
+
+    // Stuck fermentation - high Brix after many days
+    if (lot.current_brix > 5 && days > 14) {
+      lotAlerts.push({
+        type: 'error',
+        message: `Stuck fermentation - Brix ${lot.current_brix}° after ${days} days`,
+        lotId: lot.id,
+        lotName: lot.name
+      });
+    }
+
+    // Very stuck - Brix barely moved
+    if (lot.current_brix && lot.initial_brix) {
+      const brixDrop = lot.initial_brix - lot.current_brix;
+      if (brixDrop < 3 && days > 7) {
+        lotAlerts.push({
+          type: 'error',
+          message: `Critically stuck - only ${brixDrop.toFixed(1)}° Brix drop in ${days} days`,
+          lotId: lot.id,
+          lotName: lot.name
+        });
+      }
+    }
+
+    // Temperature concerns
+    if (lot.current_temp_f) {
+      if (lot.current_temp_f > 95) {
+        lotAlerts.push({
+          type: 'error',
+          message: `Dangerous temperature: ${lot.current_temp_f}°F - yeast death risk`,
+          lotId: lot.id,
+          lotName: lot.name
+        });
+      } else if (lot.current_temp_f > 90) {
+        lotAlerts.push({
+          type: 'warning',
+          message: `High temperature: ${lot.current_temp_f}°F`,
+          lotId: lot.id,
+          lotName: lot.name
+        });
+      }
+    }
+
+    return lotAlerts;
+  });
+
+  // Legacy alerts for selected lot (for the detailed view)
   const alerts = selectedLot ? getAlerts(selectedLot) : [];
 
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
       <div className="pt-4">
-        <h2 className="text-2xl font-bold text-gray-900">Fermentation Tracker</h2>
-        <p className="text-gray-600 mt-1">Monitor active fermentations and daily cellar work</p>
+        <h1 className="text-2xl font-bold text-gray-900">Fermentation Tracker</h1>
+        <p className="text-sm text-gray-500 mt-1">Monitor active fermentations and daily cellar work. <DocLink docId="production/fermentation" /></p>
       </div>
 
       {/* Alerts */}
@@ -989,20 +1367,32 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
         </div>
       )}
 
-      {/* Fermentation Alerts */}
-      {alerts.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-5 h-5 text-amber-600" />
-            <span className="font-semibold text-amber-900">Alerts</span>
+      {/* Fermentation Alerts Summary - Compact banner */}
+      {allLotsAlerts.length > 0 && (
+        <div className={`rounded-lg px-4 py-3 flex items-center justify-between ${
+          allLotsAlerts.some(a => a.type === 'error')
+            ? 'bg-red-50 border border-red-200'
+            : 'bg-amber-50 border border-amber-200'
+        }`}>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className={`w-5 h-5 ${
+              allLotsAlerts.some(a => a.type === 'error') ? 'text-red-600' : 'text-amber-600'
+            }`} />
+            <span className={`font-medium ${
+              allLotsAlerts.some(a => a.type === 'error') ? 'text-red-800' : 'text-amber-800'
+            }`}>
+              {(() => {
+                const criticalCount = allLotsAlerts.filter(a => a.type === 'error').length;
+                const warningCount = allLotsAlerts.filter(a => a.type === 'warning').length;
+                const lotsWithIssues = [...new Set(allLotsAlerts.map(a => a.lotId))].length;
+                if (criticalCount > 0) {
+                  return `${lotsWithIssues} lot${lotsWithIssues > 1 ? 's' : ''} with critical issues`;
+                }
+                return `${lotsWithIssues} lot${lotsWithIssues > 1 ? 's' : ''} need${lotsWithIssues === 1 ? 's' : ''} attention`;
+              })()}
+            </span>
           </div>
-          <ul className="space-y-1 ml-7">
-            {alerts.map((alert, idx) => (
-              <li key={idx} className={`text-sm ${alert.type === 'error' ? 'text-red-700' : 'text-amber-700'}`}>
-                {alert.message}
-              </li>
-            ))}
-          </ul>
+          <span className="text-xs text-gray-500">Click a lot to see details</span>
         </div>
       )}
 
@@ -1072,49 +1462,116 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
 
       {/* Active Fermentations - only show if there are any */}
       {lots.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 pt-0.5 pb-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Active Fermentations</h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Active Fermentations</h3>
+            <span className="text-sm text-gray-500">{lots.length} lot{lots.length !== 1 ? 's' : ''}</span>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {lots.map((lot) => {
             const days = getDaysFermenting(lot);
             const status = getFermentationStatus(lot);
             const isSelected = selectedLot?.id === lot.id;
+            const brix = lot.current_brix || 0;
+            const startBrix = lot.initial_brix || 24;
+            // Check if this lot has critical issues
+            const lotHasIssues = allLotsAlerts.some(a => a.lotId === lot.id);
+            const lotHasCritical = allLotsAlerts.some(a => a.lotId === lot.id && a.type === 'error');
+            // Progress calculation aligned with fermentation status:
+            // - Dry (Brix <= 0): 100%
+            // - Finishing (Brix 0-2): 95-100% (scales within this range)
+            // - Active (Brix > 2): 0-95% based on drop from initial
+            let progressPercent;
+            if (brix <= 0) {
+              progressPercent = 100;
+            } else if (brix <= 2) {
+              // Finishing phase: 95% to 100%
+              progressPercent = 95 + ((2 - brix) / 2) * 5;
+            } else {
+              // Active phase: 0% to 95% based on brix drop
+              progressPercent = Math.max(0, Math.min(95, ((startBrix - brix) / (startBrix - 2)) * 95));
+            }
 
             return (
               <button
                 key={lot.id}
-                onClick={() => setSelectedLot(lot)}
-                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                onClick={() => {
+                  setSelectedLot(lot);
+                  loadLogs(lot.id);
+                  loadEvents(lot.id);
+                }}
+                className={`group relative p-5 rounded-xl text-left transition-all ${
                   isSelected
-                    ? 'border-[#7C203A] bg-rose-50'
-                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                    ? 'bg-white border-2 border-[#7C203A] shadow-lg'
+                    : lotHasCritical
+                      ? 'bg-white border-2 border-red-400 hover:border-red-500 hover:shadow-md'
+                      : lotHasIssues
+                        ? 'bg-white border-2 border-amber-400 hover:border-amber-500 hover:shadow-md'
+                        : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md'
                 }`}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900 text-sm">{lot.name}</p>
-                    <p className="text-xs text-gray-500">{lot.varietal} • {lot.vintage}</p>
+                {/* Critical issue indicator */}
+                {lotHasCritical && !isSelected && (
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                    <AlertTriangle className="w-3.5 h-3.5 text-white" />
                   </div>
-                  <span className={`px-2 py-1 rounded text-xs font-medium bg-${status.color}-100 text-${status.color}-700`}>
+                )}
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 text-base truncate">{lot.name}</h4>
+                    <p className="text-sm text-gray-500 mt-0.5">{lot.varietal} • {lot.vintage}</p>
+                  </div>
+                  <div className={`ml-3 px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${
+                    status.color === 'purple' ? 'bg-purple-100 text-purple-700' :
+                    status.color === 'amber' ? 'bg-amber-100 text-amber-700' :
+                    status.color === 'green' ? 'bg-green-100 text-green-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
                     {status.label}
-                  </span>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 mt-3">
-                  <div>
-                    <p className="text-xs text-gray-500">Days</p>
-                    <p className="text-sm font-semibold text-gray-900">{days}</p>
+                {/* Progress Bar */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-medium text-gray-500">Fermentation Progress (based on Brix)</span>
+                    <span className="text-xs font-semibold text-gray-700">{Math.round(progressPercent)}%</span>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Brix</p>
-                    <p className="text-sm font-semibold text-gray-900">{lot.current_brix?.toFixed(1) || '—'}°</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Temp</p>
-                    <p className="text-sm font-semibold text-gray-900">{lot.current_temp_f?.toFixed(0) || '—'}°F</p>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 ${
+                        status.color === 'purple' ? 'bg-gradient-to-r from-purple-500 to-purple-600' :
+                        status.color === 'amber' ? 'bg-gradient-to-r from-amber-500 to-amber-600' :
+                        status.color === 'green' ? 'bg-gradient-to-r from-green-500 to-green-600' :
+                        'bg-gradient-to-r from-gray-400 to-gray-500'
+                      }`}
+                      style={{ width: `${progressPercent}%` }}
+                    />
                   </div>
                 </div>
+
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center">
+                    <div className="text-xs font-medium text-gray-500 mb-1">Day</div>
+                    <div className="text-lg font-bold text-gray-900">{days}</div>
+                  </div>
+                  <div className="text-center border-x border-gray-100">
+                    <div className="text-xs font-medium text-gray-500 mb-1">Brix</div>
+                    <div className="text-lg font-bold text-gray-900">{lot.current_brix?.toFixed(1) || '—'}<span className="text-sm font-normal">°</span></div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-medium text-gray-500 mb-1">Temp</div>
+                    <div className="text-lg font-bold text-gray-900">{lot.current_temp_f?.toFixed(0) || '—'}<span className="text-sm font-normal">°F</span></div>
+                  </div>
+                </div>
+
+                {/* Selected Indicator */}
+                {isSelected && (
+                  <div className="absolute top-3 left-3 w-1.5 h-8 bg-[#7C203A] rounded-full" />
+                )}
               </button>
             );
           })}
@@ -1125,35 +1582,61 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
       {selectedLot && (
         <>
           {/* Quick Actions Bar */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 pt-0.5 pb-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={handleOpenQuickLog}
-                className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#7C203A] to-[#8B2E48] text-white rounded-lg hover:from-[#8B2E48] hover:to-[#7C203A] focus-visible:outline-none focus-visible:ring-0 focus-visible:bg-white focus-visible:text-[#7C203A] active:scale-95 transition-all text-sm font-semibold shadow-md"
+                className="flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-[#7C203A] to-[#8B2E48] text-white rounded-lg hover:from-[#8B2E48] hover:to-[#7C203A] focus-visible:outline-none focus-visible:ring-0 active:scale-95 transition-all text-sm font-semibold shadow-md"
                 style={{ outline: 'none' }}
               >
-                <CheckCircle2 className="w-5 h-5" />
+                <CheckCircle2 className="w-4 h-4" />
                 Quick Daily Log
               </button>
               <button
                 onClick={handleQuickPunchdown}
-                className="flex items-center gap-2 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium"
+                disabled={recordingAction === 'punchdown'}
+                className={`flex items-center gap-2.5 px-5 py-2.5 rounded-lg transition-all text-sm font-medium ${
+                  recordedAction === 'punchdown'
+                    ? 'bg-green-100 text-green-700 border border-green-300'
+                    : recordingAction === 'punchdown'
+                    ? 'bg-purple-100 text-purple-700 border border-purple-300'
+                    : 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100'
+                }`}
               >
-                <Activity className="w-4 h-4" />
-                Punchdown
+                {recordingAction === 'punchdown' ? (
+                  <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                ) : recordedAction === 'punchdown' ? (
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Activity className="w-4 h-4" />
+                )}
+                {recordedAction === 'punchdown' ? 'Recorded!' : recordingAction === 'punchdown' ? 'Recording...' : 'Punchdown'}
               </button>
               <button
                 onClick={handleQuickPumpover}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+                disabled={recordingAction === 'pumpover'}
+                className={`flex items-center gap-2.5 px-5 py-2.5 rounded-lg transition-all text-sm font-medium ${
+                  recordedAction === 'pumpover'
+                    ? 'bg-green-100 text-green-700 border border-green-300'
+                    : recordingAction === 'pumpover'
+                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                    : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
+                }`}
               >
-                <Droplets className="w-4 h-4" />
-                Pumpover
+                {recordingAction === 'pumpover' ? (
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                ) : recordedAction === 'pumpover' ? (
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Droplets className="w-4 h-4" />
+                )}
+                {recordedAction === 'pumpover' ? 'Recorded!' : recordingAction === 'pumpover' ? 'Recording...' : 'Pumpover'}
               </button>
               {logs.length > 0 && (
                 <button
                   onClick={handleCopyYesterday}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  className="flex items-center gap-2.5 px-5 py-2.5 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium"
                 >
                   <Copy className="w-4 h-4" />
                   Copy Yesterday
@@ -1161,7 +1644,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
               )}
               <button
                 onClick={() => setShowProfileSelector(!showProfileSelector)}
-                className="flex items-center gap-2 px-3 py-2 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 transition-colors text-sm font-medium"
+                className="flex items-center gap-2.5 px-5 py-2.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-100 transition-colors text-sm font-medium"
               >
                 <Target className="w-4 h-4" />
                 {selectedProfile ? FERMENTATION_PROFILES[selectedProfile].name : 'Set Profile'}
@@ -1195,38 +1678,293 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
             )}
           </div>
 
+          {/* Events & Interventions Section */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <h3 className="font-semibold text-gray-900">Events & Interventions</h3>
+                {recommendations.filter(r => r.type === 'warning').length > 0 && (
+                  <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full animate-pulse">
+                    {recommendations.filter(r => r.type === 'warning').length} issue{recommendations.filter(r => r.type === 'warning').length > 1 ? 's' : ''} detected
+                  </span>
+                )}
+                {unresolvedDeviations.length > 0 && (
+                  <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                    {unresolvedDeviations.length} unresolved
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleOpenEventModal('nutrient')}
+                  className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors text-sm font-medium"
+                >
+                  <Pill className="w-4 h-4" />
+                  Nutrient
+                </button>
+                <button
+                  onClick={() => handleOpenEventModal('deviation')}
+                  className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+                >
+                  <AlertOctagon className="w-4 h-4" />
+                  Issue
+                </button>
+                <button
+                  onClick={() => handleOpenEventModal('intervention')}
+                  className="flex items-center gap-2 px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm font-medium"
+                >
+                  <Zap className="w-4 h-4" />
+                  Intervention
+                </button>
+                <button
+                  onClick={() => handleOpenEventModal('oxygen')}
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                >
+                  <Wind className="w-4 h-4" />
+                  O₂/Extraction
+                </button>
+              </div>
+            </div>
+
+            {/* Auto-Detected Issues */}
+            {recommendations.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className={`w-4 h-4 ${
+                    recommendations.some(r => r.type === 'warning' && r.priority === 'high')
+                      ? 'text-red-600'
+                      : 'text-amber-600'
+                  }`} />
+                  <span className="text-sm font-medium text-gray-700">
+                    {recommendations.some(r => r.type === 'warning') ? 'Issues Detected' : 'Alerts & Suggestions'}
+                  </span>
+                  <span className="text-xs text-gray-400">• Auto-analyzed</span>
+                </div>
+                <div className="space-y-3">
+                  {recommendations.map((rec, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-lg border ${
+                        rec.type === 'warning'
+                          ? rec.priority === 'high'
+                            ? 'bg-red-50 border-red-200'
+                            : 'bg-amber-50 border-amber-200'
+                          : rec.type === 'success'
+                            ? 'bg-emerald-50 border-emerald-200'
+                            : 'bg-blue-50 border-blue-200'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-1.5 rounded-lg shrink-0 ${
+                          rec.type === 'warning'
+                            ? rec.priority === 'high' ? 'bg-red-100' : 'bg-amber-100'
+                            : rec.type === 'success'
+                              ? 'bg-emerald-100'
+                              : 'bg-blue-100'
+                        }`}>
+                          {rec.type === 'warning' && (
+                            <AlertTriangle className={`w-4 h-4 ${
+                              rec.priority === 'high' ? 'text-red-600' : 'text-amber-600'
+                            }`} />
+                          )}
+                          {rec.type === 'success' && (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          )}
+                          {rec.type === 'info' && (
+                            <Lightbulb className="w-4 h-4 text-blue-600" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            {rec.priority === 'high' && (
+                              <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded">
+                                URGENT
+                              </span>
+                            )}
+                            <h4 className={`font-semibold text-sm ${
+                              rec.type === 'warning'
+                                ? rec.priority === 'high' ? 'text-red-800' : 'text-amber-800'
+                                : rec.type === 'success'
+                                  ? 'text-emerald-800'
+                                  : 'text-blue-800'
+                            }`}>
+                              {rec.title}
+                            </h4>
+                          </div>
+                          <p className="text-sm text-gray-700 mb-2">{rec.message}</p>
+
+                          {/* Solutions shown automatically */}
+                          {rec.suggestions && rec.suggestions.length > 0 && (
+                            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                              <p className="text-xs font-semibold mb-1.5 text-blue-800">
+                                Solution:
+                              </p>
+                              <ul className="text-xs text-gray-700 space-y-1">
+                                {rec.suggestions.map((suggestion, sIdx) => (
+                                  <li key={sIdx} className="flex items-start gap-2">
+                                    <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-blue-600" />
+                                    <span>{suggestion}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Action button */}
+                          {rec.action && rec.actionLabel && (
+                            <button
+                              onClick={() => {
+                                if (rec.action === 'log') {
+                                  setShowQuickLog(true);
+                                } else if (rec.action === 'nutrient') {
+                                  handleOpenEventModal('nutrient');
+                                } else if (rec.action === 'deviation') {
+                                  handleOpenEventModal('deviation');
+                                } else if (rec.action === 'intervention') {
+                                  handleOpenEventModal('intervention');
+                                }
+                              }}
+                              className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                                rec.type === 'warning'
+                                  ? 'bg-green-600 text-white hover:bg-green-700'
+                                  : rec.type === 'info'
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                              }`}
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              {rec.actionLabel}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Event Timeline */}
+            {events.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <FileWarning className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                <p className="text-sm">No events recorded yet</p>
+                <p className="text-xs mt-1">Track nutrient additions, issues, and interventions</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {events.map((event) => {
+                  const config = EVENT_TYPES[event.event_type] || EVENT_TYPES.intervention;
+                  const Icon = config.icon;
+                  const categoryLabel = config.categories?.find(c => c.value === event.category)?.label || event.category;
+
+                  return (
+                    <div
+                      key={event.id}
+                      className={`flex items-start gap-3 p-3 rounded-lg border ${
+                        event.event_type === 'deviation' && !event.resolved
+                          ? 'bg-red-50 border-red-200'
+                          : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg bg-${config.color}-100`}>
+                        <Icon className={`w-4 h-4 text-${config.color}-600`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-gray-900">
+                            {categoryLabel || config.label}
+                          </span>
+                          {event.event_type === 'deviation' && !event.resolved && (
+                            <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded">
+                              Unresolved
+                            </span>
+                          )}
+                          {event.resolved && (
+                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
+                              Resolved
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                          <span>{new Date(event.event_date).toLocaleDateString()}</span>
+                          {event.dosage && (
+                            <span>{event.dosage} {event.dosage_unit}</span>
+                          )}
+                          {event.severity && (
+                            <span className={`font-medium ${
+                              event.severity === 'critical' ? 'text-red-600' :
+                              event.severity === 'high' ? 'text-orange-600' :
+                              event.severity === 'medium' ? 'text-amber-600' : 'text-gray-600'
+                            }`}>
+                              {event.severity} severity
+                            </span>
+                          )}
+                          {event.brix_at_event && (
+                            <span>Brix: {event.brix_at_event}°</span>
+                          )}
+                        </div>
+                        {event.notes && (
+                          <p className="text-xs text-gray-600 mt-1 truncate">{event.notes}</p>
+                        )}
+                        {event.resolution_notes && (
+                          <p className="text-xs text-green-700 mt-1">Resolution: {event.resolution_notes}</p>
+                        )}
+                      </div>
+                      {event.event_type === 'deviation' && !event.resolved && (
+                        <button
+                          onClick={() => handleResolveEvent(event.id)}
+                          className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200 transition-colors"
+                        >
+                          Resolve
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Fermentation Timeline */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 pt-1.5 pb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Fermentation Timeline</h3>
-            <div className="relative">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-8">Fermentation Progress</h3>
+            <div className="relative px-4">
               {/* Timeline line */}
-              <div className="absolute top-6 left-0 right-0 h-1 bg-gray-200"></div>
-              <div className="absolute top-6 left-0 h-1 bg-gradient-to-r from-green-500 to-purple-500"
+              <div className="absolute top-7 left-4 right-4 h-0.5 bg-gray-200"></div>
+              <div className="absolute top-7 left-4 h-0.5 bg-indigo-500 transition-all duration-500"
                    style={{ width: `${Math.min((getDaysFermenting(selectedLot) / 14) * 100, 100)}%` }}></div>
 
               {/* Milestones */}
               <div className="relative flex justify-between">
                 {getTimelineMilestones(selectedLot).map((milestone, idx) => (
-                  <div key={idx} className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all ${
+                  <div key={idx} className="flex flex-col items-center gap-3 max-w-[100px]">
+                    <div className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 ${
                       milestone.completed
-                        ? `bg-${milestone.color}-500 text-white shadow-lg`
-                        : 'bg-gray-200 text-gray-400'
+                        ? 'bg-indigo-500 text-white shadow-md ring-4 ring-indigo-50'
+                        : 'bg-white border-2 border-gray-200 text-gray-400'
                     }`}>
                       {milestone.icon === 'crush' && <Activity className="w-5 h-5" />}
                       {milestone.icon === 'temp' && <Thermometer className="w-5 h-5" />}
                       {milestone.icon === 'dry' && <TrendingDown className="w-5 h-5" />}
                       {milestone.icon === 'press' && <Circle className="w-5 h-5" />}
+                      {milestone.completed && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                          <CheckCircle2 className="w-3 h-3 text-white" />
+                        </div>
+                      )}
                     </div>
-                    <p className={`text-xs font-semibold ${milestone.completed ? 'text-gray-900' : 'text-gray-500'}`}>
-                      {milestone.label}
-                    </p>
-                    {milestone.detail && (
-                      <p className="text-xs text-gray-500 mt-1">{milestone.detail}</p>
-                    )}
-                    {milestone.day !== null && (
-                      <p className="text-xs text-gray-400 mt-1">Day {milestone.day}</p>
-                    )}
+                    <div className="text-center">
+                      <p className={`text-sm font-semibold ${milestone.completed ? 'text-gray-900' : 'text-gray-500'}`}>
+                        {milestone.label}
+                      </p>
+                      {milestone.detail && (
+                        <p className="text-xs text-gray-500 mt-1">{milestone.detail}</p>
+                      )}
+                      {milestone.day !== null && (
+                        <p className="text-xs font-medium text-gray-400 mt-1">Day {milestone.day}</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1234,41 +1972,35 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
           </div>
 
           {/* Current Status Card */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex items-start justify-between mb-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+            <div className="flex items-start justify-between mb-6">
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-bold text-gray-900">{selectedLot.name}</h3>
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-2xl font-bold text-gray-900">{selectedLot.name}</h3>
                   {selectedLot.parent_lot_id && (
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                    <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold">
                       Split Lot
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-600">{selectedLot.varietal} • {selectedLot.vintage}</p>
+                <p className="text-base text-gray-600">{selectedLot.varietal} • {selectedLot.vintage}</p>
                 {selectedLot.parent_lot_id && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    ↳ Fermentation split from parent lot ({selectedLot.current_volume_gallons?.toFixed(0) || '—'} gallons)
+                  <p className="text-sm text-indigo-600 mt-2 flex items-center gap-1">
+                    <span className="text-indigo-400">↳</span>
+                    Split from parent lot ({selectedLot.current_volume_gallons?.toFixed(0) || '—'} gallons)
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-3">
                 {selectedLot.status === 'fermenting' && (
                   <button
                     onClick={handlePressWine}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-sm font-medium"
                   >
                     <Circle className="w-4 h-4" />
                     Press Wine
                   </button>
                 )}
-                <button
-                  onClick={() => setShowLogForm(!showLogForm)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors shadow-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Log Entry
-                </button>
               </div>
             </div>
 
@@ -1277,62 +2009,97 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
               const timerInfo = getFermentationTimerInfo(selectedLot);
               if (timerInfo) {
                 return (
-                  <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-purple-600" />
-                        <span className="font-semibold text-gray-900">Fermentation Timer</span>
+                  <div className="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-6 py-5 border-b border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${
+                            timerInfo.isComplete
+                              ? 'bg-emerald-50'
+                              : timerInfo.isOverdue
+                              ? 'bg-rose-50'
+                              : 'bg-indigo-50'
+                          }`}>
+                            <Clock className={`w-5 h-5 ${
+                              timerInfo.isComplete
+                                ? 'text-emerald-600'
+                                : timerInfo.isOverdue
+                                ? 'text-rose-600'
+                                : 'text-indigo-600'
+                            }`} />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-semibold text-gray-900">Fermentation Progress</h3>
+                            <p className="text-sm text-gray-500 mt-0.5">
+                              Day {timerInfo.daysElapsed + 1} of {selectedLot.target_fermentation_days}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {timerInfo.isComplete ? (
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                              <span className="text-sm font-semibold text-emerald-700">Ready to press</span>
+                            </div>
+                          ) : timerInfo.isOverdue ? (
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle className="w-5 h-5 text-rose-600" />
+                              <span className="text-sm font-semibold text-rose-700">
+                                Overdue {Math.abs(timerInfo.daysRemaining)}d
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-gray-900">{timerInfo.daysRemaining}</div>
+                              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Days Left</div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        {timerInfo.isComplete ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-green-700">Ready to press!</span>
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                          </div>
-                        ) : timerInfo.isOverdue ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-red-700">
-                              Overdue by {Math.abs(timerInfo.daysRemaining)} days
-                            </span>
-                            <AlertTriangle className="w-5 h-5 text-red-600" />
-                          </div>
-                        ) : (
-                          <span className="text-sm font-medium text-purple-700">
-                            {timerInfo.daysRemaining} {timerInfo.daysRemaining === 1 ? 'day' : 'days'} remaining
+                    </div>
+
+                    <div className="px-6 py-6">
+                      {/* Modern Progress Bar */}
+                      <div className="relative">
+                        <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-3">
+                          <span>Progress</span>
+                          <span>{timerInfo.percentComplete}%</span>
+                        </div>
+                        <div className="relative w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-700 ease-out ${
+                              timerInfo.isComplete
+                                ? 'bg-emerald-500'
+                                : timerInfo.isOverdue
+                                ? 'bg-rose-500'
+                                : 'bg-indigo-500'
+                            }`}
+                            style={{ width: `${timerInfo.percentComplete}%` }}
+                          ></div>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-gray-400">Started</span>
+                          <span className="text-xs font-medium text-gray-600">
+                            Target {timerInfo.targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </span>
-                        )}
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-500 ${
-                          timerInfo.isComplete
-                            ? 'bg-gradient-to-r from-green-500 to-green-600'
-                            : timerInfo.isOverdue
-                            ? 'bg-gradient-to-r from-red-500 to-red-600'
-                            : 'bg-gradient-to-r from-purple-500 to-blue-500'
-                        }`}
-                        style={{ width: `${timerInfo.percentComplete}%` }}
-                      ></div>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-2 text-xs text-gray-600">
-                      <span>Day {timerInfo.daysElapsed + 1} of {selectedLot.target_fermentation_days}</span>
-                      <span>Target: {timerInfo.targetDate.toLocaleDateString()}</span>
                     </div>
                   </div>
                 );
               } else if (selectedLot.fermentation_start_date) {
                 // Fermentation started but no target duration set
                 return (
-                  <div className="mb-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                    <div className="flex items-center gap-2 text-amber-800">
-                      <Clock className="w-5 h-5" />
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm">Timer Not Available</p>
-                        <p className="text-xs mt-1">This fermentation was started before the timer feature was added. Start a new fermentation to see the countdown timer!</p>
+                  <div className="mb-6 bg-amber-50/50 rounded-xl border border-amber-200/60 p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
+                        <Clock className="w-5 h-5 text-amber-700" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-amber-900 text-sm">Timer Not Available</p>
+                        <p className="text-xs text-amber-700 mt-1.5 leading-relaxed">
+                          This fermentation was started before the timer feature was added. Start a new fermentation to see the countdown timer.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -1341,39 +2108,47 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
               return null;
             })()}
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-xs text-gray-600 uppercase font-medium">Days</span>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-5 border border-gray-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 bg-white rounded-lg shadow-sm">
+                    <Clock className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <span className="text-xs text-gray-600 uppercase font-semibold tracking-wide">Days</span>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{getDaysFermenting(selectedLot)}</div>
+                <div className="text-3xl font-bold text-gray-900">{getDaysFermenting(selectedLot)}</div>
+                <div className="text-xs text-gray-500 mt-1">Fermenting</div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingDown className="w-4 h-4 text-gray-500" />
-                  <span className="text-xs text-gray-600 uppercase font-medium">Brix</span>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-5 border border-purple-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 bg-white rounded-lg shadow-sm">
+                    <TrendingDown className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <span className="text-xs text-purple-700 uppercase font-semibold tracking-wide">Brix</span>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{selectedLot.current_brix?.toFixed(1) || '—'}°</div>
+                <div className="text-3xl font-bold text-purple-900">{selectedLot.current_brix?.toFixed(1) || '—'}°</div>
+                <div className="text-xs text-purple-600 mt-1">Sugar content</div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-1">
+              <div className="bg-gradient-to-br from-rose-50 to-rose-100/50 rounded-xl p-5 border border-rose-100">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Thermometer className="w-4 h-4 text-gray-500" />
-                    <span className="text-xs text-gray-600 uppercase font-medium">Temp</span>
+                    <div className="p-1.5 bg-white rounded-lg shadow-sm">
+                      <Thermometer className="w-4 h-4 text-rose-600" />
+                    </div>
+                    <span className="text-xs text-rose-700 uppercase font-semibold tracking-wide">Temp</span>
                   </div>
                   {lotSensor && lotSensor.status === 'active' && (
-                    <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded">
-                      <Activity className="w-3 h-3 text-green-600" />
-                      <span className="text-[10px] text-green-700 font-semibold uppercase">Live</span>
+                    <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 rounded-full">
+                      <Activity className="w-3 h-3 text-emerald-600" />
+                      <span className="text-[10px] text-emerald-700 font-bold uppercase">Live</span>
                     </div>
                   )}
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{selectedLot.current_temp_f?.toFixed(0) || '—'}°F</div>
+                <div className="text-3xl font-bold text-rose-900">{selectedLot.current_temp_f?.toFixed(0) || '—'}°F</div>
                 {lotSensor && (
-                  <div className="text-[11px] text-gray-500 mt-1">
+                  <div className="text-xs text-rose-600 mt-1">
                     {lotSensor.name}
                     {lotSensor.last_reading_at && (
                       <span className="ml-1">
@@ -1382,193 +2157,47 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                     )}
                   </div>
                 )}
+                {!lotSensor && <div className="text-xs text-rose-600 mt-1">Manual entry</div>}
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Droplets className="w-4 h-4 text-gray-500" />
-                  <span className="text-xs text-gray-600 uppercase font-medium">Volume</span>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 bg-white rounded-lg shadow-sm">
+                    <Droplets className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <span className="text-xs text-blue-700 uppercase font-semibold tracking-wide">Volume</span>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{selectedLot.current_volume_gallons?.toLocaleString() || '—'}</div>
-                <div className="text-xs text-gray-500">gal</div>
+                <div className="text-3xl font-bold text-blue-900">{selectedLot.current_volume_gallons?.toLocaleString() || '—'}</div>
+                <div className="text-xs text-blue-600 mt-1">gallons</div>
               </div>
             </div>
           </div>
 
-          {/* Log Entry Modal */}
-          {showLogForm && createPortal(
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-              <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar">
-                {/* Modal Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-gray-900">New Fermentation Log</h3>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                {/* Modal Body */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                {/* Log Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Log Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.log_date}
-                    onChange={(e) => setFormData({...formData, log_date: e.target.value})}
-                    required
-                    className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter the date for this log entry (allows adding historical data)
-                  </p>
-                </div>
-
-                {/* Chemistry Readings */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Chemistry Readings</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">Brix</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={formData.brix}
-                        onChange={(e) => setFormData({...formData, brix: e.target.value})}
-                        placeholder="24.5"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">Temp (°F)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={formData.temp_f}
-                        onChange={(e) => setFormData({...formData, temp_f: e.target.value})}
-                        placeholder="72"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">pH</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.ph}
-                        onChange={(e) => setFormData({...formData, ph: e.target.value})}
-                        placeholder="3.45"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">TA (g/L)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={formData.ta}
-                        onChange={(e) => setFormData({...formData, ta: e.target.value})}
-                        placeholder="6.5"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Cellar Work */}
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Cellar Work Performed</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {cellarWorkOptions.map((work) => {
-                      const Icon = work.icon;
-                      const isSelected = formData.work_performed.includes(work.value);
-
-                      return (
-                        <button
-                          key={work.value}
-                          type="button"
-                          onClick={() => toggleWork(work.value)}
-                          className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
-                            isSelected
-                              ? 'border-[#7C203A] bg-rose-50 text-[#7C203A]'
-                              : 'border-gray-200 hover:border-gray-300 bg-white text-gray-700'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                          <span className="text-sm font-medium">{work.label}</span>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 ml-auto" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Notes */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                    rows="3"
-                    placeholder="Observations, adjustments, sensory notes..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
-                  />
-                </div>
-
-                {/* Form Actions */}
-                <div className="flex items-center gap-3 pt-4 border-t sticky bottom-0 bg-white">
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-colors shadow-sm"
-                  >
-                    Save Log
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-              </div>
-            </div>,
-            document.body
-          )}
-
           {/* Charts */}
           {chartData.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               {/* Header with lot name and day count */}
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {selectedLot?.name || 'Fermentation Progress'}
-                </h3>
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Fermentation Curves
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {selectedLot?.name} • Day {chartData.length}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
                   {selectedProfile && (
-                    <span className="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-semibold">
+                    <span className="px-3 py-1.5 bg-white border border-rose-200 text-rose-700 rounded-full text-xs font-semibold shadow-sm">
                       {FERMENTATION_PROFILES[selectedProfile].name}
                     </span>
                   )}
-                  <span className="text-sm text-gray-500">
-                    Day {chartData.length} of {selectedProfile ? FERMENTATION_PROFILES[selectedProfile].durationDays : '~12'}
-                  </span>
                 </div>
               </div>
 
               {/* Chart section */}
-              <div className="mb-6">
-                <div className="h-96">
+              <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+                <div className="h-96 bg-white rounded-lg border border-gray-200 p-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={chartData}
@@ -1727,33 +2356,36 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
 
-              {/* Quick stats below chart - matching marketing screenshot */}
-              {chartData.length > 0 && chartData[chartData.length - 1] && (
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100">
-                    <div className="text-sm text-gray-500 mb-1">pH</div>
-                    <div className="text-2xl font-bold text-gray-900">
-                      {chartData[chartData.length - 1].ph || '—'}
+                {/* Quick stats below chart */}
+                {chartData.length > 0 && chartData[chartData.length - 1] && (
+                  <div className="grid grid-cols-3 gap-3 mt-6">
+                    <div className="bg-white rounded-lg p-4 text-center border border-gray-200 shadow-sm">
+                      <div className="text-xs font-medium text-gray-500 mb-1.5">pH</div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {chartData[chartData.length - 1].ph || '—'}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 text-center border border-gray-200 shadow-sm">
+                      <div className="text-xs font-medium text-gray-500 mb-1.5">TA (g/L)</div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {chartData[chartData.length - 1].ta || '—'}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 text-center border border-gray-200 shadow-sm">
+                      <div className="text-xs font-medium text-gray-500 mb-1.5">Volume</div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {selectedLot?.current_volume_gallons
+                          ? `${Math.round(selectedLot.current_volume_gallons)}`
+                          : '—'}
+                      </div>
+                      {selectedLot?.current_volume_gallons && (
+                        <div className="text-xs text-gray-500 mt-0.5">gallons</div>
+                      )}
                     </div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100">
-                    <div className="text-sm text-gray-500 mb-1">TA</div>
-                    <div className="text-2xl font-bold text-gray-900">
-                      {chartData[chartData.length - 1].ta || '—'}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100">
-                    <div className="text-sm text-gray-500 mb-1">Vol</div>
-                    <div className="text-2xl font-bold text-gray-900">
-                      {selectedLot?.current_volume_gallons
-                        ? `${Math.round(selectedLot.current_volume_gallons)} gal`
-                        : '—'}
-                    </div>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
@@ -1825,15 +2457,20 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
 
       {/* Start Fermentation Modal */}
       {showStartFermentationModal && selectedLot && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
-            <div className="bg-purple-600 px-6 py-4 flex items-center justify-between rounded-t-xl">
-              <div>
-                <h3 className="text-xl font-bold text-white">Start Fermentation</h3>
-                <p className="text-purple-100 text-sm">{selectedLot.name}</p>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
+            <div className="bg-gradient-to-r from-[#7C203A] to-[#8B2E48] px-6 py-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <Play className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Start Fermentation</h3>
+                  <p className="text-sm text-white/80">{selectedLot.name} • {selectedLot.vintage} {selectedLot.varietal}</p>
+                </div>
               </div>
               <button onClick={() => setShowStartFermentationModal(false)} className="hover:bg-white/20 p-2 rounded-lg transition-colors">
-                <X className="w-6 h-6 text-gray-900 stroke-[3]" />
+                <X className="w-5 h-5 text-white" />
               </button>
             </div>
 
@@ -1848,7 +2485,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                       <button
                         type="button"
                         onClick={() => setShowVesselDropdown(!showVesselDropdown)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white text-left flex items-center justify-between"
+                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] bg-white text-left flex items-center justify-between"
                       >
                         <span className={fermentationStartData.container_id ? "text-gray-900" : "text-gray-400"}>
                           {fermentationStartData.container_id
@@ -1883,8 +2520,8 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                                 className={`w-full px-4 py-3 text-left border-b border-gray-100 transition-colors ${
                                   isDisabled
                                     ? 'bg-gray-50 cursor-not-allowed opacity-60'
-                                    : 'hover:bg-purple-50 cursor-pointer'
-                                } ${fermentationStartData.container_id === vessel.id ? 'bg-purple-100' : ''}`}
+                                    : 'hover:bg-rose-50 cursor-pointer'
+                                } ${fermentationStartData.container_id === vessel.id ? 'bg-rose-100' : ''}`}
                               >
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
@@ -1939,7 +2576,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                       value={fermentationStartData.volume_gallons || ''}
                       onChange={(e) => setFermentationStartData({...fermentationStartData, volume_gallons: e.target.value})}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A]"
                       placeholder="Enter volume"
                     />
                     <p className="text-xs text-gray-500 mt-1">Total harvest: {selectedLot.current_volume_gallons || 'N/A'} gallons</p>
@@ -1949,10 +2586,10 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
 
               {/* SO₂ Addition */}
               <div className="border-t border-gray-200 pt-6">
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <FlaskConical className="w-5 h-5 text-purple-600" />
-                  SO₂ Addition
-                </h4>
+                <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
+                  <FlaskConical className="w-4 h-4 text-[#7C203A]" />
+                  <h4 className="text-base font-semibold text-gray-900">SO₂ Addition</h4>
+                </div>
                 {selectedLot.current_ph && (
                   <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
                     <p className="font-semibold">Recommended: {calculateSO2(selectedLot.current_ph)} ppm</p>
@@ -1966,7 +2603,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                     value={fermentationStartData.so2_ppm}
                     onChange={(e) => setFermentationStartData({...fermentationStartData, so2_ppm: e.target.value})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A]"
                     placeholder="30-75"
                   />
                   {fermentationStartData.so2_ppm && fermentationStartData.volume_gallons && (
@@ -1992,7 +2629,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                       value={fermentationStartData.yeast_strain}
                       onChange={(e) => setFermentationStartData({...fermentationStartData, yeast_strain: e.target.value})}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A]"
                     >
                       <option value="">Select yeast...</option>
                       {Object.entries(YEAST_STRAINS).map(([key, strain]) => (
@@ -2007,16 +2644,16 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                       step="0.1"
                       value={fermentationStartData.yeast_grams}
                       onChange={(e) => setFermentationStartData({...fermentationStartData, yeast_grams: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A]"
                       placeholder="Per manufacturer"
                     />
                   </div>
                 </div>
                 {fermentationStartData.yeast_strain && YEAST_STRAINS[fermentationStartData.yeast_strain] && (
-                  <div className="text-sm bg-purple-50 border border-purple-200 rounded-lg p-3">
-                    <p className="text-purple-900"><strong>Temp Range:</strong> {YEAST_STRAINS[fermentationStartData.yeast_strain].temp}</p>
-                    <p className="text-purple-900"><strong>Alcohol Tolerance:</strong> {YEAST_STRAINS[fermentationStartData.yeast_strain].alcohol}</p>
-                    <p className="text-purple-700 mt-1">{YEAST_STRAINS[fermentationStartData.yeast_strain].notes}</p>
+                  <div className="text-sm bg-rose-50 border border-rose-200 rounded-lg p-3">
+                    <p className="text-gray-900"><strong>Temp Range:</strong> {YEAST_STRAINS[fermentationStartData.yeast_strain].temp}</p>
+                    <p className="text-gray-900"><strong>Alcohol Tolerance:</strong> {YEAST_STRAINS[fermentationStartData.yeast_strain].alcohol}</p>
+                    <p className="text-gray-600 mt-1">{YEAST_STRAINS[fermentationStartData.yeast_strain].notes}</p>
                   </div>
                 )}
               </div>
@@ -2028,7 +2665,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                   <select
                     value={fermentationStartData.nutrient_type}
                     onChange={(e) => setFermentationStartData({...fermentationStartData, nutrient_type: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A]"
                   >
                     <option value="">None</option>
                     <option value="Fermaid K">Fermaid K</option>
@@ -2044,7 +2681,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                     step="0.1"
                     value={fermentationStartData.nutrient_grams}
                     onChange={(e) => setFermentationStartData({...fermentationStartData, nutrient_grams: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A]"
                   />
                 </div>
               </div>
@@ -2060,7 +2697,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                       value={fermentationStartData.fermentation_start_date}
                       onChange={(e) => setFermentationStartData({...fermentationStartData, fermentation_start_date: e.target.value})}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A]"
                     />
                     <p className="text-xs text-gray-500 mt-1">Backdate if fermentation was started earlier</p>
                   </div>
@@ -2073,7 +2710,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                       required
                       min="1"
                       max="30"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A]"
                     />
                     <p className="text-xs text-gray-500 mt-1">Typical: Whites 7-10 days, Reds 12-21 days</p>
                   </div>
@@ -2088,7 +2725,7 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                   onChange={(e) => setFermentationStartData({...fermentationStartData, notes: e.target.value})}
                   rows="3"
                   placeholder="Additional fermentation notes..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A]"
                 />
               </div>
 
@@ -2096,14 +2733,14 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
               <div className="flex items-center gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm font-medium"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#7C203A] to-[#8B2E48] text-white rounded-lg hover:from-[#8B2E48] hover:to-[#7C203A] transition-all shadow-md font-semibold"
                 >
                   Start Fermentation
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowStartFermentationModal(false)}
-                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
                   Cancel
                 </button>
@@ -2119,17 +2756,20 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#7C203A] to-[#8B2E48] px-6 py-4">
+            <div className="bg-gray-100 border-b border-gray-200 px-6 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-white">Quick Daily Log</h3>
-                  <p className="text-rose-100 text-sm">{selectedLot.name} • Day {getDaysFermenting(selectedLot)}</p>
+                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <CheckCircle2 className="w-6 h-6 text-[#7C203A]" />
+                    Daily Log
+                  </h3>
+                  <p className="text-gray-500 text-sm mt-1">{selectedLot.name} • Day {getDaysFermenting(selectedLot)}</p>
                 </div>
                 <button
                   onClick={() => setShowQuickLog(false)}
-                  className="hover:bg-white/20 p-2 rounded-lg transition-colors"
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800 rounded-lg p-2 transition-colors"
                 >
-                  <X className="w-6 h-6 text-gray-900 stroke-[3]" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -2366,6 +3006,210 @@ ${fermentationStartData.notes ? `\nNotes: ${fermentationStartData.notes}` : ''}`
                   type="button"
                   onClick={() => setShowQuickLog(false)}
                   className="w-full sm:w-auto px-6 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors text-base font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Event Modal */}
+      {showEventModal && selectedLot && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            {/* Header */}
+            <div className="bg-gray-100 border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    {(() => {
+                      const config = EVENT_TYPES[eventModalType];
+                      const Icon = config?.icon || Zap;
+                      return <Icon className={`w-6 h-6 text-${config?.color || 'gray'}-600`} />;
+                    })()}
+                    {EVENT_TYPES[eventModalType]?.label || 'Add Event'}
+                  </h3>
+                  <p className="text-gray-500 text-sm mt-1">{selectedLot.name}</p>
+                </div>
+                <button
+                  onClick={() => setShowEventModal(false)}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800 rounded-lg p-2 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmitEvent} className="p-6 space-y-5">
+              {/* Category Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={eventFormData.category}
+                  onChange={(e) => setEventFormData({ ...eventFormData, category: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-[#7C203A]"
+                >
+                  <option value="">Select...</option>
+                  {EVENT_TYPES[eventModalType]?.categories?.map((cat) => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Nutrient-specific fields */}
+              {eventModalType === 'nutrient' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dosage</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={eventFormData.dosage}
+                        onChange={(e) => setEventFormData({ ...eventFormData, dosage: e.target.value })}
+                        className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-[#7C203A]"
+                        placeholder="Amount"
+                      />
+                      <select
+                        value={eventFormData.dosage_unit}
+                        onChange={(e) => setEventFormData({ ...eventFormData, dosage_unit: e.target.value })}
+                        className="w-24 px-2 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-[#7C203A]"
+                      >
+                        <option value="g">g</option>
+                        <option value="g/hL">g/hL</option>
+                        <option value="ppm">ppm</option>
+                        <option value="mL">mL</option>
+                        <option value="oz">oz</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">YAN Reading (optional)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={eventFormData.yan_reading}
+                      onChange={(e) => setEventFormData({ ...eventFormData, yan_reading: e.target.value })}
+                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-[#7C203A]"
+                      placeholder="mg/L"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Deviation-specific fields */}
+              {eventModalType === 'deviation' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Severity</label>
+                  <div className="flex gap-2">
+                    {['low', 'medium', 'high', 'critical'].map((sev) => (
+                      <button
+                        key={sev}
+                        type="button"
+                        onClick={() => setEventFormData({ ...eventFormData, severity: sev })}
+                        className={`flex-1 py-2 px-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                          eventFormData.severity === sev
+                            ? sev === 'critical' ? 'border-red-500 bg-red-50 text-red-700' :
+                              sev === 'high' ? 'border-orange-500 bg-orange-50 text-orange-700' :
+                              sev === 'medium' ? 'border-amber-500 bg-amber-50 text-amber-700' :
+                              'border-gray-400 bg-gray-50 text-gray-700'
+                            : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                        }`}
+                      >
+                        {sev.charAt(0).toUpperCase() + sev.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Oxygen-specific fields */}
+              {eventModalType === 'oxygen' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Intensity</label>
+                    <select
+                      value={eventFormData.intensity}
+                      onChange={(e) => setEventFormData({ ...eventFormData, intensity: e.target.value })}
+                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-[#7C203A]"
+                    >
+                      <option value="light">Light</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="aggressive">Aggressive</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Extraction Goal</label>
+                    <select
+                      value={eventFormData.extraction_goal}
+                      onChange={(e) => setEventFormData({ ...eventFormData, extraction_goal: e.target.value })}
+                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-[#7C203A]"
+                    >
+                      <option value="general">General</option>
+                      <option value="color">Color Extraction</option>
+                      <option value="tannin">Tannin Extraction</option>
+                      <option value="aromatics">Aromatics</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Current readings snapshot */}
+              <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Brix at Event</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={eventFormData.brix_at_event}
+                    onChange={(e) => setEventFormData({ ...eventFormData, brix_at_event: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    placeholder={selectedLot?.current_brix || 'Brix'}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Temp at Event (°F)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={eventFormData.temp_at_event}
+                    onChange={(e) => setEventFormData({ ...eventFormData, temp_at_event: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    placeholder={selectedLot?.current_temp_f || 'Temp'}
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                <textarea
+                  value={eventFormData.notes}
+                  onChange={(e) => setEventFormData({ ...eventFormData, notes: e.target.value })}
+                  rows="3"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-[#7C203A]"
+                  placeholder="Additional details, observations..."
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-gradient-to-r from-[#7C203A] to-[#8B2E48] text-white rounded-lg hover:from-[#8B2E48] hover:to-[#7C203A] transition-all font-semibold"
+                >
+                  Record Event
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEventModal(false)}
+                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
                 >
                   Cancel
                 </button>

@@ -292,7 +292,9 @@ export async function processWebhookIrrigationEvent(webhookToken, webhookData) {
 export const DEVICE_TYPES = {
   rachio: {
     name: 'Rachio Smart Sprinkler',
-    icon: '💧',
+    iconName: 'Droplets',
+    iconColor: 'text-blue-500',
+    bgColor: 'bg-blue-50',
     supportsApi: true,
     supportsWebhook: true,
     setupInstructions: 'Get your API key from app.rach.io and configure webhooks...',
@@ -300,21 +302,27 @@ export const DEVICE_TYPES = {
   },
   hunter: {
     name: 'Hunter Hydrawise',
-    icon: '🌊',
+    iconName: 'Waves',
+    iconColor: 'text-cyan-500',
+    bgColor: 'bg-cyan-50',
     supportsApi: true,
     supportsWebhook: false,
     setupInstructions: 'Enter your Hydrawise API key from your account settings...'
   },
   flow_meter: {
     name: 'Flow Meter',
-    icon: '📊',
+    iconName: 'Gauge',
+    iconColor: 'text-emerald-600',
+    bgColor: 'bg-emerald-50',
     supportsApi: false,
     supportsWebhook: true,
     setupInstructions: 'Configure your flow meter to send data to the webhook URL...'
   },
   custom: {
     name: 'Custom Webhook',
-    icon: '🔌',
+    iconName: 'Webhook',
+    iconColor: 'text-purple-500',
+    bgColor: 'bg-purple-50',
     supportsApi: false,
     supportsWebhook: true,
     setupInstructions: 'Send POST requests to the webhook URL with irrigation data...'
@@ -322,11 +330,88 @@ export const DEVICE_TYPES = {
 };
 
 /**
+ * Get the base URL for API/webhook calls
+ * Uses custom API domain if available, falls back to Supabase URL
+ */
+function getApiBaseUrl() {
+  return import.meta.env.VITE_API_DOMAIN || import.meta.env.VITE_SUPABASE_URL;
+}
+
+/**
  * Generate webhook URL for a device
  * @param {string} webhookToken - Device webhook token
  * @returns {string} Full webhook URL
  */
 export function generateWebhookUrl(webhookToken) {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const baseUrl = getApiBaseUrl();
   return `${baseUrl}/functions/v1/irrigation-webhook?token=${webhookToken}`;
+}
+
+/**
+ * Generate webhook URL for flow meter (uses the new flow-meter-webhook)
+ * @param {string} webhookToken - Device webhook token
+ * @returns {string} Full webhook URL for flow meter
+ */
+export function generateFlowMeterWebhookUrl(webhookToken) {
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/functions/v1/flow-meter-webhook?token=${webhookToken}`;
+}
+
+// =====================================================
+// DEVICE CONFIGURATION
+// =====================================================
+
+/**
+ * Update device flow detection thresholds
+ * @param {string} deviceId - Device ID
+ * @param {Object} thresholds - Threshold configuration
+ * @returns {Promise} Updated device
+ */
+export async function updateDeviceThresholds(deviceId, thresholds) {
+  const validKeys = [
+    'flow_start_threshold_gpm',
+    'flow_stop_threshold_gpm',
+    'min_session_duration_minutes',
+    'min_session_gallons',
+    'offline_threshold_minutes',
+    'consecutive_start_readings',
+    'consecutive_stop_readings'
+  ];
+
+  const updates = {};
+  validKeys.forEach(key => {
+    if (thresholds[key] !== undefined) {
+      updates[key] = thresholds[key];
+    }
+  });
+
+  if (Object.keys(updates).length === 0) {
+    return { data: null, error: new Error('No valid threshold values provided') };
+  }
+
+  return supabase
+    .from('irrigation_devices')
+    .update(updates)
+    .eq('id', deviceId)
+    .select()
+    .single();
+}
+
+/**
+ * Reset device state (useful for debugging)
+ * Clears current session and resets to idle
+ * @param {string} deviceId - Device ID
+ * @returns {Promise} Updated device
+ */
+export async function resetDeviceState(deviceId) {
+  return supabase
+    .from('irrigation_devices')
+    .update({
+      current_state: 'idle',
+      current_session_id: null,
+      consecutive_flow_readings: 0
+    })
+    .eq('id', deviceId)
+    .select()
+    .single();
 }

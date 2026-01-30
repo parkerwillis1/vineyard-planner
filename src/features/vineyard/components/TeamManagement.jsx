@@ -16,11 +16,13 @@ import {
   DollarSign,
   MapPin,
   Building2,
-  Sparkles,
-  Network
+  Network,
+  X,
+  Grape
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { LoadingSpinner } from './LoadingSpinner';
 import {
   listOrganizationMembers,
   createOrganizationMember,
@@ -30,6 +32,7 @@ import {
   updateOrganization,
   sendMemberInvitation
 } from '@/shared/lib/vineyardApi';
+import { DocLink } from '@/shared/components/DocLink';
 
 const ROLES = [
   {
@@ -37,21 +40,21 @@ const ROLES = [
     label: 'Admin',
     icon: Crown,
     description: 'Full access - can manage team, view costs, and access all features',
-    color: 'purple'
+    color: 'wine'
   },
   {
     value: 'manager',
     label: 'Manager',
     icon: Shield,
     description: 'Can manage operations, create tasks, and view reports',
-    color: 'blue'
+    color: 'slate'
   },
   {
     value: 'member',
     label: 'Member',
     icon: User,
     description: 'Can view and complete assigned tasks',
-    color: 'green'
+    color: 'stone'
   }
 ];
 
@@ -137,17 +140,23 @@ export function TeamManagement() {
 
   return (
     <div className="space-y-8">
+      {/* Page Header */}
+      <div className="pt-4">
+        <h1 className="text-2xl font-semibold text-gray-900">My Vineyard</h1>
+        <p className="text-sm text-gray-500 mt-1">Manage your vineyard organization and team members. <DocLink docId="operations/my-vineyard" /></p>
+      </div>
+
       {/* Organization Header */}
       {!error && organization && (
-        <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
+        <Card className="bg-white border border-gray-200 shadow-sm">
           <CardContent className="px-6 py-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-start justify-between gap-4">
               {/* Left side - Logo and Info */}
-              <div className="flex items-center gap-8">
+              <div className="flex items-start gap-6 min-w-0">
                 {/* Logo/Avatar */}
-                <div className="relative flex-shrink-0">
+                <div className="flex-shrink-0">
                   {organization.logo_url ? (
-                    <div className="h-28 w-auto max-w-xs rounded-xl overflow-hidden">
+                    <div className="h-20 w-auto max-w-[160px] rounded-lg overflow-hidden border border-gray-100">
                       <img
                         src={organization.logo_url}
                         alt={organization.name}
@@ -155,49 +164,36 @@ export function TeamManagement() {
                       />
                     </div>
                   ) : (
-                    <div className="h-28 w-52 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
-                      <div className="text-center">
-                        <Building2 className="w-14 h-14 text-[#10b981] mx-auto mb-2" />
-                        <div className="text-lg font-bold text-[#1f2937]">
-                          {organization.name?.substring(0, 2).toUpperCase()}
-                        </div>
-                      </div>
+                    <div className="h-20 w-20 rounded-lg bg-stone-50 border border-stone-200 flex items-center justify-center">
+                      <Grape className="w-8 h-8 text-[#1C2739]" />
                     </div>
                   )}
                 </div>
 
                 {/* Organization Details */}
                 <div className="flex-1">
-                  <h2 className="text-3xl font-bold text-[#1f2937] mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-3">
                     {organization.name}
                   </h2>
 
-                  {/* Contact grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Contact info - simple inline list */}
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600">
                     {organization.email && (
-                      <div className="flex items-center gap-2 text-[#4b5563]">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
-                          <Mail className="w-4 h-4 text-[#008080]" />
-                        </div>
-                        <span className="text-sm font-medium truncate">{organization.email}</span>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-gray-400" />
+                        <span>{organization.email}</span>
                       </div>
                     )}
                     {organization.phone && (
-                      <div className="flex items-center gap-2 text-[#4b5563]">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
-                          <Phone className="w-4 h-4 text-[#10b981]" />
-                        </div>
-                        <span className="text-sm font-medium">{organization.phone}</span>
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-gray-400" />
+                        <span>{organization.phone}</span>
                       </div>
                     )}
                     {(organization.city || organization.state) && (
-                      <div className="flex items-center gap-2 text-[#4b5563]">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-                          <MapPin className="w-4 h-4 text-[#1f2937]" />
-                        </div>
-                        <span className="text-sm font-medium">
-                          {[organization.city, organization.state].filter(Boolean).join(', ')}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span>{[organization.city, organization.state].filter(Boolean).join(', ')}</span>
                       </div>
                     )}
                   </div>
@@ -207,44 +203,41 @@ export function TeamManagement() {
               {/* Right side - Edit button */}
               <Button
                 onClick={() => setEditingMember({ type: 'org', data: organization })}
-                className="bg-gradient-to-r from-vine-green-500 to-emerald-600 hover:from-vine-green-600 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                variant="outline"
+                className="text-gray-700 border-gray-300 hover:bg-gray-50 whitespace-nowrap flex-shrink-0 !flex-row"
               >
-                <Edit2 className="w-4 h-4 mr-2" />
-                Edit Details
+                <span className="flex items-center gap-2">
+                  <Edit2 className="w-4 h-4" />
+                  Edit
+                </span>
               </Button>
             </div>
 
             {/* Stats bar at bottom */}
-            <div className="pt-6 border-t-2 border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-8">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#1f2937]">{members.length}</div>
-                  <div className="text-xs text-[#4b5563] font-semibold mt-1">Team Members</div>
-                </div>
-                <div className="w-px h-12 bg-gray-200"></div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#10b981]">
-                    {members.filter(m => m.is_active).length}
-                  </div>
-                  <div className="text-xs text-[#4b5563] font-semibold mt-1">Active</div>
-                </div>
-                <div className="w-px h-12 bg-gray-200"></div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#008080]">
-                    {new Date().getFullYear()}
-                  </div>
-                  <div className="text-xs text-[#4b5563] font-semibold mt-1">Season</div>
-                </div>
+            <div className="mt-6 pt-5 border-t border-gray-100 flex items-center gap-8">
+              <div>
+                <div className="text-2xl font-semibold text-gray-900">{members.length}</div>
+                <div className="text-xs text-gray-500 mt-0.5">Team Members</div>
               </div>
-
-              <div className="text-right bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-                <div className="text-xs text-[#4b5563] font-semibold mb-1">Established</div>
-                <div className="text-sm font-bold text-[#1f2937]">
-                  {new Date(organization.created_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    year: 'numeric'
-                  })}
+              <div className="w-px h-10 bg-gray-200"></div>
+              <div>
+                <div className="text-2xl font-semibold text-emerald-600">
+                  {members.filter(m => m.is_active).length}
                 </div>
+                <div className="text-xs text-gray-500 mt-0.5">Active</div>
+              </div>
+              <div className="w-px h-10 bg-gray-200"></div>
+              <div>
+                <div className="text-2xl font-semibold text-gray-900">
+                  {new Date().getFullYear()}
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">Season</div>
+              </div>
+              <div className="ml-auto text-right text-sm text-gray-500">
+                Est. {new Date(organization.created_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: 'numeric'
+                })}
               </div>
             </div>
           </CardContent>
@@ -253,55 +246,40 @@ export function TeamManagement() {
 
       {/* Error Display */}
       {error && (
-        <Card className="border-2 border-red-300 bg-red-50">
-          <CardContent className="py-6">
+        <Card className="bg-white border border-red-200">
+          <CardContent className="py-5">
             <div className="flex items-start gap-3">
-              <XCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <XCircle className="w-4 h-4 text-red-600" />
+              </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-red-900 mb-1">Setup Required</h3>
-                <p className="text-sm text-red-800 mb-3">{error.message || error}</p>
+                <h3 className="font-medium text-gray-900 mb-1">Setup Required</h3>
+                <p className="text-sm text-gray-600 mb-3">{error.message || error}</p>
 
                 {error.type === 'rls_recursion' ? (
-                  <div className="bg-white rounded-lg p-4 text-sm space-y-3">
-                    <div>
-                      <p className="font-semibold text-gray-900 mb-2">🔧 Quick Fix - Run RLS Fix Script:</p>
-                      <ol className="list-decimal list-inside space-y-1 text-gray-700">
-                        <li>Go to your <strong>Supabase Dashboard</strong></li>
-                        <li>Click <strong>SQL Editor</strong> in the left sidebar</li>
-                        <li>Click <strong>New Query</strong></li>
-                        <li>Copy the contents of: <code className="bg-gray-100 px-2 py-0.5 rounded text-xs">supabase/migrations/009_fix_rls_recursion_complete.sql</code></li>
-                        <li>Paste into the SQL Editor and click <strong>Run</strong></li>
-                        <li>Refresh this page</li>
-                      </ol>
-                    </div>
-                    <div className="border-t pt-3">
-                      <p className="font-semibold text-gray-900 mb-2">📝 What this fixes:</p>
-                      <p className="text-gray-700 text-xs">
-                        The organization_members table had Row Level Security policies that referenced itself,
-                        creating infinite recursion. The fix script uses security definer functions to bypass
-                        RLS when checking membership, eliminating the circular dependency.
-                      </p>
-                    </div>
+                  <div className="bg-gray-50 rounded-lg p-4 text-sm border border-gray-200">
+                    <p className="font-medium text-gray-900 mb-2">Quick Fix:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-gray-600 text-xs">
+                      <li>Go to your Supabase Dashboard</li>
+                      <li>Click SQL Editor in the left sidebar</li>
+                      <li>Run the contents of: <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-xs">supabase/migrations/009_fix_rls_recursion_complete.sql</code></li>
+                      <li>Refresh this page</li>
+                    </ol>
                   </div>
                 ) : error.type === 'missing_table' ? (
-                  <div className="bg-white rounded-lg p-4 text-sm">
-                    <p className="font-semibold text-gray-900 mb-2">🚀 Initial Setup:</p>
-                    <ol className="list-decimal list-inside space-y-1 text-gray-700">
-                      <li>Go to your <strong>Supabase Dashboard</strong></li>
-                      <li>Click <strong>SQL Editor</strong> in the left sidebar</li>
-                      <li>Click <strong>New Query</strong></li>
-                      <li>Copy the contents of: <code className="bg-gray-100 px-2 py-0.5 rounded text-xs">supabase/migrations/008_add_organizations.sql</code></li>
-                      <li>Paste into the SQL Editor and click <strong>Run</strong></li>
+                  <div className="bg-gray-50 rounded-lg p-4 text-sm border border-gray-200">
+                    <p className="font-medium text-gray-900 mb-2">Initial Setup:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-gray-600 text-xs">
+                      <li>Go to your Supabase Dashboard</li>
+                      <li>Click SQL Editor in the left sidebar</li>
+                      <li>Run the contents of: <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-xs">supabase/migrations/008_add_organizations.sql</code></li>
                       <li>Refresh this page</li>
                     </ol>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-lg p-4 text-sm">
-                    <p className="font-semibold text-gray-900 mb-2">⚠️ Error Details:</p>
-                    <p className="text-gray-700 text-xs">{error.message || error}</p>
-                    <p className="text-gray-600 text-xs mt-2">
-                      Check the browser console for more details.
-                    </p>
+                  <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 border border-gray-200">
+                    <p>{error.message || error}</p>
+                    <p className="mt-1 text-gray-400">Check the browser console for more details.</p>
                   </div>
                 )}
               </div>
@@ -313,54 +291,46 @@ export function TeamManagement() {
       {/* Team Members Section */}
       {!error && (
         <div>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-[#1f2937]">Team Members</h3>
-            <div className="flex items-center gap-4">
-              {members.length > 0 && (
-                <div className="text-sm text-[#4b5563] font-medium">
-                  {members.length} {members.length === 1 ? 'member' : 'members'} total
-                </div>
-              )}
-              {organization && (
-                <Button
-                  onClick={() => setShowInviteModal(true)}
-                  className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white shadow-md hover:shadow-lg transition-all duration-300"
-                >
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-lg font-semibold text-gray-900">Team Members</h3>
+            {organization && (
+              <Button
+                onClick={() => setShowInviteModal(true)}
+                className="bg-[#1C2739] hover:bg-[#151d2b] text-white whitespace-nowrap !flex-row"
+              >
+                <span className="flex items-center gap-2">
                   <Plus className="w-4 h-4" />
                   Invite Member
-                </Button>
-              )}
-            </div>
+                </span>
+              </Button>
+            )}
           </div>
 
           {loading ? (
-            <Card>
-              <CardContent className="py-16 text-center">
-                <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-200 border-t-gray-600"></div>
-                <p className="text-[#4b5563] font-medium mt-4">Loading team...</p>
-              </CardContent>
-            </Card>
+            <LoadingSpinner message="Loading team..." />
           ) : members.length === 0 ? (
-            <Card className="border-2 border-dashed border-gray-300 bg-gray-50">
-              <CardContent className="py-16 text-center">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-[#10b981]" />
+            <Card className="bg-white border border-dashed border-gray-300">
+              <CardContent className="py-12 text-center">
+                <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mx-auto mb-3">
+                  <Users className="w-6 h-6 text-stone-400" />
                 </div>
-                <p className="text-[#1f2937] font-bold text-lg mb-2">No team members yet</p>
-                <p className="text-sm text-[#4b5563] mb-6">
+                <p className="text-gray-900 font-medium mb-1">No team members yet</p>
+                <p className="text-sm text-gray-500 mb-4">
                   Invite your first team member to get started
                 </p>
                 <Button
                   onClick={() => setShowInviteModal(true)}
-                  className="bg-[#10b981] hover:bg-[#059669] text-white shadow-md hover:shadow-lg transition-all duration-300"
+                  className="bg-[#1C2739] hover:bg-[#151d2b] text-white whitespace-nowrap !flex-row"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Invite Member
+                  <span className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Invite Member
+                  </span>
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {members.map((member) => {
                 const roleConfig = getRoleConfig(member.role);
                 const RoleIcon = roleConfig.icon;
@@ -368,92 +338,92 @@ export function TeamManagement() {
                 return (
                   <Card
                     key={member.id}
-                    className="group hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-gray-300 hover:-translate-y-1"
+                    className="bg-white border border-gray-200 hover:border-gray-300 transition-colors"
                   >
-                    <CardContent className="pt-6">
+                    <CardContent className="p-5">
                       {/* Avatar & Name */}
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#10b981] to-[#008080] flex items-center justify-center text-white font-bold text-xl shadow-md group-hover:shadow-lg transition-shadow">
+                          <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 font-medium text-sm">
                             {member.full_name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <h3 className="font-bold text-[#1f2937] text-base">{member.full_name}</h3>
-                            <p className="text-xs text-[#4b5563] font-medium">{member.job_title || 'Team Member'}</p>
+                            <h3 className="font-medium text-gray-900">{member.full_name}</h3>
+                            <p className="text-xs text-gray-500">{member.job_title || 'Team Member'}</p>
                           </div>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-0.5">
                           <button
                             onClick={() => setViewingHierarchy(member)}
-                            className="p-2 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-300"
+                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                             title="View reporting hierarchy"
                           >
-                            <Network className="w-4 h-4 text-[#4b5563] hover:text-blue-600" />
+                            <Network className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setEditingMember({ type: 'member', data: member })}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-300"
+                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                           >
-                            <Edit2 className="w-4 h-4 text-[#4b5563] hover:text-[#1f2937]" />
+                            <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteMember(member.id)}
-                            className="p-2 hover:bg-red-50 rounded-lg transition-all duration-200 border border-transparent hover:border-red-300"
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                           >
-                            <Trash2 className="w-4 h-4 text-[#4b5563] hover:text-red-600" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
 
                       {/* Role Badge */}
-                      <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold mb-4 ${
+                      <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium mb-3 ${
                         roleConfig.value === 'admin'
-                          ? 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700'
+                          ? 'bg-[#1C2739]/10 text-[#1C2739]'
                           : roleConfig.value === 'manager'
-                          ? 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700'
-                          : 'bg-gradient-to-r from-emerald-100 to-emerald-200 text-[#10b981]'
+                          ? 'bg-slate-100 text-slate-700'
+                          : 'bg-stone-100 text-stone-600'
                       }`}>
-                        <RoleIcon className="w-3.5 h-3.5" />
+                        <RoleIcon className="w-3 h-3" />
                         {roleConfig.label}
                       </div>
 
                       {/* Contact Info */}
-                      <div className="space-y-3 text-sm mb-4">
-                        <div className="flex items-center gap-2 text-[#4b5563]">
-                          <Mail className="w-4 h-4 text-[#008080]" />
-                          <span className="truncate font-medium">{member.email}</span>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Mail className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="truncate">{member.email}</span>
                         </div>
                         {member.phone && (
-                          <div className="flex items-center gap-2 text-[#4b5563]">
-                            <Phone className="w-4 h-4 text-[#10b981]" />
-                            <span className="font-medium">{member.phone}</span>
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Phone className="w-3.5 h-3.5 text-gray-400" />
+                            <span>{member.phone}</span>
                           </div>
                         )}
                         {member.hourly_rate && (
-                          <div className="flex items-center gap-2 text-[#4b5563]">
-                            <DollarSign className="w-4 h-4 text-amber-600" />
-                            <span className="font-medium">${member.hourly_rate}/hour</span>
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <DollarSign className="w-3.5 h-3.5 text-gray-400" />
+                            <span>${member.hourly_rate}/hr</span>
                           </div>
                         )}
                       </div>
 
                       {/* Status */}
-                      <div className="pt-4 border-t-2 border-gray-100 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
+                      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5">
                           {member.is_active ? (
                             <>
-                              <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
-                              <span className="text-[#10b981] font-bold">Active</span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              <span className="text-emerald-600">Active</span>
                             </>
                           ) : (
                             <>
-                              <XCircle className="w-4 h-4 text-red-600" />
-                              <span className="text-red-700 font-bold">Inactive</span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                              <span className="text-gray-500">Inactive</span>
                             </>
                           )}
                         </div>
                         {member.joined_at && (
-                          <span className="text-[#4b5563] font-medium">
+                          <span className="text-gray-400">
                             Joined {new Date(member.joined_at).toLocaleDateString()}
                           </span>
                         )}
@@ -645,152 +615,129 @@ function MemberModal({ member, isOrg, onClose, onSaved }) {
 
   if (isOrg) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="bg-gradient-to-r from-[#10b981] to-[#008080] px-6 py-5">
-            <h2 className="text-2xl font-bold text-white">Edit Vineyard Details</h2>
-            <p className="text-sm text-white/90 mt-1 font-medium">Update your vineyard's information and branding</p>
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Edit Vineyard Details</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Update your vineyard's information</p>
+            </div>
+            <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="p-6 space-y-5">
             {/* Branding Section */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-              <h3 className="text-sm font-bold text-[#1f2937] mb-4 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-[#10b981]" />
-                Branding
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-[#1f2937] mb-2">
-                    Vineyard Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
-                    placeholder="Your Vineyard Name"
-                  />
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Vineyard Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
+                placeholder="Your Vineyard Name"
+              />
+            </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-[#1f2937] mb-2">
-                    Logo
-                  </label>
-                  <div className="flex items-start gap-4">
-                    {/* Logo preview */}
-                    {logoPreview && (
-                      <div className="w-24 h-24 rounded-xl border border-gray-300 overflow-hidden flex-shrink-0 bg-white">
-                        <img
-                          src={logoPreview}
-                          alt="Logo preview"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-
-                    {/* File input */}
-                    <div className="flex-1">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 transition-all"
-                      />
-                      <p className="text-xs text-[#4b5563] mt-2 font-medium">Upload your vineyard logo (JPG, PNG, or GIF)</p>
-                    </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Logo</label>
+              <div className="flex items-start gap-4">
+                {logoPreview && (
+                  <div className="w-16 h-16 rounded-lg border border-gray-200 overflow-hidden flex-shrink-0 bg-gray-50">
+                    <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
                   </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 transition-colors"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">JPG, PNG, or GIF</p>
                 </div>
               </div>
             </div>
 
             {/* Contact Information */}
-            <div>
-              <h3 className="text-sm font-bold text-[#1f2937] mb-4">Contact Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-[#1f2937] mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email || ''}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
-                    placeholder="contact@vineyard.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-[#1f2937] mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.phone || ''}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
+                  placeholder="contact@vineyard.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
+                <input
+                  type="tel"
+                  value={formData.phone || ''}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
+                  placeholder="(555) 123-4567"
+                />
               </div>
             </div>
 
             {/* Location */}
             <div>
-              <h3 className="text-sm font-bold text-[#1f2937] mb-4">Location</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-[#1f2937] mb-2">Address</label>
-                  <input
-                    type="text"
-                    value={formData.address || ''}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
-                    placeholder="123 Vineyard Lane"
-                  />
-                </div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Address</label>
+              <input
+                type="text"
+                value={formData.address || ''}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
+                placeholder="123 Vineyard Lane"
+              />
+            </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2">
-                    <label className="block text-sm font-bold text-[#1f2937] mb-2">City</label>
-                    <input
-                      type="text"
-                      value={formData.city || ''}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
-                      placeholder="Napa"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-[#1f2937] mb-2">State</label>
-                    <input
-                      type="text"
-                      value={formData.state || ''}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
-                      placeholder="CA"
-                      maxLength="2"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-[#1f2937] mb-2">ZIP Code</label>
-                  <input
-                    type="text"
-                    value={formData.zip || ''}
-                    onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
-                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
-                    placeholder="94558"
-                  />
-                </div>
+            <div className="grid grid-cols-6 gap-4">
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">City</label>
+                <input
+                  type="text"
+                  value={formData.city || ''}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
+                  placeholder="Napa"
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">State</label>
+                <input
+                  type="text"
+                  value={formData.state || ''}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
+                  placeholder="CA"
+                  maxLength="2"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">ZIP</label>
+                <input
+                  type="text"
+                  value={formData.zip || ''}
+                  onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
+                  placeholder="94558"
+                />
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
-              <Button type="submit" disabled={saving} className="flex-1 bg-[#10b981] hover:bg-[#059669] text-white font-bold shadow-md hover:shadow-lg transition-all">
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-              <Button type="button" onClick={onClose} className="bg-white border-2 border-gray-200 hover:bg-gray-50 text-[#1f2937] font-bold transition-all">
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <Button type="button" onClick={onClose} variant="outline" className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50">
                 Cancel
+              </Button>
+              <Button type="submit" disabled={saving} className="flex-1 bg-[#1C2739] hover:bg-[#151d2b] text-white">
+                {saving ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </form>
@@ -800,36 +747,36 @@ function MemberModal({ member, isOrg, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="bg-gradient-to-r from-[#10b981] to-[#008080] px-6 py-5">
-          <h2 className="text-2xl font-bold text-white">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
             {member ? 'Edit Team Member' : 'Invite Team Member'}
           </h2>
+          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-[#1f2937] mb-2">
-                Full Name *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name *</label>
               <input
                 type="text"
                 value={formData.full_name}
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
                 placeholder="John Doe"
               />
             </div>
-
             <div>
-              <label className="block text-sm font-bold text-[#1f2937] mb-2">Email *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email *</label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
                 placeholder="john@example.com"
               />
             </div>
@@ -837,28 +784,27 @@ function MemberModal({ member, isOrg, onClose, onSaved }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-[#1f2937] mb-2">Role</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
               >
                 {ROLES.map(role => (
                   <option key={role.value} value={role.value}>{role.label}</option>
                 ))}
               </select>
-              <p className="text-xs text-[#4b5563] mt-2 font-medium">
+              <p className="text-xs text-gray-500 mt-1">
                 {ROLES.find(r => r.value === formData.role)?.description}
               </p>
             </div>
-
             <div>
-              <label className="block text-sm font-bold text-[#1f2937] mb-2">Job Title</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Job Title</label>
               <input
                 type="text"
                 value={formData.job_title || ''}
                 onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
                 placeholder="Field Manager"
               />
             </div>
@@ -866,124 +812,117 @@ function MemberModal({ member, isOrg, onClose, onSaved }) {
 
           {/* Manager Assignment */}
           <div>
-            <label className="block text-sm font-bold text-[#1f2937] mb-2">
-              Reports To (Manager)
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Reports To</label>
             <select
               value={formData.manager_id || ''}
               onChange={(e) => setFormData({ ...formData, manager_id: e.target.value || null })}
-              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
             >
-              <option value="">None (reports directly to admin/owner)</option>
+              <option value="">None (reports directly to owner)</option>
               {potentialManagers.map(mgr => (
                 <option key={mgr.id} value={mgr.id}>
                   {mgr.full_name} ({mgr.role === 'admin' ? 'Admin' : 'Manager'})
                 </option>
               ))}
             </select>
-            <p className="text-xs text-[#4b5563] mt-2 font-medium">
-              Select which manager supervises this team member. Only admins and managers can be assigned as supervisors.
-            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-[#1f2937] mb-2">Phone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
               <input
                 type="tel"
                 value={formData.phone || ''}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
                 placeholder="(555) 123-4567"
               />
             </div>
-
             <div>
-              <label className="block text-sm font-bold text-[#1f2937] mb-2">
-                Hourly Rate ($)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.hourly_rate || ''}
-                onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
-                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
-                placeholder="25.00"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Hourly Rate</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.hourly_rate || ''}
+                  onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+                  className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C2739]/20 focus:border-[#1C2739] transition-colors"
+                  placeholder="25.00"
+                />
+              </div>
             </div>
           </div>
 
           {/* Permissions */}
-          <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-            <h3 className="font-bold text-[#1f2937] mb-3">Permissions</h3>
-            <div className="space-y-2">
-              <label className="flex items-center gap-3">
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Permissions</h3>
+            <div className="space-y-2.5">
+              <label className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.can_view_costs}
                   onChange={(e) => setFormData({ ...formData, can_view_costs: e.target.checked })}
-                  className="rounded w-4 h-4 text-blue-500 focus:ring-blue-500"
+                  className="rounded border-gray-300 text-[#1C2739] focus:ring-[#1C2739]/20"
                 />
-                <span className="text-sm text-[#1f2937] font-medium">Can view costs and financial data</span>
+                <span className="text-sm text-gray-700">Can view costs and financial data</span>
               </label>
-              <label className="flex items-center gap-3">
+              <label className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.can_manage_team}
                   onChange={(e) => setFormData({ ...formData, can_manage_team: e.target.checked })}
-                  className="rounded w-4 h-4 text-blue-500 focus:ring-blue-500"
+                  className="rounded border-gray-300 text-[#1C2739] focus:ring-[#1C2739]/20"
                 />
-                <span className="text-sm text-[#1f2937] font-medium">Can manage team members</span>
+                <span className="text-sm text-gray-700">Can manage team members</span>
               </label>
-              <label className="flex items-center gap-3">
+              <label className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.can_manage_blocks}
                   onChange={(e) => setFormData({ ...formData, can_manage_blocks: e.target.checked })}
-                  className="rounded w-4 h-4 text-blue-500 focus:ring-blue-500"
+                  className="rounded border-gray-300 text-[#1C2739] focus:ring-[#1C2739]/20"
                 />
-                <span className="text-sm text-[#1f2937] font-medium">Can manage vineyard blocks</span>
+                <span className="text-sm text-gray-700">Can manage vineyard blocks</span>
               </label>
-              <label className="flex items-center gap-3">
+              <label className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.can_manage_tasks}
                   onChange={(e) => setFormData({ ...formData, can_manage_tasks: e.target.checked })}
-                  className="rounded w-4 h-4 text-blue-500 focus:ring-blue-500"
+                  className="rounded border-gray-300 text-[#1C2739] focus:ring-[#1C2739]/20"
                 />
-                <span className="text-sm text-[#1f2937] font-medium">Can create and manage tasks</span>
+                <span className="text-sm text-gray-700">Can create and manage tasks</span>
               </label>
-              <label className="flex items-center gap-3">
+              <label className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.can_approve_tasks}
                   onChange={(e) => setFormData({ ...formData, can_approve_tasks: e.target.checked })}
-                  className="rounded w-4 h-4 text-blue-500 focus:ring-blue-500"
+                  className="rounded border-gray-300 text-[#1C2739] focus:ring-[#1C2739]/20"
                 />
-                <span className="text-sm text-[#1f2937] font-medium">Can approve and review tasks</span>
+                <span className="text-sm text-gray-700">Can approve and review tasks</span>
               </label>
             </div>
           </div>
 
           {/* Active Status */}
-          <div>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={formData.is_active}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                className="rounded w-4 h-4 text-blue-500 focus:ring-blue-500"
-              />
-              <span className="text-sm font-bold text-[#1f2937]">Active (can log in)</span>
-            </label>
-          </div>
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.is_active}
+              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              className="rounded border-gray-300 text-[#1C2739] focus:ring-[#1C2739]/20"
+            />
+            <span className="text-sm font-medium text-gray-900">Active (can log in)</span>
+          </label>
 
-          <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
-            <Button type="submit" disabled={saving} className="flex-1 bg-[#10b981] hover:bg-[#059669] text-white font-bold shadow-md hover:shadow-lg transition-all">
-              {saving ? 'Saving...' : member ? 'Save Changes' : 'Send Invitation'}
-            </Button>
-            <Button type="button" onClick={onClose} className="bg-white border-2 border-gray-200 hover:bg-gray-50 text-[#1f2937] font-bold transition-all">
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <Button type="button" onClick={onClose} variant="outline" className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50">
               Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="flex-1 bg-[#1C2739] hover:bg-[#151d2b] text-white">
+              {saving ? 'Saving...' : member ? 'Save Changes' : 'Send Invitation'}
             </Button>
           </div>
         </form>
@@ -1020,44 +959,44 @@ function HierarchyModal({ member, allMembers, onClose }) {
       <div className="flex flex-col items-center">
         {/* Connecting line from above */}
         {showLine && (
-          <div className="w-0.5 h-8 bg-gradient-to-b from-[#10b981] to-[#008080]"></div>
+          <div className="w-px h-6 bg-gray-300"></div>
         )}
 
         {/* Card */}
         <div className={`
-          relative rounded-xl p-4 transition-all duration-300 min-w-[240px]
+          relative rounded-lg p-4 transition-all min-w-[200px] border
           ${isCurrent
-            ? 'bg-gradient-to-br from-[#10b981] to-[#008080] shadow-xl shadow-emerald-500/30 border-2 border-emerald-400'
-            : 'bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 border-2 border-slate-600 hover:border-emerald-500/50'
+            ? 'bg-[#1C2739]/5 border-[#1C2739] shadow-sm'
+            : 'bg-white border-gray-200 hover:border-gray-300'
           }
         `}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg ${
-              isCurrent ? 'bg-white/20' : 'bg-gradient-to-br from-emerald-400 to-teal-500'
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+              isCurrent ? 'bg-[#1C2739] text-white' : 'bg-stone-100 text-stone-600'
             }`}>
               {person.full_name.charAt(0).toUpperCase()}
             </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-white text-base">{person.full_name}</h4>
-              <p className={`text-xs ${isCurrent ? 'text-white/80' : 'text-slate-300'}`}>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-gray-900 text-sm truncate">{person.full_name}</h4>
+              <p className="text-xs text-gray-500 truncate">
                 {person.job_title || 'Team Member'}
               </p>
             </div>
           </div>
-          <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
+          <div className={`mt-3 inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
             roleConfig.value === 'admin'
-              ? 'bg-purple-500/20 text-purple-200 border border-purple-400/30'
+              ? 'bg-[#1C2739]/10 text-[#1C2739]'
               : roleConfig.value === 'manager'
-              ? 'bg-blue-500/20 text-blue-200 border border-blue-400/30'
-              : 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30'
+              ? 'bg-slate-100 text-slate-700'
+              : 'bg-stone-100 text-stone-600'
           }`}>
-            <RoleIcon className="w-3.5 h-3.5" />
+            <RoleIcon className="w-3 h-3" />
             {roleConfig.label}
           </div>
 
           {isCurrent && (
-            <div className="absolute -top-3 -right-3 bg-white text-emerald-600 text-xs font-bold px-3 py-1 rounded-full shadow-lg border-2 border-emerald-500">
-              YOU
+            <div className="absolute -top-2 -right-2 bg-[#1C2739] text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
+              Selected
             </div>
           )}
         </div>
@@ -1067,38 +1006,31 @@ function HierarchyModal({ member, allMembers, onClose }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 flex items-center justify-center p-4"
       style={{ zIndex: 99999 }}
       onClick={onClose}
     >
       <div
-        className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto border-2 border-slate-700 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-5 sticky top-0 z-10 border-b-2 border-emerald-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                  <Network className="w-6 h-6 text-white" />
-                </div>
-                Organization Hierarchy
-              </h2>
-              <p className="text-sm text-slate-300 mt-2 font-medium ml-13">
-                Reporting structure for {member.full_name}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2.5 hover:bg-slate-700 rounded-xl transition-all duration-200 border border-transparent hover:border-emerald-500/50"
-            >
-              <XCircle className="w-6 h-6 text-slate-900 hover:text-slate-800" />
-            </button>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Organization Hierarchy</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Reporting structure for {member.full_name}
+            </p>
           </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="p-8">
+        <div className="p-6">
           {/* Tree Structure */}
           <div className="flex flex-col items-center space-y-0">
 
@@ -1113,9 +1045,9 @@ function HierarchyModal({ member, allMembers, onClose }) {
             {manager ? (
               <MemberCard person={manager} showLine={!!managersManager} />
             ) : !managersManager && (
-              <div className="bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-xl p-4 mb-4">
-                <p className="text-sm text-slate-300 text-center font-medium">
-                  Reports directly to admin/owner (no assigned manager)
+              <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg px-4 py-3 mb-4">
+                <p className="text-sm text-gray-500 text-center">
+                  Reports directly to owner
                 </p>
               </div>
             )}
@@ -1127,14 +1059,11 @@ function HierarchyModal({ member, allMembers, onClose }) {
             {directReports.length > 0 && (
               <div className="flex flex-col items-center w-full">
                 {/* Vertical line down */}
-                <div className="w-0.5 h-8 bg-gradient-to-b from-[#10b981] to-[#008080]"></div>
+                <div className="w-px h-6 bg-gray-300"></div>
 
                 {/* Horizontal branching line */}
                 {directReports.length > 1 && (
-                  <div className="relative w-full max-w-4xl">
-                    <div className="absolute top-0 left-1/2 right-0 h-0.5 bg-gradient-to-r from-[#10b981] to-transparent"></div>
-                    <div className="absolute top-0 left-0 right-1/2 h-0.5 bg-gradient-to-l from-[#10b981] to-transparent"></div>
-                  </div>
+                  <div className="relative w-full max-w-3xl h-px bg-gray-300"></div>
                 )}
 
                 {/* Direct Reports Grid */}
@@ -1144,11 +1073,11 @@ function HierarchyModal({ member, allMembers, onClose }) {
                     : directReports.length === 2
                     ? 'grid-cols-2'
                     : 'grid-cols-3'
-                } gap-6 mt-0 w-full max-w-4xl`}>
-                  {directReports.map((report, idx) => (
+                } gap-4 mt-0 w-full max-w-3xl`}>
+                  {directReports.map((report) => (
                     <div key={report.id} className="flex flex-col items-center">
                       {directReports.length > 1 && (
-                        <div className="w-0.5 h-8 bg-gradient-to-b from-[#10b981] to-[#008080]"></div>
+                        <div className="w-px h-6 bg-gray-300"></div>
                       )}
                       <MemberCard person={report} />
                     </div>
@@ -1160,15 +1089,11 @@ function HierarchyModal({ member, allMembers, onClose }) {
 
           {/* Peers Section (if any) */}
           {peers.length > 0 && (
-            <div className="mt-12 pt-8 border-t-2 border-slate-700">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wide px-4">
-                  Peers ({peers.length})
-                </h3>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-500 mb-4 text-center">
+                Peers ({peers.length})
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {peers.map(peer => (
                   <div key={peer.id} className="flex justify-center">
                     <MemberCard person={peer} />
@@ -1179,33 +1104,30 @@ function HierarchyModal({ member, allMembers, onClose }) {
           )}
 
           {/* Summary Stats */}
-          <div className="mt-8 bg-gradient-to-br from-slate-800/50 to-slate-700/50 rounded-xl p-6 border-2 border-slate-600">
-            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-              <div className="w-1 h-4 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-full"></div>
-              Hierarchy Summary
-            </h3>
-            <div className="grid grid-cols-3 gap-6 text-center">
-              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-                <div className="text-3xl font-bold text-emerald-400">{manager ? 1 : 0}</div>
-                <div className="text-xs text-slate-300 font-medium mt-1">Manager</div>
+          <div className="mt-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-xl font-semibold text-gray-900">{manager ? 1 : 0}</div>
+                <div className="text-xs text-gray-500 mt-0.5">Manager</div>
               </div>
-              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-                <div className="text-3xl font-bold text-blue-400">{peers.length}</div>
-                <div className="text-xs text-slate-300 font-medium mt-1">Peers</div>
+              <div>
+                <div className="text-xl font-semibold text-gray-900">{peers.length}</div>
+                <div className="text-xs text-gray-500 mt-0.5">Peers</div>
               </div>
-              <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-                <div className="text-3xl font-bold text-teal-400">{directReports.length}</div>
-                <div className="text-xs text-slate-300 font-medium mt-1">Reports</div>
+              <div>
+                <div className="text-xl font-semibold text-gray-900">{directReports.length}</div>
+                <div className="text-xs text-gray-500 mt-0.5">Direct Reports</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-900 border-t-2 border-emerald-500/30 sticky bottom-0 rounded-b-2xl">
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
           <Button
             onClick={onClose}
-            className="w-full !bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold shadow-lg hover:shadow-xl transition-all py-3 focus:!outline-none focus:!ring-2 focus:!ring-emerald-400 focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-emerald-400 active:from-emerald-700 active:to-teal-800"
+            variant="outline"
+            className="w-full border-gray-300 text-gray-700 hover:bg-gray-100"
           >
             Close
           </Button>

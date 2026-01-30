@@ -18,6 +18,27 @@ module.exports = {
           800: '#166534',
           900: '#14532d',
         },
+        'danger': {
+          50: '#fef2f1',
+          100: '#fde3e1',
+          200: '#fccbc8',
+          300: '#f9a7a1',
+          400: '#f4746b',
+          500: '#ab3b2e', // main color
+          600: '#9a352a',
+          700: '#812d24',
+          800: '#6b2720',
+          900: '#5a231e',
+        },
+      },
+      animation: {
+        'slideInRight': 'slideInRight 0.3s ease-out',
+      },
+      keyframes: {
+        slideInRight: {
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
       },
     },
   },

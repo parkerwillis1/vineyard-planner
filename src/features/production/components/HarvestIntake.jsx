@@ -5,7 +5,10 @@ import { listLots, createLot, updateLot, deleteLot, updateContainer, logLotAssig
 import { listVineyardBlocks, listHarvestTracking, getHarvestTracking } from '@/shared/lib/vineyardApi';
 import { getAvailableContainers } from '@/shared/lib/productionApi';
 import { supabase } from '@/shared/lib/supabaseClient';
+import { sortByName } from '@/shared/lib/sortUtils';
+import { WINE_TYPE_LABELS, determineTTBTaxClass } from '@/shared/lib/ttbUtils';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
+import { DocLink } from '@/shared/components/DocLink';
 
 export const HarvestIntake = () => {
   const [lots, setLots] = useState([]);
@@ -51,6 +54,7 @@ export const HarvestIntake = () => {
     vintage: new Date().getFullYear(),
     varietal: '',
     appellation: '',
+    wine_type: 'still',
     block_id: null,
     harvest_date: new Date().toISOString().split('T')[0],
     pick_start_time: '',
@@ -142,6 +146,9 @@ export const HarvestIntake = () => {
       const estimatedVolume = weightTons * 160;
 
       // Clean data: convert empty strings to null for timestamps, numbers, and UUIDs
+      // Calculate TTB tax class based on wine type (alcohol not yet known at harvest)
+      const taxClass = determineTTBTaxClass(null, formData.wine_type);
+
       const lotData = {
         ...formData,
         pick_start_time: formData.pick_start_time || null,
@@ -160,7 +167,9 @@ export const HarvestIntake = () => {
         current_volume_gallons: estimatedVolume,
         current_brix: formData.initial_brix || null,
         current_ph: formData.initial_ph || null,
-        current_ta: formData.initial_ta || null
+        current_ta: formData.initial_ta || null,
+        wine_type: formData.wine_type,
+        ttb_tax_class: taxClass
       };
 
       let savedLotId = editingLot?.id;
@@ -217,6 +226,7 @@ export const HarvestIntake = () => {
       vintage: lot.vintage,
       varietal: lot.varietal,
       appellation: lot.appellation || '',
+      wine_type: lot.wine_type || 'still',
       block_id: lot.block_id,
       harvest_date: lot.harvest_date || new Date().toISOString().split('T')[0],
       pick_start_time: lot.pick_start_time ? new Date(lot.pick_start_time).toISOString().slice(0, 16) : '',
@@ -361,6 +371,7 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
       vintage: new Date().getFullYear(),
       varietal: '',
       appellation: '',
+      wine_type: 'still',
       block_id: null,
       harvest_date: new Date().toISOString().split('T')[0],
       initial_weight_lbs: '',
@@ -568,8 +579,8 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
       {/* Header */}
       <div className="flex items-center justify-between pt-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Harvest Intake</h2>
-          <p className="text-gray-600 mt-1">Track incoming fruit from vineyard to crush pad</p>
+          <h1 className="text-2xl font-bold text-gray-900">Harvest Intake</h1>
+          <p className="text-sm text-gray-500 mt-1">Track incoming fruit from vineyard to crush pad. <DocLink docId="production/harvest-intake" /></p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -712,6 +723,24 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
                 />
               </div>
 
+              {/* Wine Type - TTB Classification */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Wine Type (TTB)
+                </label>
+                <select
+                  name="wine_type"
+                  value={formData.wine_type}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                >
+                  {Object.entries(WINE_TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Used for TTB tax class determination</p>
+              </div>
+
               {/* Block */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -724,7 +753,7 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
                 >
                   <option value="">None</option>
-                  {blocks.map(block => (
+                  {sortByName(blocks).map(block => (
                     <option key={block.id} value={block.id}>
                       {block.name} - {block.varietal}
                     </option>
@@ -1657,7 +1686,7 @@ Estimated Volume: ${estimatedVolume.toFixed(0)} gallons${crushData.receiving_con
                                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
                                         >
                                           <option value="">Select Block</option>
-                                          {blocks.map((block) => (
+                                          {sortByName(blocks).map((block) => (
                                             <option key={block.id} value={block.id}>{block.name}</option>
                                           ))}
                                         </select>

@@ -1,5 +1,6 @@
 import { FileDown, Printer } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
+import { DocLink } from '@/shared/components/DocLink';
 import {
   LineChart,
   Line,
@@ -105,11 +106,11 @@ export function BusinessPlanReport({
   return (
     <div className="w-full px-4 lg:px-6 print:px-4" id="business-plan-report">
       {/* Header with Export Button */}
-      <div className="border-b pb-3 mb-6 print:hidden">
+      <div className="pt-4 print:hidden">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Business Plan</h1>
-            <p className="text-sm text-gray-600 mt-1">Professional vineyard development proposal and financial analysis</p>
+            <p className="text-sm text-gray-500 mt-1">Professional vineyard development proposal and financial analysis. <DocLink docId="planner/business-plan" /></p>
           </div>
           <button
             onClick={handleExportPDF}

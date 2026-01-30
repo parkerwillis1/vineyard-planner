@@ -100,7 +100,7 @@ export function ProductsMegaMenu() {
               </div>
             </Link>
 
-            {/* Winery Production */}
+            {/* Wine Production */}
             <Link
               to="/products/production"
               onClick={() => setIsOpen(false)}
@@ -113,7 +113,7 @@ export function ProductsMegaMenu() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-gray-900 group-hover:text-purple-700 transition-colors">
-                      Winery Production
+                      Wine Production
                     </h3>
                   </div>
                   <p className="text-sm text-gray-600">

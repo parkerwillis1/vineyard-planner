@@ -112,7 +112,7 @@ export default function TroubleshootingPage() {
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
             <li><strong>Check spam/junk folder:</strong> Email filters sometimes flag automated emails</li>
-            <li><strong>Whitelist sender:</strong> Add noreply@vinepioneer.com to contacts</li>
+            <li><strong>Whitelist sender:</strong> Add noreply@trellisag.com to contacts</li>
             <li><strong>Check email address:</strong> Verify correct email in account settings</li>
             <li><strong>Resend verification:</strong> Sign in → Account Settings → "Resend verification email"</li>
             <li><strong>Wait 15 minutes:</strong> Some email providers delay delivery</li>
@@ -398,7 +398,7 @@ export default function TroubleshootingPage() {
           <li>Steps to reproduce issue</li>
           <li>Screenshot of error (if any)</li>
           <li>Browser/device type and version</li>
-          <li>Email: support@vinepioneer.com</li>
+          <li>Email: support@trellisag.com</li>
         </ul>
         We respond within 24 hours (usually much faster).
       </Callout>

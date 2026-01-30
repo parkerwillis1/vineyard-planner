@@ -16,12 +16,21 @@ import {
   Package,
   ChevronLeft,
   ChevronRight,
+  PanelLeftOpen,
+  PanelLeftClose,
   Zap,
   Wind,
   Tractor,
   Archive,
-  TrendingUp
+  TrendingUp,
+  Menu,
+  BookOpen,
+  Settings,
+  Calculator,
+  Wine,
+  FileText
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { VineyardDashboard } from '../components/VineyardDashboard';
 import { BlockManagement } from '../components/BlockManagement';
 import { TaskManagement } from '../components/TaskManagement';
@@ -39,7 +48,9 @@ import { HardwareIntegration } from '../components/HardwareIntegration';
 import { DeviceZoneMapping } from '../components/DeviceZoneMapping';
 import { WebhookTester } from '../components/WebhookTester';
 import { ArchivedItems } from '../components/ArchivedItems';
+import { OperationsReports } from '../components/OperationsReports';
 import { FieldDetailPage } from './FieldDetailPage';
+import { SettingsView } from '@/shared/components/SettingsView';
 
 export function OperationsShell() {
   const { user } = useAuth();
@@ -55,6 +66,9 @@ export function OperationsShell() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Check if we're on a field detail page
   const isFieldDetailPage = location.pathname.startsWith('/vineyard/field/');
@@ -122,6 +136,7 @@ export function OperationsShell() {
       items: [
         { id: 'inventory', label: 'Inventory', icon: Package, color: 'blue' },
         { id: 'costs', label: 'Analytics', icon: TrendingUp, color: 'teal' },
+        { id: 'reports', label: 'Reports', icon: FileText, color: 'wine' },
         { id: 'equipment', label: 'Equipment', icon: Wrench, color: 'orange' },
         { id: 'labor', label: 'Labor Tracking', icon: Users, color: 'rose' },
       ]
@@ -137,51 +152,221 @@ export function OperationsShell() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sticky Sidebar Navigation */}
-      <aside
+    <div className="min-h-screen bg-[#F5F6F7] flex">
+      {/* Mobile Menu Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-[45] lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Dropdown Menu */}
+      <div
         className={`
-          fixed left-0 top-0 h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900
-          transition-all duration-300 ease-in-out z-40
-          ${sidebarOpen ? 'w-56' : 'w-20'}
+          fixed top-0 left-0 right-0 bg-white shadow-xl z-[50] lg:hidden
+          transition-all duration-300 ease-in-out
+          ${mobileMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}
         `}
       >
-        {/* Fixed spacer for navbar */}
-        <div className="h-16 flex-shrink-0"></div>
-
-        {/* Sidebar Header - slides up with navbar */}
-        <div
-          className={`h-[64px] flex items-center justify-between px-4 border-b border-slate-700 flex-shrink-0 transition-transform duration-300 ${
-            isNavbarVisible ? 'translate-y-0' : '-translate-y-16'
-          }`}
-        >
-          {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-vine-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Grape className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-white font-bold text-lg">Operations</span>
-            </div>
-          )}
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/Trellis_Logo/logo_symbol .png" alt="Trellis" className="h-8 w-8" />
+            <span className="font-semibold text-gray-900">Operations</span>
+          </Link>
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors ml-auto"
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-2 text-gray-500 hover:text-gray-700"
           >
-            {sidebarOpen ? (
-              <ChevronLeft className="w-5 h-5 text-slate-400" />
-            ) : (
-              <ChevronRight className="w-5 h-5 text-slate-400" />
-            )}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
+        {/* Mobile Navigation Grid */}
+        <div className="p-4 max-h-[70vh] overflow-y-auto">
+          {navigationSections.map((section, sectionIdx) => (
+            <div key={section.title} className={sectionIdx > 0 ? 'mt-4 pt-4 border-t border-gray-100' : ''}>
+              <div className="px-1 mb-2">
+                <span className="text-xs font-semibold text-[#1C2739] uppercase tracking-wider">
+                  {section.title}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  // Highlight "Fields" when on field detail page, otherwise use activeView
+                  const isActive = isFieldDetailPage
+                    ? item.id === 'blocks'
+                    : activeView === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        navigate(`/vineyard?view=${item.id}`);
+                        setActiveView(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`
+                        flex items-center gap-2 px-3 py-3 rounded-xl
+                        transition-all duration-200
+                        ${isActive
+                          ? 'bg-[#1C2739] text-white shadow-md'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        }
+                      `}
+                    >
+                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-[#1C2739]'}`} />
+                      <span className="font-medium text-sm">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {/* Quick Links */}
+          <div className="mt-4 pt-4 border-t border-gray-100 flex gap-3">
+            <Link
+              to="/planner"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-50 rounded-xl text-gray-600 hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Calculator className="w-4 h-4" />
+              <span className="text-sm font-medium">Planner</span>
+            </Link>
+            <Link
+              to="/production"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-50 rounded-xl text-gray-600 hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Wine className="w-4 h-4" />
+              <span className="text-sm font-medium">Production</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Top Header Bar */}
+      <div className="fixed top-0 left-0 right-0 z-[40] lg:hidden bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/Trellis_Logo/logo_symbol .png" alt="Trellis" className="h-7 w-7" />
+          </Link>
+          <div className="flex items-center gap-1">
+            <span className="text-sm font-medium text-gray-700 mr-2">
+              {navigationSections.flatMap(s => s.items).find(i => i.id === activeView)?.label || 'Dashboard'}
+            </span>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-[#1C2739] hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky Sidebar Navigation - Desktop Only */}
+      <aside
+        className={`
+          fixed left-0 top-0 h-screen bg-[#F5F6F7]
+          transition-all duration-300 ease-in-out z-40
+          hidden lg:block
+          ${sidebarOpen ? 'w-56' : 'w-20'}
+        `}
+      >
+        {/* Sidebar Header Row */}
+        <div className={`h-16 flex items-center flex-shrink-0 relative ${sidebarOpen ? 'justify-between px-4' : 'justify-center'}`}>
+          {sidebarOpen ? (
+            <>
+              <Link to="/" className="flex-shrink-0">
+                <img src="/Trellis_Logo/logo_symbol .png" alt="Trellis" className="h-8 w-8" />
+              </Link>
+              <div className="flex items-center gap-4">
+                {/* Tools Menu */}
+                <div className="relative group/menu">
+                  <Menu
+                    className="w-[18px] h-[18px] text-[#1C2739] hover:text-[#1C2739]/70 transition-colors cursor-pointer"
+                    onClick={() => setShowToolsMenu(!showToolsMenu)}
+                  />
+                  {!showToolsMenu && (
+                    <div className="absolute top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover/menu:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg">
+                      Tools
+                    </div>
+                  )}
+                  {showToolsMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowToolsMenu(false)} />
+                      <div className="absolute top-8 left-0 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-2">
+                        <Link
+                          to="/planner"
+                          className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                          onClick={() => setShowToolsMenu(false)}
+                        >
+                          <Calculator className="w-4 h-4" />
+                          <span className="text-sm font-medium">Planner</span>
+                        </Link>
+                        <Link
+                          to="/vineyard"
+                          className="flex items-center gap-3 px-4 py-2.5 text-[#1C2739] bg-[#1C2739]/10"
+                          onClick={() => setShowToolsMenu(false)}
+                        >
+                          <Grape className="w-4 h-4" />
+                          <span className="text-sm font-medium">Operations</span>
+                        </Link>
+                        <Link
+                          to="/production"
+                          className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                          onClick={() => setShowToolsMenu(false)}
+                        >
+                          <Wine className="w-4 h-4" />
+                          <span className="text-sm font-medium">Production</span>
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <Link to="/docs" className="relative group/docs">
+                  <BookOpen className="w-[18px] h-[18px] text-[#1C2739] hover:text-[#1C2739]/70 transition-colors" />
+                  <div className="absolute top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover/docs:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg">
+                    Docs
+                  </div>
+                </Link>
+                <div className="relative group/settings cursor-pointer" onClick={() => setShowSettings(true)}>
+                  <Settings className="w-[18px] h-[18px] text-[#1C2739] hover:text-[#1C2739]/70 transition-colors" />
+                  <div className="absolute top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover/settings:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg">
+                    Settings
+                  </div>
+                </div>
+                <div
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="cursor-pointer"
+                >
+                  <PanelLeftClose className="w-[18px] h-[18px] text-[#1C2739] hover:text-[#1C2739]/70 transition-colors" />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div
+              onClick={() => setSidebarOpen(true)}
+              className="relative group/expand cursor-pointer flex items-center justify-center"
+            >
+              <img src="/Trellis_Logo/logo_symbol .png" alt="Trellis" className="h-8 w-8 group-hover/expand:opacity-50 transition-opacity" />
+              <PanelLeftOpen className="w-5 h-5 text-[#1C2739] absolute opacity-0 group-hover/expand:opacity-100 transition-opacity" />
+            </div>
+          )}
+        </div>
+
         {/* Navigation Sections - positioned at fixed location */}
-        <nav className="absolute top-[128px] left-0 right-0 bottom-[85px] overflow-y-auto py-4 px-2 hide-scrollbar">
+        <nav className="absolute top-16 left-0 right-0 bottom-[85px] overflow-y-auto py-4 px-3 hide-scrollbar">
           {navigationSections.map((section, sectionIdx) => (
             <div key={section.title} className={sectionIdx > 0 ? 'mt-6' : ''}>
               {sidebarOpen && (
                 <div className="px-3 mb-2">
-                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-[#1C2739] uppercase tracking-wider">
                     {section.title}
                   </span>
                 </div>
@@ -189,7 +374,10 @@ export function OperationsShell() {
               <div className="space-y-1">
                 {section.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = activeView === item.id;
+                  // Highlight "Fields" when on field detail page, otherwise use activeView
+                  const isActive = isFieldDetailPage
+                    ? item.id === 'blocks'
+                    : activeView === item.id;
                   return (
                     <button
                       key={item.id}
@@ -201,14 +389,14 @@ export function OperationsShell() {
                         w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
                         transition-all duration-200 group
                         ${isActive
-                          ? 'bg-white text-slate-800 shadow-lg'
-                          : 'bg-white/10 text-white hover:bg-white hover:text-slate-800'
+                          ? 'bg-[#1C2739] text-white shadow-lg'
+                          : 'bg-transparent text-gray-700 hover:bg-[#1C2739]/10 hover:text-[#1C2739]'
                         }
                         ${!sidebarOpen && 'justify-center'}
                       `}
                       title={!sidebarOpen ? item.label : ''}
                     >
-                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-slate-800' : 'group-hover:text-slate-800'}`} />
+                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-[#1C2739] group-hover:text-[#1C2739]'}`} />
                       {sidebarOpen && (
                         <span className="font-medium text-sm">{item.label}</span>
                       )}
@@ -222,10 +410,10 @@ export function OperationsShell() {
 
         {/* Sidebar Footer - positioned at fixed location */}
         {sidebarOpen && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
-            <div className="bg-gradient-to-br from-vine-green-500/10 to-emerald-500/10 rounded-lg p-3 border border-vine-green-500/20">
-              <p className="text-xs text-slate-400 mb-1">Active Season</p>
-              <p className="text-sm font-semibold text-white">{new Date().getFullYear()}</p>
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-[#F5F6F7]">
+            <div className="bg-[#1C2739]/5 rounded-lg p-3 border border-[#1C2739]/20">
+              <p className="text-xs text-[#1C2739]/70 mb-1">Active Season</p>
+              <p className="text-sm font-semibold text-[#1C2739]">{new Date().getFullYear()}</p>
             </div>
           </div>
         )}
@@ -235,12 +423,15 @@ export function OperationsShell() {
       <main
         className={`
           flex-1 transition-all duration-300 max-w-full overflow-x-hidden
-          ${sidebarOpen ? 'ml-56' : 'ml-20'}
+          pt-16 lg:pt-0
+          ${sidebarOpen ? 'lg:ml-56' : 'lg:ml-20'}
         `}
       >
         {/* Content Area */}
-        <div className="px-6 pt-2 pb-6 max-w-full overflow-x-hidden">
-          {isFieldDetailPage ? (
+        <div className="pl-4 pr-4 lg:pl-0 lg:pr-6 pt-2 lg:pt-0 pb-6 max-w-full overflow-x-hidden">
+          {showSettings ? (
+            <SettingsView onClose={() => setShowSettings(false)} />
+          ) : isFieldDetailPage ? (
             <FieldDetailPage id={fieldId} onBack={() => {
               navigate(-1); // Go back to previous page
             }} />
@@ -256,6 +447,7 @@ export function OperationsShell() {
               {activeView === 'team' && <TeamManagement />}
               {activeView === 'inventory' && <InventoryManagement />}
               {activeView === 'costs' && <CostAnalysis />}
+              {activeView === 'reports' && <OperationsReports />}
               {activeView === 'equipment' && <EquipmentManagement />}
               {activeView === 'labor' && <LaborManagement />}
               {activeView === 'weather' && <WeatherDashboard />}

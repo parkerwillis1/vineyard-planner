@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/auth/AuthContext';
 import { Link } from 'react-router-dom';
+import { DocLink } from '@/shared/components/DocLink';
 import {
   DollarSign,
   TrendingUp,
@@ -56,6 +57,8 @@ import {
   listHarvestSamples
 } from '@/shared/lib/vineyardApi';
 import { listIrrigationEvents } from '@/shared/lib/irrigationApi';
+import { sortByName } from '@/shared/lib/sortUtils';
+import { LoadingSpinner } from './LoadingSpinner';
 import { fetchNDVIForBlock, isSentinelHubConfigured } from '@/shared/lib/sentinelHubApi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -81,24 +84,18 @@ export function CostAnalysis() {
   const [ndviProgress, setNdviProgress] = useState({ current: 0, total: 0, field: '', month: '' });
   const [selectedBlockForNdvi, setSelectedBlockForNdvi] = useState('all');
 
-  // Load all data
-  useEffect(() => {
-    if (user) {
-      loadAllData();
-    }
-  }, [user, selectedYear]);
-
-  const loadAllData = async () => {
+  // Load all data - accepts year parameter to avoid stale closure issues
+  const loadAllData = useCallback(async (year) => {
     setLoading(true);
 
     try {
       const [laborRes, inventoryRes, yieldRes, blocksRes, sprayRes, samplesRes, irrigationRes] = await Promise.all([
         listLaborLogs({}).catch(err => ({ data: [], error: err })),
         listInventoryTransactions(null, 1000).catch(err => ({ data: [], error: err })),
-        listFieldYieldHistory(null, selectedYear).catch(err => ({ data: [], error: err })),
+        listFieldYieldHistory(null, year).catch(err => ({ data: [], error: err })),
         listVineyardBlocks().catch(err => ({ data: [], error: err })),
         listSprayApplications().catch(err => ({ data: [], error: err })),
-        listHarvestSamples(null, selectedYear).catch(err => ({ data: [], error: err })),
+        listHarvestSamples(null, year).catch(err => ({ data: [], error: err })),
         listIrrigationEvents().catch(err => ({ data: [], error: err }))
       ]);
 
@@ -120,7 +117,14 @@ export function CostAnalysis() {
     }
 
     setLoading(false);
-  };
+  }, []);
+
+  // Load data when user or selectedYear changes
+  useEffect(() => {
+    if (user) {
+      loadAllData(selectedYear);
+    }
+  }, [user, selectedYear, loadAllData]);
 
   // Load NDVI data for all blocks - monthly throughout the growing season (PARALLEL)
   const loadNdviData = useCallback(async () => {
@@ -521,24 +525,17 @@ export function CostAnalysis() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading analytics...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading analytics..." />;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pt-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
-            <p className="text-sm text-gray-600 mt-1">Comprehensive insights into quality, performance, and profitability</p>
+            <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+            <p className="text-sm text-gray-500 mt-1">Comprehensive insights into quality, performance, and profitability. <DocLink docId="operations/analytics" /></p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -569,7 +566,7 @@ export function CostAnalysis() {
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
-              {[2025, 2024, 2023, 2022, 2021, 2020].map(year => (
+              {Array.from({ length: new Date().getFullYear() - 2019 }, (_, i) => new Date().getFullYear() - i).map(year => (
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
@@ -680,7 +677,7 @@ export function CostAnalysis() {
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="all">All Fields (Average)</option>
-                    {blocks.map(block => (
+                    {sortByName(blocks).map(block => (
                       <option key={block.id} value={block.id}>{block.name}</option>
                     ))}
                   </select>
@@ -924,7 +921,7 @@ export function CostAnalysis() {
                     disabled={loadingNdvi}
                   >
                     <option value="all">All Fields (Average)</option>
-                    {blocks.filter(b => b.geom).map(block => (
+                    {sortByName(blocks.filter(b => b.geom)).map(block => (
                       <option key={block.id} value={block.id}>{block.name}</option>
                     ))}
                   </select>

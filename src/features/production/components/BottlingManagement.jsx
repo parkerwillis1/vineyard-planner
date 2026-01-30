@@ -26,11 +26,19 @@ import {
   ChevronDown,
   Clock,
   Droplet,
-  FlaskConical
+  FlaskConical,
+  Barrel,
+  RefreshCw,
+  MapPin,
+  Check
 } from 'lucide-react';
+import { DocLink } from '@/shared/components/DocLink';
 import {
   listLots,
+  listFermentationLogs,
+  getLatestFermentationLog,
   getDraftRunForLot,
+  getAllDraftRuns,
   createBottlingRun,
   updateBottlingRun,
   startBottlingRun,
@@ -137,9 +145,11 @@ export function BottlingManagement() {
   const [issueForm, setIssueForm] = useState({ description: '', severity: 'minor' });
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [draftRunAvailable, setDraftRunAvailable] = useState(null);
+  const [draftsByLot, setDraftsByLot] = useState({}); // Map of lot_id -> draft run
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
 
   // Dirty tracking and in-flight lock
   const [lastSaved, setLastSaved] = useState(null);
@@ -153,12 +163,13 @@ export function BottlingManagement() {
   const [varietalFilter, setVarietalFilter] = useState('all');
   const [vintageFilter, setVintageFilter] = useState('all');
   const [containerFilter, setContainerFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('readiness'); // readiness, aging, vintage, volume
-  const [groupBy, setGroupBy] = useState('none'); // none, vintage, varietal
+  const [vesselFilter, setVesselFilter] = useState('all'); // Filter by specific vessel/barrel name
+  const [sortBy, setSortBy] = useState('barrel_asc'); // readiness, aging, vintage, volume, name_asc, name_desc, barrel_asc, barrel_desc
+  const [groupBy, setGroupBy] = useState('none'); // none, vintage, varietal, field
   const [viewMode, setViewMode] = useState('cards'); // cards, table
   const [currentPage, setCurrentPage] = useState(1);
   const lotsPerPage = 20;
-  const [selectedLotPreview, setSelectedLotPreview] = useState(null);
+  const [selectedLots, setSelectedLots] = useState([]); // Array of selected lots for multi-select
   const [readinessPopover, setReadinessPopover] = useState(null); // { lot, position }
 
   const steps = ['Select Lot', 'Run Setup', 'Validate', 'Execute Run', 'Complete'];
@@ -273,15 +284,14 @@ export function BottlingManagement() {
           operator: runData.operator
         };
 
+        // Only autosave if we already have a run_id (record exists)
+        // New records are created when user clicks "Continue" button
         if (runData.run_id) {
           const { error } = await updateBottlingRun(runData.run_id, setupData);
           if (error) throw error;
         } else {
-          const { data, error } = await createBottlingRun(setupData);
-          if (error) throw error;
-          if (data) {
-            setRunData(prev => ({ ...prev, run_id: data.id }));
-          }
+          // Don't auto-create new records - let user initiate
+          return;
         }
 
         // Update last saved snapshot
@@ -434,7 +444,86 @@ export function BottlingManagement() {
         return isInBarrel && isBottleableStatus;
       });
 
-      setLots(candidateLots);
+      // Deduplicate by container_id - if multiple lots claim the same barrel,
+      // keep only the one with the highest volume (likely the primary lot)
+      const seenContainers = new Map();
+      const deduplicatedLots = [];
+
+      for (const lot of candidateLots) {
+        const containerId = lot.container_id;
+        if (!containerId) {
+          deduplicatedLots.push(lot);
+          continue;
+        }
+
+        const existing = seenContainers.get(containerId);
+        if (!existing) {
+          seenContainers.set(containerId, lot);
+          deduplicatedLots.push(lot);
+        } else {
+          // Keep the lot with higher volume
+          if ((lot.current_volume_gallons || 0) > (existing.current_volume_gallons || 0)) {
+            // Remove old one, add new one
+            const idx = deduplicatedLots.indexOf(existing);
+            if (idx > -1) deduplicatedLots.splice(idx, 1);
+            seenContainers.set(containerId, lot);
+            deduplicatedLots.push(lot);
+          }
+        }
+      }
+
+      // Fetch latest fermentation_logs for ALL lots to ensure we have chemistry data
+      // This is necessary because lab data might exist but wasn't synced to the lot record
+      const lotsWithChemistry = await Promise.all(
+        deduplicatedLots.map(async (lot) => {
+          try {
+            // Always try to get the latest lab data
+            const { data: latestLab, error: labError } = await getLatestFermentationLog(lot.id);
+
+            if (labError) {
+              // PGRST116 means no rows found - that's ok, just use lot as-is
+              if (labError.code !== 'PGRST116') {
+                console.error(`Error fetching lab for lot ${lot.id}:`, labError);
+              }
+              return lot;
+            }
+
+            if (!latestLab) {
+              return lot;
+            }
+
+            console.log(`Lot ${lot.name} (ID: ${lot.id}): Found lab data - pH: ${latestLab.ph}, TA: ${latestLab.ta}, ABV: ${latestLab.alcohol_pct}`);
+
+            // ALWAYS use lab data if available (overrides lot record)
+            // This ensures we display the actual lab results even if sync failed
+            return {
+              ...lot,
+              current_ph: latestLab.ph || lot.current_ph,
+              current_ta: latestLab.ta || latestLab.titratable_acidity || lot.current_ta,
+              current_alcohol_pct: latestLab.alcohol_pct || lot.current_alcohol_pct,
+              _hasLabData: true,
+              _latestLabDate: latestLab.log_date
+            };
+          } catch (err) {
+            console.error(`Error fetching labs for lot ${lot.id}:`, err);
+            return lot;
+          }
+        })
+      );
+
+      console.log('Lots with chemistry:', lotsWithChemistry.map(l => ({
+        name: l.name,
+        abv: l.current_alcohol_pct,
+        ph: l.current_ph,
+        ta: l.current_ta,
+        hasLab: l._hasLabData
+      })));
+
+      setLots(lotsWithChemistry);
+
+      // Fetch all draft runs to show Resume buttons on cards
+      const { data: drafts } = await getAllDraftRuns();
+      setDraftsByLot(drafts || {});
     } catch (err) {
       console.error('Error loading lots:', err);
     } finally {
@@ -445,7 +534,11 @@ export function BottlingManagement() {
   // Get unique filter options
   const uniqueVarietals = [...new Set(lots.map(l => l.varietal).filter(Boolean))].sort();
   const uniqueVintages = [...new Set(lots.map(l => l.vintage).filter(Boolean))].sort((a, b) => b - a);
-  const uniqueContainers = [...new Set(lots.map(l => l.container_type).filter(Boolean))].sort();
+  const uniqueContainers = [...new Set(lots.map(l => l.container?.type).filter(Boolean))].sort();
+  const uniqueVessels = [...new Set(lots.map(l => l.container?.name).filter(Boolean))].sort((a, b) => {
+    // Natural sort for barrel numbers (e.g., Barrel 1, Barrel 2, Barrel 10)
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  });
 
   // Apply filters, search, and sort
   const filteredLots = React.useMemo(() => {
@@ -458,7 +551,7 @@ export function BottlingManagement() {
         lot.name?.toLowerCase().includes(term) ||
         lot.varietal?.toLowerCase().includes(term) ||
         lot.vintage?.toString().includes(term) ||
-        lot.container_name?.toLowerCase().includes(term)
+        lot.container?.name?.toLowerCase().includes(term)
       );
     }
 
@@ -483,7 +576,12 @@ export function BottlingManagement() {
 
     // Container type filter
     if (containerFilter !== 'all') {
-      result = result.filter(lot => lot.container_type === containerFilter);
+      result = result.filter(lot => lot.container?.type === containerFilter);
+    }
+
+    // Vessel/Barrel name filter
+    if (vesselFilter !== 'all') {
+      result = result.filter(lot => lot.container?.name === vesselFilter);
     }
 
     // Sort
@@ -497,13 +595,37 @@ export function BottlingManagement() {
           return (b.vintage || 0) - (a.vintage || 0);
         case 'volume':
           return (b.current_volume_gallons || 0) - (a.current_volume_gallons || 0);
+        case 'name_asc':
+          return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' });
+        case 'name_desc':
+          return (b.name || '').localeCompare(a.name || '', undefined, { numeric: true, sensitivity: 'base' });
+        case 'vessel_asc':
+          return (a.container?.name || '').localeCompare(b.container?.name || '', undefined, { numeric: true, sensitivity: 'base' });
+        case 'vessel_desc':
+          return (b.container?.name || '').localeCompare(a.container?.name || '', undefined, { numeric: true, sensitivity: 'base' });
+        case 'barrel_asc': {
+          // Use container.name (the actual barrel) for sorting
+          const aMatch = a.container?.name?.match(/(\d+)/)?.[1];
+          const bMatch = b.container?.name?.match(/(\d+)/)?.[1];
+          const aNum = aMatch ? parseInt(aMatch) : 999999;
+          const bNum = bMatch ? parseInt(bMatch) : 999999;
+          return aNum - bNum;
+        }
+        case 'barrel_desc': {
+          // Use container.name (the actual barrel) for sorting
+          const aMatch = a.container?.name?.match(/(\d+)/)?.[1];
+          const bMatch = b.container?.name?.match(/(\d+)/)?.[1];
+          const aNum = aMatch ? parseInt(aMatch) : 0;
+          const bNum = bMatch ? parseInt(bMatch) : 0;
+          return bNum - aNum;
+        }
         default:
           return 0;
       }
     });
 
     return result;
-  }, [lots, searchTerm, statusFilter, varietalFilter, vintageFilter, containerFilter, sortBy]);
+  }, [lots, searchTerm, statusFilter, varietalFilter, vintageFilter, containerFilter, vesselFilter, sortBy]);
 
   // Group lots if needed
   const groupedLots = React.useMemo(() => {
@@ -513,7 +635,16 @@ export function BottlingManagement() {
 
     const groups = {};
     filteredLots.forEach(lot => {
-      const key = groupBy === 'vintage' ? lot.vintage || 'Unknown' : lot.varietal || 'Unknown';
+      let key;
+      if (groupBy === 'vintage') {
+        key = lot.vintage || 'Unknown';
+      } else if (groupBy === 'varietal') {
+        key = lot.varietal || 'Unknown';
+      } else if (groupBy === 'field') {
+        key = lot.block?.name || 'Unknown Field';
+      } else {
+        key = 'Unknown';
+      }
       if (!groups[key]) groups[key] = [];
       groups[key].push(lot);
     });
@@ -570,7 +701,7 @@ export function BottlingManagement() {
       varietal: lot.varietal,
       vintage: lot.vintage,
       appellation: '',
-      abv: lot.alcohol_pct ? lot.alcohol_pct.toFixed(1) : '',
+      abv: lot.current_alcohol_pct ? lot.current_alcohol_pct.toFixed(1) : '',
       lot_code: lotCode,
       sku_prefix: 'BOT',
       create_as: 'available',
@@ -593,6 +724,7 @@ export function BottlingManagement() {
     });
 
     setDraftRunAvailable(null);
+    setSaveError(null); // Clear any previous save errors
     setCurrentStep(1);
   }
 
@@ -640,7 +772,7 @@ export function BottlingManagement() {
     });
 
     setDraftRunAvailable(null);
-    setCurrentStep(1);
+    setCurrentStep(2); // Go to validation step where draft was saved
   }
 
   function validateRun() {
@@ -724,6 +856,61 @@ export function BottlingManagement() {
     } catch (err) {
       console.error('Start run error:', err);
       alert('Failed to start run: ' + err.message);
+    }
+  }
+
+  async function saveAsDraft() {
+    setSaving(true);
+    setToast(null);
+    try {
+      const setupData = {
+        lot_id: runData.lot_id,
+        bottle_ml: runData.bottle_ml,
+        closure_type: runData.closure_type,
+        capsule_color: runData.capsule_color,
+        case_pack: runData.case_pack,
+        pallet_cases: runData.pallet_cases || null,
+        bulk_volume_gal: runData.bulk_volume_gal,
+        loss_pct: runData.loss_pct,
+        headspace_loss_gal: runData.headspace_loss_gal,
+        net_volume_gal: runData.net_volume_gal,
+        estimated_bottles: runData.estimated_bottles,
+        estimated_cases: runData.estimated_cases,
+        estimated_pallets: runData.estimated_pallets,
+        label_name: runData.label_name,
+        varietal: runData.varietal,
+        vintage: runData.vintage,
+        appellation: runData.appellation,
+        abv: runData.abv ? parseFloat(runData.abv) : null,
+        lot_code: runData.lot_code,
+        sku_prefix: runData.sku_prefix,
+        create_as: runData.create_as,
+        run_date: runData.run_date,
+        operator: runData.operator
+      };
+
+      let result;
+      if (runData.run_id) {
+        // Update existing draft
+        result = await updateBottlingRun(runData.run_id, setupData);
+      } else {
+        // Create new draft
+        result = await createBottlingRun(setupData);
+      }
+
+      if (result.error) {
+        setToast({ type: 'error', message: 'Failed to save draft: ' + result.error.message });
+        return;
+      }
+
+      setRunData(prev => ({ ...prev, run_id: result.data.id }));
+      setToast({ type: 'success', message: 'Draft saved successfully!' });
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      console.error('Save draft error:', err);
+      setToast({ type: 'error', message: 'Failed to save draft: ' + err.message });
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -870,9 +1057,10 @@ export function BottlingManagement() {
       )}
 
       {/* Header with Stepper */}
-      <div className="pt-6">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-gray-900">Bottling Run Console</h1>
+      <div className="pt-4">
+        <h1 className="text-2xl font-bold text-gray-900">Bottling Run Console</h1>
+        <p className="text-sm text-gray-500 mt-1">Track and manage your bottling operations. <DocLink docId="production/bottling" /></p>
+        <div className="flex items-center justify-between mt-4">
           {saving && currentStep === 1 && (
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -900,7 +1088,6 @@ export function BottlingManagement() {
             </div>
           )}
         </div>
-        <p className="text-gray-500 mb-6">Plan, execute, and track bottling runs with real-time QC</p>
 
         {/* Progress Stepper */}
         <div className="flex items-center gap-2 mb-6">
@@ -999,6 +1186,17 @@ export function BottlingManagement() {
                 </select>
               )}
 
+              {uniqueVessels.length > 0 && (
+                <select
+                  value={vesselFilter}
+                  onChange={(e) => { setVesselFilter(e.target.value); setCurrentPage(1); }}
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#7C203A] focus:border-transparent"
+                >
+                  <option value="all">All Vessels</option>
+                  {uniqueVessels.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              )}
+
               <div className="h-6 w-px bg-gray-200"></div>
 
               <select
@@ -1010,6 +1208,12 @@ export function BottlingManagement() {
                 <option value="aging">Sort: Aging Duration</option>
                 <option value="vintage">Sort: Vintage</option>
                 <option value="volume">Sort: Volume</option>
+                <option value="name_asc">Sort: Name (A-Z)</option>
+                <option value="name_desc">Sort: Name (Z-A)</option>
+                <option value="vessel_asc">Sort: Vessel (A-Z)</option>
+                <option value="vessel_desc">Sort: Vessel (Z-A)</option>
+                <option value="barrel_asc">Sort: Barrel # (1-9)</option>
+                <option value="barrel_desc">Sort: Barrel # (9-1)</option>
               </select>
 
               <select
@@ -1020,9 +1224,17 @@ export function BottlingManagement() {
                 <option value="none">No Grouping</option>
                 <option value="vintage">Group by Vintage</option>
                 <option value="varietal">Group by Varietal</option>
+                <option value="field">Group by Field</option>
               </select>
 
               <div className="flex-1"></div>
+              <button
+                onClick={() => loadLots()}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Refresh lot data"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
               <p className="text-sm text-gray-500">{filteredLots.length} lot{filteredLots.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
@@ -1040,6 +1252,7 @@ export function BottlingManagement() {
                     setVarietalFilter('all');
                     setVintageFilter('all');
                     setContainerFilter('all');
+                    setVesselFilter('all');
                   }}
                   className="mt-4 text-sm text-[#7C203A] hover:underline"
                 >
@@ -1052,7 +1265,9 @@ export function BottlingManagement() {
                   <div key={groupName}>
                     {groupBy !== 'none' && (
                       <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        {groupBy === 'vintage' ? <Calendar className="w-5 h-5 text-[#7C203A]" /> : <Wine className="w-5 h-5 text-[#7C203A]" />}
+                        {groupBy === 'vintage' && <Calendar className="w-5 h-5 text-[#7C203A]" />}
+                        {groupBy === 'varietal' && <Wine className="w-5 h-5 text-[#7C203A]" />}
+                        {groupBy === 'field' && <MapPin className="w-5 h-5 text-[#7C203A]" />}
                         {groupName}
                         <span className="text-sm font-normal text-gray-500">({groupLots.length})</span>
                       </h3>
@@ -1075,47 +1290,66 @@ export function BottlingManagement() {
                         const abnormalBlockers = blockers.filter(b => b.type === 'volume' || b.type === 'status_production');
                         const hasAbnormalBlocker = abnormalBlockers.length > 0;
 
+                        const isSelected = selectedLots.some(l => l.id === lot.id);
+
                         return (
                           <div
                             key={lot.id}
                             className={`relative p-5 rounded-xl border-2 transition-all ${
-                              eligible
-                                ? 'border-gray-200 hover:border-[#7C203A] hover:shadow-md cursor-pointer bg-white'
-                                : nearlyReady
-                                  ? 'border-gray-200 bg-white'
-                                  : 'border-gray-200 bg-white'
+                              isSelected
+                                ? 'border-[#7C203A] bg-[#7C203A]/5 shadow-md cursor-pointer'
+                                : eligible
+                                  ? 'border-gray-200 hover:border-[#7C203A] hover:shadow-md cursor-pointer bg-white'
+                                  : nearlyReady
+                                    ? 'border-gray-200 bg-white'
+                                    : 'border-gray-200 bg-white'
                             }`}
-                            onClick={() => eligible && setSelectedLotPreview(lot)}
+                            onClick={() => {
+                              if (eligible) {
+                                setSelectedLots(prev => {
+                                  const alreadySelected = prev.some(l => l.id === lot.id);
+                                  if (alreadySelected) {
+                                    return prev.filter(l => l.id !== lot.id);
+                                  } else {
+                                    return [...prev, lot];
+                                  }
+                                });
+                              }
+                            }}
                           >
-                            {/* Header - Identity Section */}
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex-1 min-w-0 pr-2">
-                                <p className="font-bold text-gray-900 text-lg break-words">{lot.name}</p>
-                                <p className="text-sm text-gray-500">{lot.varietal} • {lot.vintage}</p>
-                              </div>
-                              {/* Neutral Question Mark with Tooltip */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setReadinessPopover(readinessPopover?.lot?.id === lot.id ? null : { lot });
-                                }}
-                                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700"
-                                title={eligible ? "See readiness details" : "Why can't this lot be bottled yet?"}
-                              >
-                                <span className="text-sm font-medium">?</span>
-                              </button>
-                            </div>
-
-                            {/* Vessel Info */}
-                            {lot.container_name && (
-                              <div className="flex items-start gap-2 mb-3 text-sm text-gray-600">
-                                <Droplet className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                <span className="break-words">{lot.container_name}</span>
-                                {lot.container_type && (
-                                  <span className="text-xs px-2 py-0.5 bg-gray-100 rounded whitespace-nowrap">{lot.container_type}</span>
-                                )}
+                            {/* Selection Indicator */}
+                            {isSelected && (
+                              <div className="absolute top-3 right-3 w-6 h-6 bg-[#7C203A] rounded-full flex items-center justify-center">
+                                <Check className="w-4 h-4 text-white" />
                               </div>
                             )}
+                            {/* Header - Barrel/Container as primary, matching Aging page style */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Barrel className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                                <p className="font-bold text-gray-900 text-lg truncate">
+                                  {lot.container?.name || 'Unknown Vessel'}
+                                </p>
+                              </div>
+                              {/* Neutral Question Mark with Tooltip - hide when selected */}
+                              {!isSelected && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReadinessPopover(readinessPopover?.lot?.id === lot.id ? null : { lot });
+                                  }}
+                                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 ml-2"
+                                  title={eligible ? "See readiness details" : "Why can't this lot be bottled yet?"}
+                                >
+                                  <span className="text-sm font-medium">?</span>
+                                </button>
+                              )}
+                            </div>
+                            {/* Lot name and varietal/vintage below */}
+                            <div className="mb-4">
+                              <p className="text-sm text-gray-600 truncate" title={lot.name}>{lot.name}</p>
+                              <p className="text-sm text-gray-500">{lot.varietal} • {lot.vintage}</p>
+                            </div>
 
                             {/* Context Info Section */}
                             <div className="space-y-2 mb-4 text-sm text-gray-600">
@@ -1132,8 +1366,8 @@ export function BottlingManagement() {
                               {/* Lab Info */}
                               <div className="flex items-center gap-2">
                                 <FlaskConical className="w-4 h-4 flex-shrink-0 text-gray-400" />
-                                {lot.last_analysis_date ? (
-                                  <span>Lab: {new Date(lot.last_analysis_date).toLocaleDateString()}</span>
+                                {lot._hasLabData ? (
+                                  <span>Lab: {lot._latestLabDate ? new Date(lot._latestLabDate).toLocaleDateString() : 'Recorded'}</span>
                                 ) : (
                                   <span className="text-amber-600">No recent lab</span>
                                 )}
@@ -1152,8 +1386,8 @@ export function BottlingManagement() {
                               </div>
                               <div>
                                 <p className="text-xs text-gray-500 mb-1">ABV</p>
-                                {lot.alcohol_pct ? (
-                                  <p className="font-semibold text-gray-900 text-sm">{lot.alcohol_pct.toFixed(1)}%</p>
+                                {lot.current_alcohol_pct ? (
+                                  <p className="font-semibold text-gray-900 text-sm">{lot.current_alcohol_pct.toFixed(1)}%</p>
                                 ) : (
                                   <span className="text-xs text-amber-600 font-medium">Not set</span>
                                 )}
@@ -1203,15 +1437,56 @@ export function BottlingManagement() {
                                     <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-[#7C203A] transition-colors" />
                                   </button>
                                 )}
+                                {/* Resume Draft Button for lots with blockers */}
+                                {draftsByLot[lot.id] && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      resumeDraft(draftsByLot[lot.id], lot);
+                                    }}
+                                    className="w-full px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm font-medium text-blue-700 transition-colors flex items-center justify-center gap-2"
+                                  >
+                                    <RefreshCw className="w-4 h-4" />
+                                    Resume Draft
+                                  </button>
+                                )}
                               </div>
                             ) : eligible ? (
-                              <div className="pt-3 border-t border-gray-100">
+                              <div className="pt-3 border-t border-gray-100 space-y-2">
                                 <div className="flex items-center gap-2 text-sm text-green-700 font-medium">
                                   <CheckCircle2 className="w-4 h-4" />
                                   <span>Ready to bottle</span>
                                 </div>
+                                {/* Resume Draft Button */}
+                                {draftsByLot[lot.id] && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      resumeDraft(draftsByLot[lot.id], lot);
+                                    }}
+                                    className="w-full px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm font-medium text-blue-700 transition-colors flex items-center justify-center gap-2"
+                                  >
+                                    <RefreshCw className="w-4 h-4" />
+                                    Resume Draft
+                                  </button>
+                                )}
                               </div>
                             ) : null}
+                            {/* Resume Draft for non-eligible lots that have drafts */}
+                            {!eligible && blockers.length === 0 && draftsByLot[lot.id] && (
+                              <div className="pt-3 border-t border-gray-100">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    resumeDraft(draftsByLot[lot.id], lot);
+                                  }}
+                                  className="w-full px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm font-medium text-blue-700 transition-colors flex items-center justify-center gap-2"
+                                >
+                                  <RefreshCw className="w-4 h-4" />
+                                  Resume Draft
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -1294,11 +1569,11 @@ export function BottlingManagement() {
                           <td className="py-3 pr-4 text-gray-700">{lot.vintage}</td>
                           <td className="py-3 pr-4 text-gray-700">{lot.varietal}</td>
                           <td className="py-3 pr-4 text-gray-600 text-xs">
-                            {lot.container_name ? (
+                            {lot.container?.name ? (
                               <div className="flex items-center gap-1">
-                                <span className="truncate max-w-[120px]">{lot.container_name}</span>
-                                {lot.container_type && (
-                                  <span className="px-1 py-0.5 bg-gray-100 rounded text-xs">{lot.container_type}</span>
+                                <span className="truncate max-w-[120px]">{lot.container.name}</span>
+                                {lot.container?.type && (
+                                  <span className="px-1 py-0.5 bg-gray-100 rounded text-xs">{lot.container.type}</span>
                                 )}
                               </div>
                             ) : (
@@ -1366,46 +1641,71 @@ export function BottlingManagement() {
             <ReadinessModal
               lot={readinessPopover.lot}
               onClose={() => setReadinessPopover(null)}
+              onRefresh={loadLots}
             />
           )}
 
-          {/* Sticky Selected Lot Summary Bar */}
-          {selectedLotPreview && (
-            <div className="sticky bottom-0 bg-[#7C203A] text-white p-4 rounded-2xl shadow-2xl border-2 border-[#5a1829]">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="flex-shrink-0">
-                    <BottleWine className="w-8 h-8" />
+          {/* Fixed Selected Lots Summary Bar */}
+          {selectedLots.length > 0 && (
+            <div className="fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[700px] lg:w-[800px] bg-[#7C203A] text-white p-4 rounded-2xl shadow-2xl border-2 border-[#5a1829] z-50">
+              <div className="flex items-center justify-between gap-6">
+                {/* Left: Selection Info */}
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="flex-shrink-0 w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <span className="text-xl font-bold">{selectedLots.length}</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-lg truncate">{selectedLotPreview.name}</p>
-                    <p className="text-sm text-white/80">
-                      {selectedLotPreview.vintage} {selectedLotPreview.varietal} • {selectedLotPreview.current_volume_gallons?.toFixed(1)} gal • {selectedLotPreview.alcohol_pct?.toFixed(1)}% ABV
+                  <div className="min-w-0">
+                    <p className="font-bold text-lg">
+                      {selectedLots.length === 1
+                        ? (selectedLots[0].container?.name || 'Unknown Vessel')
+                        : `${selectedLots.length} Vessels Selected`}
                     </p>
-                  </div>
-                  <div className="flex-shrink-0 text-right">
-                    <p className="text-sm text-white/80">Est. Production</p>
-                    <p className="font-bold">
-                      {Math.floor((selectedLotPreview.current_volume_gallons || 0) * 3785.411784 / 750)} btl / {Math.floor(Math.floor((selectedLotPreview.current_volume_gallons || 0) * 3785.411784 / 750) / 12)} cs
+                    <p className="text-sm text-white/80">
+                      {selectedLots.length === 1
+                        ? selectedLots[0].name
+                        : selectedLots.map(l => l.container?.name || 'Unknown').join(', ')}
                     </p>
                   </div>
                 </div>
+
+                {/* Center: Totals */}
+                <div className="flex-shrink-0 text-center">
+                  <p className="text-sm text-white/80">Total Volume</p>
+                  <p className="font-bold text-lg">
+                    {selectedLots.reduce((sum, l) => sum + (l.current_volume_gallons || 0), 0).toFixed(0)} gal
+                  </p>
+                </div>
+
+                <div className="flex-shrink-0 text-center">
+                  <p className="text-sm text-white/80">Est. Production</p>
+                  <p className="font-bold text-lg">
+                    {Math.floor(selectedLots.reduce((sum, l) => sum + (l.current_volume_gallons || 0), 0) * 3785.411784 / 750 / 12)} cs
+                  </p>
+                </div>
+
+                {/* Right: Actions */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
-                    onClick={() => setSelectedLotPreview(null)}
+                    onClick={() => setSelectedLots([])}
                     className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors flex items-center gap-2"
                   >
                     <X className="w-4 h-4" />
-                    <span>Cancel</span>
+                    <span>Clear</span>
                   </button>
                   <button
                     onClick={() => {
-                      selectLot(selectedLotPreview);
-                      setSelectedLotPreview(null);
+                      // For now, select the first lot - multi-lot bottling can be enhanced later
+                      if (selectedLots.length === 1) {
+                        selectLot(selectedLots[0]);
+                      } else {
+                        // TODO: Handle multi-lot bottling run
+                        selectLot(selectedLots[0]);
+                      }
+                      setSelectedLots([]);
                     }}
                     className="px-6 py-2 bg-white text-[#7C203A] font-bold rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
                   >
-                    <span>Continue</span>
+                    <span>Start Run</span>
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -1430,6 +1730,7 @@ export function BottlingManagement() {
                 <button
                   onClick={() => {
                     setRunData({ ...runData, lot_id: null, selectedLot: null });
+                    setSaveError(null);
                     setCurrentStep(0);
                   }}
                   className="text-white/80 hover:text-white"
@@ -1445,7 +1746,7 @@ export function BottlingManagement() {
                 </div>
                 <div>
                   <p className="text-white/60 text-xs mb-1">Container</p>
-                  <p className="text-sm font-medium">{runData.selectedLot.container_name || 'Unassigned'}</p>
+                  <p className="text-sm font-medium">{runData.selectedLot.container?.name || 'Unassigned'}</p>
                 </div>
                 <div>
                   <p className="text-white/60 text-xs mb-1">ABV</p>
@@ -1454,9 +1755,11 @@ export function BottlingManagement() {
                 <div>
                   <p className="text-white/60 text-xs mb-1">Last Analysis</p>
                   <p className="text-sm font-medium">
-                    {runData.selectedLot.last_analysis_date
-                      ? new Date(runData.selectedLot.last_analysis_date).toLocaleDateString()
-                      : 'Never'}
+                    {runData.selectedLot._latestLabDate
+                      ? new Date(runData.selectedLot._latestLabDate).toLocaleDateString()
+                      : runData.selectedLot._hasLabData
+                        ? 'Recorded'
+                        : 'None'}
                   </p>
                 </div>
               </div>
@@ -1656,18 +1959,79 @@ export function BottlingManagement() {
             {/* Navigation Buttons */}
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setCurrentStep(0)}
+                onClick={() => {
+                  setSaveError(null);
+                  setCurrentStep(0);
+                }}
                 className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Back to Lot Selection
               </button>
               <button
-                onClick={() => setCurrentStep(2)}
-                className="flex items-center gap-2 px-6 py-3 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-all font-medium shadow-sm"
+                onClick={async () => {
+                  // Create record if doesn't exist yet
+                  if (!runData.run_id) {
+                    setSaving(true);
+                    setSaveError(null);
+                    try {
+                      const setupData = {
+                        lot_id: runData.lot_id,
+                        bottle_ml: runData.bottle_ml,
+                        closure_type: runData.closure_type,
+                        capsule_color: runData.capsule_color,
+                        case_pack: runData.case_pack,
+                        pallet_cases: runData.pallet_cases || null,
+                        bulk_volume_gal: runData.bulk_volume_gal,
+                        loss_pct: runData.loss_pct,
+                        headspace_loss_gal: runData.headspace_loss_gal,
+                        net_volume_gal: runData.net_volume_gal,
+                        estimated_bottles: runData.estimated_bottles,
+                        estimated_cases: runData.estimated_cases,
+                        estimated_pallets: runData.estimated_pallets,
+                        label_name: runData.label_name,
+                        varietal: runData.varietal,
+                        vintage: runData.vintage,
+                        appellation: runData.appellation,
+                        abv: runData.abv ? parseFloat(runData.abv) : null,
+                        lot_code: runData.lot_code,
+                        sku_prefix: runData.sku_prefix,
+                        create_as: runData.create_as,
+                        run_date: runData.run_date,
+                        operator: runData.operator
+                      };
+                      const { data, error } = await createBottlingRun(setupData);
+                      if (error) {
+                        setSaveError(error.message || 'Failed to save run');
+                        setSaving(false);
+                        return;
+                      }
+                      if (data) {
+                        setRunData(prev => ({ ...prev, run_id: data.id }));
+                      }
+                    } catch (err) {
+                      setSaveError(err.message || 'Failed to save run');
+                      setSaving(false);
+                      return;
+                    }
+                    setSaving(false);
+                  }
+                  setCurrentStep(2);
+                }}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 bg-[#7C203A] text-white rounded-lg hover:bg-[#8B2E48] transition-all font-medium shadow-sm disabled:opacity-50"
               >
-                Continue to Validation
-                <ChevronRight className="w-4 h-4" />
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Continue to Validation
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1832,10 +2196,16 @@ export function BottlingManagement() {
                         Start Bottling Run
                       </button>
                       <button
-                        className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium"
+                        onClick={saveAsDraft}
+                        disabled={saving}
+                        className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Save className="w-4 h-4" />
-                        Save as Draft
+                        {saving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4" />
+                        )}
+                        {saving ? 'Saving...' : 'Save as Draft'}
                       </button>
                     </div>
                   </div>
@@ -2183,6 +2553,30 @@ export function BottlingManagement() {
             >
               <Plus className="w-4 h-4" />
               Start New Run
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className={`flex items-center gap-3 px-5 py-4 rounded-xl shadow-lg border ${
+            toast.type === 'success'
+              ? 'bg-green-50 border-green-200 text-green-800'
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            {toast.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            )}
+            <span className="font-medium">{toast.message}</span>
+            <button
+              onClick={() => setToast(null)}
+              className="ml-2 p-1 hover:bg-black/5 rounded-full transition-colors"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

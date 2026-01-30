@@ -4,14 +4,108 @@
 ================================================================ */
 
 /**
+ * Fetch historical rainfall using Open-Meteo API
+ * FREE, no API key needed, reliable historical data worldwide
+ * Uses forecast API for recent data (up to 92 days) + archive API for older
+ * @param {number} lat - Field center latitude
+ * @param {number} lng - Field center longitude
+ * @param {number} days - Days of historical data to fetch
+ * @returns {Promise} Rainfall data
+ */
+async function fetchRainfallOpenMeteo(lat, lng, days = 7) {
+  const endDate = new Date();
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - days);
+
+  const startStr = startDate.toISOString().split('T')[0];
+  const endStr = endDate.toISOString().split('T')[0];
+
+  console.log(`🌧️ Open-Meteo: Fetching ${days} days of rainfall from ${startStr} to ${endStr}`);
+
+  let url;
+  if (days <= 92) {
+    // Forecast API supports up to 92 past days with current data
+    url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=precipitation_sum&timezone=auto&past_days=${days}&forecast_days=0`;
+  } else {
+    // Archive API for longer historical periods (5-day delay on most recent)
+    const archiveEnd = new Date(endDate);
+    archiveEnd.setDate(archiveEnd.getDate() - 5); // Account for archive delay
+    const archiveEndStr = archiveEnd.toISOString().split('T')[0];
+    url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${startStr}&end_date=${archiveEndStr}&daily=precipitation_sum&timezone=auto`;
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Open-Meteo API error: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  // Process daily precipitation
+  let totalMm = 0;
+  const dailyRainfall = {};
+  const lastRainEvent = { date: null, amount: 0 };
+
+  const dates = data.daily?.time || [];
+  const precipitation = data.daily?.precipitation_sum || [];
+
+  for (let i = 0; i < dates.length; i++) {
+    const date = dates[i];
+    const precipMm = precipitation[i] || 0;
+
+    if (precipMm > 0) {
+      totalMm += precipMm;
+      dailyRainfall[date] = precipMm;
+
+      // Track most recent rain event
+      if (!lastRainEvent.date || date > lastRainEvent.date) {
+        lastRainEvent.date = date;
+        lastRainEvent.amount = precipMm;
+      }
+    }
+  }
+
+  const daysWithPrecip = Object.keys(dailyRainfall).length;
+
+  console.log(`📊 Open-Meteo: ${totalMm.toFixed(1)}mm total, ${daysWithPrecip} days with rain`);
+  if (lastRainEvent.date) {
+    console.log(`🌧️ Last rain: ${lastRainEvent.date}, amount: ${lastRainEvent.amount?.toFixed(2)}mm`);
+  }
+
+  return {
+    totalMm,
+    totalInches: totalMm / 25.4,
+    dailyRainfall,
+    lastRainEvent,
+    source: 'Open-Meteo',
+    days,
+    observationDays: dates.length,
+    daysWithPrecip,
+    dataComplete: dates.length >= days * 0.8,
+    dataWarning: null
+  };
+}
+
+/**
  * Fetch historical rainfall for a specific field
- * Uses National Weather Service (NWS) - FREE, no API key needed
+ * Uses Open-Meteo (primary) with NWS fallback
  * @param {number} lat - Field center latitude
  * @param {number} lng - Field center longitude
  * @param {number} days - Days of historical data to fetch
  * @returns {Promise} Rainfall data
  */
 export async function fetchFieldRainfall(lat, lng, days = 7) {
+  // Try Open-Meteo first (more reliable historical data)
+  try {
+    const openMeteoData = await fetchRainfallOpenMeteo(lat, lng, days);
+    if (openMeteoData && !openMeteoData.error) {
+      return openMeteoData;
+    }
+  } catch (error) {
+    console.warn('Open-Meteo failed, falling back to NWS:', error.message);
+  }
+
+  // Fallback to NWS
   try {
     // Step 1: Get the grid point for this location
     const pointUrl = `https://api.weather.gov/points/${lat},${lng}`;
@@ -46,8 +140,11 @@ export async function fetchFieldRainfall(lat, lng, days = 7) {
     }
 
     // Step 3: Get observations from station
+    // Note: NWS API typically only provides ~7-14 days of observation history
     const endDate = new Date();
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    console.log(`🌧️ Fetching ${days} days of rainfall from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`);
 
     const obsUrl = `${nearestStation}/observations?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
 
@@ -59,6 +156,7 @@ export async function fetchFieldRainfall(lat, lng, days = 7) {
     });
 
     const obsData = await obsResponse.json();
+    console.log(`📊 Received ${obsData.features?.length || 0} observations from NWS`);
 
     // Step 4: Transform and aggregate rainfall data
     let totalMm = 0;
@@ -66,20 +164,67 @@ export async function fetchFieldRainfall(lat, lng, days = 7) {
     const lastRainEvent = { date: null, amount: 0 };
     const hourlyData = new Map(); // Track by hour to avoid double-counting
 
+    // Debug: log first observation with precipitation to understand data structure
+    if (obsData.features?.length > 0) {
+      // Find an observation with precipitation data
+      const withPrecip = obsData.features.find(f =>
+        f.properties.precipitationLastHour?.value ||
+        f.properties.precipitationLast3Hours?.value
+      );
+      if (withPrecip) {
+        const p = withPrecip.properties;
+        console.log('📋 Found precipitation data:', {
+          timestamp: p.timestamp,
+          precipLastHour: p.precipitationLastHour?.value,
+          unitCode: p.precipitationLastHour?.unitCode,
+          precipLast3Hours: p.precipitationLast3Hours?.value
+        });
+      } else {
+        console.log('📋 No precipitation data found in observations (stations may not report precip)');
+      }
+    }
+
     for (const obs of obsData.features || []) {
       const props = obs.properties;
 
-      // Precipitation is in meters, convert to mm
-      // Use precipitationLastHour for incremental hourly amounts
+      // NWS API: precipitation should be in meters, but data quality varies
+      // Some stations report in inches, some don't report at all
       let precipMm = 0;
+      let rawValue = null;
+      let unitCode = null;
 
+      // Try precipitationLastHour first (most common)
       if (props.precipitationLastHour?.value !== null &&
           props.precipitationLastHour?.value !== undefined) {
-        precipMm = props.precipitationLastHour.value * 1000;
+        rawValue = props.precipitationLastHour.value;
+        unitCode = props.precipitationLastHour.unitCode;
+      }
+      // Fallback to precipitationLast3Hours / 3
+      else if (props.precipitationLast3Hours?.value !== null &&
+               props.precipitationLast3Hours?.value !== undefined) {
+        rawValue = props.precipitationLast3Hours.value / 3; // average per hour
+        unitCode = props.precipitationLast3Hours.unitCode;
+      }
 
-        // Sanity check - hourly precipitation should not exceed 100mm (4 inches)
+      if (rawValue !== null && rawValue > 0) {
+        // Convert based on unit code or infer from value magnitude
+        if (unitCode === 'wmoUnit:mm' || unitCode === 'unit:mm') {
+          precipMm = rawValue;
+        } else if (unitCode === 'wmoUnit:m' || unitCode === 'unit:m') {
+          precipMm = rawValue * 1000; // meters to mm
+        } else if (unitCode === 'wmoUnit:inch' || unitCode === 'unit:inch' || rawValue < 5) {
+          // If unitCode indicates inches OR value is small (likely inches)
+          // 5 meters of rain per hour is impossible, but 5 inches is possible in extreme storms
+          precipMm = rawValue * 25.4; // inches to mm
+        } else {
+          // Default: assume meters
+          precipMm = rawValue * 1000;
+        }
+
+        // Final sanity check - skip impossible values (>100mm/hour is rare but possible)
         if (precipMm > 100) {
-          console.warn(`Suspicious rainfall value: ${precipMm}mm, skipping`);
+          // This is suspicious but might be valid in extreme weather
+          // Skip values that would be >4 inches/hour as likely data errors
           precipMm = 0;
         }
       }
@@ -104,6 +249,13 @@ export async function fetchFieldRainfall(lat, lng, days = 7) {
       }
     }
 
+    // Track all days we have observations for (even if no rain)
+    const daysWithObservations = new Set();
+    for (const obs of obsData.features || []) {
+      const date = new Date(obs.properties.timestamp).toISOString().split('T')[0];
+      daysWithObservations.add(date);
+    }
+
     // Sum up unique hourly readings
     for (const [hour, amount] of hourlyData.entries()) {
       totalMm += amount;
@@ -113,6 +265,16 @@ export async function fetchFieldRainfall(lat, lng, days = 7) {
       dailyRainfall[date] = (dailyRainfall[date] || 0) + amount;
     }
 
+    // Calculate actual data coverage
+    const daysWithPrecip = Object.keys(dailyRainfall).length;
+    const observationDays = daysWithObservations.size;
+    const dataComplete = observationDays >= days * 0.5; // Consider complete if we have 50%+ coverage
+
+    console.log(`📅 Observation coverage: ${observationDays} days of data, ${daysWithPrecip} days with precipitation (of ${days} requested)`);
+    if (lastRainEvent.date) {
+      console.log(`🌧️ Last rain: ${lastRainEvent.date}, amount: ${lastRainEvent.amount?.toFixed(2)}mm`);
+    }
+
     return {
       totalMm,
       totalInches: totalMm / 25.4,
@@ -120,7 +282,11 @@ export async function fetchFieldRainfall(lat, lng, days = 7) {
       lastRainEvent,
       stationName: stationsData.features[0]?.properties?.name || 'Unknown Station',
       source: 'NWS',
-      days
+      days,
+      observationDays,
+      daysWithPrecip,
+      dataComplete,
+      dataWarning: !dataComplete ? 'Limited observation data available' : null
     };
 
   } catch (error) {

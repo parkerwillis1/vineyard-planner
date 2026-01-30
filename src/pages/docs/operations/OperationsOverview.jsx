@@ -7,8 +7,8 @@ export default function OperationsOverview() {
   const features = [
     {
       icon: <Map className="w-6 h-6 text-emerald-600" />,
-      title: "Block Management",
-      description: "Map every vineyard block with satellite imagery, track plantings, varietals, and manage field-level data with NDVI zone mapping.",
+      title: "Field Management",
+      description: "Map every vineyard field with satellite imagery, track plantings, varietals, and manage field-level data with NDVI zone mapping.",
       link: "/docs/operations/blocks",
     },
     {

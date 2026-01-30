@@ -31,7 +31,7 @@ export const MODULES = {
   },
   production: {
     id: 'production',
-    name: 'Winery Production',
+    name: 'Wine Production',
     description: 'Track lots from crush to bottle',
     icon: 'Wine',
     requiredTier: 'estate', // Estate tier ($109) includes winery production

@@ -308,8 +308,8 @@ export default function IrrigationPage() {
       <NextSteps
         links={[
           {
-            title: "Block Management",
-            description: "Set up vineyard blocks with GPS boundaries",
+            title: "Field Management",
+            description: "Set up vineyard fields with GPS boundaries",
             href: "/docs/operations/blocks",
           },
           {

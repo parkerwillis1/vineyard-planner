@@ -68,13 +68,13 @@ export default function BlocksPage() {
   return (
     <DocsLayout>
       <DocsHeader
-        title="Block Management"
-        subtitle="Map, organize, and track detailed information about each vineyard block with GPS boundaries and viticulture data."
+        title="Field Management"
+        subtitle="Map, organize, and track detailed information about each vineyard field with GPS boundaries and viticulture data."
       />
 
       <Section title="Overview">
         <p>
-          Block Management is the foundation of your vineyard operations. Each block represents a distinct area of your vineyard with specific characteristics—variety, rootstock, planting year, spacing, and soil conditions.
+          Field Management is the foundation of your vineyard operations. Each field represents a distinct area of your vineyard with specific characteristics—variety, rootstock, planting year, spacing, and soil conditions.
         </p>
         <p>
           You can draw GPS boundaries on satellite imagery, track viticulture details, collect harvest samples, monitor maturity metrics (Brix, pH, TA), and view historical yield data for each block.

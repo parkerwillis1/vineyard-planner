@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { listTasks, getTask, listVineyardBlocks, listHarvestTracking, listOrganizationMembers } from '@/shared/lib/vineyardApi';
 import { TaskDrawer } from './TaskDrawer';
+import { DocLink } from '@/shared/components/DocLink';
 
 export function CalendarView({ onNavigate }) {
   const { user } = useAuth();
@@ -508,7 +509,13 @@ export function CalendarView({ onNavigate }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Page Header */}
+      <div className="pt-2 sm:pt-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Calendar</h1>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">View and manage tasks, sprays, and vineyard events. <DocLink docId="operations/calendar" /></p>
+      </div>
+
       {/* Header Controls */}
       <Card className="border border-gray-200 shadow-sm">
         <CardContent className="p-6">

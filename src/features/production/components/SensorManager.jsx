@@ -4,6 +4,7 @@ import {
   Thermometer, Plus, Edit, Trash2, X, Eye, EyeOff, Copy, CheckCircle,
   AlertTriangle, Activity, WifiOff, RefreshCw, Zap
 } from 'lucide-react';
+import { DocLink } from '@/shared/components/DocLink';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import {
   listSensors,
@@ -260,12 +261,12 @@ export function SensorManager() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Temperature Sensors</h2>
-          <p className="text-sm text-gray-600 mt-1">Monitor tanks and fermentations with IoT sensors</p>
+          <h1 className="text-2xl font-bold text-gray-900">Temperature Sensors</h1>
+          <p className="text-sm text-gray-500 mt-1">Monitor tanks and fermentations with IoT sensors. <DocLink docId="production/sensors" /></p>
         </div>
         <button
           onClick={() => handleOpenForm()}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[#1c2739] text-white rounded-lg hover:bg-[#151d2b] transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Sensor
@@ -292,7 +293,7 @@ export function SensorManager() {
           <p className="text-gray-600 mb-6">Connect IoT temperature sensors to monitor your fermentations in real-time.</p>
           <button
             onClick={() => handleOpenForm()}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#1c2739] text-white rounded-lg hover:bg-[#151d2b] transition-colors"
           >
             <Plus className="w-5 h-5" />
             Add Your First Sensor
@@ -319,7 +320,7 @@ export function SensorManager() {
                         <span className={`px-2 py-0.5 text-xs rounded font-medium flex items-center gap-1 ${
                           sensor.location_type === 'field'
                             ? 'bg-green-100 text-green-700 border border-green-200'
-                            : 'bg-purple-100 text-purple-700 border border-purple-200'
+                            : 'bg-[#1c2739]/10 text-[#1c2739] border border-[#1c2739]/30'
                         }`}>
                           {sensor.location_type === 'field' ? '🌱 Field' : '🍷 Cellar'}
                         </span>
@@ -423,24 +424,24 @@ export function SensorManager() {
 
       {/* Add/Edit Sensor Modal */}
       {showForm && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden">
-            <div className="bg-purple-600 px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full my-4 sm:my-8 flex flex-col max-h-[calc(100vh-2rem)]">
+            <div className="bg-[#1c2739] px-6 py-4 flex items-center justify-between flex-shrink-0 rounded-t-xl">
               <div>
                 <h3 className="text-xl font-bold text-white">
                   {editingSensor ? 'Edit Sensor' : 'Add New Sensor'}
                 </h3>
-                <p className="text-purple-100 text-sm">Register an IoT temperature sensor</p>
+                <p className="text-slate-300 text-sm">Register an IoT temperature sensor</p>
               </div>
               <button
                 onClick={() => setShowForm(false)}
-                className="hover:bg-white/20 p-2 rounded-lg transition-colors"
+                className="bg-white hover:bg-gray-100 p-2 rounded-lg transition-colors"
               >
-                <X className="w-6 h-6 text-white" />
+                <X className="w-6 h-6 text-gray-800" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* Location Type - FIRST */}
               <div className="border-b border-gray-200 pb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Sensor Location *</label>
@@ -463,7 +464,7 @@ export function SensorManager() {
                     onClick={() => setFormData({ ...formData, location_type: 'cellar', sensor_type: '' })}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       formData.location_type === 'cellar'
-                        ? 'border-purple-500 bg-purple-50'
+                        ? 'border-[#1c2739] bg-[#1c2739]/5'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   >
@@ -483,7 +484,7 @@ export function SensorManager() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2739]"
                     placeholder={formData.location_type === 'field' ? 'e.g., Block 3 Weather Station' : 'e.g., Tank 1 Temperature Probe'}
                   />
                 </div>
@@ -493,7 +494,7 @@ export function SensorManager() {
                     value={formData.sensor_type}
                     onChange={(e) => setFormData({ ...formData, sensor_type: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2739]"
                   >
                     <option value="">Select type...</option>
                     {formData.location_type === 'cellar' && (
@@ -533,7 +534,7 @@ export function SensorManager() {
                     type="text"
                     value={formData.manufacturer}
                     onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2739]"
                   />
                 </div>
                 <div>
@@ -542,7 +543,7 @@ export function SensorManager() {
                     type="text"
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2739]"
                   />
                 </div>
                 <div>
@@ -551,7 +552,7 @@ export function SensorManager() {
                     type="text"
                     value={formData.serial_number}
                     onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2739]"
                   />
                 </div>
               </div>
@@ -567,7 +568,7 @@ export function SensorManager() {
                       value="container"
                       checked={formData.assignment_type === 'container'}
                       onChange={(e) => setFormData({ ...formData, assignment_type: e.target.value, lot_id: null })}
-                      className="text-purple-600"
+                      className="text-[#1c2739]"
                     />
                     <span className="text-sm">Tank/Barrel</span>
                   </label>
@@ -578,7 +579,7 @@ export function SensorManager() {
                       value="lot"
                       checked={formData.assignment_type === 'lot'}
                       onChange={(e) => setFormData({ ...formData, assignment_type: e.target.value, container_id: null })}
-                      className="text-purple-600"
+                      className="text-[#1c2739]"
                     />
                     <span className="text-sm">Specific Lot</span>
                   </label>
@@ -589,7 +590,7 @@ export function SensorManager() {
                     value={formData.container_id || ''}
                     onChange={(e) => setFormData({ ...formData, container_id: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2739]"
                   >
                     <option value="">Select tank or barrel...</option>
                     {containers.map(container => (
@@ -603,7 +604,7 @@ export function SensorManager() {
                     value={formData.lot_id || ''}
                     onChange={(e) => setFormData({ ...formData, lot_id: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2739]"
                   >
                     <option value="">Select lot...</option>
                     {lots.map(lot => (
@@ -626,7 +627,7 @@ export function SensorManager() {
                   onChange={(e) => setFormData({ ...formData, connection_interval_minutes: e.target.value })}
                   min="1"
                   max="1440"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2739]"
                 />
                 <p className="text-xs text-gray-500 mt-1">How often sensor should send data (used for offline detection)</p>
               </div>
@@ -638,7 +639,7 @@ export function SensorManager() {
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1c2739]"
                   placeholder="Location, installation details, etc."
                 />
               </div>
@@ -654,7 +655,7 @@ export function SensorManager() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="px-4 py-2 bg-[#1c2739] text-white rounded-lg hover:bg-[#151d2b] transition-colors"
                 >
                   {editingSensor ? 'Update Sensor' : 'Register Sensor'}
                 </button>

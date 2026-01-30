@@ -71,7 +71,7 @@ Creates the field attachments table and storage bucket for field photos.
 ---
 
 ### create_production_tables.sql
-Creates all tables for the Winery Production module.
+Creates all tables for the Wine Production module.
 
 **What it does:**
 - Creates `production_containers` table for vessels (tanks, barrels, totes)
@@ -82,7 +82,7 @@ Creates all tables for the Winery Production module.
 - Sets up comprehensive RLS policies and indexes
 
 **When to run:**
-- **REQUIRED** to use the Winery Production module
+- **REQUIRED** to use the Wine Production module
 
 **Tables created:**
 - production_containers
@@ -195,6 +195,46 @@ Adds comprehensive vessel tracking, cost management, and CIP (Clean-In-Place) mo
 
 ---
 
+### create_user_settings_table.sql
+Creates user settings table for storing user preferences and profile data.
+
+**What it does:**
+- Creates `user_settings` table for storing user profile, display, and notification preferences
+- Stores profile data (full name, display name, birthday, timezone, profile picture URL)
+- Stores display preferences (date format, currency, unit system)
+- Stores notification preferences (email updates, plan reminders, product news)
+- Includes RLS policies to ensure users can only access their own settings
+- Uses JSONB columns for flexible preference storage
+
+**When to run:**
+- **REQUIRED** to use the Settings modal (accessed via settings gear icon in tool pages)
+- Safe to run at any time
+
+**Tables created:**
+- user_settings
+
+---
+
+### create_profile_pictures_storage.sql
+Creates storage bucket for user profile pictures.
+
+**What it does:**
+- Creates public `profile-pictures` storage bucket for profile picture uploads
+- Sets up RLS policies for secure upload/update/delete operations
+- Users can only upload/modify their own profile pictures
+- All profile pictures are publicly viewable
+- Validates file organization by user ID
+
+**When to run:**
+- **REQUIRED** to upload profile pictures in Settings modal
+- Must be run AFTER `create_user_settings_table.sql`
+- Safe to run at any time
+
+**Storage buckets created:**
+- profile-pictures
+
+---
+
 ### add_task_rbac.sql
 Implements Role-Based Access Control (RBAC) for tasks with Admin, Manager, and Member roles.
 
@@ -251,7 +291,7 @@ Migrations should be run in the following order:
 1. **create_field_attachments.sql** (REQUIRED for Photos feature)
 2. **create_field_yield_history.sql** (REQUIRED for Yield History feature)
 3. **create_irrigation_schedules.sql** (REQUIRED for Irrigation Scheduling feature)
-4. **create_production_tables.sql** (REQUIRED for Winery Production module)
+4. **create_production_tables.sql** (REQUIRED for Wine Production module)
 5. **add_fermentation_fields.sql** (REQUIRED for Fermentation Tracker - run after create_production_tables.sql)
 6. **add_barrel_tracking_dates.sql** (REQUIRED for barrel topping/racking tracking - run after create_production_tables.sql)
 7. **create_vessel_history_and_costs.sql** (REQUIRED for vessel analytics & cost tracking - run after create_production_tables.sql)

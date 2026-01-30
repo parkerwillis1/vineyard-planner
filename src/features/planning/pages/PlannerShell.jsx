@@ -31,10 +31,15 @@ import {
   Grape,
   ChevronLeft,
   ChevronRight,
+  PanelLeftOpen,
+  PanelLeftClose,
   Settings,
   Wine,
   ShoppingCart,
-  Cog
+  Cog,
+  Menu,
+  BookOpen,
+  Calculator
 } from "lucide-react";
 import {
   VineyardLayoutConfig,
@@ -74,6 +79,8 @@ import {
 
 import { useAuth } from "@/auth/AuthContext";
 import { useUsageLimits } from "@/shared/hooks/useUsageLimits";
+import { SettingsView } from "@/shared/components/SettingsView";
+import { DocLink } from '@/shared/components/DocLink';
 
 
 /* ------------------------------------------------------------------ */
@@ -162,7 +169,7 @@ function makeSnapshot({ st, projYears, taskCompletion }) {
 
 const ProjectBanner = ({ years, setYears }) => (
     <section
-      className="relative rounded-xl overflow-hidden shadow-sm mb-0 mx-4 md:mx-8
+      className="relative rounded-xl overflow-hidden mb-0 mx-4 md:mx-8 border border-gray-200
                 bg-gradient-to-r from-vine-green-100 via-vine-green-50 to-white"
     >
     {/* soft radial accent */}
@@ -204,11 +211,14 @@ const Sidebar = ({
   currentTier,
   limits = {},
   plans,
-  totalEstCost
+  totalEstCost,
+  showSettings,
+  setShowSettings
 }) => {
   const [showPlanMenu, setShowPlanMenu] = React.useState(false);
   const [isNavbarVisible, setIsNavbarVisible] = React.useState(true);
   const [lastScrollY, setLastScrollY] = React.useState(0);
+  const [showToolsMenu, setShowToolsMenu] = React.useState(false);
   const planMenuRef = React.useRef(null);
 
   // Track navbar visibility
@@ -256,44 +266,97 @@ const Sidebar = ({
   return (
     <aside
       className={`
-        fixed left-0 top-0 h-screen bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100
-        transition-all duration-300 ease-in-out z-40 border-r border-gray-200
-        print:hidden
+        fixed left-0 top-0 h-screen bg-[#F5F6F7]
+        transition-all duration-300 ease-in-out z-40
+        print:hidden hidden lg:block
         ${sidebarOpen ? 'w-56' : 'w-20'}
       `}
     >
-      {/* Fixed spacer for navbar */}
-      <div className="h-16 flex-shrink-0"></div>
-
-      {/* Sidebar Header - slides up with navbar */}
-      <div
-        className={`flex items-center justify-between px-4 py-3 border-b border-gray-300 flex-shrink-0 transition-transform duration-300 ${
-          isNavbarVisible ? 'translate-y-0' : '-translate-y-16'
-        }`}
-      >
-        {sidebarOpen && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-vine-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
-              <Grape className="w-5 h-5 text-white" />
+      {/* Sidebar Header Row */}
+      <div className={`h-16 flex items-center flex-shrink-0 relative ${sidebarOpen ? 'justify-between px-4' : 'justify-center'}`}>
+        {sidebarOpen ? (
+          <>
+            <Link to="/" className="flex-shrink-0">
+              <img src="/Trellis_Logo/logo_symbol .png" alt="Trellis" className="h-8 w-8" />
+            </Link>
+            <div className="flex items-center gap-4">
+              {/* Tools Menu */}
+              <div className="relative group/menu">
+                <Menu
+                  className="w-[18px] h-[18px] text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+                  onClick={() => setShowToolsMenu(!showToolsMenu)}
+                />
+                {!showToolsMenu && (
+                  <div className="absolute top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover/menu:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg">
+                    Tools
+                  </div>
+                )}
+                {showToolsMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowToolsMenu(false)} />
+                    <div className="absolute top-8 left-0 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-2">
+                      <Link
+                        to="/planner"
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-800 bg-gray-100"
+                        onClick={() => setShowToolsMenu(false)}
+                      >
+                        <Calculator className="w-4 h-4" />
+                        <span className="text-sm font-medium">Planner</span>
+                      </Link>
+                      <Link
+                        to="/vineyard"
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                        onClick={() => setShowToolsMenu(false)}
+                      >
+                        <Grape className="w-4 h-4" />
+                        <span className="text-sm font-medium">Operations</span>
+                      </Link>
+                      <Link
+                        to="/production"
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+                        onClick={() => setShowToolsMenu(false)}
+                      >
+                        <Wine className="w-4 h-4" />
+                        <span className="text-sm font-medium">Production</span>
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
+              <Link to="/docs" className="relative group/docs">
+                <BookOpen className="w-[18px] h-[18px] text-gray-500 hover:text-gray-800 transition-colors" />
+                <div className="absolute top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover/docs:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg">
+                  Docs
+                </div>
+              </Link>
+              <div className="relative group/settings cursor-pointer" onClick={() => setShowSettings(true)}>
+                <Settings className="w-[18px] h-[18px] text-gray-500 hover:text-gray-800 transition-colors" />
+                <div className="absolute top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover/settings:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg">
+                  Settings
+                </div>
+              </div>
+              <div
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="cursor-pointer"
+              >
+                <PanelLeftClose className="w-[18px] h-[18px] text-gray-500 hover:text-gray-800 transition-colors" />
+              </div>
             </div>
-            <span className="text-gray-800 font-bold text-lg">Planner</span>
+          </>
+        ) : (
+          <div
+            onClick={() => setSidebarOpen(true)}
+            className="relative group/expand cursor-pointer flex items-center justify-center"
+          >
+            <img src="/Trellis_Logo/logo_symbol .png" alt="Trellis" className="h-8 w-8 group-hover/expand:opacity-50 transition-opacity" />
+            <PanelLeftOpen className="w-5 h-5 text-gray-500 absolute opacity-0 group-hover/expand:opacity-100 transition-opacity" />
           </div>
         )}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-gray-200 rounded-lg transition-colors ml-auto"
-        >
-          {sidebarOpen ? (
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
-          ) : (
-            <ChevronRight className="w-5 h-5 text-gray-600" />
-          )}
-        </button>
       </div>
 
-      {/* Plans & Save Section - Only when expanded - positioned at fixed location */}
+      {/* Plans & Save Section - Only when expanded - positioned at top */}
       {sidebarOpen && (
-        <div className="absolute top-[128px] left-0 right-0 px-3 py-3 border-b border-gray-300 space-y-2 bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100">
+        <div className="px-3 py-3 space-y-2 bg-[#F5F6F7] flex-shrink-0">
           {/* Plans Dropdown */}
           <div className="relative" ref={planMenuRef}>
             <button
@@ -383,8 +446,8 @@ const Sidebar = ({
         </div>
       )}
 
-      {/* Navigation Items - positioned at fixed location */}
-      <nav className="absolute top-[254px] left-0 right-0 bottom-[180px] flex items-center justify-center px-2 hide-scrollbar">
+      {/* Navigation Items - scrollable content */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 hide-scrollbar">
         <div className="space-y-3 w-full">
           {navigationItems.map((item) => {
             const Icon = item.icon;
@@ -398,7 +461,7 @@ const Sidebar = ({
                   transition-all duration-200 group
                   ${isActive
                     ? 'bg-white text-gray-800 shadow-md'
-                    : 'text-gray-700 hover:bg-white hover:text-gray-800 hover:shadow-sm'
+                    : 'bg-transparent text-gray-700 hover:bg-white hover:text-gray-800 hover:shadow-sm'
                   }
                   ${!sidebarOpen && 'justify-center'}
                 `}
@@ -416,7 +479,7 @@ const Sidebar = ({
 
       {/* Sidebar Footer - Years + Total - positioned at fixed location */}
       {sidebarOpen && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-300 space-y-3 bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100">
+        <div className="absolute bottom-0 left-0 right-0 p-4 space-y-3 bg-[#F5F6F7]">
           {/* Years Selector */}
           <div>
             <label className="flex items-center justify-between text-xs text-gray-600 mb-1">
@@ -501,7 +564,7 @@ const SectionHeader = ({ title }) => (
 
 // Card container for each section
 const SectionCard = ({ title, children, className = "" }) => (
-    <Card className="rounded-xl shadow-sm bg-white overflow-hidden mb-16"> {/* Increase mb-8 to mb-10 */}
+    <Card className="rounded-xl bg-white overflow-hidden mb-16 border border-gray-200"> {/* Increase mb-8 to mb-10 */}
       <div className="bg-vine-green-50 px-6 py-4 border-b"> {/* Increase py-3 to py-4 */}
         <h3 className="font-medium text-black font-bold text-lg">{title}</h3> {/* Add text-lg */}
       </div>
@@ -566,7 +629,7 @@ function CollapsibleSection({ title, children, isOpen, onToggle }) {
   };
 
   return (
-    <Card className="rounded-xl shadow-lg bg-white overflow-hidden mb-8 border-2 border-gray-200 transition-all duration-300 hover:shadow-xl relative">
+    <Card className="rounded-xl bg-white overflow-hidden mb-8 border border-gray-200 relative">
       {/* Subtle gradient accent in top-left corner */}
       <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-100 via-blue-50 to-transparent opacity-40 rounded-br-full pointer-events-none" />
       
@@ -631,6 +694,8 @@ export default function PlannerShell({ embedded = false }) {
   const [establishmentView, setEstablishmentView] = useState('breakdown');
   const [taskCompletion, setTaskCompletion] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sectionsState, setSectionsState] = useState({
     "Core Vineyard Parameters": true,
     "Vineyard Setup": true,
@@ -2081,16 +2146,16 @@ const EstablishmentProgressTracker = ({
   const MainUI = (
     <div className="w-full">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div className="max-w-7xl pl-0 pr-4 sm:pr-6 lg:pr-8 pb-16">
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
         <div className="space-y-8">
           {/* Header */}
-          <div className="border-b pb-3 mb-6">
+          <div className="pt-4">
             <h1 className="text-2xl font-bold text-gray-900">Vineyard Design</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Design your vineyard layout using our interactive map or auto-layout calculator. Configure row spacing, vine spacing, and field boundaries.
+            <p className="text-sm text-gray-500 mt-1">
+              Design your vineyard layout using our interactive map or auto-layout calculator. Configure row spacing, vine spacing, and field boundaries. <DocLink docId="planner/vineyard-design" />
             </p>
           </div>
 
@@ -2120,12 +2185,12 @@ const EstablishmentProgressTracker = ({
       {/* INPUTS TAB */}
       {activeTab === "inputs" && (
         <div className="space-y-8">
-          <div className="border-b pb-3 mb-6">
+          <div className="pt-4">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Financial Inputs</h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  Set up your vineyard's financial blueprint, from land and equipment to annual operating costs.
+                <p className="text-sm text-gray-500 mt-1">
+                  Set up your vineyard's financial blueprint, from land and equipment to annual operating costs. <DocLink docId="planner/financial-inputs" />
                 </p>
               </div>
               <button
@@ -3590,11 +3655,11 @@ const EstablishmentProgressTracker = ({
         {/* ── Vineyard Establishment Tab ── */}
         {activeTab === "establishment" && (
           <div className="space-y-8">
-            <div className="flex items-center justify-between border-b pb-3 mb-6">
+            <div className="flex items-center justify-between pt-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Vineyard Setup</h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  One-time upfront costs to establish your vineyard including land, infrastructure, planting, and initial setup expenses.
+                <p className="text-sm text-gray-500 mt-1">
+                  One-time upfront costs to establish your vineyard including land, infrastructure, planting, and initial setup expenses. <DocLink docId="planner/vineyard-setup" />
                 </p>
               </div>
 
@@ -3629,7 +3694,7 @@ const EstablishmentProgressTracker = ({
                 {/* Enhanced Summary Cards - Clean Icon Style */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
                   {/* Land Card */}
-                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                  <div className="bg-white rounded-2xl p-8 border border-gray-200">
                     <div className="flex items-center justify-center mb-4">
                       <MapPin className="w-8 h-8 text-vine-green-500" />
                     </div>
@@ -3643,7 +3708,7 @@ const EstablishmentProgressTracker = ({
                   </div>
 
                   {/* Pre-Planting Card */}
-                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                  <div className="bg-white rounded-2xl p-8 border border-gray-200">
                     <div className="flex items-center justify-center mb-4">
                       <Tractor className="w-8 h-8 text-amber-500" />
                     </div>
@@ -3657,7 +3722,7 @@ const EstablishmentProgressTracker = ({
                   </div>
 
                   {/* Planting Card */}
-                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                  <div className="bg-white rounded-2xl p-8 border border-gray-200">
                     <div className="flex items-center justify-center mb-4">
                       <Sprout className="w-8 h-8 text-vine-green-500" />
                     </div>
@@ -3671,7 +3736,7 @@ const EstablishmentProgressTracker = ({
                   </div>
 
                   {/* Setup/Infrastructure Card */}
-                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                  <div className="bg-white rounded-2xl p-8 border border-gray-200">
                     <div className="flex items-center justify-center mb-4">
                       <HardHat className="w-8 h-8 text-blue-500" />
                     </div>
@@ -3688,7 +3753,7 @@ const EstablishmentProgressTracker = ({
                   </div>
 
                   {/* License Card */}
-                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                  <div className="bg-white rounded-2xl p-8 border border-gray-200">
                     <div className="flex items-center justify-center mb-4">
                       <FileText className="w-8 h-8 text-purple-500" />
                     </div>
@@ -3702,7 +3767,7 @@ const EstablishmentProgressTracker = ({
                   </div>
 
                   {/* Permits Card */}
-                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                  <div className="bg-white rounded-2xl p-8 border border-gray-200">
                     <div className="flex items-center justify-center mb-4">
                       <ScrollText className="w-8 h-8 text-blue-500" />
                     </div>
@@ -3718,7 +3783,7 @@ const EstablishmentProgressTracker = ({
 
                 {/* Total Investment - Full Width Card */}
                 <div className="mb-8">
-                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                  <div className="bg-white rounded-2xl p-8 border border-gray-200">
                     <div className="flex items-center justify-center mb-4">
                       <DollarSign className="w-8 h-8 text-vine-green-500" />
                     </div>
@@ -4101,16 +4166,16 @@ const EstablishmentProgressTracker = ({
         {/* ── 10-Year Projection Tab ── */}
         {activeTab === "proj" && (
         <div className="space-y-8">
-            <div className="border-b pb-3 mb-6">
+            <div className="pt-4">
               <h1 className="text-2xl font-bold text-gray-900">{projYears}-Year Plan</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Multi-year financial forecast showing revenue, expenses, cash flow, and profitability over time based on your vineyard inputs.
+              <p className="text-sm text-gray-500 mt-1">
+                Multi-year financial forecast showing revenue, expenses, cash flow, and profitability over time based on your vineyard inputs. <DocLink docId="planner/10-year-plan" />
               </p>
             </div>
 
             {/* Enhanced Top-line summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+              <div className="bg-white rounded-2xl p-8 border border-gray-200">
                 <div className="flex items-center justify-center mb-4">
                   <TrendingUp className="w-6 h-6 text-blue-600" />
                 </div>
@@ -4125,7 +4190,7 @@ const EstablishmentProgressTracker = ({
                 )}
               </div>
 
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+              <div className="bg-white rounded-2xl p-8 border border-gray-200">
                 <div className="flex items-center justify-center mb-4">
                   <div className="w-12 h-12 bg-vine-green-100 rounded-full flex items-center justify-center">
                     <DollarSign className="w-6 h-6 text-vine-green-500" />
@@ -4144,7 +4209,7 @@ const EstablishmentProgressTracker = ({
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+              <div className="bg-white rounded-2xl p-8 border border-gray-200">
                 <div className="flex items-center justify-center mb-4">
                   <div className="w-12 h-12 bg-vine-green-100 rounded-full flex items-center justify-center">
                     <TrendingUp className="w-7 h-7 text-vine-green-500" strokeWidth={1.5} />
@@ -4172,7 +4237,7 @@ const EstablishmentProgressTracker = ({
             />
 
             {/* Chart Selector with Multiple Views */}
-            <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden mb-16 p-8">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-16 p-8">
               <div className="mb-6">
                 {/* Chart Selector Dropdown */}
                 <div className="flex items-center justify-between mb-6">
@@ -4454,9 +4519,145 @@ const EstablishmentProgressTracker = ({
     </div>
   );
 
+  const navigationItems = [
+    { id: 'design', label: 'Vineyard Design', icon: Grape },
+    { id: 'inputs', label: 'Financial Inputs', icon: DollarSign },
+    { id: 'establishment', label: 'Vineyard Setup', icon: Sprout },
+    { id: 'proj', label: `${projYears}-Year Plan`, icon: TrendingUp },
+    { id: 'details', label: 'Business Plan', icon: FileText },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar with all controls */}
+    <div className="min-h-screen bg-[#F5F6F7] flex">
+      {/* Mobile Menu Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-[45] lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Dropdown Menu */}
+      <div
+        className={`
+          fixed top-0 left-0 right-0 bg-white shadow-xl z-[50] lg:hidden
+          transition-all duration-300 ease-in-out
+          ${mobileMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}
+        `}
+      >
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/Trellis_Logo/logo_symbol .png" alt="Trellis" className="h-8 w-8" />
+            <span className="font-semibold text-gray-900">Planner</span>
+          </Link>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-2 text-gray-500 hover:text-gray-700"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Mobile Navigation */}
+        <div className="p-4 max-h-[70vh] overflow-y-auto">
+          {/* Plan Selector */}
+          <div className="mb-4 pb-4 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Current Plan</p>
+            <p className="text-sm font-medium text-gray-900">{currentPlanName || 'Default Plan'}</p>
+          </div>
+
+          {/* Navigation Items */}
+          <div className="grid grid-cols-2 gap-2">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`
+                    flex items-center gap-2 px-3 py-3 rounded-xl
+                    transition-all duration-200
+                    ${isActive
+                      ? 'bg-vine-green-600 text-white shadow-md'
+                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                    }
+                  `}
+                >
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-vine-green-600'}`} />
+                  <span className="font-medium text-sm">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick Links */}
+          <div className="mt-4 pt-4 border-t border-gray-100 flex gap-3">
+            <Link
+              to="/vineyard"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-50 rounded-xl text-gray-600 hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Grape className="w-4 h-4" />
+              <span className="text-sm font-medium">Operations</span>
+            </Link>
+            <Link
+              to="/production"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-50 rounded-xl text-gray-600 hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Wine className="w-4 h-4" />
+              <span className="text-sm font-medium">Production</span>
+            </Link>
+          </div>
+
+          {/* Save Button */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <button
+              onClick={() => {
+                handleManualSave();
+                setMobileMenuOpen(false);
+              }}
+              disabled={saving || !dirty}
+              className={`w-full px-4 py-3 text-sm rounded-xl font-semibold transition-all ${
+                dirty
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-vine-green-500 text-white'
+              }`}
+            >
+              {saving ? 'Saving…' : dirty ? 'Save Changes' : 'All Saved'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Top Header Bar */}
+      <div className="fixed top-0 left-0 right-0 z-[40] lg:hidden bg-white border-b border-gray-200 shadow-sm print:hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/Trellis_Logo/logo_symbol .png" alt="Trellis" className="h-7 w-7" />
+          </Link>
+          <div className="flex items-center gap-1">
+            <span className="text-sm font-medium text-gray-700 mr-2">
+              {navigationItems.find(i => i.id === activeTab)?.label || 'Planner'}
+            </span>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar with all controls - Desktop Only */}
       <Sidebar
         active={activeTab}
         setActive={setActiveTab}
@@ -4475,18 +4676,25 @@ const EstablishmentProgressTracker = ({
         currentTier={tier}
         limits={limits}
         totalEstCost={totalEstCost}
+        showSettings={showSettings}
+        setShowSettings={setShowSettings}
       />
 
       {/* Main Content Area */}
       <main
         className={`
-          flex-1 transition-all duration-300 mt-8 print:mt-0 print:ml-0
-          ${sidebarOpen ? 'ml-56' : 'ml-20'}
+          flex-1 transition-all duration-300 max-w-full overflow-x-hidden print:mt-0 print:ml-0
+          pt-16 lg:pt-0
+          lg:ml-56 ${sidebarOpen ? 'lg:ml-56' : 'lg:ml-20'}
         `}
       >
         {/* Content Container */}
-        <div className="w-full">
-          {MainUI}
+        <div className="pl-4 pr-4 lg:pl-0 lg:pr-6 pt-2 lg:pt-0 pb-6 max-w-full overflow-x-hidden">
+          {showSettings ? (
+            <SettingsView onClose={() => setShowSettings(false)} />
+          ) : (
+            MainUI
+          )}
         </div>
       </main>
 

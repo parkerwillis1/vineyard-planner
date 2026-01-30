@@ -189,10 +189,10 @@ export default function ContactPage() {
                 For general inquiries and support
               </p>
               <a
-                href="mailto:support@vinepioneer.com"
+                href="mailto:support@trellisag.com"
                 className="text-teal-600 hover:text-teal-700 font-semibold hover:underline"
               >
-                support@vinepioneer.com
+                support@trellisag.com
               </a>
             </div>
 

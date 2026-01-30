@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, Clock, Beaker, FlaskConical, Play, ChevronDown, X, Calculator, Grape } from 'lucide-react';
 import { listLots, updateLot } from '@/shared/lib/productionApi';
+import { DocLink } from '@/shared/components/DocLink';
 
 // Common yeast strains with characteristics
 const YEAST_STRAINS = {
@@ -178,8 +179,8 @@ export function CrushPad() {
     <div className="space-y-6 pb-8">
       {/* Header */}
       <div className="pt-4">
-        <h2 className="text-2xl font-bold text-gray-900">Crush Pad</h2>
-        <p className="text-gray-600 mt-1">Process harvested fruit and prepare for fermentation</p>
+        <h1 className="text-2xl font-bold text-gray-900">Crush Pad</h1>
+        <p className="text-sm text-gray-500 mt-1">Process harvested fruit and prepare for fermentation. <DocLink docId="production/harvest-intake" /></p>
       </div>
 
       {/* Alert for urgent lots */}

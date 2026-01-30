@@ -1,31 +1,24 @@
 import React from 'react';
-import { Wine, Grape, Sparkles, Warehouse, BarChart3, FlaskConical, Thermometer, Container } from 'lucide-react';
-import { Section, Subsection, Callout } from '../DocsComponents';
+import { Wine, Grape, Sparkles, Warehouse, BarChart3, FlaskConical, Thermometer, Package } from 'lucide-react';
+import { DocsHeader, Section, Subsection, Callout } from '../DocsComponents';
 import DocsLayout from '../DocsLayout';
 
 export function ProductionOverview() {
   return (
     <DocsLayout>
     <div className="max-w-4xl">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-rose-600 rounded-xl flex items-center justify-center">
-            <Wine className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900">Winery Production</h1>
-            <p className="text-lg text-gray-600 mt-1">Track wine from crush to bottle</p>
-          </div>
-        </div>
-      </div>
+      <DocsHeader
+        title="Wine Production"
+        subtitle="Track wine from crush to bottle"
+      />
 
       <Callout type="note" title="Professional Tier Feature">
-        Winery Production requires the Professional subscription tier. This comprehensive system manages your entire winemaking process from harvest intake through bottling.
+        Wine Production requires the Professional subscription tier. This comprehensive system manages your entire winemaking process from harvest intake through bottling.
       </Callout>
 
       <Section title="Overview">
         <p className="text-gray-700 leading-relaxed mb-4">
-          The Winery Production module provides a complete cellar management system for tracking wine lots,
+          The Wine Production module provides a complete cellar management system for tracking wine lots,
           fermentations, vessels, lab chemistry, aging, blending, and bottling operations.
         </p>
         <p className="text-gray-700 leading-relaxed">
@@ -52,7 +45,7 @@ export function ProductionOverview() {
             <p className="text-sm text-gray-600 leading-relaxed">Connect unlimited temperature sensors to tanks and barrels. Real-time monitoring with customizable alerts for out-of-range temperatures.</p>
           </div>
           <div className="border border-gray-200 rounded-lg p-6 hover:border-purple-300 hover:shadow-md transition-all">
-            <Container className="w-8 h-8 text-purple-600 mb-3" />
+            <Package className="w-8 h-8 text-purple-600 mb-3" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Vessel Management</h3>
             <p className="text-sm text-gray-600 leading-relaxed">Track tanks, barrels, totes, and other containers. Monitor capacity, contents, and cleaning schedules.</p>
           </div>

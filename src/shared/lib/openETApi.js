@@ -400,8 +400,13 @@ export function getDateRange(period = 'week') {
       start.setDate(end.getDate() - 7);
   }
 
+  // Use local date, not UTC
+  const formatLocalDate = (date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
   return {
-    startDate: start.toISOString().split('T')[0],
-    endDate: end.toISOString().split('T')[0]
+    startDate: formatLocalDate(start),
+    endDate: formatLocalDate(end)
   };
 }

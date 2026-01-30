@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FileText,
   Download,
@@ -10,7 +11,8 @@ import {
   FileSpreadsheet,
   Printer,
   Filter,
-  Loader2
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
 import { listLots, listContainers, listFermentationLogs } from '@/shared/lib/productionApi';
 import {
@@ -41,6 +43,7 @@ import {
 } from '@/shared/lib/exportUtils';
 
 export function Reports() {
+  const navigate = useNavigate();
   const [selectedReport, setSelectedReport] = useState(null);
   const [dateRange, setDateRange] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -193,6 +196,13 @@ export function Reports() {
           break;
 
         case 'ttb-report':
+          navigate('/production?view=ttb-report');
+          break;
+
+        case 'ttb-transactions':
+          navigate('/production?view=ttb-transactions');
+          break;
+
         case 'audit-trail':
           alert(`${reportId} export coming soon - requires additional data tracking`);
           break;
@@ -299,9 +309,17 @@ export function Reports() {
       reports: [
         {
           id: 'ttb-report',
-          name: 'TTB Wine Report',
-          description: 'Excise tax reporting format',
-          format: ['PDF']
+          name: 'TTB Form 5120.17',
+          description: 'Federal wine premises operations report',
+          format: ['Open Generator'],
+          isLink: true
+        },
+        {
+          id: 'ttb-transactions',
+          name: 'TTB Transaction Log',
+          description: 'View all TTB-reportable transactions',
+          format: ['View Log'],
+          isLink: true
         },
         {
           id: 'label-information',
@@ -333,10 +351,10 @@ export function Reports() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="pt-6 flex items-center justify-between">
+      <div className="pt-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Reports</h1>
-          <p className="text-gray-500">Generate and export production reports</p>
+          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+          <p className="text-sm text-gray-500 mt-1">Generate and export production reports</p>
         </div>
         {exporting && (
           <div className="flex items-center gap-2 text-[#7C203A]">
@@ -402,10 +420,15 @@ export function Reports() {
                       <button
                         key={format}
                         disabled={exporting}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                          report.isLink
+                            ? 'bg-[#7C203A]/10 hover:bg-[#7C203A]/20 border-[#7C203A]/30 text-[#7C203A]'
+                            : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700'
+                        }`}
                         onClick={() => handleExport(report.id, format)}
                       >
-                        {format === 'PDF' ? <FileText className="w-4 h-4" /> :
+                        {report.isLink ? <ExternalLink className="w-4 h-4" /> :
+                         format === 'PDF' ? <FileText className="w-4 h-4" /> :
                          format === 'Excel' ? <FileSpreadsheet className="w-4 h-4" /> :
                          <Download className="w-4 h-4" />}
                         {format}

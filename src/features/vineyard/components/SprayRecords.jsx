@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { DocLink } from '@/shared/components/DocLink';
 import { QuickSpray } from './QuickSpray';
 import {
   listVineyardBlocks,
@@ -37,6 +38,7 @@ import {
   checkSprayCompliance,
   getActivePHILocks
 } from '@/shared/lib/vineyardApi';
+import { sortByName } from '@/shared/lib/sortUtils';
 
 const SPRAY_METHODS = ['Airblast', 'Boom', 'Handgun', 'Backpack', 'Drone'];
 const INVERSION_RISKS = ['None', 'Low', 'Moderate', 'High'];
@@ -477,51 +479,53 @@ export function SprayRecords() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 sm:pt-4 gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Spray Applications</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Pesticide application tracking with PHI/REI compliance
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Spray Applications</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
+            Pesticide application tracking with PHI/REI compliance. <DocLink docId="operations/spray-records" />
           </p>
         </div>
         {!showWizard && !showQuickSpray && (
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap">
             <Button
               onClick={() => navigate('/vineyard?view=calendar')}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border-slate-700"
+              className="flex items-center gap-1.5 sm:gap-2 bg-slate-800 hover:bg-slate-700 text-white border-slate-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
             >
-              <CalendarIcon className="w-4 h-4" />
+              <CalendarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Calendar</span>
             </Button>
             <Button
               onClick={() => setShowUsageSummary(!showUsageSummary)}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border-slate-700"
+              className="flex items-center gap-1.5 sm:gap-2 bg-slate-800 hover:bg-slate-700 text-white border-slate-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
             >
-              <BarChart3 className="w-4 h-4" />
+              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Usage Report</span>
             </Button>
             <Button
               onClick={handleExport}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border-0 focus:ring-0 focus:ring-offset-0"
+              className="flex items-center gap-1.5 sm:gap-2 bg-slate-800 hover:bg-slate-700 text-white border-0 focus:ring-0 focus:ring-offset-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Export</span>
             </Button>
             <Button
               onClick={() => setShowQuickSpray(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+              className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
             >
-              <Zap className="w-4 h-4" />
-              Quick Spray
+              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Quick Spray</span>
+              <span className="sm:hidden">Quick</span>
             </Button>
             <Button
               onClick={openWizard}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+              className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
             >
-              <Plus className="w-4 h-4" />
-              Full Wizard
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Full Wizard</span>
+              <span className="sm:hidden">Wizard</span>
             </Button>
           </div>
         )}
@@ -566,7 +570,7 @@ export function SprayRecords() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     >
                       <option value="all">All Blocks</option>
-                      {blocks.map(block => (
+                      {sortByName(blocks).map(block => (
                         <option key={block.id} value={block.id}>{block.name}</option>
                       ))}
                     </select>
@@ -810,7 +814,7 @@ export function SprayRecords() {
                     Blocks to Spray ({wizardData.selectedBlocks.length} selected)
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {blocks.map(block => {
+                    {sortByName(blocks).map(block => {
                       const isSelected = wizardData.selectedBlocks.some(b => b.block_id === block.id);
                       return (
                         <button

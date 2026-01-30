@@ -27,7 +27,9 @@ import {
   Settings,
   Edit,
   Pause,
-  Play
+  Play,
+  Download,
+  FileText
 } from 'lucide-react';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { useAuth } from '@/auth/AuthContext';
@@ -40,6 +42,7 @@ import {
   calculateWaterDeficit,
   getDateRange
 } from '@/shared/lib/openETApi';
+import { sortByName } from '@/shared/lib/sortUtils';
 import {
   listIrrigationEvents,
   createIrrigationEvent,
@@ -57,6 +60,8 @@ import {
   fetchFieldForecast,
   calculateAdjustedIrrigation
 } from '@/shared/lib/fieldWeatherService';
+import { useActiveSessions } from '@/shared/hooks/useActiveSessions';
+import { endStuckSession } from '@/shared/lib/flowMeterApi';
 import { ETHeatMap } from './ETHeatMap';
 import { ETTrendsChart } from './ETTrendsChart';
 import { WaterBalanceCard } from './WaterBalanceCard';
@@ -66,11 +71,16 @@ import { GrowthStageCard } from './GrowthStageCard';
 import { YearComparison } from './YearComparison';
 import { ETExplainerCard } from './ETExplainerCard';
 import { NDVIZoneMap } from './NDVIZoneMap';
+import { NDVIDebugPanel } from './NDVIDebugPanel';
 import {
   fetchNDVIForBlock,
   createZonesFromNDVI,
-  isSentinelHubConfigured
+  isSentinelHubConfigured,
+  onNDVIRefreshed,
+  onNDVIRefreshFailed
 } from '@/shared/lib/sentinelHubApi';
+import { DocLink } from '@/shared/components/DocLink';
+import FlowMonitorDashboard from './FlowMonitorDashboard';
 
 // Crop coefficients for grapes (Kc values by growth stage)
 const GRAPE_KC_VALUES = {
@@ -145,6 +155,8 @@ const calculateSoilMoisture = (deficitMm, irrigationEvents, blockAcres = 1, rain
 
 export function IrrigationManagement() {
   const { user } = useAuth();
+  const { sessions: activeSessions, isLoading: loadingActiveSessions, refresh: refreshActiveSessions } = useActiveSessions();
+  const [activeTab, setActiveTab] = useState('planning'); // 'planning' or 'live-monitor'
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [isAllFieldsMode, setIsAllFieldsMode] = useState(false);
   const [showAddEvent, setShowAddEvent] = useState(false);
@@ -158,7 +170,7 @@ export function IrrigationManagement() {
   const [waterBudgetExpanded, setWaterBudgetExpanded] = useState(true);
   const [irrigationHistoryExpanded, setIrrigationHistoryExpanded] = useState(true);
   const [showAllEvents, setShowAllEvents] = useState(false);
-  const [eventTab, setEventTab] = useState('scheduled'); // 'scheduled' or 'completed'
+  const [eventTab, setEventTab] = useState('scheduled'); // 'active', 'scheduled', or 'completed'
   const [loadAllHistoricalEvents, setLoadAllHistoricalEvents] = useState(false); // Only load all when explicitly requested
   const [vriExpanded, setVriExpanded] = useState(true);
   const [etExplainerExpanded, setEtExplainerExpanded] = useState(false);
@@ -209,6 +221,9 @@ export function IrrigationManagement() {
   // Notification state for custom alerts
   const [notification, setNotification] = useState(null); // { type: 'success' | 'error', message: string }
 
+  // Export dropdown state
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+
   // Auto-dismiss notifications after 5 seconds
   useEffect(() => {
     if (notification) {
@@ -235,6 +250,31 @@ export function IrrigationManagement() {
   const [loadingNDVI, setLoadingNDVI] = useState(false);
   const [showNDVISection, setShowNDVISection] = useState(true);
   const [ndviError, setNdviError] = useState(null);
+
+  // Listen for SWR background refresh completion
+  useEffect(() => {
+    const unsubRefresh = onNDVIRefreshed(({ blockId, payload }) => {
+      console.log('🔄 NDVI refresh completed for block:', blockId);
+      // Update the ndviData and zones with fresh data
+      setNdviData(prev => ({ ...prev, [blockId]: payload }));
+      if (payload.zones) {
+        const block = blocks.find(b => b.id === blockId);
+        if (block) {
+          const newZones = createZonesFromNDVI(payload, block);
+          setVriZones(prev => ({ ...prev, [blockId]: newZones }));
+        }
+      }
+    });
+
+    const unsubError = onNDVIRefreshFailed(({ blockId, error }) => {
+      console.warn('⚠️ NDVI background refresh failed for block:', blockId, error);
+    });
+
+    return () => {
+      unsubRefresh();
+      unsubError();
+    };
+  }, [blocks]);
 
   // Load blocks from database
   useEffect(() => {
@@ -470,55 +510,52 @@ export function IrrigationManagement() {
           end_date: null // Remove end_date restriction to generate future events
         };
 
-        // Generate events from today to 30 days in the future
-        const futureEvents = await generateEventsFromSchedule(
+        // Use local date, not UTC
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+
+        // Generate ALL events from schedule start to 30 days in the future
+        // This ensures both past (backfill) and future events are created
+        const allEvents = await generateEventsFromSchedule(
           scheduleForGeneration,
-          futureDate.toISOString().split('T')[0]
+          futureDateStr
         );
 
-        console.log(`🔄 Generated ${futureEvents.length} total events from schedule`);
+        console.log(`🔄 Generated ${allEvents.length} total events from schedule (${schedule.start_date} to ${futureDateStr})`);
 
-        // Filter to only include future events (from today onwards)
-        const todayStr = today.toISOString().split('T')[0];
-        const newEvents = futureEvents.filter(event => event.event_date >= todayStr);
-
-        console.log(`➡️ Filtered to ${newEvents.length} future events (from ${todayStr} onwards)`);
-
-        // Show sample dates of generated future events
-        if (newEvents.length > 0) {
-          const sampleDates = newEvents.slice(0, 5).map(e => e.event_date);
-          console.log(`📆 Sample future event dates: ${sampleDates.join(', ')}${newEvents.length > 5 ? '...' : ''}`);
-        }
-
-        if (newEvents.length === 0) {
-          console.log('⚠️ No future events to insert, skipping...');
+        if (allEvents.length === 0) {
+          console.log('⚠️ No events generated, skipping...');
           continue;
         }
 
-        // Check which events already exist
+        // Check which events already exist (from schedule start to future)
         const { data: existingEvents } = await supabase
           .from('irrigation_events')
           .select('event_date, schedule_id')
           .eq('user_id', user.id)
           .eq('block_id', blockId)
           .eq('schedule_id', schedule.id)
-          .gte('event_date', todayStr);
+          .gte('event_date', schedule.start_date);
 
         const existingDates = new Set(
           (existingEvents || []).map(e => e.event_date)
         );
 
-        console.log(`📊 Found ${existingDates.size} existing future events in database`);
+        console.log(`📊 Found ${existingDates.size} existing events in database`);
 
         // Only insert events that don't already exist
-        const eventsToInsert = newEvents
+        const eventsToInsert = allEvents
           .filter(event => !existingDates.has(event.event_date))
           .map(event => ({
             ...event,
             user_id: user.id
           }));
 
-        console.log(`💾 Inserting ${eventsToInsert.length} new events`);
+        // Separate past and future for logging
+        const pastEvents = eventsToInsert.filter(e => e.event_date < todayStr);
+        const futureEvents = eventsToInsert.filter(e => e.event_date >= todayStr);
+
+        console.log(`💾 Inserting ${eventsToInsert.length} events (${pastEvents.length} past/backfill + ${futureEvents.length} future)`);
 
         if (eventsToInsert.length > 0) {
           const { error: insertError } = await supabase
@@ -528,10 +565,13 @@ export function IrrigationManagement() {
           if (insertError) {
             console.error('❌ Error inserting events:', insertError);
           } else {
-            console.log(`✅ Extended schedule "${schedule.irrigation_method}" with ${eventsToInsert.length} future events`);
+            console.log(`✅ Extended schedule "${schedule.irrigation_method}" with ${eventsToInsert.length} events`);
+            if (pastEvents.length > 0) {
+              console.log(`   📜 Backfilled ${pastEvents.length} missing historical events`);
+            }
           }
         } else {
-          console.log('✓ All future events already exist in database');
+          console.log('✓ All events already exist in database');
         }
       }
     } catch (error) {
@@ -562,8 +602,9 @@ export function IrrigationManagement() {
       for (const schedule of schedules) {
         console.log(`📅 Backfilling schedule: ${schedule.irrigation_method} (start: ${schedule.start_date})`);
 
-        // Generate events from start_date to today
-        const today = new Date().toISOString().split('T')[0];
+        // Generate events from start_date to today (use local date, not UTC)
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const allEvents = await generateEventsFromSchedule(schedule, today);
 
         console.log(`  Generated ${allEvents.length} total events from ${schedule.start_date} to ${today}`);
@@ -638,6 +679,200 @@ export function IrrigationManagement() {
       console.error('Error backfilling events:', error);
       setNotification({ type: 'error', message: `Error backfilling events: ${error.message}` });
     }
+  };
+
+  // Export irrigation report
+  const exportIrrigationReport = (period, format) => {
+    if (!selectedBlock) return;
+
+    const allEvents = irrigationEvents[selectedBlock.id] || [];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    // Calculate cutoff date based on period
+    let cutoffDate = new Date();
+    switch (period) {
+      case '1month':
+        cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+        break;
+      case '3months':
+        cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+        break;
+      case '6months':
+        cutoffDate.setMonth(cutoffDate.getMonth() - 6);
+        break;
+      case '12months':
+        cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+        break;
+      case 'all':
+      default:
+        cutoffDate = new Date('1900-01-01');
+        break;
+    }
+    const cutoffStr = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, '0')}-${String(cutoffDate.getDate()).padStart(2, '0')}`;
+
+    // Filter to completed events within the period
+    const completedEvents = allEvents
+      .filter(event => event.date < today && event.date >= cutoffStr)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (completedEvents.length === 0) {
+      setNotification({ type: 'error', message: 'No completed irrigations found for the selected period' });
+      return;
+    }
+
+    // Calculate totals
+    const totalWater = completedEvents.reduce((sum, e) => sum + (e.totalWater || 0), 0);
+    const totalHours = completedEvents.reduce((sum, e) => sum + (e.duration || 0), 0);
+
+    const periodLabels = {
+      '1month': 'Last Month',
+      '3months': 'Last 3 Months',
+      '6months': 'Last 6 Months',
+      '12months': 'Last 12 Months',
+      'all': 'All Time'
+    };
+
+    if (format === 'csv') {
+      // Generate CSV
+      const headers = ['Date', 'Method', 'Duration (hrs)', 'Flow Rate (GPM)', 'Total Water (gal)', 'Water (inches)', 'Source', 'Notes'];
+      const rows = completedEvents.map(event => {
+        const waterInches = selectedBlock.acres > 0 ? (event.totalWater / (27154 * selectedBlock.acres)).toFixed(3) : '0';
+        return [
+          event.date,
+          event.method,
+          event.duration,
+          event.flowRate,
+          event.totalWater?.toFixed(0) || '0',
+          waterInches,
+          event.source,
+          `"${(event.notes || '').replace(/"/g, '""')}"`
+        ].join(',');
+      });
+
+      // Add summary rows
+      rows.push('');
+      rows.push(`Summary for ${selectedBlock.name} - ${periodLabels[period]}`);
+      rows.push(`Total Irrigations,${completedEvents.length}`);
+      rows.push(`Total Water (gallons),${totalWater.toFixed(0)}`);
+      rows.push(`Total Duration (hours),${totalHours.toFixed(1)}`);
+      if (selectedBlock.acres > 0) {
+        rows.push(`Total Water (inches),${(totalWater / (27154 * selectedBlock.acres)).toFixed(2)}`);
+      }
+
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `irrigation-report-${selectedBlock.name}-${period}-${today}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      setNotification({ type: 'success', message: `Downloaded CSV report with ${completedEvents.length} irrigation events` });
+    } else if (format === 'pdf') {
+      // Generate PDF-style HTML and trigger print
+      const waterInchesTotal = selectedBlock.acres > 0 ? (totalWater / (27154 * selectedBlock.acres)).toFixed(2) : '0';
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Irrigation Report - ${selectedBlock.name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; max-width: 1000px; margin: 0 auto; }
+            h1 { color: #1c2739; border-bottom: 2px solid #1c2739; padding-bottom: 10px; }
+            h2 { color: #374151; margin-top: 30px; }
+            .summary { background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+            .summary-item { text-align: center; }
+            .summary-value { font-size: 24px; font-weight: bold; color: #1c2739; }
+            .summary-label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+            th { background: #1c2739; color: white; padding: 12px 8px; text-align: left; }
+            td { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; }
+            tr:nth-child(even) { background: #f9fafb; }
+            .footer { margin-top: 40px; text-align: center; color: #9ca3af; font-size: 11px; }
+            @media print { body { padding: 20px; } }
+          </style>
+        </head>
+        <body>
+          <h1>Irrigation Report</h1>
+          <p><strong>Field:</strong> ${selectedBlock.name} (${selectedBlock.acres?.toFixed(2) || '?'} acres)</p>
+          <p><strong>Period:</strong> ${periodLabels[period]} (${cutoffStr} to ${today})</p>
+          <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+
+          <div class="summary">
+            <div class="summary-grid">
+              <div class="summary-item">
+                <div class="summary-value">${completedEvents.length}</div>
+                <div class="summary-label">Total Irrigations</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-value">${(totalWater / 1000).toFixed(1)}k</div>
+                <div class="summary-label">Total Gallons</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-value">${waterInchesTotal}"</div>
+                <div class="summary-label">Total Inches</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-value">${totalHours.toFixed(1)}</div>
+                <div class="summary-label">Total Hours</div>
+              </div>
+            </div>
+          </div>
+
+          <h2>Irrigation Events</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Method</th>
+                <th>Duration</th>
+                <th>Flow Rate</th>
+                <th>Water (gal)</th>
+                <th>Water (in)</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${completedEvents.map(event => {
+                const waterInches = selectedBlock.acres > 0 ? (event.totalWater / (27154 * selectedBlock.acres)).toFixed(3) : '0';
+                const dateObj = new Date(event.date + 'T12:00:00');
+                return `
+                  <tr>
+                    <td>${dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                    <td>${event.method}</td>
+                    <td>${event.duration} hrs</td>
+                    <td>${event.flowRate} GPM</td>
+                    <td>${event.totalWater?.toLocaleString() || '0'}</td>
+                    <td>${waterInches}"</td>
+                    <td>${event.source}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Generated by Trellis Vineyard Management
+          </div>
+        </body>
+        </html>
+      `;
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+
+      setNotification({ type: 'success', message: `Generated PDF report with ${completedEvents.length} irrigation events` });
+    }
+
+    setShowExportDropdown(false);
   };
 
   // Clean up duplicate events (same date, block, and schedule)
@@ -1177,24 +1412,22 @@ export function IrrigationManagement() {
       try {
         let { startDate, endDate } = getDateRange(dateRange);
 
-        // Load all historical events if:
-        // 1. User explicitly requested it (Show All)
-        // 2. Date range is set to "season" (need full season data for accurate water budget)
-        if (loadAllHistoricalEvents || dateRange === 'season') {
-          // Check if there are schedules with earlier start dates
-          // If so, extend the start date backwards to include all historical events
-          const { data: schedules } = await listIrrigationSchedules(selectedBlock.id, false);
-          if (schedules && schedules.length > 0) {
-            const earliestScheduleStart = schedules
-              .map(s => s.start_date)
-              .sort()
-              [0];
+        // ALWAYS load all historical events for accurate counts and proper display
+        // This ensures:
+        // 1. Completed count is always accurate
+        // 2. Most recent completed events are shown first
+        // 3. User can see full history without clicking "Show All"
+        const { data: schedules } = await listIrrigationSchedules(selectedBlock.id, false);
+        if (schedules && schedules.length > 0) {
+          const earliestScheduleStart = schedules
+            .map(s => s.start_date)
+            .sort()
+            [0];
 
-            // Use the earlier of: calculated startDate or earliest schedule start
-            if (earliestScheduleStart < startDate) {
-              startDate = earliestScheduleStart;
-              console.log(`📅 Extended start date backwards to ${startDate} to include full schedule history`);
-            }
+          // Always use the earliest schedule start date
+          if (earliestScheduleStart < startDate) {
+            startDate = earliestScheduleStart;
+            console.log(`📅 Extended start date backwards to ${startDate} to include full schedule history`);
           }
         }
 
@@ -1242,7 +1475,8 @@ export function IrrigationManagement() {
 
         // Log date range of loaded events
         const dates = transformedEvents.map(e => e.date).sort();
-        const todayStr = new Date().toISOString().split('T')[0];
+        const nowLocal = new Date();
+        const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}-${String(nowLocal.getDate()).padStart(2, '0')}`;
         const futureEvents = transformedEvents.filter(e => e.date >= todayStr);
 
         console.log(`✅ Loaded ${transformedEvents.length} irrigation events for block ${selectedBlock.name}`);
@@ -1816,7 +2050,36 @@ export function IrrigationManagement() {
         [selectedBlock.id]: fetchedNdviData
       });
 
-      alert(`Successfully analyzed satellite imagery!\n\nCreated ${newZones.length} irrigation zones based on NDVI data from Sentinel-2.\n\nDate Range: ${fetchedNdviData.dateRange.from} to ${fetchedNdviData.dateRange.to}\nCloud Coverage: ${fetchedNdviData.stats.cloudCoverage}%\nMean NDVI: ${fetchedNdviData.stats.meanNDVI.toFixed(2)}`);
+      // Format the acquisition date or fall back to date range
+      const imageDate = fetchedNdviData.acquisitionDate
+        ? new Date(fetchedNdviData.acquisitionDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        : `${fetchedNdviData.dateRange.from} to ${fetchedNdviData.dateRange.to}`;
+      const cloudCoverage = fetchedNdviData.cloudCoverage ?? fetchedNdviData.stats?.cloudCoverage ?? 'N/A';
+      const meanNDVI = fetchedNdviData.meanNDVI ?? fetchedNdviData.stats?.meanNDVI ?? 0;
+
+      // Show cache status in console for debugging
+      if (fetchedNdviData.cacheHit || fetchedNdviData.cacheMeta) {
+        console.log('📦 Cache status:', {
+          scene: fetchedNdviData.cacheHit?.scene ? 'HIT' : 'MISS',
+          ndvi: fetchedNdviData.cacheHit?.ndvi ? 'HIT' : 'MISS',
+          stale: fetchedNdviData.cacheMeta?.stale,
+          refreshing: fetchedNdviData.cacheMeta?.refreshing,
+          ndviAgeDays: fetchedNdviData.cacheMeta?.ndviAgeDays?.toFixed(1)
+        });
+      }
+
+      // Build alert message with cache indicator (show stale/refreshing status)
+      let cacheInfo = '';
+      if (fetchedNdviData.cacheHit?.ndvi) {
+        if (fetchedNdviData.cacheMeta?.stale && fetchedNdviData.cacheMeta?.refreshing) {
+          cacheInfo = ' (cached • refreshing)';
+        } else if (fetchedNdviData.cacheMeta?.stale) {
+          cacheInfo = ' (cached • stale)';
+        } else {
+          cacheInfo = ' (cached)';
+        }
+      }
+      alert(`Successfully analyzed satellite imagery${cacheInfo}!\n\nCreated ${newZones.length} irrigation zones based on NDVI data from Sentinel-2.\n\nSatellite Image Date: ${imageDate}\nCloud Coverage: ${typeof cloudCoverage === 'number' ? cloudCoverage.toFixed(1) + '%' : cloudCoverage}\nMean NDVI: ${typeof meanNDVI === 'number' ? meanNDVI.toFixed(2) : meanNDVI}`);
       setShowNDVIUpload(false);
 
     } catch (error) {
@@ -1913,7 +2176,7 @@ export function IrrigationManagement() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Notification Toast */}
       {notification && (
         <div className={`fixed top-4 right-4 z-50 max-w-md animate-slide-in-right`}>
@@ -1949,13 +2212,51 @@ export function IrrigationManagement() {
       )}
 
       {/* Page Title */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Irrigation Management</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Monitor water usage, evapotranspiration, and optimize irrigation schedules
+      <div className="pt-2 sm:pt-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Irrigation Management</h1>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
+          Monitor water usage, evapotranspiration, and optimize irrigation schedules. <DocLink docId="operations/irrigation" />
         </p>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab('planning')}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            activeTab === 'planning'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Planning
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('live-monitor')}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            activeTab === 'live-monitor'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <Activity className="w-4 h-4" />
+            Live Monitor
+          </span>
+        </button>
+      </div>
+
+      {/* Live Monitor Tab Content */}
+      {activeTab === 'live-monitor' && (
+        <FlowMonitorDashboard />
+      )}
+
+      {/* Planning Tab Content */}
+      {activeTab === 'planning' && (
+      <>
       {/* Block Selector & System Flow Rate */}
       <Card>
         <CardContent className="pt-6">
@@ -2081,11 +2382,11 @@ export function IrrigationManagement() {
                           </button>
 
                           {/* Individual Fields */}
-                          {blocks
+                          {sortByName(blocks
                             .filter(block =>
                               block.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                               block.variety.toLowerCase().includes(searchQuery.toLowerCase())
-                            )
+                            ))
                             .map(block => {
                             const recommendation = getIrrigationRecommendation(block.id);
                             const isSelected = !isAllFieldsMode && selectedBlock?.id === block.id;
@@ -2342,7 +2643,7 @@ export function IrrigationManagement() {
               <div className="flex items-center justify-between mb-4">
                 <button
                   onClick={() => setIrrigationHistoryExpanded(!irrigationHistoryExpanded)}
-                  className="flex items-center gap-2 hover:bg-gray-50 -ml-2 pl-2 pr-4 py-2 rounded transition-colors"
+                  className="flex items-center gap-2 hover:bg-gray-50 py-2 transition-colors"
                 >
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-blue-600" />
@@ -2357,7 +2658,7 @@ export function IrrigationManagement() {
                         setShowScheduleManager(true);
                         loadActiveSchedules();
                       }}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 text-sm font-medium"
+                      className="px-4 py-2 bg-[#1c2739] text-white rounded-lg hover:bg-[#151d2b] transition-colors flex items-center gap-2 text-sm font-medium"
                     >
                       <Settings className="w-4 h-4" />
                       Manage Schedules
@@ -2369,6 +2670,70 @@ export function IrrigationManagement() {
                       <Plus className="w-4 h-4" />
                       Log Irrigation
                     </button>
+
+                    {/* Export Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowExportDropdown(!showExportDropdown)}
+                        className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm font-medium"
+                      >
+                        <Download className="w-4 h-4" />
+                        Export
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
+
+                      {showExportDropdown && (
+                        <>
+                          {/* Backdrop to close dropdown */}
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setShowExportDropdown(false)}
+                          />
+
+                          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                            <div className="p-2">
+                              <p className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Download Report</p>
+
+                              <p className="px-3 py-1 text-xs text-gray-400 mt-2">CSV Format</p>
+                              <button onClick={() => exportIrrigationReport('1month', 'csv')} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-green-600" /> Last Month
+                              </button>
+                              <button onClick={() => exportIrrigationReport('3months', 'csv')} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-green-600" /> Last 3 Months
+                              </button>
+                              <button onClick={() => exportIrrigationReport('6months', 'csv')} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-green-600" /> Last 6 Months
+                              </button>
+                              <button onClick={() => exportIrrigationReport('12months', 'csv')} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-green-600" /> Last 12 Months
+                              </button>
+                              <button onClick={() => exportIrrigationReport('all', 'csv')} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-green-600" /> All Time
+                              </button>
+
+                              <div className="border-t border-gray-100 my-2"></div>
+
+                              <p className="px-3 py-1 text-xs text-gray-400">PDF Format</p>
+                              <button onClick={() => exportIrrigationReport('1month', 'pdf')} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-red-600" /> Last Month
+                              </button>
+                              <button onClick={() => exportIrrigationReport('3months', 'pdf')} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-red-600" /> Last 3 Months
+                              </button>
+                              <button onClick={() => exportIrrigationReport('6months', 'pdf')} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-red-600" /> Last 6 Months
+                              </button>
+                              <button onClick={() => exportIrrigationReport('12months', 'pdf')} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-red-600" /> Last 12 Months
+                              </button>
+                              <button onClick={() => exportIrrigationReport('all', 'pdf')} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-red-600" /> All Time
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -2378,8 +2743,9 @@ export function IrrigationManagement() {
               {/* Event Tabs */}
               {(() => {
                 const allEvents = irrigationEvents[selectedBlock.id] || [];
-                const today = new Date().toISOString().split('T')[0];
                 const now = new Date();
+                // Use local date, not UTC
+                const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
                 console.log(`\n📊 Tab Count Calculation - Total Events: ${allEvents.length}, Today: ${today}`);
 
@@ -2392,10 +2758,12 @@ export function IrrigationManagement() {
                 }
 
                 const scheduledCount = allEvents.filter(event => {
+                  // Webhook events are always completed
+                  if (event.source === 'webhook') return false;
                   if (event.date > today) return true;
                   if (event.date === today && event.duration) {
                     const [year, month, day] = event.date.split('-').map(Number);
-                    const startHour = 6;
+                    const startHour = event.startTime ? parseInt(event.startTime.split(':')[0]) : 6;
                     const endTime = new Date(year, month - 1, day, startHour + event.duration);
                     return now <= endTime;
                   }
@@ -2403,51 +2771,82 @@ export function IrrigationManagement() {
                 }).length;
 
                 const completedCount = allEvents.filter(event => {
+                  // Webhook events are always completed
+                  if (event.source === 'webhook') return true;
                   if (event.date < today) return true;
                   if (event.date === today && event.duration) {
                     const [year, month, day] = event.date.split('-').map(Number);
-                    const startHour = 6;
+                    const startHour = event.startTime ? parseInt(event.startTime.split(':')[0]) : 6;
                     const endTime = new Date(year, month - 1, day, startHour + event.duration);
                     return now > endTime;
                   }
                   return false;
                 }).length;
 
-                console.log(`✅ Scheduled: ${scheduledCount}, Completed: ${completedCount}`);
+                // Filter active sessions for the selected block
+                const blockActiveSessions = activeSessions.filter(session =>
+                  session.zone_mapping?.block?.id === selectedBlock?.id
+                );
+                const activeCount = blockActiveSessions.length;
+
+                console.log(`✅ Active: ${activeCount}, Scheduled: ${scheduledCount}, Completed: ${completedCount}`);
 
                 return (
-                  <div className="flex items-center justify-between mb-4 border-b border-gray-200">
-                    <div className="flex gap-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+                      {activeCount > 0 && (
+                        <button
+                          onClick={() => setEventTab('active')}
+                          className={`px-4 py-2 text-sm font-medium transition-all rounded-md flex items-center gap-2 ${
+                            eventTab === 'active'
+                              ? 'bg-white text-emerald-600 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                          </span>
+                          Active
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${
+                            eventTab === 'active'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-gray-200 text-gray-600'
+                          }`}>
+                            {activeCount}
+                          </span>
+                        </button>
+                      )}
                       <button
                         onClick={() => setEventTab('scheduled')}
-                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+                        className={`px-4 py-2 text-sm font-medium transition-all rounded-md flex items-center gap-2 ${
                           eventTab === 'scheduled'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
                         Scheduled
-                        <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${
                           eventTab === 'scheduled'
                             ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-600'
+                            : 'bg-gray-200 text-gray-600'
                         }`}>
                           {scheduledCount}
                         </span>
                       </button>
                       <button
                         onClick={() => setEventTab('completed')}
-                        className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+                        className={`px-4 py-2 text-sm font-medium transition-all rounded-md flex items-center gap-2 ${
                           eventTab === 'completed'
-                            ? 'border-green-600 text-green-600'
-                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                            ? 'bg-white text-green-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
                         Completed
-                        <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${
                           eventTab === 'completed'
                             ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-600'
+                            : 'bg-gray-200 text-gray-600'
                         }`}>
                           {completedCount}
                         </span>
@@ -2955,8 +3354,9 @@ export function IrrigationManagement() {
                   </div>
                 ) : (() => {
                   const allEvents = irrigationEvents[selectedBlock.id] || [];
-                  const today = new Date().toISOString().split('T')[0];
                   const now = new Date();
+                  // Use local date, not UTC
+                  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
                   // Debug: Log all event dates
                   console.log('📅 Today:', today);
@@ -2966,17 +3366,39 @@ export function IrrigationManagement() {
                   });
 
                   // Separate completed and scheduled events
-                  // Completed: All events (manual or scheduled) that are today or in the past
-                  // Scheduled: All events (manual or scheduled) that are in the future
-                  const completedEvents = allEvents.filter(event => {
-                    // Events today or in the past are completed
-                    return event.date <= today;
-                  }).sort((a, b) => new Date(b.date) - new Date(a.date));
-
+                  // Scheduled: Future events + today's events that haven't finished yet
+                  // Completed: Past events + today's events that have finished + all webhook events
                   const scheduledEvents = allEvents.filter(event => {
-                    // Events that are in the future
-                    return event.date > today;
+                    // Webhook events are always completed (they represent past irrigation)
+                    if (event.source === 'webhook') return false;
+                    // Future events are always scheduled
+                    if (event.date > today) return true;
+                    // Today's events: check if still running
+                    if (event.date === today && event.duration) {
+                      const [year, month, day] = event.date.split('-').map(Number);
+                      const startHour = event.startTime ? parseInt(event.startTime.split(':')[0]) : 6;
+                      const endTime = new Date(year, month - 1, day, startHour + event.duration);
+                      return now <= endTime;
+                    }
+                    // Today's events without duration are considered scheduled until end of day
+                    if (event.date === today) return true;
+                    return false;
                   }).sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort ascending for scheduled
+
+                  const completedEvents = allEvents.filter(event => {
+                    // Webhook events are always completed (they represent past irrigation)
+                    if (event.source === 'webhook') return true;
+                    // Past events are always completed
+                    if (event.date < today) return true;
+                    // Today's events: check if finished
+                    if (event.date === today && event.duration) {
+                      const [year, month, day] = event.date.split('-').map(Number);
+                      const startHour = event.startTime ? parseInt(event.startTime.split(':')[0]) : 6;
+                      const endTime = new Date(year, month - 1, day, startHour + event.duration);
+                      return now > endTime;
+                    }
+                    return false;
+                  }).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort descending for completed
 
                   // Select events based on active tab
                   const eventsToDisplay = eventTab === 'scheduled' ? scheduledEvents : completedEvents;
@@ -2985,6 +3407,93 @@ export function IrrigationManagement() {
                   const displayedEvents = showAllEvents ? eventsToDisplay : eventsToDisplay.slice(0, 5);
 
                   console.log(`🎨 Rendering ${displayedEvents.length} of ${eventsToDisplay.length} ${eventTab} events. Total: ${allEvents.length}, Scheduled: ${scheduledEvents.length}, Completed: ${completedEvents.length}`);
+
+                  // Show active sessions tab
+                  if (eventTab === 'active') {
+                    const blockActiveSessions = activeSessions.filter(session =>
+                      session.zone_mapping?.block?.id === selectedBlock?.id
+                    );
+
+                    if (blockActiveSessions.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          <Activity className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                          <p>No active irrigation sessions</p>
+                        </div>
+                      );
+                    }
+
+                    return blockActiveSessions.map((session) => (
+                      <div
+                        key={session.id}
+                        className="flex items-start gap-3 p-4 rounded-lg bg-emerald-50 border border-emerald-200"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                          <Activity className="w-5 h-5 text-emerald-600 animate-pulse" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-1">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-gray-900">
+                                  {session.zone_mapping?.irrigation_method || 'drip'} Irrigation
+                                </span>
+                                <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full flex items-center gap-1">
+                                  <span className="relative flex h-1.5 w-1.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                  </span>
+                                  Live
+                                </span>
+                                {session.zone_mapping?.zone_name && (
+                                  <span className="px-2 py-0.5 text-xs font-semibold bg-purple-100 text-purple-700 rounded-full">
+                                    {session.zone_mapping.zone_name}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-600 mt-0.5">
+                                Started {new Date(session.started_at).toLocaleTimeString()}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-emerald-600">
+                                {session.total_gallons?.toFixed(0) || 0}
+                                <span className="text-sm font-normal text-gray-500 ml-1">gal</span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {session.avg_flow_rate_gpm?.toFixed(1) || 0} GPM
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                {Math.round(session.runtimeMinutes || 0)} min running
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Gauge className="w-3.5 h-3.5" />
+                                Peak: {session.peak_flow_rate_gpm?.toFixed(1) || 0} GPM
+                              </span>
+                            </div>
+                            <button
+                              onClick={async () => {
+                                if (confirm('End this irrigation session? Use this if the device went offline.')) {
+                                  await endStuckSession(session.id, 'manual');
+                                  refreshActiveSessions();
+                                }
+                              }}
+                              className="px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded transition-colors flex items-center gap-1"
+                              title="Manually end this session (use if device went offline)"
+                            >
+                              <Pause className="w-3 h-3" />
+                              Stop
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ));
+                  }
 
                   return displayedEvents.map((event, idx) => (
                     <div
@@ -3011,8 +3520,22 @@ export function IrrigationManagement() {
                               {event.source === 'schedule' && (
                                 <>
                                   {(() => {
-                                    const today = new Date().toISOString().split('T')[0];
-                                    const isCompleted = event.date <= today;
+                                    // Use local date, not UTC
+                                    const now = new Date();
+                                    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+                                    // Determine if completed using same logic as tab filtering
+                                    let isCompleted = false;
+                                    if (event.date < today) {
+                                      // Past events are always completed
+                                      isCompleted = true;
+                                    } else if (event.date === today && event.duration) {
+                                      // Today's events: check if finished based on start time + duration
+                                      const [year, month, day] = event.date.split('-').map(Number);
+                                      const startHour = event.startTime ? parseInt(event.startTime.split(':')[0]) : 6;
+                                      const endTime = new Date(year, month - 1, day, startHour + event.duration);
+                                      isCompleted = now > endTime;
+                                    }
 
                                     // Check if parent schedule is paused
                                     const parentSchedule = activeSchedules.find(s => s.id === event.scheduleId);
@@ -3047,8 +3570,23 @@ export function IrrigationManagement() {
                               {event.source === 'manual' && (
                                 <>
                                   {(() => {
-                                    const today = new Date().toISOString().split('T')[0];
-                                    const isCompleted = event.date <= today;
+                                    // Use local date, not UTC
+                                    const now = new Date();
+                                    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+                                    // Determine if completed using same logic as tab filtering
+                                    let isCompleted = false;
+                                    if (event.date < today) {
+                                      isCompleted = true;
+                                    } else if (event.date === today && event.duration) {
+                                      const [year, month, day] = event.date.split('-').map(Number);
+                                      const startHour = event.startTime ? parseInt(event.startTime.split(':')[0]) : 6;
+                                      const endTime = new Date(year, month - 1, day, startHour + event.duration);
+                                      isCompleted = now > endTime;
+                                    } else if (event.date <= today) {
+                                      // Manual logs without duration but on/before today are completed
+                                      isCompleted = true;
+                                    }
 
                                     if (isCompleted) {
                                       return (
@@ -3067,6 +3605,14 @@ export function IrrigationManagement() {
                                     }
                                   })()}
                                 </>
+                              )}
+                              {event.source === 'webhook' && (
+                                <span className="px-2 py-0.5 text-xs font-semibold bg-purple-100 text-purple-700 rounded-full flex items-center gap-1">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                  </svg>
+                                  Auto-logged
+                                </span>
                               )}
                             </div>
                             <div className="text-sm text-gray-600">
@@ -3116,26 +3662,34 @@ export function IrrigationManagement() {
                 })()}
 
                 {!loadingIrrigation && (() => {
+                  // Skip for active tab - it has its own display logic
+                  if (eventTab === 'active') return null;
+
                   const allEvents = irrigationEvents[selectedBlock.id] || [];
-                  const today = new Date().toISOString().split('T')[0];
                   const now = new Date();
+                  // Use local date, not UTC
+                  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
                   const eventsToDisplay = eventTab === 'scheduled'
                     ? allEvents.filter(event => {
+                        // Webhook events are always completed
+                        if (event.source === 'webhook') return false;
                         if (event.date > today) return true;
                         if (event.date === today && event.duration) {
                           const [year, month, day] = event.date.split('-').map(Number);
-                          const startHour = 6;
+                          const startHour = event.startTime ? parseInt(event.startTime.split(':')[0]) : 6;
                           const endTime = new Date(year, month - 1, day, startHour + event.duration);
                           return now <= endTime;
                         }
                         return event.date >= today;
                       })
                     : allEvents.filter(event => {
+                        // Webhook events are always completed
+                        if (event.source === 'webhook') return true;
                         if (event.date < today) return true;
                         if (event.date === today && event.duration) {
                           const [year, month, day] = event.date.split('-').map(Number);
-                          const startHour = 6;
+                          const startHour = event.startTime ? parseInt(event.startTime.split(':')[0]) : 6;
                           const endTime = new Date(year, month - 1, day, startHour + event.duration);
                           return now > endTime;
                         }
@@ -3211,13 +3765,35 @@ export function IrrigationManagement() {
                     </p>
                   </div>
                 </div>
-                <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-                  {showNDVISection ? (
-                    <ChevronUp className="w-5 h-5 text-gray-600" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-600" />
-                  )}
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Debug panel - shows cache info */}
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <NDVIDebugPanel
+                      blockId={selectedBlock?.id}
+                      ndviData={ndviData[selectedBlock?.id]}
+                      onCacheCleared={() => {
+                        // Clear local state when cache is cleared
+                        setNdviData(prev => {
+                          const next = { ...prev };
+                          delete next[selectedBlock.id];
+                          return next;
+                        });
+                        setVriZones(prev => {
+                          const next = { ...prev };
+                          delete next[selectedBlock.id];
+                          return next;
+                        });
+                      }}
+                    />
+                  </div>
+                  <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                    {showNDVISection ? (
+                      <ChevronUp className="w-5 h-5 text-gray-600" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-600" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {showNDVISection && (
@@ -3778,7 +4354,7 @@ export function IrrigationManagement() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {blocks.map(block => (
+                      {sortByName(blocks).map(block => (
                         <tr key={block.id} className="hover:bg-gray-50">
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">{block.name}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{block.variety || '-'}</td>
@@ -3888,6 +4464,15 @@ export function IrrigationManagement() {
                   <div className="space-y-2">
                     {blocks
                       .filter(b => etData[b.id]?.timeseries?.length > 0)
+                      .sort((a, b) => {
+                        // Natural number sorting (Field 1, Field 2, ... Field 10)
+                        const aMatch = a.name.match(/(\d+)/);
+                        const bMatch = b.name.match(/(\d+)/);
+                        if (aMatch && bMatch) {
+                          return parseInt(aMatch[1], 10) - parseInt(bMatch[1], 10);
+                        }
+                        return a.name.localeCompare(b.name);
+                      })
                       .map(block => {
                         const blockET = etData[block.id];
                         const last7Days = blockET.timeseries.slice(-7);
@@ -4334,6 +4919,8 @@ export function IrrigationManagement() {
           </div>
         </div>,
         document.body
+      )}
+      </>
       )}
     </div>
   );
