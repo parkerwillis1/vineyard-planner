@@ -92,7 +92,7 @@ export default function HomePage() {
               Plan. Grow. Prosper.
             </h1>
             <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-6 sm:leading-8 text-white font-bold px-4 sm:px-0" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
-              From financial planning to daily operations—design your vineyard, manage your team, track activities, and monitor vineyard health with satellite data. All in one powerful platform.
+              From financial planning to daily operations. Design your vineyard, manage your team, track activities, and monitor vineyard health with satellite data. All in one powerful platform.
             </p>
             <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-x-6 px-4 sm:px-0">
               <Link
@@ -138,7 +138,7 @@ export default function HomePage() {
               Plan smarter. Operate better.
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-              Everything you need to design your vineyard, forecast financials, and manage daily operations—all in one platform.
+              Everything you need to design your vineyard, forecast financials, and manage daily operations, all in one platform.
             </p>
           </div>
 
@@ -209,7 +209,7 @@ export default function HomePage() {
                         <Sprout className="w-4 h-4 text-vine-green-600" />
                         <span className="font-bold text-sm text-gray-900">Planner</span>
                       </div>
-                      <div className="bg-teal-600 text-white text-xs font-semibold px-2 py-1 rounded text-center">
+                      <div className="bg-[#008070] text-white text-xs font-semibold px-2 py-1 rounded text-center">
                         Saved
                       </div>
                     </div>
@@ -243,9 +243,9 @@ export default function HomePage() {
                         <div className="text-xs text-gray-600 mb-1">Project Years</div>
                         <div className="text-2xl font-bold text-gray-900">10</div>
                       </div>
-                      <div className="bg-purple-50 rounded p-2 text-center">
+                      <div className="bg-rose-50 rounded p-2 text-center">
                         <div className="text-xs text-gray-600 mb-0.5">Total Est. Cost</div>
-                        <div className="text-lg font-bold text-purple-600">$220,883</div>
+                        <div className="text-lg font-bold text-[#7C203A]">$220,883</div>
                       </div>
                     </div>
                   </div>
@@ -266,10 +266,10 @@ export default function HomePage() {
                         <div className="text-xs text-gray-600">Break Even</div>
                       </div>
                       <div className="bg-white rounded-lg p-2.5 shadow-sm border border-gray-200 text-center">
-                        <div className="w-5 h-5 rounded-full bg-teal-100 flex items-center justify-center mx-auto mb-1">
-                          <DollarSign className="w-3.5 h-3.5 text-teal-600" />
+                        <div className="w-5 h-5 rounded-full bg-[#008070]/10 flex items-center justify-center mx-auto mb-1">
+                          <DollarSign className="w-3.5 h-3.5 text-[#008070]" />
                         </div>
-                        <div className="text-xl font-bold text-teal-600">$1.09M</div>
+                        <div className="text-xl font-bold text-[#008070]">$1.09M</div>
                         <div className="text-xs text-gray-600">Total Revenue</div>
                       </div>
                       <div className="bg-white rounded-lg p-2.5 shadow-sm border border-gray-200 text-center">
@@ -285,7 +285,7 @@ export default function HomePage() {
                     <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-sm font-bold text-gray-900">10-Year Revenue Projection</h3>
-                        <BarChart3 className="w-4 h-4 text-teal-600" />
+                        <BarChart3 className="w-4 h-4 text-[#008070]" />
                       </div>
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
@@ -307,13 +307,13 @@ export default function HomePage() {
                           <span className="font-semibold text-gray-900">$181,780/yr</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-teal-500 h-1.5 rounded-full" style={{width: '100%'}}></div>
+                          <div className="bg-[#008070] h-1.5 rounded-full" style={{width: '100%'}}></div>
                         </div>
                       </div>
 
                       <div className="mt-2 pt-2 border-t border-gray-200 flex items-center justify-between">
                         <span className="text-xs font-semibold text-gray-700">Break-Even</span>
-                        <span className="text-sm font-bold text-teal-600">Year 7</span>
+                        <span className="text-sm font-bold text-[#008070]">Year 7</span>
                       </div>
                     </div>
                   </div>
@@ -465,7 +465,7 @@ export default function HomePage() {
 
             <p className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-relaxed max-w-4xl mx-auto pt-8">
               <ScrollHighlightText>
-                Trellis streamlines vineyard and winery operations, helping you grow exceptional grapes and craft outstanding wine. Acting as an extension of your team, we automate repetitive tasks and enable faster decisions through real-time insights. Trellis connects your entire process — planning, growing, and producing wine — in one seamless platform.
+                Trellis streamlines vineyard and winery operations, helping you grow exceptional grapes and craft outstanding wine. Acting as an extension of your team, we automate repetitive tasks and enable faster decisions through real-time insights. Trellis connects your entire process: planning, growing, and producing wine in one seamless platform.
               </ScrollHighlightText>
             </p>
 
@@ -540,7 +540,7 @@ export default function HomePage() {
             </h2>
             <AnimatedSection delay={600}>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                We're not another generic farm platform. Trellis is purpose-built for vineyards and wineries—with modern tools at a price that makes sense.
+                We're not another generic farm platform. Trellis is purpose-built for vineyards and wineries, with modern tools at a price that makes sense.
               </p>
             </AnimatedSection>
           </AnimatedSection>
@@ -565,7 +565,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">Modern & Intuitive</h3>
                 <p className="text-sm text-gray-600">
-                  Clean interface you can learn in minutes—not legacy software requiring weeks of training.
+                  Clean interface you can learn in minutes, not legacy software requiring weeks of training.
                 </p>
               </div>
             </AnimatedSection>
@@ -610,7 +610,7 @@ export default function HomePage() {
                 See what's happening across every acre
               </h2>
               <p className="text-lg text-gray-300 mb-8">
-                Trellis integrates Sentinel-2 satellite imagery and OpenET data to give you a bird's-eye view of your vineyard's health—updated every 5 days, no hardware required.
+                Trellis integrates Sentinel-2 satellite imagery and OpenET data to give you a bird's-eye view of your vineyard's health. Updated every 5 days, no hardware required.
               </p>
 
               <div className="space-y-4 mb-8">
@@ -702,7 +702,7 @@ export default function HomePage() {
             </p>
             <AnimatedSection delay={300}>
               <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 px-4 sm:px-0">
-                We're expanding beyond vineyard operations to give you complete control of your wine business—from crush to customer delivery.
+                We're expanding beyond vineyard operations to give you complete control of your wine business, from crush to customer delivery.
               </p>
             </AnimatedSection>
           </AnimatedSection>
@@ -846,7 +846,7 @@ function JourneySection() {
         { name: "Loan Comparison Tools", desc: "USDA FSA vs. commercial" },
         { name: "Business Plan Export", desc: "Bank-ready PDF reports" },
       ],
-      color: "vine-green",
+      color: "planner-green",
       mockup: (
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
@@ -855,7 +855,7 @@ function JourneySection() {
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
               <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
             </div>
-            <span className="text-xs text-gray-500 ml-2">Financial Planner — 10-Year Projections</span>
+            <span className="text-xs text-gray-500 ml-2">Financial Planner - 10-Year Projections</span>
           </div>
           <div className="p-5">
             {/* Key Metrics */}
@@ -870,9 +870,9 @@ function JourneySection() {
                 <p className="text-2xl font-bold text-green-600">$1.09M</p>
                 <p className="text-xs text-gray-600 font-medium">10-Yr Revenue</p>
               </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 text-center border border-purple-200">
-                <BarChart3 className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-purple-600">210%</p>
+              <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl p-4 text-center border border-rose-200">
+                <BarChart3 className="w-6 h-6 text-[#7C203A] mx-auto mb-2" />
+                <p className="text-2xl font-bold text-[#7C203A]">210%</p>
                 <p className="text-xs text-gray-600 font-medium">Projected ROI</p>
               </div>
             </div>
@@ -908,7 +908,7 @@ function JourneySection() {
       label: "Vineyard Operations",
       icon: Sprout,
       status: "Available Now",
-      statusColor: "bg-teal-100 text-teal-700",
+      statusColor: "bg-slate-100 text-[#1a2844]",
       title: "Vineyard Operations",
       subtitle: "Manage your vineyard day-to-day",
       description: "Map your fields with satellite imagery, monitor vine health with NDVI data updated every 5 days, assign tasks to team members, log spray and irrigation events, track harvest quality, and connect flow meters for automatic documentation.",
@@ -918,7 +918,7 @@ function JourneySection() {
         { name: "Task & Team Management", desc: "Assign, track, complete" },
         { name: "Hardware Integration", desc: "Flow meters, controllers" },
       ],
-      color: "teal",
+      color: "navy",
       mockup: (
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
@@ -927,13 +927,13 @@ function JourneySection() {
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
               <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
             </div>
-            <span className="text-xs text-gray-500 ml-2">Vineyard Operations — Dashboard</span>
+            <span className="text-xs text-gray-500 ml-2">Vineyard Operations - Dashboard</span>
           </div>
           <div className="p-5">
             {/* Quick Stats Row */}
             <div className="grid grid-cols-4 gap-3 mb-5">
-              <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-3 text-center border border-teal-200">
-                <p className="text-xl font-bold text-teal-600">12</p>
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-3 text-center border border-slate-200">
+                <p className="text-xl font-bold text-[#1a2844]">12</p>
                 <p className="text-xs text-gray-600 font-medium">Blocks</p>
               </div>
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 text-center border border-blue-200">
@@ -944,8 +944,8 @@ function JourneySection() {
                 <p className="text-xl font-bold text-green-600">3</p>
                 <p className="text-xs text-gray-600 font-medium">Tasks</p>
               </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 text-center border border-purple-200">
-                <p className="text-xl font-bold text-purple-600">5</p>
+              <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl p-3 text-center border border-rose-200">
+                <p className="text-xl font-bold text-[#7C203A]">5</p>
                 <p className="text-xs text-gray-600 font-medium">Team</p>
               </div>
             </div>
@@ -954,18 +954,18 @@ function JourneySection() {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-bold text-gray-900">Today's Tasks</h4>
-                <span className="text-xs text-teal-600 font-semibold">View All</span>
+                <span className="text-xs text-[#1a2844] font-semibold">View All</span>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center gap-3 p-3 bg-teal-50 rounded-lg border border-teal-200">
-                  <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="w-8 h-8 rounded-full bg-[#1a2844] flex items-center justify-center">
                     <Droplet className="w-4 h-4 text-white" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-gray-900">Irrigate Block A</p>
                     <p className="text-xs text-gray-500">2 hrs @ 15 GPM • Assigned to Mike</p>
                   </div>
-                  <CheckCircle2 className="w-5 h-5 text-teal-600" />
+                  <CheckCircle2 className="w-5 h-5 text-[#1a2844]" />
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center">
@@ -1013,7 +1013,7 @@ function JourneySection() {
         { name: "Barrel & Tank Management", desc: "Aging, topping, racking" },
         { name: "Blending & Bottling", desc: "Recipes, labels, lot traceability" },
       ],
-      color: "purple",
+      color: "burgundy",
       mockup: (
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
@@ -1022,32 +1022,32 @@ function JourneySection() {
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
               <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
             </div>
-            <span className="text-xs text-gray-500 ml-2">Wine Production — Fermentation</span>
+            <span className="text-xs text-gray-500 ml-2">Wine Production - Fermentation</span>
           </div>
           <div className="p-5">
             {/* Active Fermentations Header */}
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-sm font-bold text-gray-900">Active Fermentations</h4>
-              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">3 lots</span>
+              <span className="text-xs bg-rose-100 text-[#7C203A] px-2 py-1 rounded-full font-semibold">3 lots</span>
             </div>
 
             {/* Main Fermentation Card */}
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200 mb-3">
+            <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl p-4 border border-rose-200 mb-3">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-bold text-gray-900">Cabernet Sauvignon - Lot 24A</span>
                 <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Day 8</span>
               </div>
               <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="bg-white rounded-lg p-2 border border-purple-200">
-                  <p className="text-xl font-bold text-purple-600">18.2°</p>
+                <div className="bg-white rounded-lg p-2 border border-rose-200">
+                  <p className="text-xl font-bold text-[#7C203A]">18.2°</p>
                   <p className="text-xs text-gray-500">Brix</p>
                 </div>
-                <div className="bg-white rounded-lg p-2 border border-purple-200">
-                  <p className="text-xl font-bold text-purple-600">72°F</p>
+                <div className="bg-white rounded-lg p-2 border border-rose-200">
+                  <p className="text-xl font-bold text-[#7C203A]">72°F</p>
                   <p className="text-xs text-gray-500">Temp</p>
                 </div>
-                <div className="bg-white rounded-lg p-2 border border-purple-200">
-                  <p className="text-xl font-bold text-purple-600">3.52</p>
+                <div className="bg-white rounded-lg p-2 border border-rose-200">
+                  <p className="text-xl font-bold text-[#7C203A]">3.52</p>
                   <p className="text-xs text-gray-500">pH</p>
                 </div>
               </div>
@@ -1061,7 +1061,7 @@ function JourneySection() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex-1 bg-gray-200 rounded-full h-2">
-                  <div className="bg-purple-500 h-2 rounded-full" style={{width: '35%'}}></div>
+                  <div className="bg-rose-500 h-2 rounded-full" style={{width: '35%'}}></div>
                 </div>
                 <span className="text-sm font-semibold text-gray-700">22.4° Brix</span>
               </div>
@@ -1069,7 +1069,7 @@ function JourneySection() {
 
             {/* Quick Actions */}
             <div className="flex gap-2">
-              <button className="flex-1 bg-purple-600 text-white text-xs font-semibold py-2 px-3 rounded-lg">Log Punch-down</button>
+              <button className="flex-1 bg-[#7C203A] text-white text-xs font-semibold py-2 px-3 rounded-lg">Log Punch-down</button>
               <button className="flex-1 bg-gray-200 text-gray-700 text-xs font-semibold py-2 px-3 rounded-lg">Add Reading</button>
             </div>
           </div>
@@ -1082,15 +1082,7 @@ function JourneySection() {
   const ActiveIcon = activeTool.icon;
 
   return (
-    <section className="relative bg-gradient-to-b from-gray-50 to-white py-20 sm:py-28 overflow-hidden">
-      {/* Subtle background */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-0 w-full h-full" style={{
-          backgroundImage: `url('/topo.png')`,
-          backgroundRepeat: 'repeat',
-          backgroundSize: 'auto',
-        }}></div>
-      </div>
+    <section className="relative bg-white py-20 sm:py-28 overflow-hidden">
 
       <div className="relative mx-auto max-w-6xl px-6">
         <AnimatedSection className="text-center mb-12">
@@ -1102,7 +1094,7 @@ function JourneySection() {
           </h2>
           <AnimatedSection delay={300}>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Plan your vineyard, manage daily operations, and track wine production—all in one integrated platform.
+              Plan your vineyard, manage daily operations, and track wine production, all in one integrated platform.
             </p>
           </AnimatedSection>
         </AnimatedSection>
@@ -1149,11 +1141,11 @@ function JourneySection() {
             <div className="flex items-center gap-3 mb-2">
               <div className={`
                 w-10 h-10 rounded-xl flex items-center justify-center
-                ${activeTab === 0 ? 'bg-vine-green-100' : ''}
-                ${activeTab === 1 ? 'bg-teal-100' : ''}
-                ${activeTab === 2 ? 'bg-purple-100' : ''}
+                ${activeTab === 0 ? 'bg-[#008070]/10' : ''}
+                ${activeTab === 1 ? 'bg-[#1a2844]/10' : ''}
+                ${activeTab === 2 ? 'bg-rose-100' : ''}
               `}>
-                <ActiveIcon className={`w-5 h-5 ${activeTab === 0 ? 'text-vine-green-600' : ''} ${activeTab === 1 ? 'text-teal-600' : ''} ${activeTab === 2 ? 'text-purple-600' : ''}`} />
+                <ActiveIcon className={`w-5 h-5 ${activeTab === 0 ? 'text-[#008070]' : ''} ${activeTab === 1 ? 'text-[#1a2844]' : ''} ${activeTab === 2 ? 'text-[#7C203A]' : ''}`} />
               </div>
               <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 {activeTool.title}
@@ -1170,7 +1162,7 @@ function JourneySection() {
             <div className="space-y-3 mb-8">
               {activeTool.features.map((feature, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${activeTab === 0 ? 'text-vine-green-500' : ''} ${activeTab === 1 ? 'text-teal-500' : ''} ${activeTab === 2 ? 'text-purple-500' : ''}`} />
+                  <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${activeTab === 0 ? 'text-[#008070]' : ''} ${activeTab === 1 ? 'text-[#1a2844]' : ''} ${activeTab === 2 ? 'text-[#7C203A]' : ''}`} />
                   <div>
                     <p className="font-semibold text-gray-900">{feature.name}</p>
                     <p className="text-sm text-gray-500">{feature.desc}</p>
@@ -1184,9 +1176,9 @@ function JourneySection() {
               to={activeTab === 2 ? "/products" : "/signup"}
               className={`
                 inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-colors shadow-md
-                ${activeTab === 0 ? 'bg-vine-green-600 text-white hover:bg-vine-green-500' : ''}
-                ${activeTab === 1 ? 'bg-teal-600 text-white hover:bg-teal-500' : ''}
-                ${activeTab === 2 ? 'bg-purple-600 text-white hover:bg-purple-500' : ''}
+                ${activeTab === 0 ? 'bg-[#008070] text-white hover:bg-[#006b5a]' : ''}
+                ${activeTab === 1 ? 'bg-[#1a2844] text-white hover:bg-[#243351]' : ''}
+                ${activeTab === 2 ? 'bg-[#7C203A] text-white hover:bg-[#8B2E48]' : ''}
               `}
             >
               {activeTab === 2 ? 'Learn More' : 'Get Started Free'}
@@ -1200,9 +1192,9 @@ function JourneySection() {
               {/* Decorative background */}
               <div className={`
                 absolute -inset-4 rounded-3xl opacity-20 blur-2xl
-                ${activeTab === 0 ? 'bg-vine-green-400' : ''}
-                ${activeTab === 1 ? 'bg-teal-400' : ''}
-                ${activeTab === 2 ? 'bg-purple-400' : ''}
+                ${activeTab === 0 ? 'bg-[#008070]' : ''}
+                ${activeTab === 1 ? 'bg-[#1a2844]' : ''}
+                ${activeTab === 2 ? 'bg-[#9B3A54]' : ''}
               `}></div>
 
               {/* Mockup content */}
@@ -1223,7 +1215,7 @@ function JourneySection() {
                 className={`
                   h-2 rounded-full transition-all duration-300
                   ${activeTab === index
-                    ? `w-8 ${activeTab === 0 ? 'bg-vine-green-600' : ''} ${activeTab === 1 ? 'bg-teal-600' : ''} ${activeTab === 2 ? 'bg-purple-600' : ''}`
+                    ? `w-8 ${activeTab === 0 ? 'bg-[#008070]' : ''} ${activeTab === 1 ? 'bg-[#1a2844]' : ''} ${activeTab === 2 ? 'bg-[#7C203A]' : ''}`
                     : 'w-2 bg-gray-300 hover:bg-gray-400'
                   }
                 `}

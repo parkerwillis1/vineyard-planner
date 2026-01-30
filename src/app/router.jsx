@@ -1,6 +1,6 @@
 // src/app/router.jsx
 import React from "react";
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 
 // Use @ if your alias is working. If not, see the relative-path version below.
 import { useAuth }        from "@/auth/AuthContext.jsx";
@@ -53,6 +53,8 @@ import { DocsPage } from "@/pages/docs/DocsPage.jsx";
 /* Guard for routes that require auth */
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth() || {};
+  const location = useLocation();
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -60,7 +62,13 @@ function ProtectedRoute({ children }) {
       </div>
     );
   }
-  if (!user) return <Navigate to="/signin" replace />;
+
+  if (!user) {
+    // Preserve the intended destination URL for redirect after login
+    const redirectUrl = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/signin?redirect=${redirectUrl}`} replace />;
+  }
+
   return children ? children : <Outlet />;
 }
 
@@ -68,6 +76,7 @@ function ProtectedRoute({ children }) {
 function ModuleProtectedRoute({ moduleId, children }) {
   const { user, loading: authLoading } = useAuth() || {};
   const { hasAccess, loading: moduleLoading, locked, reason } = useModuleAccess(moduleId);
+  const location = useLocation();
 
   console.log('[ModuleProtectedRoute]', {
     moduleId,
@@ -88,7 +97,9 @@ function ModuleProtectedRoute({ moduleId, children }) {
 
   if (!user) {
     console.log('[ModuleProtectedRoute] No user, redirecting to signin');
-    return <Navigate to="/signin" replace />;
+    // Preserve the intended destination URL for redirect after login
+    const redirectUrl = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/signin?redirect=${redirectUrl}`} replace />;
   }
 
   // If user doesn't have access, redirect to pricing page

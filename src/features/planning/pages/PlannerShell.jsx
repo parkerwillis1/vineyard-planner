@@ -640,7 +640,7 @@ function CollapsibleSection({ title, children, isOpen, onToggle }) {
       >
         <div className="flex items-center gap-4">
           {getIcon()}
-          <h3 className="font-bold text-gray-800 text-2xl leading-none -translate-y-2">{title}</h3>
+          <h3 className="font-bold text-gray-800 text-2xl leading-none">{title}</h3>
         </div>
 
         {/* Chevron */}
@@ -652,7 +652,7 @@ function CollapsibleSection({ title, children, isOpen, onToggle }) {
       </button>
 
       {/* Subtitle/description bar */}
-      <div className="px-8 pb-4 relative z-10">
+      <div className="px-8 py-3 relative z-10">
         <p className="text-gray-500 text-sm">
           {title === "Core Vineyard Parameters" && "Configure your vineyard's basic financial parameters"}
           {title === "Vineyard Setup" && "One-time infrastructure and setup costs"}
@@ -2146,7 +2146,7 @@ const EstablishmentProgressTracker = ({
   const MainUI = (
     <div className="w-full">
 
-      <div className="max-w-7xl pl-0 pr-4 sm:pr-6 lg:pr-8 pb-16">
+      <div className="w-full pl-0 pr-4 sm:pr-6 lg:pr-8 pb-16">
 
       {/* NEW VINEYARD DESIGN TAB */}
       {activeTab === "design" && (
@@ -2299,12 +2299,12 @@ const EstablishmentProgressTracker = ({
                 <p className="text-xs text-gray-500 mt-1">Expected yield at full maturity (default: 3.5 tons/acre)</p>
               </div>
               <div>
-                <label>Operating Cost ($/yr)</label>
-                    <Input
-                        readOnly
-                        value={dynamicOperatingCost.toFixed(0)}
-                        className="bg-gray-100 text-sm"
-                    />
+                <label className="text-sm text-black font-bold font-medium block mb-2">Operating Cost ($/yr)</label>
+                <Input
+                  readOnly
+                  value={dynamicOperatingCost.toFixed(0)}
+                  className="bg-gray-100 text-sm"
+                />
               </div>
               <div>
                 <label className="text-sm text-black font-bold font-medium block mb-2">Water Cost ($/acre-yr)</label>
@@ -4685,7 +4685,7 @@ const EstablishmentProgressTracker = ({
         className={`
           flex-1 transition-all duration-300 max-w-full overflow-x-hidden print:mt-0 print:ml-0
           pt-16 lg:pt-0
-          lg:ml-56 ${sidebarOpen ? 'lg:ml-56' : 'lg:ml-20'}
+          ${sidebarOpen ? 'lg:ml-56' : 'lg:ml-20'}
         `}
       >
         {/* Content Container */}

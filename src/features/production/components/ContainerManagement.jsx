@@ -493,14 +493,18 @@ export function ContainerManagement() {
   };
 
   const handlePrintLabel = () => {
-    // Use QR Code API to generate QR code as image
     const lot = getLotForContainer(qrContainer.id);
 
-    // Create URL that links to this vessel's detail page with scan parameter for mobile view
-    const vesselUrl = `${window.location.origin}/production/vessel/${qrContainer.id}?scan=true`;
-
-    // Use QR Server API to generate QR code
-    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=144x144&data=${encodeURIComponent(vesselUrl)}&ecc=H`;
+    // Get the QR code SVG from the modal and serialize it
+    const qrSvg = document.querySelector('#qr-code-container svg');
+    let qrSvgString = '';
+    if (qrSvg) {
+      // Clone and set explicit size
+      const clonedSvg = qrSvg.cloneNode(true);
+      clonedSvg.setAttribute('width', '144');
+      clonedSvg.setAttribute('height', '144');
+      qrSvgString = new XMLSerializer().serializeToString(clonedSvg);
+    }
 
     // Create a new window with just the label
     const printWindow = window.open('', '_blank', 'width=600,height=400');
@@ -534,26 +538,26 @@ export function ContainerManagement() {
               height: 2in;
               padding: 0.15in;
               border: 2px solid #000;
-              display: table;
-            }
-
-            .label-content {
-              display: table-row;
+              display: flex;
+              align-items: center;
             }
 
             .text-side {
-              display: table-cell;
-              width: 2.4in;
-              vertical-align: middle;
+              width: 2.2in;
               padding: 0.1in;
             }
 
             .qr-side {
-              display: table-cell;
               width: 1.6in;
-              text-align: center;
-              vertical-align: middle;
+              display: flex;
+              align-items: center;
+              justify-content: center;
               padding: 0.1in;
+            }
+
+            .qr-side svg {
+              width: 144px;
+              height: 144px;
             }
 
             .field {
@@ -589,44 +593,46 @@ export function ContainerManagement() {
               color: #888;
             }
 
-            .qr-code-img {
-              width: 144px;
-              height: 144px;
-            }
-
             @media print {
               body {
                 width: 4in;
                 height: 2in;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              .label-container {
+                border: 2px solid #000 !important;
               }
             }
           </style>
         </head>
         <body>
           <div class="label-container">
-            <div class="label-content">
-              <div class="text-side">
-                <div class="field">
-                  <div class="field-label">BARREL ID</div>
-                  <div class="field-value large">${qrContainer.name}</div>
-                </div>
-                <div class="field">
-                  <div class="field-label">VARIETY</div>
-                  <div class="field-value">${lot?.varietal || '—'}</div>
-                </div>
-                <div class="field">
-                  <div class="field-label">VINTAGE</div>
-                  <div class="field-value">${lot?.vintage || '—'}</div>
-                </div>
-                <div class="footer">
-                  ${qrContainer.capacity_gallons} gal • ${qrContainer.material?.replace('_', ' ') || '—'}
-                </div>
+            <div class="text-side">
+              <div class="field">
+                <div class="field-label">VESSEL ID</div>
+                <div class="field-value large">${qrContainer.name}</div>
               </div>
-              <div class="qr-side">
-                <img src="${qrImageUrl}" class="qr-code-img" alt="QR Code" onload="window.print();" />
+              <div class="field">
+                <div class="field-label">VARIETY</div>
+                <div class="field-value">${lot?.varietal || '—'}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">VINTAGE</div>
+                <div class="field-value">${lot?.vintage || '—'}</div>
+              </div>
+              <div class="footer">
+                ${qrContainer.capacity_gallons} gal • ${qrContainer.material?.replace('_', ' ') || '—'}
               </div>
             </div>
+            <div class="qr-side">
+              ${qrSvgString}
+            </div>
           </div>
+          <script>
+            // Auto-print after a brief delay to ensure rendering
+            setTimeout(function() { window.print(); }, 100);
+          </script>
         </body>
       </html>
     `);
@@ -1913,7 +1919,7 @@ export function ContainerManagement() {
                     </div>
 
                     {/* Right side - QR Code */}
-                    <div className="flex items-center justify-center" style={{ width: '1.6in' }}>
+                    <div id="qr-code-container" className="flex items-center justify-center" style={{ width: '1.6in' }}>
                       <QRCode
                         value={`${window.location.origin}/production/vessel/${qrContainer.id}?scan=true`}
                         size={144}

@@ -10,7 +10,8 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/planner';
+  const redirectParam = searchParams.get('redirect');
+  const redirect = redirectParam ? decodeURIComponent(redirectParam) : '/planner';
   const startTrial = searchParams.get('startTrial') === 'true';
   const tier = searchParams.get('tier');
 

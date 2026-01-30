@@ -38,7 +38,7 @@ export default function FinancialPlannerPage() {
               Complete vineyard financial planning
             </h1>
             <p className="mt-6 text-xl leading-8 text-white/90">
-              From financial planning to vineyard design—everything you need to plan, finance, and execute your vineyard project.
+              From financial planning to vineyard design. Everything you need to plan, finance, and execute your vineyard project.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link

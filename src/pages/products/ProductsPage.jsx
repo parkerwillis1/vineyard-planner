@@ -146,7 +146,7 @@ export default function ProductsPage() {
             </h1>
             <p className="mt-6 text-xl leading-8 text-white/90">
               {selectedTool === 'planner'
-                ? 'From financial planning to vineyard design—everything you need to plan, finance, and execute your vineyard project.'
+                ? 'From financial planning to vineyard design. Everything you need to plan, finance, and execute your vineyard project.'
                 : selectedTool === 'operations'
                 ? 'Manage blocks, track tasks, monitor spray programs, and optimize your vineyard operations from one central platform.'
                 : 'Track harvest, manage fermentation, create blends, and monitor inventory across your entire winery operation.'}

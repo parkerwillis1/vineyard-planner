@@ -163,20 +163,91 @@ export function VesselsPage() {
         </Subsection>
       </Section>
 
-      <Section title="QR Codes">
+      <Section title="QR Code Labels">
         <p className="text-gray-700 leading-relaxed mb-4">
-          Each vessel can display a QR code for quick identification:
+          Generate and print QR code labels to attach to your physical vessels. Scanning a label
+          with any smartphone instantly opens that vessel's detail page—perfect for cellar staff
+          to quickly check contents, log readings, or record work.
         </p>
-        <ul className="list-disc list-inside space-y-2 text-gray-700 mb-4">
-          <li>Click the QR icon on any vessel card</li>
-          <li>Print the QR code label</li>
-          <li>Attach to the physical vessel</li>
-          <li>Scan to quickly view vessel details on mobile</li>
-        </ul>
-        <Callout type="tip" title="QR Code Labels">
-          Printed labels include the vessel name and QR code that links directly to the vessel
-          detail page. Great for cellar staff to quickly look up contents or log work.
-        </Callout>
+
+        <Subsection title="Printing Labels">
+          <p className="text-gray-700 leading-relaxed mb-4">
+            Labels are optimized for <strong>4" x 2" thermal sticker labels</strong>. To print:
+          </p>
+          <ol className="list-decimal list-inside space-y-2 text-gray-700 mb-4">
+            <li>Click the QR icon on any vessel card</li>
+            <li>Preview the label (shows vessel name, variety, vintage, and QR code)</li>
+            <li>Click "Print Label" to send to your printer</li>
+            <li>Attach the printed sticker to your barrel or tank</li>
+          </ol>
+        </Subsection>
+
+        <Subsection title="Recommended Printers">
+          <p className="text-gray-700 leading-relaxed mb-4">
+            For best results, use a thermal label printer. These don't require ink and produce
+            durable labels that withstand cellar humidity:
+          </p>
+          <Table
+            headers={['Printer', 'Price', 'Best For']}
+            rows={[
+              ['DYMO LabelWriter 550', '~$120', 'Small wineries, easy setup'],
+              ['Brother QL-820NWB', '~$200', 'WiFi/Bluetooth, multiple users'],
+              ['ROLLO Label Printer', '~$180', 'Versatile, various label sizes'],
+              ['Zebra ZD421', '~$350', 'Professional grade, high volume'],
+            ]}
+          />
+          <Callout type="tip" title="Label Stock">
+            Purchase <strong>4" x 2" direct thermal labels</strong> (no ink or ribbon needed).
+            For cellar use, look for "waterproof" or "moisture resistant" thermal labels to
+            ensure durability in humid conditions.
+          </Callout>
+          <p className="text-gray-700 leading-relaxed mt-4">
+            <strong>Budget option:</strong> A regular inkjet or laser printer works too—just buy
+            4" x 2" sticker sheets (Avery makes these). Thermal printers are simply faster and
+            more durable for cellar environments.
+          </p>
+        </Subsection>
+
+        <Subsection title="Scanning Labels">
+          <p className="text-gray-700 leading-relaxed mb-4">
+            Any smartphone camera can scan the QR codes:
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-gray-700 mb-4">
+            <li><strong>iPhone:</strong> Open Camera app and point at QR code</li>
+            <li><strong>Android:</strong> Open Camera app or Google Lens</li>
+            <li>Tap the notification that appears to open the vessel page</li>
+          </ul>
+          <p className="text-gray-700 leading-relaxed mb-4">
+            When scanned, the QR code opens a <strong>mobile-optimized quick view</strong> showing:
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-gray-700 mb-4">
+            <li>Vessel name and current contents</li>
+            <li>Wine variety and vintage</li>
+            <li>Current volume and fill level</li>
+            <li>Quick action buttons (log reading, CIP, etc.)</li>
+          </ul>
+        </Subsection>
+
+        <Subsection title="Best Practices for Labels">
+          <ul className="space-y-3 text-gray-700">
+            <li className="flex items-start gap-3">
+              <span className="text-purple-600 font-bold mt-1">•</span>
+              <span><strong>Placement:</strong> Attach labels at eye level on the barrel head or tank shell</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-purple-600 font-bold mt-1">•</span>
+              <span><strong>Protection:</strong> For high-humidity areas, cover labels with clear packing tape</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-purple-600 font-bold mt-1">•</span>
+              <span><strong>Replace when needed:</strong> Reprint labels if they become damaged or unreadable</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-purple-600 font-bold mt-1">•</span>
+              <span><strong>Bulk printing:</strong> Print all barrel labels at once when setting up a new lot</span>
+            </li>
+          </ul>
+        </Subsection>
       </Section>
 
       <Section title="Vessel Detail Page">
