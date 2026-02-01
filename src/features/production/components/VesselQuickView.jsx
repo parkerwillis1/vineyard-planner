@@ -19,12 +19,15 @@ import { useAuth } from '@/auth/AuthContext.jsx';
  * Mobile-optimized quick view for vessels accessed via QR code scan
  * Shows essential info and quick action buttons
  */
-export function VesselQuickView() {
-  const { id } = useParams();
+export function VesselQuickView({ id: propId }) {
+  const { id: paramId } = useParams();
+  const id = propId || paramId; // Use prop if provided, fallback to URL param
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isScan = searchParams.get('scan') === 'true';
   const { user, loading: authLoading } = useAuth() || {};
+
+  console.log('[VesselQuickView] ID from prop:', propId, 'ID from params:', paramId, 'Using:', id);
 
   const [container, setContainer] = useState(null);
   const [lot, setLot] = useState(null);

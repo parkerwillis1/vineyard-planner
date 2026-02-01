@@ -40,8 +40,9 @@ export function VesselDetail({ id: propId, onBack }) {
   const fromView = searchParams.get('from');
 
   // If scanned via QR, show mobile-optimized quick view
+  // Pass the id explicitly since useParams() may not work in nested renders
   if (isScan) {
-    return <VesselQuickView />;
+    return <VesselQuickView id={id} />;
   }
 
   // Core state
