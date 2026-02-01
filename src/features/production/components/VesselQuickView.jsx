@@ -305,156 +305,194 @@ export function VesselQuickView({ id: propId }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#7C203A] to-[#422833] pb-6">
-      {/* Header with scan indicator */}
-      {isScan && (
-        <div className="bg-white/10 backdrop-blur-sm text-white px-4 py-3 text-center font-medium">
-          <CheckCircle2 className="w-5 h-5 inline mr-2" />
-          QR Code Scanned Successfully
+    <div className="min-h-screen bg-gray-100">
+      {/* Elegant Header */}
+      <div className="bg-gradient-to-r from-[#7C203A] to-[#5a1a2d] text-white">
+        <div className="px-5 pt-4 pb-6">
+          {/* Success indicator */}
+          {isScan && (
+            <div className="flex items-center justify-center gap-2 mb-4 py-2 px-4 bg-white/15 rounded-full w-fit mx-auto">
+              <CheckCircle2 className="w-4 h-4" />
+              <span className="text-sm font-medium">QR Scan Successful</span>
+            </div>
+          )}
+
+          {/* Vessel name and status */}
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold mb-1">{container.name}</h1>
+              <p className="text-white/70 text-sm capitalize">{container.type} • {container.capacity_gallons.toLocaleString()} gallon capacity</p>
+            </div>
+            <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${
+              container.status === 'in_use' ? 'bg-white text-[#7C203A]' :
+              container.status === 'empty' ? 'bg-white/20 text-white' :
+              container.status === 'sanitized' ? 'bg-emerald-400 text-emerald-900' :
+              'bg-white/20 text-white'
+            }`}>
+              {container.status.replace('_', ' ')}
+            </span>
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Main Content */}
-      <div className="p-5 space-y-5">
+      <div className="px-4 -mt-2 pb-6 space-y-4">
         {/* Success/Error Messages */}
         {success && (
-          <div className="bg-green-500 text-white px-5 py-4 rounded-xl flex items-center justify-between shadow-lg text-base font-medium">
-            <span>{success}</span>
-            <button onClick={() => setSuccess(null)} className="p-1 hover:bg-green-600 rounded-lg transition-colors">
-              <X className="w-6 h-6" />
+          <div className="bg-emerald-500 text-white px-4 py-3 rounded-xl flex items-center justify-between shadow-lg text-sm font-medium">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5" />
+              <span>{success}</span>
+            </div>
+            <button onClick={() => setSuccess(null)} className="p-1 hover:bg-emerald-600 rounded-lg transition-colors">
+              <X className="w-5 h-5" />
             </button>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-500 text-white px-5 py-4 rounded-xl flex items-center justify-between shadow-lg text-base font-medium">
+          <div className="bg-red-500 text-white px-4 py-3 rounded-xl flex items-center justify-between shadow-lg text-sm font-medium">
             <span>{error}</span>
             <button onClick={() => setError(null)} className="p-1 hover:bg-red-600 rounded-lg transition-colors">
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         )}
 
-        {/* Vessel Header Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-          <div className="flex items-start justify-between mb-5">
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-1">{container.name}</h1>
-              <p className="text-lg text-gray-600 capitalize">{container.type} • {container.capacity_gallons} gal</p>
-            </div>
-            <span className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap ${getStatusColor(container.status)}`}>
-              {container.status.replace('_', ' ')}
-            </span>
+        {/* Fill Level Card */}
+        <div className="bg-white rounded-2xl shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-gray-600">Current Fill Level</span>
+            <span className="text-2xl font-bold text-gray-900">{fillPercentage.toFixed(0)}%</span>
           </div>
-
-          {/* Fill Level Indicator */}
-          <div className="mb-5">
-            <div className="flex justify-between text-base text-gray-700 mb-2 font-medium">
-              <span>Fill Level</span>
-              <span className="font-bold text-lg">{fillPercentage.toFixed(0)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden shadow-inner">
-              <div
-                className="bg-gradient-to-r from-[#7C203A] to-[#8B2E48] h-6 transition-all duration-500 flex items-center justify-end"
-                style={{ width: `${fillPercentage}%` }}
-              >
-                {fillPercentage > 10 && (
-                  <span className="text-white text-xs font-bold mr-2">{fillPercentage.toFixed(0)}%</span>
-                )}
-              </div>
-            </div>
+          <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+            <div
+              className={`h-3 rounded-full transition-all duration-500 ${
+                fillPercentage > 80 ? 'bg-[#7C203A]' :
+                fillPercentage > 50 ? 'bg-amber-500' :
+                fillPercentage > 20 ? 'bg-emerald-500' :
+                'bg-gray-400'
+              }`}
+              style={{ width: `${fillPercentage}%` }}
+            />
           </div>
-
-          {/* Current Lot Info */}
-          {lot ? (
-            <div className="bg-gradient-to-br from-[#7C203A]/10 to-[#7C203A]/5 rounded-xl p-5 border-2 border-[#7C203A]/20">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#7C203A] flex items-center justify-center">
-                  <Wine className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-gray-900">{lot.varietal || 'Unknown'}</p>
-                  <p className="text-sm text-[#7C203A] font-semibold">{lot.vintage} • {lot.name}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Brix</p>
-                  <p className="text-2xl font-bold text-amber-600">{lot.current_brix?.toFixed(1) || '—'}°</p>
-                </div>
-                <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Temp</p>
-                  <p className="text-2xl font-bold text-red-600">{lot.current_temp_f?.toFixed(0) || '—'}°F</p>
-                </div>
-                <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">pH</p>
-                  <p className="text-2xl font-bold text-purple-600">{lot.current_ph?.toFixed(2) || '—'}</p>
-                </div>
-                <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Volume</p>
-                  <p className="text-2xl font-bold text-[#7C203A]">{lot.current_volume_gallons?.toFixed(0) || '—'} <span className="text-sm font-normal">gal</span></p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-gray-50 rounded-xl p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-3">
-                <Wine className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-lg font-semibold text-gray-700">Vessel Empty</p>
-              <p className="text-sm text-gray-500 mt-1">No lot currently assigned</p>
-            </div>
-          )}
+          <div className="flex justify-between mt-2 text-xs text-gray-500">
+            <span>0 gal</span>
+            <span>{lot?.current_volume_gallons?.toLocaleString() || 0} / {container.capacity_gallons.toLocaleString()} gal</span>
+          </div>
         </div>
 
-        {/* Quick Actions - Larger touch targets */}
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            onClick={() => setShowReadingModal(true)}
-            disabled={!lot}
-            className={`bg-white rounded-2xl shadow-xl p-5 text-left transition-all min-h-[120px] border-2 border-transparent ${
-              lot ? 'hover:shadow-2xl hover:border-[#7C203A]/20 active:scale-95' : 'opacity-50 cursor-not-allowed'
-            }`}
-          >
-            <div className="w-12 h-12 rounded-xl bg-[#7C203A]/10 flex items-center justify-center mb-3">
-              <Activity className="w-6 h-6 text-[#7C203A]" />
+        {/* Wine Info Card */}
+        {lot ? (
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            {/* Wine header */}
+            <div className="bg-gradient-to-r from-[#7C203A]/5 to-[#7C203A]/10 px-4 py-3 border-b border-[#7C203A]/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#7C203A] flex items-center justify-center shadow-sm">
+                  <Wine className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-900 truncate">{lot.varietal || 'Unknown Varietal'}</p>
+                  <p className="text-xs text-[#7C203A] font-medium truncate">{lot.vintage} Vintage • {lot.name}</p>
+                </div>
+              </div>
             </div>
-            <p className="font-bold text-gray-900 text-lg mb-1">Quick Reading</p>
-            <p className="text-sm text-gray-600">Brix, Temp, pH</p>
-          </button>
 
-          <button
-            onClick={() => setShowCIPModal(true)}
-            className="bg-white rounded-2xl shadow-xl p-5 text-left hover:shadow-2xl hover:border-emerald-200 active:scale-95 transition-all min-h-[120px] border-2 border-transparent"
-          >
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center mb-3">
-              <Sparkles className="w-6 h-6 text-emerald-600" />
+            {/* Metrics grid */}
+            <div className="grid grid-cols-4 divide-x divide-gray-100">
+              <div className="p-3 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-1">Brix</p>
+                <p className="text-xl font-bold text-gray-900">{lot.current_brix?.toFixed(1) || '—'}</p>
+                <p className="text-[10px] text-gray-400">°Bx</p>
+              </div>
+              <div className="p-3 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-1">Temp</p>
+                <p className="text-xl font-bold text-gray-900">{lot.current_temp_f?.toFixed(0) || '—'}</p>
+                <p className="text-[10px] text-gray-400">°F</p>
+              </div>
+              <div className="p-3 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-1">pH</p>
+                <p className="text-xl font-bold text-gray-900">{lot.current_ph?.toFixed(2) || '—'}</p>
+                <p className="text-[10px] text-gray-400">level</p>
+              </div>
+              <div className="p-3 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-1">Vol</p>
+                <p className="text-xl font-bold text-gray-900">{lot.current_volume_gallons ? (lot.current_volume_gallons / 1000).toFixed(1) : '—'}</p>
+                <p className="text-[10px] text-gray-400">k gal</p>
+              </div>
             </div>
-            <p className="font-bold text-gray-900 text-lg mb-1">Mark Cleaned</p>
-            <p className="text-sm text-gray-600">Record CIP</p>
-          </button>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
+            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+              <Wine className="w-7 h-7 text-gray-400" />
+            </div>
+            <p className="font-semibold text-gray-700">Vessel Empty</p>
+            <p className="text-sm text-gray-500 mt-1">No lot currently assigned</p>
+          </div>
+        )}
 
-          <button
-            onClick={() => navigate(`/production/vessel/${id}`)}
-            className="bg-white rounded-2xl shadow-xl p-5 text-left hover:shadow-2xl hover:border-slate-200 active:scale-95 transition-all min-h-[120px] border-2 border-transparent"
-          >
-            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-              <BarChart3 className="w-6 h-6 text-slate-700" />
-            </div>
-            <p className="font-bold text-gray-900 text-lg mb-1">Full Details</p>
-            <p className="text-sm text-gray-600">View analytics</p>
-          </button>
+        {/* Quick Actions */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1">Quick Actions</p>
 
-          <button
-            onClick={() => navigate('/production?view=containers')}
-            className="bg-white rounded-2xl shadow-xl p-5 text-left hover:shadow-2xl hover:border-gray-200 active:scale-95 transition-all min-h-[120px] border-2 border-transparent"
-          >
-            <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
-              <ExternalLink className="w-6 h-6 text-gray-600" />
-            </div>
-            <p className="font-bold text-gray-900 text-lg mb-1">All Vessels</p>
-            <p className="text-sm text-gray-600">Manage fleet</p>
-          </button>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setShowReadingModal(true)}
+              disabled={!lot}
+              className={`bg-white rounded-xl shadow-sm p-4 text-left transition-all ${
+                lot ? 'active:scale-[0.98]' : 'opacity-50 cursor-not-allowed'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C203A] to-[#5a1a2d] flex items-center justify-center shadow-sm">
+                  <Activity className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Add Reading</p>
+                  <p className="text-xs text-gray-500">Brix, Temp, pH</p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setShowCIPModal(true)}
+              className="bg-white rounded-xl shadow-sm p-4 text-left active:scale-[0.98] transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-sm">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Mark Clean</p>
+                  <p className="text-xs text-gray-500">Record CIP</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* Secondary actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate(`/production/vessel/${id}`)}
+              className="flex-1 bg-white rounded-xl shadow-sm px-4 py-3 text-center active:scale-[0.98] transition-all"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <BarChart3 className="w-4 h-4 text-gray-600" />
+                <span className="font-medium text-gray-700 text-sm">Full Details</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigate('/production?view=containers')}
+              className="flex-1 bg-white rounded-xl shadow-sm px-4 py-3 text-center active:scale-[0.98] transition-all"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <ExternalLink className="w-4 h-4 text-gray-600" />
+                <span className="font-medium text-gray-700 text-sm">All Vessels</span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
