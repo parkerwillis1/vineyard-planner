@@ -130,20 +130,20 @@ export default function HomePage() {
       </section>
 
       {/* Product Showcase - Zendesk Style */}
-      <section className="relative bg-white py-20 sm:py-32 overflow-hidden">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="relative bg-white py-12 sm:py-20 lg:py-32 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           {/* Title */}
-          <div className="text-center mb-10 mt-4">
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-4">
+          <div className="text-center mb-8 sm:mb-10 mt-2 sm:mt-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-gray-900 mb-3 sm:mb-4 px-2">
               Plan smarter. Operate better.
             </h2>
-            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto px-2">
               Everything you need to design your vineyard, forecast financials, and manage daily operations, all in one platform.
             </p>
           </div>
 
           {/* Main content with software mockup and people */}
-          <div className="relative flex items-center justify-center min-h-[600px]">
+          <div className="relative flex items-center justify-center min-h-[400px] sm:min-h-[500px] lg:min-h-[600px]">
             {/* Background layer - furthest back (z-index: 1) */}
             {/* Far left - small and receded */}
             <div className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-56 h-80 rounded-3xl overflow-hidden shadow-lg" style={{zIndex: 1}}>
@@ -183,18 +183,18 @@ export default function HomePage() {
             </div>
 
             {/* Software Interface Mockup - IN FRONT (z-index: 10) */}
-            <div className="relative z-10 mx-auto max-w-[52rem] w-full">
+            <div className="relative z-10 mx-auto max-w-[52rem] w-full px-2 sm:px-0">
               {/* Browser-style mockup frame */}
-              <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+              <div className="relative bg-white rounded-xl sm:rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
                 {/* Browser chrome */}
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                <div className="bg-gray-100 px-2 sm:px-4 py-2 sm:py-3 border-b border-gray-200 flex items-center gap-2">
+                  <div className="flex gap-1 sm:gap-1.5">
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-400"></div>
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-400"></div>
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-400"></div>
                   </div>
-                  <div className="flex-1 mx-4">
-                    <div className="bg-white rounded px-3 py-1 text-xs text-gray-500 max-w-md">
+                  <div className="flex-1 mx-2 sm:mx-4">
+                    <div className="bg-white rounded px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-gray-500 max-w-md truncate">
                       trellisag.com/planner
                     </div>
                   </div>
@@ -202,8 +202,8 @@ export default function HomePage() {
 
                 {/* Interface content - Planner view with sidebar */}
                 <div className="bg-gray-50 flex">
-                  {/* Sidebar */}
-                  <div className="w-40 bg-white border-r border-gray-200 p-2.5 flex flex-col">
+                  {/* Sidebar - Hidden on mobile */}
+                  <div className="hidden sm:flex w-32 lg:w-40 bg-white border-r border-gray-200 p-2 lg:p-2.5 flex-col">
                     <div className="mb-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Sprout className="w-4 h-4 text-vine-green-600" />
@@ -251,69 +251,57 @@ export default function HomePage() {
                   </div>
 
                   {/* Main content */}
-                  <div className="flex-1 p-5">
+                  <div className="flex-1 p-3 sm:p-4 lg:p-5">
                     {/* Header */}
-                    <div className="mb-3">
-                      <h2 className="text-xl font-bold text-gray-900 mb-0.5">10-Year Plan</h2>
-                      <p className="text-xs text-gray-600">Financial forecast showing revenue, expenses, and profitability</p>
+                    <div className="mb-2 sm:mb-3">
+                      <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-0.5">10-Year Plan</h2>
+                      <p className="text-[10px] sm:text-xs text-gray-600 hidden sm:block">Financial forecast showing revenue, expenses, and profitability</p>
                     </div>
 
                     {/* Key metrics cards */}
-                    <div className="grid grid-cols-3 gap-2.5 mb-3">
-                      <div className="bg-white rounded-lg p-2.5 shadow-sm border border-gray-200 text-center">
-                        <TrendingUp className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-                        <div className="text-xl font-bold text-blue-600">Year 7</div>
-                        <div className="text-xs text-gray-600">Break Even</div>
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 lg:gap-2.5 mb-2 sm:mb-3">
+                      <div className="bg-white rounded-lg p-1.5 sm:p-2 lg:p-2.5 shadow-sm border border-gray-200 text-center">
+                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 mx-auto mb-0.5 sm:mb-1" />
+                        <div className="text-sm sm:text-lg lg:text-xl font-bold text-blue-600">Year 7</div>
+                        <div className="text-[9px] sm:text-xs text-gray-600">Break Even</div>
                       </div>
-                      <div className="bg-white rounded-lg p-2.5 shadow-sm border border-gray-200 text-center">
-                        <div className="w-5 h-5 rounded-full bg-[#008070]/10 flex items-center justify-center mx-auto mb-1">
-                          <DollarSign className="w-3.5 h-3.5 text-[#008070]" />
+                      <div className="bg-white rounded-lg p-1.5 sm:p-2 lg:p-2.5 shadow-sm border border-gray-200 text-center">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#008070]/10 flex items-center justify-center mx-auto mb-0.5 sm:mb-1">
+                          <DollarSign className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-[#008070]" />
                         </div>
-                        <div className="text-xl font-bold text-[#008070]">$1.09M</div>
-                        <div className="text-xs text-gray-600">Total Revenue</div>
+                        <div className="text-sm sm:text-lg lg:text-xl font-bold text-[#008070]">$1.09M</div>
+                        <div className="text-[9px] sm:text-xs text-gray-600">10-Yr Revenue</div>
                       </div>
-                      <div className="bg-white rounded-lg p-2.5 shadow-sm border border-gray-200 text-center">
-                        <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-1">
-                          <TrendingUp className="w-3.5 h-3.5 text-green-600" />
+                      <div className="bg-white rounded-lg p-1.5 sm:p-2 lg:p-2.5 shadow-sm border border-gray-200 text-center">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-0.5 sm:mb-1">
+                          <TrendingUp className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-green-600" />
                         </div>
-                        <div className="text-xl font-bold text-green-600">210%</div>
-                        <div className="text-xs text-gray-600">Annual ROI</div>
+                        <div className="text-sm sm:text-lg lg:text-xl font-bold text-green-600">210%</div>
+                        <div className="text-[9px] sm:text-xs text-gray-600">Projected ROI</div>
                       </div>
                     </div>
 
                     {/* Revenue projection chart */}
-                    <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-bold text-gray-900">10-Year Revenue Projection</h3>
-                        <BarChart3 className="w-4 h-4 text-[#008070]" />
+                    <div className="bg-white rounded-lg p-2 sm:p-3 shadow-sm border border-gray-200">
+                      <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                        <h3 className="text-xs sm:text-sm font-bold text-gray-900">Annual Cash Flow</h3>
+                        <span className="text-[10px] sm:text-xs text-green-600 font-medium">Profitable Year 7+</span>
                       </div>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600">Year 1-3</span>
-                          <span className="font-semibold text-gray-900">$0</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5"></div>
-
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600">Year 4-5</span>
-                          <span className="font-semibold text-gray-900">$90,890/yr</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-yellow-500 h-1.5 rounded-full" style={{width: '60%'}}></div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600">Year 6-10</span>
-                          <span className="font-semibold text-gray-900">$181,780/yr</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-[#008070] h-1.5 rounded-full" style={{width: '100%'}}></div>
-                        </div>
+                      {/* Mini chart */}
+                      <div className="flex items-end gap-1 h-16 sm:h-20 lg:h-24">
+                        {[-45, -35, -20, 15, 40, 65, 85, 95, 100, 98].map((h, i) => (
+                          <div key={i} className="flex-1 flex flex-col justify-end h-full">
+                            <div
+                              className={`w-full rounded-t transition-all ${h < 0 ? 'bg-red-400' : h < 50 ? 'bg-yellow-400' : 'bg-green-500'}`}
+                              style={{height: `${Math.abs(h)}%`}}
+                            ></div>
+                          </div>
+                        ))}
                       </div>
-
-                      <div className="mt-2 pt-2 border-t border-gray-200 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-700">Break-Even</span>
-                        <span className="text-sm font-bold text-[#008070]">Year 7</span>
+                      <div className="flex justify-between mt-1 text-[9px] sm:text-xs text-gray-500">
+                        <span>Year 1</span>
+                        <span>Year 5</span>
+                        <span>Year 10</span>
                       </div>
                     </div>
                   </div>
@@ -323,8 +311,8 @@ export default function HomePage() {
           </div>
 
           {/* Moving Ticker - Trusted Vineyards */}
-          <div className="mt-12 border-t border-gray-200 pt-8">
-            <p className="text-center text-sm font-semibold text-gray-500 uppercase tracking-wide mb-8">
+          <div className="mt-8 sm:mt-12 border-t border-gray-200 pt-6 sm:pt-8">
+            <p className="text-center text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide mb-6 sm:mb-8 px-4">
               Trusted by vineyard operations across North America
             </p>
 
@@ -344,26 +332,26 @@ export default function HomePage() {
               `}} />
               <div className="flex ticker-animate whitespace-nowrap">
                 {/* First set of names */}
-                <div className="flex items-center gap-12 px-6">
-                  <span className="text-gray-400 font-bold text-lg">Napa Valley Estates</span>
-                  <span className="text-gray-400 font-bold text-lg">Willamette Vintners</span>
-                  <span className="text-gray-400 font-bold text-lg">Sonoma Vineyards</span>
-                  <span className="text-gray-400 font-bold text-lg">Central Coast Wines</span>
-                  <span className="text-gray-400 font-bold text-lg">Paso Robles Growers</span>
-                  <span className="text-gray-400 font-bold text-lg">Santa Barbara Viticulture</span>
-                  <span className="text-gray-400 font-bold text-lg">Oregon Wine Co.</span>
-                  <span className="text-gray-400 font-bold text-lg">Finger Lakes Vineyard</span>
+                <div className="flex items-center gap-6 sm:gap-12 px-4 sm:px-6">
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Napa Valley Estates</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Willamette Vintners</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Sonoma Vineyards</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Central Coast Wines</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Paso Robles Growers</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Santa Barbara Viticulture</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Oregon Wine Co.</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Finger Lakes Vineyard</span>
                 </div>
                 {/* Duplicate set for seamless loop */}
-                <div className="flex items-center gap-12 px-6">
-                  <span className="text-gray-400 font-bold text-lg">Napa Valley Estates</span>
-                  <span className="text-gray-400 font-bold text-lg">Willamette Vintners</span>
-                  <span className="text-gray-400 font-bold text-lg">Sonoma Vineyards</span>
-                  <span className="text-gray-400 font-bold text-lg">Central Coast Wines</span>
-                  <span className="text-gray-400 font-bold text-lg">Paso Robles Growers</span>
-                  <span className="text-gray-400 font-bold text-lg">Santa Barbara Viticulture</span>
-                  <span className="text-gray-400 font-bold text-lg">Oregon Wine Co.</span>
-                  <span className="text-gray-400 font-bold text-lg">Finger Lakes Vineyard</span>
+                <div className="flex items-center gap-6 sm:gap-12 px-4 sm:px-6">
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Napa Valley Estates</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Willamette Vintners</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Sonoma Vineyards</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Central Coast Wines</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Paso Robles Growers</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Santa Barbara Viticulture</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Oregon Wine Co.</span>
+                  <span className="text-gray-400 font-bold text-sm sm:text-lg">Finger Lakes Vineyard</span>
                 </div>
               </div>
             </div>
@@ -372,71 +360,71 @@ export default function HomePage() {
       </section>
 
       {/* Planning Tools Section - Clean & Balanced */}
-      <section className="bg-gradient-to-br from-vine-green-500 to-emerald-600 pt-16 pb-24 sm:pt-20 sm:pb-32">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 mb-3 border border-white/30">
-              <LayoutGrid className="w-4 h-4 text-white" strokeWidth={1.5} />
-              <span className="text-sm font-semibold text-white">Financial Planner</span>
+      <section className="bg-gradient-to-br from-vine-green-500 to-emerald-600 py-12 sm:pt-16 sm:pb-24 lg:pt-20 lg:pb-32">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-16 lg:mb-20">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 sm:px-4 py-1.5 sm:py-2 mb-3 border border-white/30">
+              <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" strokeWidth={1.5} />
+              <span className="text-xs sm:text-sm font-semibold text-white">Financial Planner</span>
             </div>
-            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
+            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 px-2">
               Build your vineyard with real numbers
             </h2>
-            <p className="text-lg text-white/90 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base lg:text-lg text-white/90 max-w-2xl mx-auto px-2">
               Model your complete financial picture with tools that show lenders you've done the homework.
             </p>
           </div>
 
           {/* 2x2 grid with more substance */}
-          <div className="grid md:grid-cols-2 gap-12 text-white">
+          <div className="grid sm:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 text-white">
             {/* Configure Layout */}
             <div>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <LayoutGrid className="w-6 h-6" strokeWidth={1.5} />
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <LayoutGrid className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-2xl font-bold">Configure Your Layout</h3>
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold">Configure Your Layout</h3>
               </div>
-              <p className="text-base text-white/90 leading-relaxed">
+              <p className="text-sm sm:text-base text-white/90 leading-relaxed">
                 Set vine spacing, define plot dimensions, and calculate total vines, trellis materials, irrigation components, and fencing costs.
               </p>
             </div>
 
             {/* Cash Flow */}
             <div>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6" strokeWidth={1.5} />
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-2xl font-bold">Project Your Cash Flow</h3>
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold">Project Your Cash Flow</h3>
               </div>
-              <p className="text-base text-white/90 leading-relaxed">
+              <p className="text-sm sm:text-base text-white/90 leading-relaxed">
                 Create 10-30 year forecasts with revenue, expenses, and liquidity analysis. Choose bottled wine or bulk grape sales.
               </p>
             </div>
 
             {/* Structure Debt */}
             <div>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <DollarSign className="w-6 h-6" strokeWidth={1.5} />
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <DollarSign className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-2xl font-bold">Structure Your Debt</h3>
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold">Structure Your Debt</h3>
               </div>
-              <p className="text-base text-white/90 leading-relaxed">
+              <p className="text-sm sm:text-base text-white/90 leading-relaxed">
                 Evaluate USDA FSA loans and commercial financing with precise payment calculations, loan-to-value ratios, and equity requirements.
               </p>
             </div>
 
             {/* Scenarios */}
             <div>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6" strokeWidth={1.5} />
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-2xl font-bold">Analyze Scenarios</h3>
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold">Analyze Scenarios</h3>
               </div>
-              <p className="text-base text-white/90 leading-relaxed">
+              <p className="text-sm sm:text-base text-white/90 leading-relaxed">
                 Test different strategies by adjusting key variables and instantly see how they impact profitability and break-even timeline.
               </p>
             </div>
@@ -448,37 +436,38 @@ export default function HomePage() {
       <JourneySection />
 
       {/* Scroll-Highlight Statement Section */}
-      <section className="relative bg-gray-50 py-24 sm:py-32 lg:py-40 overflow-hidden">
+      <section className="relative bg-gray-50 py-16 sm:py-24 lg:py-32 xl:py-40 overflow-hidden">
         {/* Decorative elements */}
-        <div className="absolute top-20 right-0 w-64 h-64 bg-vine-green-100 rounded-full opacity-40 blur-3xl"></div>
-        <div className="absolute bottom-20 left-0 w-64 h-64 bg-teal-100 rounded-full opacity-40 blur-3xl"></div>
+        <div className="absolute top-20 right-0 w-48 sm:w-64 h-48 sm:h-64 bg-vine-green-100 rounded-full opacity-40 blur-3xl"></div>
+        <div className="absolute bottom-20 left-0 w-48 sm:w-64 h-48 sm:h-64 bg-teal-100 rounded-full opacity-40 blur-3xl"></div>
 
-        <div className="relative mx-auto max-w-5xl px-6">
-          <div className="text-center space-y-8">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
-              Vineyard management is built on tradition.
-            </h2>
+        <div className="relative mx-auto max-w-5xl px-4 sm:px-6">
+          <div className="text-center space-y-6 sm:space-y-8">
+            <div className="space-y-1 sm:space-y-2">
+              <h2 className="text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight">
+                Tradition is the foundation.
+              </h2>
+              <h2 className="text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight">
+                Innovation is the advantage.
+              </h2>
+            </div>
 
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
-              But that doesn't mean your tools need to be.
-            </h2>
-
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-relaxed max-w-4xl mx-auto pt-8">
+            <p className="text-lg sm:text-2xl lg:text-3xl xl:text-4xl font-bold leading-relaxed max-w-4xl mx-auto pt-4 sm:pt-8 px-2">
               <ScrollHighlightText>
                 Trellis streamlines vineyard and winery operations, helping you grow exceptional grapes and craft outstanding wine. Acting as an extension of your team, we automate repetitive tasks and enable faster decisions through real-time insights. Trellis connects your entire process: planning, growing, and producing wine in one seamless platform.
               </ScrollHighlightText>
             </p>
 
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold pt-4">
+            <p className="text-lg sm:text-2xl lg:text-3xl xl:text-4xl font-bold pt-2 sm:pt-4 px-2">
               <ScrollHighlightText>
                 Welcome to the future of viticulture.
               </ScrollHighlightText>
             </p>
 
-            <div className="pt-8">
+            <div className="pt-6 sm:pt-8">
               <Link
                 to="/signup"
-                className="inline-flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-full font-semibold hover:bg-gray-800 transition-colors text-lg"
+                className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold hover:bg-gray-800 transition-colors text-base sm:text-lg"
               >
                 See how we can help
               </Link>
@@ -488,108 +477,108 @@ export default function HomePage() {
       </section>
 
       {/* Video/Demo Section Placeholder */}
-      <section className="bg-gray-900 py-20 sm:py-28">
-        <div className="mx-auto max-w-5xl px-6">
-          <AnimatedSection className="text-center mb-12">
-            <p className="text-sm font-semibold text-teal-400 uppercase tracking-wide mb-3">
+      <section className="bg-gray-900 py-12 sm:py-20 lg:py-28">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <AnimatedSection className="text-center mb-8 sm:mb-12">
+            <p className="text-xs sm:text-sm font-semibold text-teal-400 uppercase tracking-wide mb-2 sm:mb-3">
               See It In Action
             </p>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white mb-3 sm:mb-4 px-2">
               <AnimatedText>Watch how Trellis works</AnimatedText>
             </h2>
             <AnimatedSection delay={300}>
-              <p className="text-lg text-gray-400 max-w-xl mx-auto">
+              <p className="text-sm sm:text-base lg:text-lg text-gray-400 max-w-xl mx-auto px-2">
                 A quick walkthrough of the planning tools, field mapping, and operations management.
               </p>
             </AnimatedSection>
           </AnimatedSection>
 
           {/* Video placeholder */}
-          <div className="relative aspect-video bg-gray-800 rounded-2xl overflow-hidden border border-gray-700 shadow-2xl">
+          <div className="relative aspect-video bg-gray-800 rounded-xl sm:rounded-2xl overflow-hidden border border-gray-700 shadow-2xl">
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="w-20 h-20 rounded-full bg-vine-green-600 flex items-center justify-center mb-4 cursor-pointer hover:bg-vine-green-500 transition-colors shadow-lg">
-                <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-vine-green-600 flex items-center justify-center mb-3 sm:mb-4 cursor-pointer hover:bg-vine-green-500 transition-colors shadow-lg">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white ml-0.5 sm:ml-1" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z"/>
                 </svg>
               </div>
-              <p className="text-gray-400 text-sm">Product Demo Coming Soon</p>
+              <p className="text-gray-400 text-xs sm:text-sm">Product Demo Coming Soon</p>
             </div>
             {/* Decorative screenshot overlay */}
-            <div className="absolute inset-4 rounded-xl bg-gradient-to-br from-gray-700/50 to-gray-800/50 border border-gray-600/50"></div>
+            <div className="absolute inset-2 sm:inset-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-gray-700/50 to-gray-800/50 border border-gray-600/50"></div>
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-6 sm:mt-8 text-center">
             <Link
               to="/signup"
-              className="inline-flex items-center gap-2 bg-vine-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-vine-green-500 transition-colors"
+              className="inline-flex items-center gap-2 bg-vine-green-600 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-vine-green-500 transition-colors text-sm sm:text-base"
             >
               Try It Free
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
           </div>
         </div>
       </section>
 
       {/* Why Growers Choose Trellis */}
-      <section className="bg-white py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-6">
-          <AnimatedSection className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 mb-6">
+      <section className="bg-white py-12 sm:py-20 lg:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <AnimatedSection className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900 mb-4 sm:mb-6 px-2">
               <AnimatedText>Why growers choose</AnimatedText><br />
               <AnimatedText delay={400} className="text-vine-green-600">Trellis.</AnimatedText>
             </h2>
             <AnimatedSection delay={600}>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-sm sm:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto px-2">
                 We're not another generic farm platform. Trellis is purpose-built for vineyards and wineries, with modern tools at a price that makes sense.
               </p>
             </AnimatedSection>
           </AnimatedSection>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             <AnimatedSection delay={100}>
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 h-full hover:shadow-lg hover:border-vine-green-200 transition-all">
-                <div className="w-10 h-10 rounded-lg bg-vine-green-100 flex items-center justify-center mb-4">
-                  <Sprout className="w-5 h-5 text-vine-green-600" />
+              <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-6 border border-gray-200 h-full hover:shadow-lg hover:border-vine-green-200 transition-all">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-vine-green-100 flex items-center justify-center mb-2 sm:mb-4">
+                  <Sprout className="w-4 h-4 sm:w-5 sm:h-5 text-vine-green-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Vineyard-Specific</h3>
-                <p className="text-sm text-gray-600">
-                  Built exclusively for grape growers, not generic farm software trying to do everything poorly.
+                <h3 className="font-semibold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">Vineyard-Specific</h3>
+                <p className="text-xs sm:text-sm text-gray-600">
+                  Built exclusively for grape growers, not generic farm software.
                 </p>
               </div>
             </AnimatedSection>
 
             <AnimatedSection delay={200}>
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 h-full hover:shadow-lg hover:border-blue-200 transition-all">
-                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mb-4">
-                  <Sparkles className="w-5 h-5 text-blue-600" />
+              <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-6 border border-gray-200 h-full hover:shadow-lg hover:border-blue-200 transition-all">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-100 flex items-center justify-center mb-2 sm:mb-4">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Modern & Intuitive</h3>
-                <p className="text-sm text-gray-600">
-                  Clean interface you can learn in minutes, not legacy software requiring weeks of training.
+                <h3 className="font-semibold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">Modern & Intuitive</h3>
+                <p className="text-xs sm:text-sm text-gray-600">
+                  Clean interface you can learn in minutes.
                 </p>
               </div>
             </AnimatedSection>
 
             <AnimatedSection delay={300}>
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 h-full hover:shadow-lg hover:border-emerald-200 transition-all">
-                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-4">
-                  <DollarSign className="w-5 h-5 text-emerald-600" />
+              <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-6 border border-gray-200 h-full hover:shadow-lg hover:border-emerald-200 transition-all">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-2 sm:mb-4">
+                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Actually Affordable</h3>
-                <p className="text-sm text-gray-600">
-                  Start free, then $29-79/mo. Not the $500+/month enterprise pricing you'll find elsewhere.
+                <h3 className="font-semibold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">Actually Affordable</h3>
+                <p className="text-xs sm:text-sm text-gray-600">
+                  Start free, then $29-79/mo. Not enterprise pricing.
                 </p>
               </div>
             </AnimatedSection>
 
             <AnimatedSection delay={400}>
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 h-full hover:shadow-lg hover:border-amber-200 transition-all">
-                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center mb-4">
-                  <CheckCircle2 className="w-5 h-5 text-amber-600" />
+              <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-6 border border-gray-200 h-full hover:shadow-lg hover:border-amber-200 transition-all">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-100 flex items-center justify-center mb-2 sm:mb-4">
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">No Lock-in</h3>
-                <p className="text-sm text-gray-600">
-                  Cancel anytime, export your data anytime. No annual contracts or hostage situations.
+                <h3 className="font-semibold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">No Lock-in</h3>
+                <p className="text-xs sm:text-sm text-gray-600">
+                  Cancel anytime, export your data anytime.
                 </p>
               </div>
             </AnimatedSection>
@@ -598,56 +587,56 @@ export default function HomePage() {
       </section>
 
       {/* Satellite Monitoring Feature */}
-      <section className="bg-gradient-to-br from-[#1a2844] to-[#141d30] py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <section className="bg-gradient-to-br from-[#1a2844] to-[#141d30] py-12 sm:py-20 lg:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
             {/* Left side - Content */}
             <AnimatedSection>
-              <p className="text-sm font-semibold text-teal-400 uppercase tracking-wide mb-3">
+              <p className="text-xs sm:text-sm font-semibold text-teal-400 uppercase tracking-wide mb-2 sm:mb-3">
                 Satellite Monitoring
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-6">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white mb-4 sm:mb-6">
                 See what's happening across every acre
               </h2>
-              <p className="text-lg text-gray-300 mb-8">
+              <p className="text-sm sm:text-base lg:text-lg text-gray-300 mb-6 sm:mb-8">
                 Trellis integrates Sentinel-2 satellite imagery and OpenET data to give you a bird's-eye view of your vineyard's health. Updated every 5 days, no hardware required.
               </p>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                    <Activity className="w-5 h-5 text-green-400" />
+              <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                    <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white mb-1">NDVI Vegetation Index</h3>
-                    <p className="text-sm text-gray-400">10-meter resolution maps showing vine vigor and health variations across your blocks.</p>
+                    <h3 className="font-semibold text-white mb-0.5 sm:mb-1 text-sm sm:text-base">NDVI Vegetation Index</h3>
+                    <p className="text-xs sm:text-sm text-gray-400">10-meter resolution maps showing vine vigor and health variations across your blocks.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                    <Droplet className="w-5 h-5 text-blue-400" />
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                    <Droplet className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white mb-1">Evapotranspiration Data</h3>
-                    <p className="text-sm text-gray-400">Daily ET measurements to optimize irrigation scheduling and reduce water waste.</p>
+                    <h3 className="font-semibold text-white mb-0.5 sm:mb-1 text-sm sm:text-base">Evapotranspiration Data</h3>
+                    <p className="text-xs sm:text-sm text-gray-400">Daily ET measurements to optimize irrigation scheduling and reduce water waste.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                    <TrendingUp className="w-5 h-5 text-amber-400" />
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white mb-1">Historical Comparisons</h3>
-                    <p className="text-sm text-gray-400">Track changes over time to spot trends and catch problems before they spread.</p>
+                    <h3 className="font-semibold text-white mb-0.5 sm:mb-1 text-sm sm:text-base">Historical Comparisons</h3>
+                    <p className="text-xs sm:text-sm text-gray-400">Track changes over time to spot trends and catch problems before they spread.</p>
                   </div>
                 </div>
               </div>
 
               <Link
                 to="/products/operations"
-                className="inline-flex items-center gap-2 text-teal-400 font-semibold hover:text-teal-300 transition-colors"
+                className="inline-flex items-center gap-2 text-teal-400 font-semibold hover:text-teal-300 transition-colors text-sm sm:text-base"
               >
                 Learn more about satellite features
                 <ArrowRight className="w-4 h-4" />
@@ -657,7 +646,7 @@ export default function HomePage() {
             {/* Right side - NDVI Image */}
             <AnimatedSection delay={200}>
               <div className="relative">
-                <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+                <div className="rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-white/10">
                   <img
                     src="/NDVI_Example.png"
                     alt="NDVI satellite imagery showing vineyard vegetation health"
@@ -665,17 +654,17 @@ export default function HomePage() {
                   />
                 </div>
                 {/* Caption */}
-                <div className="mt-4 flex items-center justify-center gap-6 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <div className="mt-3 sm:mt-4 flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-400">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500"></div>
                     <span>Healthy</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500"></div>
                     <span>Moderate</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500"></div>
                     <span>Stressed</span>
                   </div>
                 </div>
@@ -686,68 +675,68 @@ export default function HomePage() {
       </section>
 
       {/* Coming Soon - Production & Sales - Redesigned */}
-      <section className="relative bg-gradient-to-b from-gray-50 to-white py-16 sm:py-24 lg:py-32 overflow-hidden">
+      <section className="relative bg-gradient-to-b from-gray-50 to-white py-12 sm:py-20 lg:py-28 xl:py-32 overflow-hidden">
         {/* Decorative elements */}
-        <div className="absolute top-20 right-0 w-96 h-96 bg-amber-100/30 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 left-0 w-96 h-96 bg-orange-100/30 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 right-0 w-48 sm:w-96 h-48 sm:h-96 bg-amber-100/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-0 w-48 sm:w-96 h-48 sm:h-96 bg-orange-100/30 rounded-full blur-3xl"></div>
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-          <AnimatedSection className="mx-auto max-w-2xl lg:text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-2 text-sm font-bold text-amber-800 mb-4 shadow-sm border border-amber-200">
-              <Sparkles className="w-4 h-4 mr-2" strokeWidth={1.5} />
+          <AnimatedSection className="mx-auto max-w-2xl lg:text-center mb-8 sm:mb-12 lg:mb-16">
+            <div className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-amber-800 mb-3 sm:mb-4 shadow-sm border border-amber-200">
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" strokeWidth={1.5} />
               Coming 2025-2026
             </div>
-            <p className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 px-4 sm:px-0">
+            <p className="mt-2 text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-gray-900 px-2 sm:px-4 lg:px-0">
               <AnimatedText>From vineyard to bottle to customer</AnimatedText>
             </p>
             <AnimatedSection delay={300}>
-              <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 px-4 sm:px-0">
+              <p className="mt-3 sm:mt-4 lg:mt-6 text-sm sm:text-base lg:text-lg leading-6 sm:leading-7 lg:leading-8 text-gray-600 px-2 sm:px-4 lg:px-0">
                 We're expanding beyond vineyard operations to give you complete control of your wine business, from crush to customer delivery.
               </p>
             </AnimatedSection>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            <div className="group relative bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
-              <div className="flex items-start justify-between mb-5">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Droplet className="w-7 h-7 text-amber-600" strokeWidth={1.5} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
+            <div className="group relative bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 sm:h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
+              <div className="flex items-start justify-between mb-3 sm:mb-5">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Droplet className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-amber-600" strokeWidth={1.5} />
                 </div>
-                <span className="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
+                <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
                   Q4 2025
                 </span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Wine Production</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">Track crush, fermentation, barrel management, and bottling operations. Manage lot numbers, blending recipes, and aging schedules with full traceability.</p>
+              <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Wine Production</h3>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">Track crush, fermentation, barrel management, and bottling operations with full traceability.</p>
             </div>
 
-            <div className="group relative bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
-              <div className="flex items-start justify-between mb-5">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Package className="w-7 h-7 text-amber-600" strokeWidth={1.5} />
+            <div className="group relative bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 sm:h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
+              <div className="flex items-start justify-between mb-3 sm:mb-5">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Package className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-amber-600" strokeWidth={1.5} />
                 </div>
-                <span className="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
+                <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
                   Q4 2025
                 </span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Inventory Management</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">Comprehensive inventory tracking for grapes, bulk wine, bottled products, and winemaking supplies. Automated stock alerts and batch tracking.</p>
+              <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Inventory Management</h3>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">Comprehensive tracking for grapes, bulk wine, bottled products, and winemaking supplies.</p>
             </div>
 
-            <div className="group relative bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
-              <div className="flex items-start justify-between mb-5">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <DollarSign className="w-7 h-7 text-amber-600" strokeWidth={1.5} />
+            <div className="group relative bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-md hover:shadow-xl transition-all overflow-hidden sm:col-span-2 lg:col-span-1">
+              <div className="absolute top-0 left-0 w-full h-1 sm:h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
+              <div className="flex items-start justify-between mb-3 sm:mb-5">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-amber-600" strokeWidth={1.5} />
                 </div>
-                <span className="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
+                <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
                   Q2 2026
                 </span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Sales & Distribution</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">CRM for wine clubs and wholesale accounts, order management, invoicing, and sales analytics. Streamline your tasting room and distribution operations.</p>
+              <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Sales & Distribution</h3>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">CRM for wine clubs and wholesale accounts, order management, and sales analytics.</p>
             </div>
           </div>
         </div>
@@ -848,42 +837,42 @@ function JourneySection() {
       ],
       color: "planner-green",
       mockup: (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
-            <div className="flex gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="bg-gray-100 px-2 sm:px-4 py-1.5 sm:py-2 border-b border-gray-200 flex items-center gap-2">
+            <div className="flex gap-1 sm:gap-1.5">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-400"></div>
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-yellow-400"></div>
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-green-400"></div>
             </div>
-            <span className="text-xs text-gray-500 ml-2">Financial Planner - 10-Year Projections</span>
+            <span className="text-[10px] sm:text-xs text-gray-500 ml-1 sm:ml-2 truncate">Financial Planner - 10-Year Projections</span>
           </div>
-          <div className="p-5">
+          <div className="p-3 sm:p-4 lg:p-5">
             {/* Key Metrics */}
-            <div className="grid grid-cols-3 gap-3 mb-5">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 text-center border border-blue-200">
-                <TrendingUp className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-blue-600">Year 7</p>
-                <p className="text-xs text-gray-600 font-medium">Break Even</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-5">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 text-center border border-blue-200">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-blue-600 mx-auto mb-1 sm:mb-2" />
+                <p className="text-base sm:text-xl lg:text-2xl font-bold text-blue-600">Year 7</p>
+                <p className="text-[9px] sm:text-xs text-gray-600 font-medium">Break Even</p>
               </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 text-center border border-green-200">
-                <DollarSign className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-green-600">$1.09M</p>
-                <p className="text-xs text-gray-600 font-medium">10-Yr Revenue</p>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 text-center border border-green-200">
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-green-600 mx-auto mb-1 sm:mb-2" />
+                <p className="text-base sm:text-xl lg:text-2xl font-bold text-green-600">$1.09M</p>
+                <p className="text-[9px] sm:text-xs text-gray-600 font-medium">10-Yr Revenue</p>
               </div>
-              <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl p-4 text-center border border-rose-200">
-                <BarChart3 className="w-6 h-6 text-[#7C203A] mx-auto mb-2" />
-                <p className="text-2xl font-bold text-[#7C203A]">210%</p>
-                <p className="text-xs text-gray-600 font-medium">Projected ROI</p>
+              <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 text-center border border-rose-200">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-[#7C203A] mx-auto mb-1 sm:mb-2" />
+                <p className="text-base sm:text-xl lg:text-2xl font-bold text-[#7C203A]">210%</p>
+                <p className="text-[9px] sm:text-xs text-gray-600 font-medium">Projected ROI</p>
               </div>
             </div>
 
             {/* Cash Flow Chart */}
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-gray-900">Annual Cash Flow</span>
-                <span className="text-xs text-green-600 font-medium">Profitable Year 7+</span>
+            <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 border border-gray-200">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <span className="text-xs sm:text-sm font-semibold text-gray-900">Annual Cash Flow</span>
+                <span className="text-[10px] sm:text-xs text-green-600 font-medium">Profitable Year 7+</span>
               </div>
-              <div className="flex items-end gap-1.5 h-28">
+              <div className="flex items-end gap-1 sm:gap-1.5 h-20 sm:h-24 lg:h-28">
                 {[-45, -35, -20, 15, 40, 65, 85, 95, 100, 98].map((h, i) => (
                   <div key={i} className="flex-1 flex flex-col justify-end h-full">
                     <div
@@ -893,7 +882,7 @@ function JourneySection() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
+              <div className="flex justify-between mt-1.5 sm:mt-2 text-[9px] sm:text-xs text-gray-500">
                 <span>Year 1</span>
                 <span>Year 5</span>
                 <span>Year 10</span>
@@ -920,78 +909,78 @@ function JourneySection() {
       ],
       color: "navy",
       mockup: (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
-            <div className="flex gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="bg-gray-100 px-2 sm:px-4 py-1.5 sm:py-2 border-b border-gray-200 flex items-center gap-2">
+            <div className="flex gap-1 sm:gap-1.5">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-400"></div>
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-yellow-400"></div>
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-green-400"></div>
             </div>
-            <span className="text-xs text-gray-500 ml-2">Vineyard Operations - Dashboard</span>
+            <span className="text-[10px] sm:text-xs text-gray-500 ml-1 sm:ml-2 truncate">Vineyard Operations - Dashboard</span>
           </div>
-          <div className="p-5">
+          <div className="p-3 sm:p-4 lg:p-5">
             {/* Quick Stats Row */}
-            <div className="grid grid-cols-4 gap-3 mb-5">
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-3 text-center border border-slate-200">
-                <p className="text-xl font-bold text-[#1a2844]">12</p>
-                <p className="text-xs text-gray-600 font-medium">Blocks</p>
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2 lg:gap-3 mb-3 sm:mb-5">
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-slate-200">
+                <p className="text-base sm:text-lg lg:text-xl font-bold text-[#1a2844]">12</p>
+                <p className="text-[8px] sm:text-xs text-gray-600 font-medium">Blocks</p>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 text-center border border-blue-200">
-                <p className="text-xl font-bold text-blue-600">0.72</p>
-                <p className="text-xs text-gray-600 font-medium">Avg NDVI</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-blue-200">
+                <p className="text-base sm:text-lg lg:text-xl font-bold text-blue-600">0.72</p>
+                <p className="text-[8px] sm:text-xs text-gray-600 font-medium">Avg NDVI</p>
               </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 text-center border border-green-200">
-                <p className="text-xl font-bold text-green-600">3</p>
-                <p className="text-xs text-gray-600 font-medium">Tasks</p>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-green-200">
+                <p className="text-base sm:text-lg lg:text-xl font-bold text-green-600">3</p>
+                <p className="text-[8px] sm:text-xs text-gray-600 font-medium">Tasks</p>
               </div>
-              <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl p-3 text-center border border-rose-200">
-                <p className="text-xl font-bold text-[#7C203A]">5</p>
-                <p className="text-xs text-gray-600 font-medium">Team</p>
+              <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-rose-200">
+                <p className="text-base sm:text-lg lg:text-xl font-bold text-[#7C203A]">5</p>
+                <p className="text-[8px] sm:text-xs text-gray-600 font-medium">Team</p>
               </div>
             </div>
 
             {/* Today's Tasks */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-bold text-gray-900">Today's Tasks</h4>
-                <span className="text-xs text-[#1a2844] font-semibold">View All</span>
+            <div className="mb-3 sm:mb-4">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <h4 className="text-xs sm:text-sm font-bold text-gray-900">Today's Tasks</h4>
+                <span className="text-[10px] sm:text-xs text-[#1a2844] font-semibold">View All</span>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <div className="w-8 h-8 rounded-full bg-[#1a2844] flex items-center justify-center">
-                    <Droplet className="w-4 h-4 text-white" />
+              <div className="space-y-1.5 sm:space-y-2">
+                <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#1a2844] flex items-center justify-center flex-shrink-0">
+                    <Droplet className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">Irrigate Block A</p>
-                    <p className="text-xs text-gray-500">2 hrs @ 15 GPM • Assigned to Mike</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">Irrigate Block A</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">2 hrs @ 15 GPM • Mike</p>
                   </div>
-                  <CheckCircle2 className="w-5 h-5 text-[#1a2844]" />
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#1a2844] flex-shrink-0" />
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center">
-                    <Wind className="w-4 h-4 text-white" />
+                <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-400 flex items-center justify-center flex-shrink-0">
+                    <Wind className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">Spray Sulfur - PM Prevention</p>
-                    <p className="text-xs text-gray-500">All blocks • Assigned to Sarah</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">Spray Sulfur - PM</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">All blocks • Sarah</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Weather Bar */}
-            <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg p-3 flex items-center justify-between border border-sky-200">
-              <div className="flex items-center gap-2">
-                <Thermometer className="w-4 h-4 text-sky-600" />
-                <span className="text-sm font-medium text-gray-700">78°F</span>
+            <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg p-2 sm:p-3 flex items-center justify-between border border-sky-200">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Thermometer className="w-3 h-3 sm:w-4 sm:h-4 text-sky-600" />
+                <span className="text-[10px] sm:text-sm font-medium text-gray-700">78°F</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Wind className="w-4 h-4 text-sky-600" />
-                <span className="text-sm font-medium text-gray-700">8 mph NW</span>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Wind className="w-3 h-3 sm:w-4 sm:h-4 text-sky-600" />
+                <span className="text-[10px] sm:text-sm font-medium text-gray-700">8 mph</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Droplet className="w-4 h-4 text-sky-600" />
-                <span className="text-sm font-medium text-gray-700">45%</span>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Droplet className="w-3 h-3 sm:w-4 sm:h-4 text-sky-600" />
+                <span className="text-[10px] sm:text-sm font-medium text-gray-700">45%</span>
               </div>
             </div>
           </div>
@@ -1015,62 +1004,62 @@ function JourneySection() {
       ],
       color: "burgundy",
       mockup: (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
-            <div className="flex gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="bg-gray-100 px-2 sm:px-4 py-1.5 sm:py-2 border-b border-gray-200 flex items-center gap-2">
+            <div className="flex gap-1 sm:gap-1.5">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-400"></div>
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-yellow-400"></div>
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-green-400"></div>
             </div>
-            <span className="text-xs text-gray-500 ml-2">Wine Production - Fermentation</span>
+            <span className="text-[10px] sm:text-xs text-gray-500 ml-1 sm:ml-2 truncate">Wine Production - Fermentation</span>
           </div>
-          <div className="p-5">
+          <div className="p-3 sm:p-4 lg:p-5">
             {/* Active Fermentations Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-sm font-bold text-gray-900">Active Fermentations</h4>
-              <span className="text-xs bg-rose-100 text-[#7C203A] px-2 py-1 rounded-full font-semibold">3 lots</span>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h4 className="text-xs sm:text-sm font-bold text-gray-900">Active Fermentations</h4>
+              <span className="text-[10px] sm:text-xs bg-rose-100 text-[#7C203A] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-semibold">3 lots</span>
             </div>
 
             {/* Main Fermentation Card */}
-            <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl p-4 border border-rose-200 mb-3">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-bold text-gray-900">Cabernet Sauvignon - Lot 24A</span>
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Day 8</span>
+            <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-4 border border-rose-200 mb-2 sm:mb-3">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <span className="text-xs sm:text-sm font-bold text-gray-900 truncate">Cabernet Sauvignon - Lot 24A</span>
+                <span className="text-[10px] sm:text-xs bg-green-100 text-green-700 px-1.5 sm:px-2 py-0.5 rounded-full font-medium ml-1 flex-shrink-0">Day 8</span>
               </div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="bg-white rounded-lg p-2 border border-rose-200">
-                  <p className="text-xl font-bold text-[#7C203A]">18.2°</p>
-                  <p className="text-xs text-gray-500">Brix</p>
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 lg:gap-3 text-center">
+                <div className="bg-white rounded-lg p-1.5 sm:p-2 border border-rose-200">
+                  <p className="text-base sm:text-lg lg:text-xl font-bold text-[#7C203A]">18.2°</p>
+                  <p className="text-[9px] sm:text-xs text-gray-500">Brix</p>
                 </div>
-                <div className="bg-white rounded-lg p-2 border border-rose-200">
-                  <p className="text-xl font-bold text-[#7C203A]">72°F</p>
-                  <p className="text-xs text-gray-500">Temp</p>
+                <div className="bg-white rounded-lg p-1.5 sm:p-2 border border-rose-200">
+                  <p className="text-base sm:text-lg lg:text-xl font-bold text-[#7C203A]">72°F</p>
+                  <p className="text-[9px] sm:text-xs text-gray-500">Temp</p>
                 </div>
-                <div className="bg-white rounded-lg p-2 border border-rose-200">
-                  <p className="text-xl font-bold text-[#7C203A]">3.52</p>
-                  <p className="text-xs text-gray-500">pH</p>
+                <div className="bg-white rounded-lg p-1.5 sm:p-2 border border-rose-200">
+                  <p className="text-base sm:text-lg lg:text-xl font-bold text-[#7C203A]">3.52</p>
+                  <p className="text-[9px] sm:text-xs text-gray-500">pH</p>
                 </div>
               </div>
             </div>
 
             {/* Secondary Fermentation */}
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-gray-900">Merlot - Lot 24B</span>
-                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">Day 3</span>
+            <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2.5 sm:p-3 lg:p-4 border border-gray-200 mb-2 sm:mb-3">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">Merlot - Lot 24B</span>
+                <span className="text-[10px] sm:text-xs bg-yellow-100 text-yellow-700 px-1.5 sm:px-2 py-0.5 rounded-full font-medium ml-1 flex-shrink-0">Day 3</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 bg-gray-200 rounded-full h-2">
-                  <div className="bg-rose-500 h-2 rounded-full" style={{width: '35%'}}></div>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex-1 bg-gray-200 rounded-full h-1.5 sm:h-2">
+                  <div className="bg-rose-500 h-1.5 sm:h-2 rounded-full" style={{width: '35%'}}></div>
                 </div>
-                <span className="text-sm font-semibold text-gray-700">22.4° Brix</span>
+                <span className="text-xs sm:text-sm font-semibold text-gray-700 flex-shrink-0">22.4° Brix</span>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="flex gap-2">
-              <button className="flex-1 bg-[#7C203A] text-white text-xs font-semibold py-2 px-3 rounded-lg">Log Punch-down</button>
-              <button className="flex-1 bg-gray-200 text-gray-700 text-xs font-semibold py-2 px-3 rounded-lg">Add Reading</button>
+            <div className="flex gap-1.5 sm:gap-2">
+              <button className="flex-1 bg-[#7C203A] text-white text-[10px] sm:text-xs font-semibold py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg">Log Punch-down</button>
+              <button className="flex-1 bg-gray-200 text-gray-700 text-[10px] sm:text-xs font-semibold py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg">Add Reading</button>
             </div>
           </div>
         </div>
@@ -1082,26 +1071,26 @@ function JourneySection() {
   const ActiveIcon = activeTool.icon;
 
   return (
-    <section className="relative bg-white py-20 sm:py-28 overflow-hidden">
+    <section className="relative bg-white py-12 sm:py-20 lg:py-28 overflow-hidden">
 
-      <div className="relative mx-auto max-w-6xl px-6">
-        <AnimatedSection className="text-center mb-12">
-          <p className="text-sm font-semibold text-vine-green-600 uppercase tracking-wide mb-3">
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+        <AnimatedSection className="text-center mb-8 sm:mb-12">
+          <p className="text-xs sm:text-sm font-semibold text-vine-green-600 uppercase tracking-wide mb-2 sm:mb-3">
             Three Powerful Tools
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 mb-4">
-            <AnimatedText>From concept to wine</AnimatedText>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900 mb-3 sm:mb-4 px-2">
+            <AnimatedText>From vineyard to vintage.</AnimatedText>
           </h2>
           <AnimatedSection delay={300}>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto px-2">
               Plan your vineyard, manage daily operations, and track wine production, all in one integrated platform.
             </p>
           </AnimatedSection>
         </AnimatedSection>
 
         {/* Tool Tab Navigation */}
-        <div className="flex justify-center mb-12">
-          <div className="inline-flex bg-white rounded-2xl p-2 shadow-lg border border-gray-200 gap-2">
+        <div className="flex justify-center mb-8 sm:mb-12 px-2">
+          <div className="inline-flex bg-white rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-lg border border-gray-200 gap-1 sm:gap-2">
             {tools.map((tool, index) => {
               const Icon = tool.icon;
               return (
@@ -1109,14 +1098,14 @@ function JourneySection() {
                   key={tool.id}
                   onClick={() => setActiveTab(index)}
                   className={`
-                    relative px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300
+                    relative px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300
                     ${activeTab === index
                       ? 'bg-gray-900 text-white shadow-md'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }
                   `}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 sm:gap-2">
                     <Icon className="w-4 h-4" />
                     <span className="hidden sm:inline">{tool.label}</span>
                   </span>
@@ -1127,45 +1116,45 @@ function JourneySection() {
         </div>
 
         {/* Content Area */}
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-start">
           {/* Text Content */}
           <div className="order-2 lg:order-1">
             {/* Status Badge */}
-            <div className="mb-4">
-              <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${activeTool.statusColor}`}>
+            <div className="mb-3 sm:mb-4">
+              <span className={`inline-flex items-center gap-2 px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold ${activeTool.statusColor}`}>
                 {activeTool.status}
               </span>
             </div>
 
             {/* Title */}
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2">
               <div className={`
-                w-10 h-10 rounded-xl flex items-center justify-center
+                w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center
                 ${activeTab === 0 ? 'bg-[#008070]/10' : ''}
                 ${activeTab === 1 ? 'bg-[#1a2844]/10' : ''}
                 ${activeTab === 2 ? 'bg-rose-100' : ''}
               `}>
-                <ActiveIcon className={`w-5 h-5 ${activeTab === 0 ? 'text-[#008070]' : ''} ${activeTab === 1 ? 'text-[#1a2844]' : ''} ${activeTab === 2 ? 'text-[#7C203A]' : ''}`} />
+                <ActiveIcon className={`w-4 h-4 sm:w-5 sm:h-5 ${activeTab === 0 ? 'text-[#008070]' : ''} ${activeTab === 1 ? 'text-[#1a2844]' : ''} ${activeTab === 2 ? 'text-[#7C203A]' : ''}`} />
               </div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
                 {activeTool.title}
               </h3>
             </div>
 
-            <p className="text-gray-500 text-sm mb-4">{activeTool.subtitle}</p>
+            <p className="text-gray-500 text-xs sm:text-sm mb-3 sm:mb-4">{activeTool.subtitle}</p>
 
-            <p className="text-gray-600 text-base mb-8 leading-relaxed">
+            <p className="text-gray-600 text-sm sm:text-base mb-6 sm:mb-8 leading-relaxed">
               {activeTool.description}
             </p>
 
             {/* Features List */}
-            <div className="space-y-3 mb-8">
+            <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
               {activeTool.features.map((feature, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${activeTab === 0 ? 'text-[#008070]' : ''} ${activeTab === 1 ? 'text-[#1a2844]' : ''} ${activeTab === 2 ? 'text-[#7C203A]' : ''}`} />
+                <div key={i} className="flex items-start gap-2 sm:gap-3">
+                  <CheckCircle2 className={`w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0 ${activeTab === 0 ? 'text-[#008070]' : ''} ${activeTab === 1 ? 'text-[#1a2844]' : ''} ${activeTab === 2 ? 'text-[#7C203A]' : ''}`} />
                   <div>
-                    <p className="font-semibold text-gray-900">{feature.name}</p>
-                    <p className="text-sm text-gray-500">{feature.desc}</p>
+                    <p className="font-semibold text-gray-900 text-sm sm:text-base">{feature.name}</p>
+                    <p className="text-xs sm:text-sm text-gray-500">{feature.desc}</p>
                   </div>
                 </div>
               ))}
@@ -1175,14 +1164,14 @@ function JourneySection() {
             <Link
               to={activeTab === 2 ? "/products" : "/signup"}
               className={`
-                inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-colors shadow-md
+                inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-semibold transition-colors shadow-md
                 ${activeTab === 0 ? 'bg-[#008070] text-white hover:bg-[#006b5a]' : ''}
                 ${activeTab === 1 ? 'bg-[#1a2844] text-white hover:bg-[#243351]' : ''}
                 ${activeTab === 2 ? 'bg-[#7C203A] text-white hover:bg-[#8B2E48]' : ''}
               `}
             >
               {activeTab === 2 ? 'Learn More' : 'Get Started Free'}
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
           </div>
 
@@ -1191,7 +1180,7 @@ function JourneySection() {
             <div className="relative">
               {/* Decorative background */}
               <div className={`
-                absolute -inset-4 rounded-3xl opacity-20 blur-2xl
+                absolute -inset-2 sm:-inset-4 rounded-2xl sm:rounded-3xl opacity-20 blur-xl sm:blur-2xl
                 ${activeTab === 0 ? 'bg-[#008070]' : ''}
                 ${activeTab === 1 ? 'bg-[#1a2844]' : ''}
                 ${activeTab === 2 ? 'bg-[#9B3A54]' : ''}
@@ -1206,17 +1195,17 @@ function JourneySection() {
         </div>
 
         {/* Progress indicator */}
-        <div className="flex justify-center mt-12">
+        <div className="flex justify-center mt-8 sm:mt-12">
           <div className="flex items-center gap-2">
             {tools.map((tool, index) => (
               <button
                 key={index}
                 onClick={() => setActiveTab(index)}
                 className={`
-                  h-2 rounded-full transition-all duration-300
+                  w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full transition-all duration-300
                   ${activeTab === index
-                    ? `w-8 ${activeTab === 0 ? 'bg-[#008070]' : ''} ${activeTab === 1 ? 'bg-[#1a2844]' : ''} ${activeTab === 2 ? 'bg-[#7C203A]' : ''}`
-                    : 'w-2 bg-gray-300 hover:bg-gray-400'
+                    ? `${activeTab === 0 ? 'bg-[#008070]' : ''} ${activeTab === 1 ? 'bg-[#1a2844]' : ''} ${activeTab === 2 ? 'bg-[#7C203A]' : ''}`
+                    : 'bg-gray-300 hover:bg-gray-400'
                   }
                 `}
               />
@@ -1476,15 +1465,15 @@ function AnimatedCounter({ value, suffix = "", prefix = "", className = "" }) {
 
 function ProcessStep({ number, title, description }) {
   return (
-    <div className="group flex gap-4 sm:gap-6 bg-white rounded-xl p-4 sm:p-6 border-2 border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all">
+    <div className="group flex gap-3 sm:gap-4 lg:gap-6 bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6 border-2 border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all">
       <div className="flex-shrink-0">
-        <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-vine-green-500 text-lg sm:text-xl font-bold text-white shadow-md group-hover:scale-110 transition-transform">
+        <div className="flex h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-teal-500 to-vine-green-500 text-base sm:text-lg lg:text-xl font-bold text-white shadow-md group-hover:scale-110 transition-transform">
           {number}
         </div>
       </div>
-      <div className="flex-1">
-        <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2">{title}</h3>
-        <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{description}</p>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm sm:text-base lg:text-xl font-bold text-gray-900 mb-0.5 sm:mb-1 lg:mb-2">{title}</h3>
+        <p className="text-xs sm:text-sm lg:text-base text-gray-600 leading-relaxed">{description}</p>
       </div>
     </div>
   );
@@ -1492,16 +1481,16 @@ function ProcessStep({ number, title, description }) {
 
 function OutputCard({ icon: Icon, title, description, stats }) {
   return (
-    <div className="group bg-white/95 backdrop-blur rounded-2xl border-2 border-white/50 p-6 sm:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
-      <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-vine-green-500 mb-4 sm:mb-5 group-hover:scale-110 transition-transform">
-        <Icon className="w-6 h-6 text-white" />
+    <div className="group bg-white/95 backdrop-blur rounded-xl sm:rounded-2xl border-2 border-white/50 p-4 sm:p-6 lg:p-8 hover:bg-white hover:shadow-2xl transition-all hover:scale-105">
+      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-teal-500 to-vine-green-500 mb-3 sm:mb-4 lg:mb-5 group-hover:scale-110 transition-transform">
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
       </div>
-      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">{title}</h3>
-      <p className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6">{description}</p>
-      <div className="space-y-2 sm:space-y-3">
+      <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-1.5 sm:mb-2 lg:mb-3">{title}</h3>
+      <p className="text-xs sm:text-sm text-gray-700 mb-3 sm:mb-4 lg:mb-6">{description}</p>
+      <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
         {stats.map((stat, idx) => (
           <div key={idx} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-            <CheckCircle2 className="w-4 h-4 text-teal-500 flex-shrink-0" />
+            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-500 flex-shrink-0" />
             <span className="text-gray-700 font-medium">{stat}</span>
           </div>
         ))}

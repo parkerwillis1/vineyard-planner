@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Check, Sparkles, Zap, Building2, Crown, Shield, Download, Users, Calendar, Gift } from "lucide-react";
+import { Check, Sparkles, Zap, Building2, Crown, Shield, Download, Users, Calendar, Gift, TrendingUp, Sprout, Wine, ShoppingCart } from "lucide-react";
 import { PRICING_TIERS } from "@/shared/config/pricing";
 import { useAuth } from "@/auth/AuthContext";
 import { useSubscription } from "@/shared/hooks/useSubscription";
@@ -18,6 +18,14 @@ const tierIcons = {
   starter: Zap,
   professional: Building2,
   enterprise: Crown,
+};
+
+// Tool definitions with icons and colors
+const TOOLS = {
+  'Financial Planner': { icon: TrendingUp, color: 'bg-[#008070]', textColor: 'text-[#008070]' },
+  'Vineyard Operations': { icon: Sprout, color: 'bg-[#1a2844]', textColor: 'text-[#1a2844]' },
+  'Wine Production': { icon: Wine, color: 'bg-[#7C203A]', textColor: 'text-[#7C203A]' },
+  'Sales & Distribution': { icon: ShoppingCart, color: 'bg-amber-600', textColor: 'text-amber-600' },
 };
 
 export default function PricingPage() {
@@ -212,8 +220,31 @@ export default function PricingPage() {
                   </span>
                 </div>
 
+                {/* Tools Included */}
+                {tier.tools && (
+                  <div className="mt-6 pt-6 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Tools Included</p>
+                    <div className="flex flex-wrap gap-2">
+                      {tier.tools.map((toolName) => {
+                        const tool = TOOLS[toolName];
+                        if (!tool) return null;
+                        const ToolIcon = tool.icon;
+                        return (
+                          <div
+                            key={toolName}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${tool.color} text-white`}
+                          >
+                            <ToolIcon className="w-3.5 h-3.5" />
+                            <span>{toolName.replace(' & Distribution', '')}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Features */}
-                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+                <ul role="list" className="mt-6 space-y-3 text-sm leading-6 text-gray-600">
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex gap-x-3">
                       <Check
@@ -297,13 +328,61 @@ export default function PricingPage() {
                 <thead>
                   <tr className="border-b border-gray-200 bg-gradient-to-r from-teal-50 to-vine-green-50">
                     <th className="py-4 px-6 text-sm font-bold text-gray-900">Feature</th>
-                    <th className="py-4 px-4 text-center text-sm font-bold text-gray-900">Planner</th>
-                    <th className="py-4 px-4 text-center text-sm font-bold text-gray-900">Vineyard</th>
-                    <th className="py-4 px-4 text-center text-sm font-bold text-teal-700">Professional</th>
+                    <th className="py-4 px-4 text-center text-sm font-bold text-gray-900">Starter</th>
+                    <th className="py-4 px-4 text-center text-sm font-bold text-gray-900">Professional</th>
+                    <th className="py-4 px-4 text-center text-sm font-bold text-teal-700">Estate</th>
                     <th className="py-4 px-4 text-center text-sm font-bold text-gray-900">Enterprise</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
+                  {/* Tools Section */}
+                  <tr className="bg-gray-50">
+                    <td colSpan={5} className="py-3 px-6 text-xs font-bold text-gray-500 uppercase tracking-wide">Tools Included</td>
+                  </tr>
+                  <tr className="hover:bg-gray-50/50">
+                    <td className="py-4 px-6 text-sm text-gray-700 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#008070]"></span>
+                      Financial Planner
+                    </td>
+                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-[#008070] mx-auto" /></td>
+                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-[#008070] mx-auto" /></td>
+                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-[#008070] mx-auto" /></td>
+                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-[#008070] mx-auto" /></td>
+                  </tr>
+                  <tr className="hover:bg-gray-50/50">
+                    <td className="py-4 px-6 text-sm text-gray-700 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#1a2844]"></span>
+                      Vineyard Operations
+                    </td>
+                    <td className="py-4 px-4 text-center text-gray-300">—</td>
+                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-[#1a2844] mx-auto" /></td>
+                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-[#1a2844] mx-auto" /></td>
+                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-[#1a2844] mx-auto" /></td>
+                  </tr>
+                  <tr className="hover:bg-gray-50/50">
+                    <td className="py-4 px-6 text-sm text-gray-700 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#7C203A]"></span>
+                      Wine Production
+                    </td>
+                    <td className="py-4 px-4 text-center text-gray-300">—</td>
+                    <td className="py-4 px-4 text-center text-gray-300">—</td>
+                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-[#7C203A] mx-auto" /></td>
+                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-[#7C203A] mx-auto" /></td>
+                  </tr>
+                  <tr className="hover:bg-gray-50/50">
+                    <td className="py-4 px-6 text-sm text-gray-700 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-600"></span>
+                      Sales & Distribution
+                    </td>
+                    <td className="py-4 px-4 text-center text-gray-300">—</td>
+                    <td className="py-4 px-4 text-center text-gray-300">—</td>
+                    <td className="py-4 px-4 text-center text-gray-300">—</td>
+                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-amber-600 mx-auto" /></td>
+                  </tr>
+                  {/* Limits Section */}
+                  <tr className="bg-gray-50">
+                    <td colSpan={5} className="py-3 px-6 text-xs font-bold text-gray-500 uppercase tracking-wide">Limits & Quotas</td>
+                  </tr>
                   <tr className="hover:bg-gray-50/50">
                     <td className="py-4 px-6 text-sm text-gray-700">Number of Plans</td>
                     <td className="py-4 px-4 text-center text-sm text-gray-600">1</td>
@@ -312,60 +391,25 @@ export default function PricingPage() {
                     <td className="py-4 px-4 text-center text-sm text-gray-600">Unlimited</td>
                   </tr>
                   <tr className="hover:bg-gray-50/50">
-                    <td className="py-4 px-6 text-sm text-gray-700">PDF Exports</td>
-                    <td className="py-4 px-4 text-center text-sm text-gray-600">3/month</td>
-                    <td className="py-4 px-4 text-center text-sm text-gray-600">Unlimited</td>
-                    <td className="py-4 px-4 text-center text-sm text-gray-600">Unlimited</td>
-                    <td className="py-4 px-4 text-center text-sm text-gray-600">Unlimited</td>
-                  </tr>
-                  <tr className="hover:bg-gray-50/50">
-                    <td className="py-4 px-6 text-sm text-gray-700">Max Acreage per Plan</td>
+                    <td className="py-4 px-6 text-sm text-gray-700">Max Acreage</td>
                     <td className="py-4 px-4 text-center text-sm text-gray-600">10 acres</td>
                     <td className="py-4 px-4 text-center text-sm text-gray-600">50 acres</td>
-                    <td className="py-4 px-4 text-center text-sm text-gray-600">200 acres</td>
+                    <td className="py-4 px-4 text-center text-sm text-gray-600">100 acres</td>
                     <td className="py-4 px-4 text-center text-sm text-gray-600">Unlimited</td>
                   </tr>
                   <tr className="hover:bg-gray-50/50">
                     <td className="py-4 px-6 text-sm text-gray-700">Team Members</td>
                     <td className="py-4 px-4 text-center text-sm text-gray-600">1</td>
-                    <td className="py-4 px-4 text-center text-sm text-gray-600">2</td>
-                    <td className="py-4 px-4 text-center text-sm text-gray-600">5</td>
+                    <td className="py-4 px-4 text-center text-sm text-gray-600">3</td>
+                    <td className="py-4 px-4 text-center text-sm text-gray-600">10</td>
                     <td className="py-4 px-4 text-center text-sm text-gray-600">Unlimited</td>
                   </tr>
-                  <tr className="hover:bg-gray-50/50 bg-teal-50/30">
-                    <td className="py-4 px-6 text-sm font-semibold text-gray-900">Financial Planning</td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                  </tr>
                   <tr className="hover:bg-gray-50/50">
-                    <td className="py-4 px-6 text-sm text-gray-700">Vineyard Operations</td>
-                    <td className="py-4 px-4 text-center text-gray-300">—</td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                  </tr>
-                  <tr className="hover:bg-gray-50/50">
-                    <td className="py-4 px-6 text-sm text-gray-700">Production Tracking</td>
-                    <td className="py-4 px-4 text-center text-gray-300">—</td>
-                    <td className="py-4 px-4 text-center text-gray-300">—</td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                  </tr>
-                  <tr className="hover:bg-gray-50/50">
-                    <td className="py-4 px-6 text-sm text-gray-700">Inventory Management</td>
-                    <td className="py-4 px-4 text-center text-gray-300">—</td>
-                    <td className="py-4 px-4 text-center text-gray-300">—</td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
-                  </tr>
-                  <tr className="hover:bg-gray-50/50">
-                    <td className="py-4 px-6 text-sm text-gray-700">Sales & Distribution</td>
-                    <td className="py-4 px-4 text-center text-gray-300">—</td>
-                    <td className="py-4 px-4 text-center text-gray-300">—</td>
-                    <td className="py-4 px-4 text-center text-gray-300">—</td>
-                    <td className="py-4 px-4 text-center"><Check className="w-5 h-5 text-teal-600 mx-auto" /></td>
+                    <td className="py-4 px-6 text-sm text-gray-700">PDF Exports</td>
+                    <td className="py-4 px-4 text-center text-sm text-gray-600">3/month</td>
+                    <td className="py-4 px-4 text-center text-sm text-gray-600">Unlimited</td>
+                    <td className="py-4 px-4 text-center text-sm text-gray-600">Unlimited</td>
+                    <td className="py-4 px-4 text-center text-sm text-gray-600">Unlimited</td>
                   </tr>
                 </tbody>
               </table>

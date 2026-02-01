@@ -30,6 +30,32 @@ const DEFAULT_RESOLUTION = 512;
 const DEFAULT_CLOUD_THRESHOLD = 30;
 const DEFAULT_DATA_COLLECTION = 'sentinel-2-l2a';
 
+/**
+ * Calculate optimal resolution based on field size
+ * Larger fields need higher resolution to maintain detail when zooming
+ * Sentinel Hub max resolution is 2500x2500
+ *
+ * @param {number} acres - Field size in acres
+ * @returns {number} - Recommended resolution (width/height in pixels)
+ */
+export function calculateResolutionForField(acres) {
+  if (!acres || acres <= 0) return DEFAULT_RESOLUTION;
+
+  if (acres < 50) {
+    return 512;      // Small fields: 512x512
+  } else if (acres < 200) {
+    return 768;      // Medium-small: 768x768
+  } else if (acres < 500) {
+    return 1024;     // Medium: 1024x1024
+  } else if (acres < 2000) {
+    return 1536;     // Large: 1536x1536
+  } else if (acres < 10000) {
+    return 2048;     // Very large: 2048x2048
+  } else {
+    return 2500;     // Massive fields: max resolution 2500x2500
+  }
+}
+
 // In-flight request map for coalescing concurrent requests
 const inFlightRequests = new Map();
 

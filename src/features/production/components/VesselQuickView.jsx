@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   Droplet, Thermometer, TrendingDown, Activity, CheckCircle2,
   Sparkles, BarChart3, Clock, X, ArrowRight, ExternalLink, Wine, Grape,
-  Barrel, Package, MapPin, Beaker
+  Barrel, Package, MapPin, Beaker, LogIn, AlertCircle
 } from 'lucide-react';
 import {
   getContainer,
@@ -13,6 +13,7 @@ import {
   logCIPEvent,
   createFermentationLog
 } from '@/shared/lib/productionApi';
+import { useAuth } from '@/auth/AuthContext.jsx';
 
 /**
  * Mobile-optimized quick view for vessels accessed via QR code scan
@@ -23,11 +24,13 @@ export function VesselQuickView() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isScan = searchParams.get('scan') === 'true';
+  const { user, loading: authLoading } = useAuth() || {};
 
   const [container, setContainer] = useState(null);
   const [lot, setLot] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [errorType, setErrorType] = useState(null); // 'auth', 'not_found', 'invalid_id'
   const [success, setSuccess] = useState(null);
 
   // Quick action modals
@@ -47,27 +50,66 @@ export function VesselQuickView() {
   });
 
   useEffect(() => {
-    loadVesselData();
-  }, [id]);
+    // Wait for auth to load before fetching data
+    if (!authLoading) {
+      loadVesselData();
+    }
+  }, [id, authLoading, user]);
 
   const loadVesselData = async () => {
     setLoading(true);
+    setError(null);
+    setErrorType(null);
+
     try {
-      // Validate ID first
+      // Check auth first
+      if (!user) {
+        setErrorType('auth');
+        throw new Error('Please sign in to view this vessel.');
+      }
+
+      // Validate ID format
       if (!id || id === 'undefined') {
+        setErrorType('invalid_id');
         throw new Error('Invalid vessel ID. Please scan a valid QR code.');
       }
 
+      // Basic UUID format check
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        setErrorType('invalid_id');
+        throw new Error('Invalid QR code format. This doesn\'t appear to be a valid vessel code.');
+      }
+
       // Fetch container
+      console.log('[VesselQuickView] Fetching container:', id);
       const { data: containerData, error: containerError } = await getContainer(id);
+
       if (containerError) {
-        console.error('Container error:', containerError);
+        console.error('[VesselQuickView] Container error:', containerError);
+        // Check for specific error types
+        if (containerError.message === 'Not authenticated') {
+          setErrorType('auth');
+          throw new Error('Please sign in to view this vessel.');
+        }
+        if (containerError.code === 'PGRST116' || containerError.message?.includes('no rows')) {
+          setErrorType('not_found');
+          throw new Error('Vessel not found. It may have been deleted or belongs to a different account.');
+        }
+        if (containerError.message?.includes('uuid')) {
+          setErrorType('invalid_id');
+          throw new Error('Invalid QR code. Please try scanning again.');
+        }
         throw containerError;
       }
 
       if (!containerData) {
-        throw new Error('Vessel not found. It may have been deleted.');
+        console.error('[VesselQuickView] No container data returned');
+        setErrorType('not_found');
+        throw new Error('Vessel not found. It may have been deleted or belongs to a different account.');
       }
+
+      console.log('[VesselQuickView] Container found:', containerData.name);
 
       // Fetch all lots to find assigned one
       const { data: lotsData, error: lotsError } = await listLots();
@@ -162,31 +204,91 @@ export function VesselQuickView() {
     return colors[status] || 'bg-gray-100 text-gray-700';
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#7C203A] to-[#422833] flex items-center justify-center p-4">
         <div className="text-white text-center">
           <Activity className="w-12 h-12 mx-auto mb-4 animate-pulse" />
-          <p className="text-lg">Loading vessel...</p>
+          <p className="text-lg">{authLoading ? 'Checking login...' : 'Loading vessel...'}</p>
         </div>
       </div>
     );
   }
 
+  // Auth required error - show sign in prompt
+  if (errorType === 'auth' || (!user && !loading)) {
+    const currentUrl = window.location.pathname + window.location.search;
+    const redirectUrl = encodeURIComponent(currentUrl);
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#7C203A] to-[#422833] flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-[#7C203A]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <LogIn className="w-10 h-10 text-[#7C203A]" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Sign In Required</h2>
+            <p className="text-base text-gray-600 mb-6 leading-relaxed">
+              Please sign in to your Trellis account to view this vessel.
+            </p>
+            <Link
+              to={`/signin?redirect=${redirectUrl}`}
+              className="block w-full py-4 bg-[#7C203A] text-white rounded-xl font-bold text-lg hover:bg-[#8B2E48] active:scale-98 transition-all shadow-lg text-center mb-3"
+            >
+              Sign In
+            </Link>
+            <Link
+              to={`/signup?redirect=${redirectUrl}`}
+              className="block w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold text-base hover:bg-gray-200 active:scale-98 transition-all text-center"
+            >
+              Create Account
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Other errors
   if (error && !container) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#7C203A] to-[#422833] flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl">
           <div className="text-center">
-            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <X className="w-12 h-12 text-red-600" />
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
+              errorType === 'invalid_id' ? 'bg-amber-100' : 'bg-red-100'
+            }`}>
+              {errorType === 'invalid_id' ? (
+                <AlertCircle className="w-10 h-10 text-amber-600" />
+              ) : (
+                <X className="w-12 h-12 text-red-600" />
+              )}
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Vessel Not Found</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              {errorType === 'invalid_id' ? 'Invalid QR Code' : 'Vessel Not Found'}
+            </h2>
             <p className="text-base text-gray-600 mb-6 leading-relaxed">
-              {error.includes('uuid')
-                ? 'The QR code appears to be invalid or the vessel has been deleted.'
-                : error}
+              {error}
             </p>
+
+            {/* Debug info for troubleshooting */}
+            <div className="bg-gray-50 rounded-lg p-3 mb-6 text-left">
+              <p className="text-xs text-gray-500 mb-2 font-medium">Troubleshooting:</p>
+              <ul className="text-xs text-gray-500 space-y-1 mb-3">
+                <li>• Make sure you're signed into the correct account</li>
+                <li>• The vessel may have been deleted</li>
+                <li>• Try scanning the QR code again</li>
+              </ul>
+              <div className="border-t border-gray-200 pt-2 mt-2">
+                <p className="text-[10px] text-gray-400 font-mono break-all">
+                  ID: {id || 'none'}
+                </p>
+                <p className="text-[10px] text-gray-400">
+                  User: {user?.email || 'not signed in'}
+                </p>
+              </div>
+            </div>
+
             <button
               onClick={() => navigate('/production?view=containers')}
               className="w-full py-4 bg-[#7C203A] text-white rounded-xl font-bold text-lg hover:bg-[#8B2E48] active:scale-98 transition-all shadow-lg"

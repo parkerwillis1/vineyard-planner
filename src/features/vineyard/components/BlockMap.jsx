@@ -20,11 +20,13 @@ import {
   fetchNDVIForBlockAtDate,
   computeNDVIDeltaRaster,
   computeNDVIStats,
-  searchAvailableImageryDates
+  searchAvailableImageryDates,
+  calculateResolutionForField
 } from '@/shared/lib/sentinelHubApi';
 import { getExportOptions } from '@/shared/lib/ndviExportUtils';
 import {
   fetchOpenETData,
+  fetchETHeatMapData,
   getGrapeKc,
   applyKcToTimeseries,
   getDateRange
@@ -974,8 +976,14 @@ export function BlockMap({
               return { blockId: block.id, data: layerData.ndvi[block.id] };
             }
 
-            console.log(`🛰️ Fetching NDVI for ${block.name}`);
-            const ndviData = await fetchNDVIForBlock(block, { days: 30 });
+            // Calculate acres from geometry if not set on block
+            const blockAcres = block.acres || (block.geom?.coordinates ? calculatePolygonArea(block.geom.coordinates[0].map(c => ({ lat: c[1], lng: c[0] }))) : 0);
+            const resolution = calculateResolutionForField(blockAcres);
+            console.log(`🛰️ Fetching NDVI for ${block.name} (${blockAcres.toFixed(0)} acres, ${resolution}px resolution)`);
+            const ndviData = await fetchNDVIForBlock(block, {
+              days: 30,
+              resolution: resolution
+            });
             console.log(`✓ Received NDVI data for ${block.name}:`, {
               hasRasterData: !!ndviData?.rasterData,
               width: ndviData?.width,
@@ -1299,12 +1307,20 @@ export function BlockMap({
           }
 
           try {
-            console.log(`🛰️ Fetching timeline NDVI for ${block.name} from ${dateStart.toISOString().split('T')[0]} to ${dateEnd.toISOString().split('T')[0]}`);
+            // Calculate acres from geometry if not set on block
+            const blockAcres = block.acres || (block.geom?.coordinates ? calculatePolygonArea(block.geom.coordinates[0].map(c => ({ lat: c[1], lng: c[0] }))) : 0);
+            const resolution = calculateResolutionForField(blockAcres);
+            console.log(`🛰️ TIMELINE FETCH: ${block.name}`);
+            console.log(`   📐 Calculated acres: ${blockAcres.toFixed(0)}`);
+            console.log(`   📏 Requested resolution: ${resolution}px`);
+            console.log(`   📅 Date range: ${dateStart.toISOString().split('T')[0]} to ${dateEnd.toISOString().split('T')[0]}`);
             const data = await fetchNDVIForBlockAtDate(block, {
               startDate: dateStart,
-              endDate: dateEnd
-              // Don't skip cache - we want consistent results for the same date range
+              endDate: dateEnd,
+              resolution: resolution,
+              skipCache: true // Force fresh data at correct resolution
             });
+            console.log(`   ✅ RECEIVED: ${data?.width}x${data?.height} resolution, mean NDVI: ${data?.meanNDVI?.toFixed(3)}`);
             // Calculate valid pixel percentage (non-NaN pixels)
             let validPixelPercent = 0;
             if (data?.rasterData) {
@@ -1386,7 +1402,7 @@ export function BlockMap({
             } else {
               // Valid data - use it
               newNdvi[blockId] = data;
-              console.log(`📊 Timeline data for block ${blockId}: mean=${data.meanNDVI?.toFixed(3)}, date=${dateStr}`);
+              console.log(`📊 Timeline data for block ${blockId}: mean=${data.meanNDVI?.toFixed(3)}, date=${dateStr}, resolution=${data.width}x${data.height}`);
             }
           });
           return { ...prev, ndvi: newNdvi };
@@ -1429,31 +1445,125 @@ export function BlockMap({
               return { blockId: block.id, data: layerData.et[block.id] };
             }
 
-            console.log(`📡 Fetching ET for ${block.name} at (${block.lat.toFixed(4)}, ${block.lng.toFixed(4)})`);
-            const etResponse = await fetchOpenETData({
-              lat: block.lat,
-              lng: block.lng,
-              startDate,
-              endDate,
-              model: 'ensemble',
-              interval: 'daily'
-            });
+            // Calculate bounding box for raster
+            const polygonCoords = block.geom?.coordinates?.[0] || [];
+            const lngs = polygonCoords.map(c => c[0]);
+            const lats = polygonCoords.map(c => c[1]);
+            const bbox = [
+              Math.min(...lngs), // minLng
+              Math.min(...lats), // minLat
+              Math.max(...lngs), // maxLng
+              Math.max(...lats)  // maxLat
+            ];
 
-            const timeseriesWithKc = applyKcToTimeseries(etResponse.timeseries, getGrapeKc);
+            // Calculate field size to determine sampling strategy
+            const fieldAcres = block.acres || calculatePolygonArea(polygonCoords.map(c => ({ lat: c[1], lng: c[0] })));
+
+            // For large fields (> 500 acres), sample a grid of points for spatial variation
+            const gridPoints = [];
+            let gridSize = 1; // Default: just centroid
+
+            if (fieldAcres > 10000) {
+              gridSize = 6; // 36 points for very large fields
+            } else if (fieldAcres > 2000) {
+              gridSize = 5; // 25 points
+            } else if (fieldAcres > 500) {
+              gridSize = 4; // 16 points
+            } else if (fieldAcres > 100) {
+              gridSize = 3; // 9 points
+            }
+
+            // Point-in-polygon test for grid points
+            const isPointInPolygon = (lat, lng) => {
+              let inside = false;
+              for (let i = 0, j = polygonCoords.length - 1; i < polygonCoords.length; j = i++) {
+                const xi = polygonCoords[i][0], yi = polygonCoords[i][1];
+                const xj = polygonCoords[j][0], yj = polygonCoords[j][1];
+                const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+              }
+              return inside;
+            };
+
+            // Generate grid points within the field
+            if (gridSize > 1) {
+              const latStep = (bbox[3] - bbox[1]) / (gridSize + 1);
+              const lngStep = (bbox[2] - bbox[0]) / (gridSize + 1);
+
+              for (let i = 1; i <= gridSize; i++) {
+                for (let j = 1; j <= gridSize; j++) {
+                  const lat = bbox[1] + latStep * i;
+                  const lng = bbox[0] + lngStep * j;
+                  if (isPointInPolygon(lat, lng)) {
+                    gridPoints.push({ lat, lng });
+                  }
+                }
+              }
+              // Always include centroid
+              gridPoints.push({ lat: block.lat, lng: block.lng });
+            } else {
+              gridPoints.push({ lat: block.lat, lng: block.lng });
+            }
+
+            console.log(`📡 Fetching ET for ${block.name} (${fieldAcres.toFixed(0)} acres) - ${gridPoints.length} sample points`);
+
+            // Fetch ET data for all grid points
+            const pointResults = await Promise.all(
+              gridPoints.map(async (point, idx) => {
+                try {
+                  const etResponse = await fetchOpenETData({
+                    lat: point.lat,
+                    lng: point.lng,
+                    startDate,
+                    endDate,
+                    model: 'ensemble',
+                    interval: 'daily'
+                  });
+                  // Skip mock data - only use real OpenET data
+                  if (etResponse.isMockData) {
+                    console.warn(`⚠️ Point ${idx} returned mock data, skipping`);
+                    return null;
+                  }
+                  const avgET = etResponse.timeseries.reduce((sum, day) => sum + day.et, 0) / etResponse.timeseries.length;
+                  return { ...point, avgET, timeseries: etResponse.timeseries, isReal: true };
+                } catch (err) {
+                  console.warn(`Failed to fetch ET for point ${idx}:`, err);
+                  return null;
+                }
+              })
+            );
+
+            // Filter out failed points and mock data - only keep REAL data
+            const validPoints = pointResults.filter(p => p !== null && p.isReal);
+
+            if (validPoints.length === 0) {
+              throw new Error('No valid ET data points');
+            }
+
+            // Calculate overall averages
+            const allTimeseries = validPoints[0].timeseries; // Use first point's timeseries structure
+            const timeseriesWithKc = applyKcToTimeseries(allTimeseries, getGrapeKc);
+            const overallAvgET = validPoints.reduce((sum, p) => sum + p.avgET, 0) / validPoints.length;
             const totalET = timeseriesWithKc.reduce((sum, day) => sum + day.et, 0);
             const totalETc = timeseriesWithKc.reduce((sum, day) => sum + day.etc, 0);
-            const avgET = totalET / timeseriesWithKc.length;
+
+            console.log(`✅ ET data loaded: avg ${overallAvgET.toFixed(2)} mm/day (${validPoints.length} points, range: ${Math.min(...validPoints.map(p => p.avgET)).toFixed(2)} - ${Math.max(...validPoints.map(p => p.avgET)).toFixed(2)})`);
 
             return {
               blockId: block.id,
               data: {
                 timeseries: timeseriesWithKc,
                 summary: {
-                  avgET: parseFloat(avgET.toFixed(2)),
+                  avgET: parseFloat(overallAvgET.toFixed(2)),
                   totalET: parseFloat(totalET.toFixed(2)),
-                  totalETc: parseFloat(totalETc.toFixed(2))
+                  totalETc: parseFloat(totalETc.toFixed(2)),
+                  minET: parseFloat(Math.min(...validPoints.map(p => p.avgET)).toFixed(2)),
+                  maxET: parseFloat(Math.max(...validPoints.map(p => p.avgET)).toFixed(2))
                 },
-                source: etResponse.source
+                gridPoints: validPoints, // Store grid points for spatial rendering
+                bbox,
+                hasRasterData: true,
+                source: validPoints[0].timeseries ? 'openet-api' : 'mock-data'
               }
             };
           } catch (error) {
@@ -1946,6 +2056,7 @@ export function BlockMap({
     console.log(`🎨 createNDVICanvas for ${block.name}:`, {
       hasData: !!ndviBlockData,
       hasRasterData: !!ndviBlockData?.rasterData,
+      resolution: ndviBlockData ? `${ndviBlockData.width}x${ndviBlockData.height}` : 'N/A',
       meanNDVI: ndviBlockData?.meanNDVI?.toFixed(3),
       acquisitionDate: ndviBlockData?.acquisitionDate,
       isDelta,
@@ -1989,29 +2100,33 @@ export function BlockMap({
       }
     };
 
-    // Color mapping for NDVI
+    // Color mapping for NDVI - use softer colors for timeline mode
+    const timelineAlpha = 120; // Softer for timeline
+    const regularAlpha = 180;  // Normal for current view
+    const alpha = ndviTimelineEnabled ? timelineAlpha : regularAlpha;
+
     const getColorForNDVI = (ndvi) => {
       if (!isFinite(ndvi) || isNaN(ndvi)) return { r: 0, g: 0, b: 0, a: 0 };
       ndvi = Math.max(-1, Math.min(1, ndvi));
 
       if (ndvi < 0) {
         const intensity = (ndvi + 1) * 128;
-        return { r: intensity, g: 0, b: 0, a: 180 };
+        return { r: intensity, g: 0, b: 0, a: alpha };
       } else if (ndvi < 0.3) {
         const t = ndvi / 0.3;
-        return { r: 139 + (255 - 139) * t, g: 0, b: 0, a: 180 };
+        return { r: 139 + (255 - 139) * t, g: 0, b: 0, a: alpha };
       } else if (ndvi < 0.5) {
         const t = (ndvi - 0.3) / 0.2;
-        return { r: 255, g: 165 * t, b: 0, a: 180 };
+        return { r: 255, g: 165 * t, b: 0, a: alpha };
       } else if (ndvi < 0.7) {
         const t = (ndvi - 0.5) / 0.2;
-        return { r: 255, g: 165 + (255 - 165) * t, b: 0, a: 180 };
+        return { r: 255, g: 165 + (255 - 165) * t, b: 0, a: alpha };
       } else if (ndvi < 0.85) {
         const t = (ndvi - 0.7) / 0.15;
-        return { r: 255 - 128 * t, g: 255, b: 50 * t, a: 180 };
+        return { r: 255 - 128 * t, g: 255, b: 50 * t, a: alpha };
       } else {
         const t = (ndvi - 0.85) / 0.15;
-        return { r: 127 - 93 * t, g: 255, b: 50, a: 180 };
+        return { r: 127 - 93 * t, g: 255, b: 50, a: alpha };
       }
     };
 
@@ -2044,37 +2159,152 @@ export function BlockMap({
     return { dataUrl: canvas.toDataURL('image/png'), bbox };
   };
 
-  // Helper function to create ET heat map for a block
+  // Helper function to create ET heat map canvas for a block
   const createETCanvas = (block) => {
     const etBlockData = layerData.et[block.id];
     if (!etBlockData || !etBlockData.summary) return null;
-
-    const avgET = etBlockData.summary.avgET;
     if (!block.geom || !block.geom.coordinates) return null;
 
-    // For ET, we'll color the entire polygon based on average ET value
-    // ET range for grapes: 0-10 mm/day
+    const { bbox } = etBlockData;
+    const avgET = etBlockData.summary.avgET;
+    const fieldCoords = block.geom.coordinates[0];
+
+    // ET color function based on REAL average ET value
+    // Scale: 0-8 mm/day typical range for agricultural areas
     const getColorForET = (et) => {
-      const normalized = Math.max(0, Math.min(1, et / 10));
+      // Normalize ET to 0-1 scale (0-8 mm/day range)
+      const normalized = Math.max(0, Math.min(1, et / 8));
+
+      // Color stops: dark blue -> cyan -> green -> yellow -> orange
+      // Lower ET = less water use (blue), Higher ET = more water use (orange)
       if (normalized < 0.2) {
-        // Very low: light blue
-        return `rgba(191, 219, 254, 0.7)`;
+        const t = normalized / 0.2;
+        return {
+          r: Math.round(30 + (56 - 30) * t),
+          g: Math.round(58 + (189 - 58) * t),
+          b: Math.round(95 + (248 - 95) * t),
+          a: 200
+        };
       } else if (normalized < 0.4) {
-        // Low: blue
-        return `rgba(96, 165, 250, 0.7)`;
+        const t = (normalized - 0.2) / 0.2;
+        return {
+          r: Math.round(56 + (34 - 56) * t),
+          g: Math.round(189 + (197 - 189) * t),
+          b: Math.round(248 + (94 - 248) * t),
+          a: 200
+        };
       } else if (normalized < 0.6) {
-        // Medium: yellow
-        return `rgba(253, 224, 71, 0.7)`;
+        const t = (normalized - 0.4) / 0.2;
+        return {
+          r: Math.round(34 + (132 - 34) * t),
+          g: Math.round(197 + (204 - 197) * t),
+          b: Math.round(94 + (22 - 94) * t),
+          a: 200
+        };
       } else if (normalized < 0.8) {
-        // High: orange
-        return `rgba(251, 146, 60, 0.7)`;
+        const t = (normalized - 0.6) / 0.2;
+        return {
+          r: Math.round(132 + (251 - 132) * t),
+          g: Math.round(204 + (191 - 204) * t),
+          b: Math.round(22 + (36 - 22) * t),
+          a: 200
+        };
       } else {
-        // Very high: red
-        return `rgba(239, 68, 68, 0.7)`;
+        const t = (normalized - 0.8) / 0.2;
+        return {
+          r: Math.round(251 + (249 - 251) * t),
+          g: Math.round(191 + (115 - 191) * t),
+          b: Math.round(36 + (22 - 36) * t),
+          a: 200
+        };
       }
     };
 
-    return { color: getColorForET(avgET), value: avgET };
+    // Create raster showing REAL ET data with spatial interpolation
+    if (bbox) {
+      const width = 256;
+      const height = 256;
+      const gridPoints = etBlockData.gridPoints || [];
+
+      // Point-in-polygon test
+      const isPointInPolygon = (lat, lng) => {
+        let inside = false;
+        for (let i = 0, j = fieldCoords.length - 1; i < fieldCoords.length; j = i++) {
+          const xi = fieldCoords[i][0], yi = fieldCoords[i][1];
+          const xj = fieldCoords[j][0], yj = fieldCoords[j][1];
+          const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      };
+
+      // Inverse Distance Weighting (IDW) interpolation
+      const interpolateET = (lat, lng) => {
+        if (gridPoints.length === 0) return avgET;
+        if (gridPoints.length === 1) return gridPoints[0].avgET;
+
+        let weightedSum = 0;
+        let totalWeight = 0;
+        const power = 2; // IDW power parameter (2 is typical)
+
+        for (const point of gridPoints) {
+          // Calculate distance in degrees (approximate)
+          const dLat = lat - point.lat;
+          const dLng = lng - point.lng;
+          const distance = Math.sqrt(dLat * dLat + dLng * dLng);
+
+          if (distance < 0.00001) {
+            // Very close to a sample point, return its value
+            return point.avgET;
+          }
+
+          const weight = 1 / Math.pow(distance, power);
+          weightedSum += point.avgET * weight;
+          totalWeight += weight;
+        }
+
+        return totalWeight > 0 ? weightedSum / totalWeight : avgET;
+      };
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.createImageData(width, height);
+      const data = imageData.data;
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const lng = bbox[0] + (x / width) * (bbox[2] - bbox[0]);
+          const lat = bbox[3] - (y / height) * (bbox[3] - bbox[1]);
+          const insideField = isPointInPolygon(lat, lng);
+
+          const pixelIdx = (y * width + x) * 4;
+          if (insideField) {
+            // Use IDW interpolation if we have multiple grid points
+            const etValue = gridPoints.length > 1 ? interpolateET(lat, lng) : avgET;
+            const color = getColorForET(etValue);
+            data[pixelIdx] = color.r;
+            data[pixelIdx + 1] = color.g;
+            data[pixelIdx + 2] = color.b;
+            data[pixelIdx + 3] = color.a;
+          } else {
+            data[pixelIdx] = 0;
+            data[pixelIdx + 1] = 0;
+            data[pixelIdx + 2] = 0;
+            data[pixelIdx + 3] = 0;
+          }
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      return { dataUrl: canvas.toDataURL('image/png'), bbox, isRaster: true, avgET };
+    }
+
+    // Fallback: solid color based on average ET (no bbox available)
+    const color = getColorForET(avgET);
+    const colorStr = `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
+    return { color: colorStr, value: avgET, isRaster: false };
   };
 
   // Helper function to create Water Deficit heat map for a block
@@ -2736,8 +2966,8 @@ export function BlockMap({
           );
         })}
 
-        {/* Render NDVI layer overlays */}
-        {activeLayers.ndvi && blocks.map(block => {
+        {/* Render NDVI layer overlays - don't render when ET or Water Deficit is active */}
+        {activeLayers.ndvi && !activeLayers.et && !activeLayers.waterDeficit && blocks.map(block => {
           if (!block.geom) {
             console.log(`Block ${block.name} has no geometry`);
             return null;
@@ -2794,12 +3024,15 @@ export function BlockMap({
               ? `ndvi-${block.id}-timeline-${ndviSelectedDateIndex}-${dataMean}`
               : `ndvi-${block.id}-default-${dataMean}`;
 
+          // Use lower opacity for timeline mode so satellite imagery shows through
+          const overlayOpacity = ndviTimelineEnabled ? 0.6 : 0.85;
+
           return (
             <GroundOverlay
               key={overlayKey}
               url={dataUrl}
               bounds={bounds}
-              opacity={0.85}
+              opacity={overlayOpacity}
               options={{
                 zIndex: 10
               }}
@@ -2819,22 +3052,43 @@ export function BlockMap({
           const etOverlay = createETCanvas(block);
           if (!etOverlay) return null;
 
-          const path = geojsonToPath(block.geom);
           const isSelected = block.id === selectedBlockId;
           const isBeingCaptured = block.id === captureBlockId;
 
+          // If we have raster data, render as GroundOverlay
+          if (etOverlay.isRaster && etOverlay.dataUrl && etOverlay.bbox) {
+            const bounds = new window.google.maps.LatLngBounds(
+              new window.google.maps.LatLng(etOverlay.bbox[1], etOverlay.bbox[0]),
+              new window.google.maps.LatLng(etOverlay.bbox[3], etOverlay.bbox[2])
+            );
+
+            return (
+              <GroundOverlay
+                key={`et-raster-${block.id}`}
+                url={etOverlay.dataUrl}
+                bounds={bounds}
+                opacity={0.85}
+                options={{
+                  zIndex: 15
+                }}
+              />
+            );
+          }
+
+          // Fallback: solid color polygon
+          const path = geojsonToPath(block.geom);
           return (
             <Polygon
               key={`et-${block.id}`}
               paths={path}
               options={{
                 fillColor: etOverlay.color,
-                fillOpacity: isBeingCaptured ? 0.7 : 0.6, // Slightly more visible during capture
-                strokeColor: isBeingCaptured ? '#3b82f6' : (isSelected ? '#f59e0b' : '#6b7280'),
-                strokeOpacity: 0.9,
+                fillOpacity: isBeingCaptured ? 0.85 : 0.8,
+                strokeColor: isBeingCaptured ? '#3b82f6' : (isSelected ? '#f59e0b' : '#1e3a5f'),
+                strokeOpacity: 1,
                 strokeWeight: isBeingCaptured ? 4 : (isSelected ? 3 : 2),
                 clickable: true,
-                zIndex: 5
+                zIndex: 15
               }}
               onClick={() => handleBlockClick(block.id)}
             />
@@ -3288,6 +3542,10 @@ export function BlockMap({
                 {/* Timeline toggle */}
                 <button
                   onClick={() => {
+                    // Clear timeline cache when toggling to force fresh data at correct resolution
+                    if (!ndviTimelineEnabled) {
+                      ndviTimelineCacheRef.current = {};
+                    }
                     setNdviTimelineEnabled(!ndviTimelineEnabled);
                     setNdviCompareEnabled(false); // Disable compare when timeline is active
                   }}
@@ -3621,11 +3879,12 @@ export function BlockMap({
             </div>
             <div className="space-y-1 sm:space-y-2">
               {[
-                { color: 'rgba(239, 68, 68, 0.7)', label: 'Very High', desc: '> 8 mm/day' },
-                { color: 'rgba(251, 146, 60, 0.7)', label: 'High', desc: '6-8 mm/day' },
-                { color: 'rgba(253, 224, 71, 0.7)', label: 'Moderate', desc: '4-6 mm/day' },
-                { color: 'rgba(96, 165, 250, 0.7)', label: 'Low', desc: '2-4 mm/day' },
-                { color: 'rgba(191, 219, 254, 0.7)', label: 'Very Low', desc: '< 2 mm/day' }
+                { color: 'rgba(249, 115, 22, 1)', label: 'Very High', desc: '> 6.4 mm/day' },
+                { color: 'rgba(251, 191, 36, 1)', label: 'High', desc: '4.8-6.4 mm/day' },
+                { color: 'rgba(132, 204, 22, 1)', label: 'Moderate', desc: '3.2-4.8 mm/day' },
+                { color: 'rgba(34, 197, 94, 1)', label: 'Low-Mod', desc: '1.6-3.2 mm/day' },
+                { color: 'rgba(56, 189, 248, 1)', label: 'Low', desc: '0.8-1.6 mm/day' },
+                { color: 'rgba(30, 58, 95, 1)', label: 'Very Low', desc: '< 0.8 mm/day' }
               ].map((item, idx) => (
                 <div key={idx} className="flex items-center gap-1.5 sm:gap-2">
                   <div
@@ -3646,7 +3905,7 @@ export function BlockMap({
               </div>
             )}
             <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 text-[10px] sm:text-xs text-gray-500 hidden sm:block">
-              Satellite data from OpenET
+              Real satellite data from OpenET
             </div>
           </div>
         )}

@@ -35,6 +35,7 @@ export async function fetchOpenETData({
   interval = 'daily'
 }) {
   console.log('📡 Fetching OpenET data via proxy:', { lat, lng, startDate, endDate, model });
+  console.log('📡 Using proxy URL:', OPENET_PROXY_URL, '(isDev:', isDevelopment, ')');
 
   try {
     // OpenET API format: https://openet.gitbook.io/docs/quick-start
@@ -51,10 +52,11 @@ export async function fetchOpenETData({
 
     console.log('📡 Request body:', requestBody);
 
-    // Add timeout to fetch request (30 seconds)
+    // Add timeout to fetch request (120 seconds - OpenET can be very slow with many concurrent requests)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
+    const startTime = Date.now();
     const response = await fetch(OPENET_PROXY_URL, {
       method: 'POST',
       headers: {
@@ -65,6 +67,7 @@ export async function fetchOpenETData({
     });
 
     clearTimeout(timeoutId);
+    console.log(`📡 OpenET response received in ${((Date.now() - startTime) / 1000).toFixed(1)}s, status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -85,7 +88,7 @@ export async function fetchOpenETData({
 
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.error('❌ OpenET proxy timeout after 30 seconds');
+      console.error('❌ OpenET proxy timeout after 60 seconds');
       console.warn('⚠️ The OpenET proxy is not responding. Falling back to mock data.');
     } else {
       console.error('❌ Error fetching OpenET data via proxy:', error);
@@ -93,7 +96,9 @@ export async function fetchOpenETData({
     }
 
     // Fall back to mock data
-    return generateMockETData(startDate, endDate);
+    const mockData = generateMockETData(startDate, endDate);
+    mockData.isMockData = true; // Flag to identify mock data
+    return mockData;
   }
 }
 
@@ -312,8 +317,8 @@ export async function fetchETHeatMapData({
 
   console.log(`📍 Generated ${gridPoints.length} grid points for heat map`);
 
-  // Limit to avoid too many API calls
-  const maxPoints = 50;
+  // Limit to avoid too many API calls - but allow more for better coverage
+  const maxPoints = 100;
   const sampledPoints = gridPoints.length > maxPoints
     ? gridPoints.filter((_, i) => i % Math.ceil(gridPoints.length / maxPoints) === 0)
     : gridPoints;

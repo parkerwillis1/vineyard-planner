@@ -42,16 +42,24 @@ export default defineConfig({
       '/api/openet': {
         target: 'https://openet-api.org',
         changeOrigin: true,
+        secure: true,
+        timeout: 120000, // 2 minute timeout for slow API responses
         rewrite: (path) => path.replace(/^\/api\/openet/, '/raster/timeseries/point'),
         configure: (proxy, options) => {
           proxy.on('proxyReq', (proxyReq, req, res) => {
             // Add OpenET API key - NOTE: OpenET uses direct key, NOT "Bearer" prefix
             if (openETKey) {
               proxyReq.setHeader('Authorization', openETKey)
-              console.log('🔑 Adding OpenET API key to proxy request')
+              console.log('🔑 OpenET Proxy: Adding API key, forwarding to openet-api.org')
             } else {
-              console.error('❌ OpenET API key not found in .env.local')
+              console.error('❌ OpenET Proxy: API key not found in .env.local')
             }
+          });
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log(`✅ OpenET Proxy: Response received - ${proxyRes.statusCode}`)
+          });
+          proxy.on('error', (err, req, res) => {
+            console.error('❌ OpenET Proxy error:', err.message)
           });
         },
       },

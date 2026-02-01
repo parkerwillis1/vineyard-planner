@@ -21,11 +21,26 @@ export async function listContainers() {
 }
 
 export async function getContainer(containerId) {
-  return supabase
+  // Get current user to ensure we're authenticated and filter by user_id
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    console.error('[getContainer] No authenticated user');
+    return { data: null, error: new Error('Not authenticated') };
+  }
+
+  console.log('[getContainer] Fetching container:', containerId, 'for user:', user.id);
+
+  const result = await supabase
     .from('production_containers')
     .select('*')
     .eq('id', containerId)
+    .eq('user_id', user.id)
     .single();
+
+  console.log('[getContainer] Result:', result.data ? 'Found' : 'Not found', result.error?.message || '');
+
+  return result;
 }
 
 export async function createContainer(container) {
