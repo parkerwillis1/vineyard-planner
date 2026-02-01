@@ -49,6 +49,11 @@ export function VesselQuickView({ id: propId }) {
     brix: '',
     temp_f: '',
     ph: '',
+    ta: '',
+    free_so2: '',
+    total_so2: '',
+    va: '',
+    rs: '',
     notes: ''
   });
 
@@ -184,7 +189,7 @@ export function VesselQuickView({ id: propId }) {
 
       setSuccess('Reading saved successfully');
       setShowReadingModal(false);
-      setReadingData({ brix: '', temp_f: '', ph: '', notes: '' });
+      setReadingData({ brix: '', temp_f: '', ph: '', ta: '', free_so2: '', total_so2: '', va: '', rs: '', notes: '' });
       loadVesselData();
     } catch (err) {
       setError(err.message);
@@ -496,68 +501,79 @@ export function VesselQuickView({ id: propId }) {
         </div>
       </div>
 
-      {/* CIP Modal - Mobile Optimized */}
+      {/* CIP Modal - Professional Design */}
       {showCIPModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
           <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4">
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-white" />
+                  <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">Record CIP</h3>
-                    <p className="text-white/70 text-sm">{container.name}</p>
+                    <p className="text-white/80 text-sm">{container.name} • {container.type}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowCIPModal(false)}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
                 >
-                  <X className="w-6 h-6 text-white" />
+                  <X className="w-6 h-6 text-white/90" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-5 space-y-4">
+              {/* Info banner */}
+              <div className="bg-emerald-50 rounded-xl p-3 flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-emerald-800">
+                  Recording a CIP will mark this vessel as sanitized and log the cleaning event.
+                </p>
+              </div>
+
               <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">CIP Product</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cleaning Product</label>
                 <input
                   type="text"
                   value={cipData.product}
                   onChange={(e) => setCIPData({ ...cipData, product: e.target.value })}
-                  className="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-                  placeholder="e.g., Saniclean, Star San"
+                  className="w-full px-3 py-2.5 text-base border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  placeholder="e.g., Saniclean, Star San, PBW"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Cost (optional)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={cipData.cost}
-                  onChange={(e) => setCIPData({ ...cipData, cost: e.target.value })}
-                  className="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-                  placeholder="$0.00"
-                />
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cost (optional)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={cipData.cost}
+                    onChange={(e) => setCIPData({ ...cipData, cost: e.target.value })}
+                    className="w-full pl-7 pr-3 py-2.5 text-base border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3">
+            <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
               <button
                 onClick={() => setShowCIPModal(false)}
-                className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold text-base hover:bg-gray-300 active:scale-98 transition-all"
+                className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 active:scale-[0.98] transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleQuickCIP}
-                className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-base hover:bg-emerald-700 active:scale-98 transition-all shadow-lg"
+                className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 active:scale-[0.98] transition-all shadow-sm"
               >
                 Mark Clean
               </button>
@@ -566,101 +582,193 @@ export function VesselQuickView({ id: propId }) {
         </div>
       )}
 
-      {/* Reading Modal - Mobile Optimized */}
+      {/* Reading Modal - Professional Design */}
       {showReadingModal && lot && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full max-h-[95vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-[#7C203A] to-[#5a1a2d] px-6 py-4">
+            <div className="bg-gradient-to-r from-[#7C203A] to-[#5a1a2d] px-5 py-4 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                    <Activity className="w-5 h-5 text-white" />
+                  <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
+                    <Activity className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white">Quick Reading</h3>
-                    <p className="text-white/70 text-sm">{lot.varietal} • {lot.vintage}</p>
+                    <h3 className="text-lg font-bold text-white">Record Lab Reading</h3>
+                    <p className="text-white/80 text-sm">{lot.varietal} • {lot.vintage} • {container.name}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowReadingModal(false)}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
                 >
-                  <X className="w-6 h-6 text-white" />
+                  <X className="w-6 h-6 text-white/90" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-5 overflow-y-auto">
-              <p className="text-sm text-gray-600">
-                Enter new readings. Only fill in values you want to update.
-              </p>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Brix (°)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    inputMode="decimal"
-                    value={readingData.brix}
-                    onChange={(e) => setReadingData({ ...readingData, brix: e.target.value })}
-                    placeholder={lot.current_brix || '0.0'}
-                    className="w-full px-4 py-3 text-xl font-semibold border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors"
-                  />
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-5 space-y-5">
+                {/* Current values reference */}
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Current Values</p>
+                  <div className="flex flex-wrap gap-3 text-sm">
+                    <span className="text-gray-700">
+                      <span className="font-medium">Brix:</span> {lot.current_brix?.toFixed(1) || '—'}°
+                    </span>
+                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-700">
+                      <span className="font-medium">Temp:</span> {lot.current_temp_f?.toFixed(0) || '—'}°F
+                    </span>
+                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-700">
+                      <span className="font-medium">pH:</span> {lot.current_ph?.toFixed(2) || '—'}
+                    </span>
+                  </div>
                 </div>
 
+                {/* Primary Measurements */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Temp (°F)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    inputMode="decimal"
-                    value={readingData.temp_f}
-                    onChange={(e) => setReadingData({ ...readingData, temp_f: e.target.value })}
-                    placeholder={lot.current_temp_f || '0.0'}
-                    className="w-full px-4 py-3 text-xl font-semibold border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors"
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Primary Measurements</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1.5">Brix (°Bx)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        inputMode="decimal"
+                        value={readingData.brix}
+                        onChange={(e) => setReadingData({ ...readingData, brix: e.target.value })}
+                        placeholder="23.0"
+                        className="w-full px-3 py-2.5 text-lg font-semibold text-center border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1.5">Temp (°F)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        inputMode="decimal"
+                        value={readingData.temp_f}
+                        onChange={(e) => setReadingData({ ...readingData, temp_f: e.target.value })}
+                        placeholder="65"
+                        className="w-full px-3 py-2.5 text-lg font-semibold text-center border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1.5">pH</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={readingData.ph}
+                        onChange={(e) => setReadingData({ ...readingData, ph: e.target.value })}
+                        placeholder="3.45"
+                        className="w-full px-3 py-2.5 text-lg font-semibold text-center border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chemistry Panel */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Chemistry Panel</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1.5">TA (g/L)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={readingData.ta}
+                        onChange={(e) => setReadingData({ ...readingData, ta: e.target.value })}
+                        placeholder="6.5"
+                        className="w-full px-3 py-2.5 text-base font-medium text-center border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1.5">VA (g/L)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={readingData.va}
+                        onChange={(e) => setReadingData({ ...readingData, va: e.target.value })}
+                        placeholder="0.4"
+                        className="w-full px-3 py-2.5 text-base font-medium text-center border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1.5">Free SO₂ (ppm)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        inputMode="numeric"
+                        value={readingData.free_so2}
+                        onChange={(e) => setReadingData({ ...readingData, free_so2: e.target.value })}
+                        placeholder="28"
+                        className="w-full px-3 py-2.5 text-base font-medium text-center border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1.5">Total SO₂ (ppm)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        inputMode="numeric"
+                        value={readingData.total_so2}
+                        onChange={(e) => setReadingData({ ...readingData, total_so2: e.target.value })}
+                        placeholder="85"
+                        className="w-full px-3 py-2.5 text-base font-medium text-center border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Residual Sugar */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Residual Sugar</p>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">RS (g/L)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      inputMode="decimal"
+                      value={readingData.rs}
+                      onChange={(e) => setReadingData({ ...readingData, rs: e.target.value })}
+                      placeholder="2.5"
+                      className="w-full px-3 py-2.5 text-base font-medium border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Notes</label>
+                  <textarea
+                    value={readingData.notes}
+                    onChange={(e) => setReadingData({ ...readingData, notes: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors resize-none text-sm"
+                    rows={2}
+                    placeholder="Observations, color, aroma, taste notes..."
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">pH</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={readingData.ph}
-                  onChange={(e) => setReadingData({ ...readingData, ph: e.target.value })}
-                  placeholder={lot.current_ph || '0.00'}
-                  className="w-full px-4 py-3 text-xl font-semibold border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Notes (optional)</label>
-                <textarea
-                  value={readingData.notes}
-                  onChange={(e) => setReadingData({ ...readingData, notes: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#7C203A]/20 focus:border-[#7C203A] transition-colors resize-none"
-                  rows={2}
-                  placeholder="Any observations..."
-                />
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3">
+            <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex gap-3 flex-shrink-0">
               <button
                 onClick={() => setShowReadingModal(false)}
-                className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold text-base hover:bg-gray-300 active:scale-98 transition-all"
+                className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 active:scale-[0.98] transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleQuickReading}
-                disabled={!readingData.brix && !readingData.temp_f && !readingData.ph}
-                className="flex-1 py-3 bg-[#7C203A] text-white rounded-xl font-bold text-base hover:bg-[#5a1a2d] active:scale-98 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!readingData.brix && !readingData.temp_f && !readingData.ph && !readingData.ta && !readingData.free_so2}
+                className="flex-1 py-3 bg-[#7C203A] text-white rounded-xl font-semibold text-sm hover:bg-[#5a1a2d] active:scale-[0.98] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Save Reading
               </button>
