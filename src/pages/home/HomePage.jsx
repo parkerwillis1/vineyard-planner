@@ -674,7 +674,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Coming Soon - Production & Sales - Redesigned */}
+      {/* Coming Soon - Inventory & Sales */}
       <section className="relative bg-gradient-to-b from-gray-50 to-white py-12 sm:py-20 lg:py-28 xl:py-32 overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-20 right-0 w-48 sm:w-96 h-48 sm:h-96 bg-amber-100/30 rounded-full blur-3xl"></div>
@@ -684,33 +684,19 @@ export default function HomePage() {
           <AnimatedSection className="mx-auto max-w-2xl lg:text-center mb-8 sm:mb-12 lg:mb-16">
             <div className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-amber-800 mb-3 sm:mb-4 shadow-sm border border-amber-200">
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" strokeWidth={1.5} />
-              Coming 2025-2026
+              Coming Soon
             </div>
             <p className="mt-2 text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-gray-900 px-2 sm:px-4 lg:px-0">
-              <AnimatedText>From vineyard to bottle to customer</AnimatedText>
+              <AnimatedText>Complete your wine business toolkit</AnimatedText>
             </p>
             <AnimatedSection delay={300}>
               <p className="mt-3 sm:mt-4 lg:mt-6 text-sm sm:text-base lg:text-lg leading-6 sm:leading-7 lg:leading-8 text-gray-600 px-2 sm:px-4 lg:px-0">
-                We're expanding beyond vineyard operations to give you complete control of your wine business, from crush to customer delivery.
+                We're adding inventory management and sales tools to give you complete control from cellar to customer.
               </p>
             </AnimatedSection>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
-            <div className="group relative bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 sm:h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
-              <div className="flex items-start justify-between mb-3 sm:mb-5">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Droplet className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-amber-600" strokeWidth={1.5} />
-                </div>
-                <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
-                  Q4 2025
-                </span>
-              </div>
-              <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Wine Production</h3>
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">Track crush, fermentation, barrel management, and bottling operations with full traceability.</p>
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
             <div className="group relative bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 sm:h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
               <div className="flex items-start justify-between mb-3 sm:mb-5">
@@ -718,25 +704,25 @@ export default function HomePage() {
                   <Package className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-amber-600" strokeWidth={1.5} />
                 </div>
                 <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
-                  Q4 2025
+                  Q2 2026
                 </span>
               </div>
               <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Inventory Management</h3>
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">Comprehensive tracking for grapes, bulk wine, bottled products, and winemaking supplies.</p>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">Comprehensive tracking for grapes, bulk wine, bottled products, and winemaking supplies with automated stock alerts.</p>
             </div>
 
-            <div className="group relative bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-md hover:shadow-xl transition-all overflow-hidden sm:col-span-2 lg:col-span-1">
+            <div className="group relative bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-md hover:shadow-xl transition-all overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 sm:h-1.5 bg-gradient-to-r from-amber-400 to-orange-400"></div>
               <div className="flex items-start justify-between mb-3 sm:mb-5">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-amber-600" strokeWidth={1.5} />
                 </div>
                 <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-amber-700 bg-amber-50 rounded-full border border-amber-200">
-                  Q2 2026
+                  Q3 2026
                 </span>
               </div>
               <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Sales & Distribution</h3>
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">CRM for wine clubs and wholesale accounts, order management, and sales analytics.</p>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">CRM for wine clubs and wholesale accounts, order management, invoicing, and sales analytics.</p>
             </div>
           </div>
         </div>
